@@ -39,6 +39,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   // Feedback notification
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'info' | 'error'} | null>(null);
 
+  // Templates de questions rapides
+  const quickQuestions = [
+    { label: "📋 Prérequis", prompt: "Quels sont les prérequis nécessaires pour cette procédure ?" },
+    { label: "📝 Résumé", prompt: "Peux-tu me faire un résumé concis de cette procédure ?" },
+    { label: "⚠️ Points critiques", prompt: "Quels sont les points de vigilance ou erreurs fréquentes à éviter ?" }
+  ];
+
   // Simulation d'une liste de techniciens
   const mockTechnicians = [
     { id: 'tech-1', name: 'Julien Vernet', initial: 'JV', email: 'j.vernet@procedio.fr' },
@@ -70,10 +77,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
     }
   }, [procedure]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
-    const currentQuestion = input;
-    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: currentQuestion, timestamp: new Date() };
+  const handleSendMessage = async (textOverride?: string) => {
+    const textToSend = textOverride || input;
+    if (!textToSend.trim()) return;
+    
+    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: textToSend, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
@@ -82,7 +90,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_id: procedure.id, question: currentQuestion })
+        body: JSON.stringify({ file_id: procedure.id, question: textToSend })
       });
       if (!response.ok) throw new Error('IA Error');
       const data = await response.json();
@@ -282,7 +290,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-6 bg-white border-t border-slate-50">
+        <div className="p-6 bg-white border-t border-slate-50 space-y-4">
+          {/* Templates de questions rapides */}
+          <div className="flex flex-wrap gap-2 px-1">
+            {quickQuestions.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => handleSendMessage(q.prompt)}
+                disabled={isTyping}
+                className="text-[10px] font-bold text-slate-500 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-100 transition-all whitespace-nowrap active:scale-95 disabled:opacity-30"
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
             <input 
               type="text"
@@ -294,7 +316,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
               disabled={isTyping}
             />
             <button 
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               disabled={!input.trim() || isTyping}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100 disabled:opacity-30"
             >
