@@ -73,7 +73,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
 
     try {
       // 2. Appel au Webhook N8N
-      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +178,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
             <input 
               type="text"
               placeholder="Posez une question sur le document..."
-              className="w-full pl-5 pr-14 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+              className="w-full pl-5 pr-32 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm font-medium"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -187,9 +187,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
             <button 
               onClick={handleSendMessage}
               disabled={!input.trim() || isTyping}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all shadow-md shadow-blue-200"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all shadow-md shadow-blue-200 group"
             >
-              <i className="fa-solid fa-paper-plane-top"></i>
+              <span className="font-bold text-xs uppercase tracking-wider">Envoyer</span>
+              <i className="fa-solid fa-paper-plane-top group-hover:translate-x-1 transition-transform"></i>
             </button>
           </div>
         </div>
