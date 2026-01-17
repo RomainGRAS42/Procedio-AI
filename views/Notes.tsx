@@ -80,6 +80,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     setIsEditing(true);
   };
 
+  const handleDelete = async (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Voulez-vous vraiment supprimer cette note ? Cette action est irréversible.")) return;
+    
+    try {
+      const { error } = await supabase.from('notes').delete().eq('id', noteId);
+      if (error) throw error;
+      await fetchNotes();
+    } catch (err) {
+      alert("Erreur lors de la suppression.");
+    }
+  };
+
   const saveNote = async () => {
     if (!activeNote.title.trim()) return;
     setSaving(true);
@@ -96,7 +109,6 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       };
 
       let result;
-      // Synchronisation Supabase (Update si ID présent, sinon Insert)
       if (activeNote.id) {
         result = await supabase.from('notes').update(payload).eq('id', activeNote.id);
       } else {
@@ -220,6 +232,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                  <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">{viewingNote.title}</h2>
                </div>
                <div className="flex gap-3">
+                 <button onClick={(e) => handleDelete(e as any, viewingNote.id)} className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center">
+                   <i className="fa-solid fa-trash-can text-lg"></i>
+                 </button>
                  <button onClick={() => { handleEdit(viewingNote); setViewingNote(null); }} className="w-14 h-14 rounded-2xl bg-slate-900 text-white hover:bg-blue-600 transition-all flex items-center justify-center shadow-xl">
                    <i className="fa-solid fa-pen-to-square text-lg"></i>
                  </button>
@@ -260,13 +275,22 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{note.updatedAt}</span>
                     </div>
                     {!isLocked && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleEdit(note); }}
-                        className="w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-50 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
-                        title="Modifier la note"
-                      >
-                        <i className="fa-solid fa-pencil text-sm"></i>
-                      </button>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={(e) => handleDelete(e, note.id)}
+                          className="w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-50 text-rose-400 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center"
+                          title="Supprimer la note"
+                        >
+                          <i className="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleEdit(note); }}
+                          className="w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-50 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center justify-center"
+                          title="Modifier la note"
+                        >
+                          <i className="fa-solid fa-pencil text-sm"></i>
+                        </button>
+                      </div>
                     )}
                   </div>
 
