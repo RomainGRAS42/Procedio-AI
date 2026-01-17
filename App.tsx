@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, UserRole, ViewType } from './types';
+import { User, UserRole, ViewType, Procedure } from './types';
 import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './views/Dashboard';
 import Statistics from './views/Statistics';
 import Procedures from './views/Procedures';
+import ProcedureDetail from './views/ProcedureDetail';
 import Notes from './views/Notes';
 import Account from './views/Account';
 import UploadProcedure from './views/UploadProcedure';
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [selectedProcedure, setSelectedProcedure] = useState<Procedure | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,6 +63,11 @@ const App: React.FC = () => {
     setUser(null);
   };
 
+  const handleProcedureSelect = (proc: Procedure) => {
+    setSelectedProcedure(proc);
+    setCurrentView('procedure-detail');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -80,7 +87,12 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'dashboard': return <Dashboard user={user!} />;
       case 'statistics': return <Statistics />;
-      case 'procedures': return <Procedures user={user!} onUploadClick={() => setCurrentView('upload')} />;
+      case 'procedures': 
+        return <Procedures user={user!} onUploadClick={() => setCurrentView('upload')} onSelectProcedure={handleProcedureSelect} />;
+      case 'procedure-detail':
+        return selectedProcedure 
+          ? <ProcedureDetail procedure={selectedProcedure} onBack={() => setCurrentView('procedures')} />
+          : <Procedures user={user!} onUploadClick={() => setCurrentView('upload')} onSelectProcedure={handleProcedureSelect} />;
       case 'notes': return <Notes />;
       case 'account': return <Account user={user!} />;
       case 'upload': return <UploadProcedure onBack={() => setCurrentView('procedures')} />;

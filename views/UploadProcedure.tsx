@@ -20,13 +20,12 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack }) => {
     
     try {
       // 1. Upload to Supabase Storage
-      // The folder corresponds to the bucket/path in Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('procedures') // Assuming a bucket named 'procedures' exists
+        .from('procedures')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
@@ -120,17 +119,21 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack }) => {
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="flex-1 w-full space-y-2">
             <label className="text-sm font-bold text-slate-700 ml-1">Répertoire Supabase :</label>
-            <select 
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[right_1rem_center]"
-              style={{backgroundImage: `url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>')`, backgroundSize: '1rem'}}
-              value={folder}
-              onChange={(e) => setFolder(e.target.value)}
-            >
-              <option value="LOGICIEL">LOGICIEL</option>
-              <option value="INFRASTRUCTURE">INFRASTRUCTURE</option>
-              <option value="MATÉRIEL">MATÉRIEL</option>
-              <option value="UTILISATEURS">UTILISATEURS</option>
-            </select>
+            <div className="relative">
+              <select 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
+                value={folder}
+                onChange={(e) => setFolder(e.target.value)}
+              >
+                <option value="LOGICIEL">LOGICIEL</option>
+                <option value="INFRASTRUCTURE">INFRASTRUCTURE</option>
+                <option value="MATÉRIEL">MATÉRIEL</option>
+                <option value="UTILISATEURS">UTILISATEURS</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <i className="fa-solid fa-chevron-down"></i>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-4 pt-6 sm:pt-0">

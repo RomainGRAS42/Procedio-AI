@@ -32,4 +32,4 @@ export interface Note {
   updatedAt: string;
 }
 
-export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'notes' | 'account' | 'upload';
+export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload';
