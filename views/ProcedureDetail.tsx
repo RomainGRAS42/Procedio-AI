@@ -102,28 +102,29 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   };
 
   const sendToWebhook = async (email: string, recipientName?: string) => {
+    if (!email.trim()) return;
     setSharing(true);
     try {
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/df536e5c-60ae-4f58-b0ca-2ec41dfc7339', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          procedure_id: procedure.id,
-          procedure_title: procedure.title,
+          procedure_name: procedure.title,
           procedure_url: docUrl,
-          recipient_email: email,
-          recipient_name: recipientName || email,
+          email_recipient: email,
+          recipient_name: recipientName || email.split('@')[0],
           timestamp: new Date().toISOString()
         })
       });
 
       if (!response.ok) throw new Error('Webhook failed');
 
-      setNotification({ msg: `Procédure envoyée avec succès à ${recipientName || email}`, type: 'success' });
+      setNotification({ msg: `Procédure envoyée avec succès à ${email}`, type: 'success' });
       setIsShareModalOpen(false);
       setShareEmail('');
     } catch (error) {
-      setNotification({ msg: "Erreur lors de l'envoi du mail", type: 'error' });
+      console.error("Share error:", error);
+      setNotification({ msg: "Erreur lors de l'envoi", type: 'error' });
     } finally {
       setSharing(false);
       setTimeout(() => setNotification(null), 3000);
@@ -135,7 +136,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   };
 
   const handleShareByEmail = () => {
-    if (!shareEmail.includes('@')) return;
+    if (!shareEmail.includes('@')) {
+      setNotification({ msg: "Email invalide", type: 'error' });
+      setTimeout(() => setNotification(null), 2000);
+      return;
+    }
     sendToWebhook(shareEmail);
   };
 
@@ -184,13 +189,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
       {/* MODAL PARTAGER */}
       {isShareModalOpen && (
         <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl animate-slide-up border border-slate-200 flex flex-col gap-8">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-slide-up border border-slate-200 flex flex-col gap-8">
              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-black text-2xl text-slate-800 tracking-tight">Partager</h3>
+                  <h3 className="font-black text-3xl text-slate-900 tracking-tighter">Partager</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Partager avec un collègue</p>
                 </div>
-                <button onClick={() => setIsShareModalOpen(false)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"><i className="fa-solid fa-xmark"></i></button>
+                <button onClick={() => setIsShareModalOpen(false)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"><i className="fa-solid fa-xmark"></i></button>
              </div>
 
              <div className="space-y-4">
@@ -201,34 +206,34 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
                         key={tech.id} 
                         disabled={sharing}
                         onClick={() => handleShareWithTech(tech)}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-indigo-50 border border-slate-100 hover:border-indigo-200 transition-all group"
+                        className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-white border border-transparent hover:border-slate-100 transition-all group shadow-sm hover:shadow-md"
                      >
                         <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all text-xs">
+                           <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all text-xs">
                              {tech.initial}
                            </div>
-                           <span className="font-bold text-slate-700 group-hover:text-indigo-600">{tech.name}</span>
+                           <span className="font-bold text-slate-700">{tech.name}</span>
                         </div>
-                        <i className={`fa-solid ${sharing ? 'fa-spinner animate-spin' : 'fa-paper-plane'} text-slate-200 group-hover:text-indigo-600`}></i>
+                        <i className={`fa-solid ${sharing ? 'fa-spinner animate-spin' : 'fa-paper-plane'} text-slate-200 group-hover:text-indigo-600 transition-colors`}></i>
                      </button>
                    ))}
                 </div>
              </div>
 
-             <div className="pt-4 border-t border-slate-100 space-y-4">
+             <div className="pt-4 border-t border-slate-50 space-y-4">
                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Partage par Email</span>
                 <div className="relative">
                   <input 
                     type="email" 
                     placeholder="exemple@entreprise.fr"
-                    className="w-full pl-5 pr-14 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                    className="w-full pl-5 pr-14 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all placeholder:font-normal"
                     value={shareEmail}
                     onChange={(e) => setShareEmail(e.target.value)}
                   />
                   <button 
                     onClick={handleShareByEmail}
                     disabled={sharing || !shareEmail.includes('@')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-indigo-600 transition-all disabled:opacity-20 shadow-lg shadow-slate-200"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-900/10 text-slate-400 hover:bg-slate-900 hover:text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
                   >
                     <i className={`fa-solid ${sharing ? 'fa-spinner animate-spin' : 'fa-check'}`}></i>
                   </button>
