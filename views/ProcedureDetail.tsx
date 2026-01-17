@@ -72,8 +72,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
     setIsTyping(true);
 
     try {
-      // 2. Appel au Webhook N8N
-      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/chat', {
+      // 2. Appel au Webhook N8N (URL de production)
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
