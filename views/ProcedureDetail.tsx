@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 interface ProcedureDetailProps {
   procedure: Procedure;
   onBack: () => void;
+  onSuggest?: (content: string) => void;
 }
 
 interface Message {
@@ -15,7 +16,7 @@ interface Message {
   timestamp: Date;
 }
 
-const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) => {
+const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, onSuggest }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -27,6 +28,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
+  
+  // États pour la modale de suggestion
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
+  const [suggestionText, setSuggestionText] = useState('');
+  // Remplacement animation XP par notification simple
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -37,11 +45,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
     scrollToBottom();
   }, [messages]);
 
-  // Génération de l'URL du document Supabase
   useEffect(() => {
     if (procedure) {
-      // Construction du chemin : Si catégorie est 'RACINE' (cas racine), on utilise juste le titre, sinon dossier/titre
-      // Note: procedure.title contient le nom du fichier avec l'extension (ex: document.pdf)
       const path = procedure.category === 'RACINE' 
         ? procedure.title 
         : `${procedure.category}/${procedure.title}`;
@@ -58,8 +63,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
     if (!input.trim()) return;
 
     const currentQuestion = input;
-    
-    // 1. Ajouter le message utilisateur immédiatement
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -72,7 +75,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
     setIsTyping(true);
 
     try {
-      // 2. Appel au Webhook N8N (URL de production)
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,14 +84,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur de communication avec le serveur IA');
-      }
-
-      // 3. Traitement de la réponse
+      if (!response.ok) throw new Error('Erreur de communication avec le serveur IA');
       const data = await response.json();
-      
-      // On essaie de récupérer le texte de la réponse (ajustez selon le format exact renvoyé par N8N: output, text, answer, etc.)
       const aiResponseText = data.output || data.text || data.answer || data.message || "Réponse reçue, mais format inconnu.";
 
       const aiMsg: Message = {
@@ -98,9 +94,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
         text: typeof aiResponseText === 'string' ? aiResponseText : JSON.stringify(aiResponseText),
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, aiMsg]);
-
     } catch (error) {
       console.error("Chat error:", error);
       const errorMsg: Message = {
@@ -126,9 +120,81 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
     }
   };
 
-  return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden">
+  const submitSuggestion = () => {
+    if (suggestionText.trim() && onSuggest) {
+      onSuggest(suggestionText);
+      setIsSuggestModalOpen(false);
+      setSuggestionText('');
       
+      // Feedback professionnel (Toast)
+      setShowSuccessNotification(true);
+      setTimeout(() => setShowSuccessNotification(false), 4000);
+    }
+  };
+
+  return (
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
+      
+      {/* Notification de succès (Toast professionnel) */}
+      {showSuccessNotification && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+           <div className="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-400"></i>
+              <span className="font-medium text-sm">Suggestion transmise au manager</span>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL SUGGESTION */}
+      {isSuggestModalOpen && (
+        <div className="absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl animate-slide-up border border-slate-200">
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-xl text-slate-800 flex items-center gap-3">
+                  <i className="fa-solid fa-pen-to-square text-slate-600"></i>
+                  Suggérer une modification
+                </h3>
+                <button onClick={() => setIsSuggestModalOpen(false)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+             </div>
+             
+             <div className="space-y-4">
+               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex gap-3">
+                  <i className="fa-solid fa-circle-info text-slate-400 mt-0.5"></i>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    Signalez une erreur, une étape manquante ou une mise à jour nécessaire. Cette note sera examinée lors de la prochaine révision.
+                  </p>
+               </div>
+               
+               <textarea 
+                 className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none font-medium text-slate-700 placeholder:text-slate-400 text-sm"
+                 placeholder="Description de la modification..."
+                 value={suggestionText}
+                 onChange={(e) => setSuggestionText(e.target.value)}
+                 autoFocus
+               ></textarea>
+               
+               <div className="flex gap-3 pt-2">
+                 <button 
+                   onClick={() => setIsSuggestModalOpen(false)}
+                   className="flex-1 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-colors text-sm"
+                 >
+                   Annuler
+                 </button>
+                 <button 
+                   onClick={submitSuggestion}
+                   disabled={!suggestionText.trim()}
+                   className="flex-1 bg-slate-900 text-white py-2.5 rounded-xl font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-sm"
+                 >
+                   Envoyer
+                 </button>
+               </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* COLONNE GAUCHE : CHATBOX */}
       <div className="lg:w-1/3 flex flex-col bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl overflow-hidden">
         {/* Header Chat */}
@@ -212,6 +278,16 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack }) 
             </div>
           </div>
           <div className="flex gap-2">
+            
+            {/* BOUTON SUGGERER (Style Pro) */}
+            <button 
+              onClick={() => setIsSuggestModalOpen(true)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 transition-colors"
+              title="Suggérer une modification"
+            >
+              <i className="fa-regular fa-pen-to-square"></i> <span className="hidden sm:inline">Modifier</span>
+            </button>
+
             <button 
               onClick={handleDownload}
               className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"

@@ -7,6 +7,8 @@ interface ProceduresProps {
   user: User;
   onUploadClick: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
+  initialSearchTerm?: string;
+  onSearchClear?: () => void;
 }
 
 interface StorageItem {
@@ -26,16 +28,23 @@ interface StorageItem {
   } | null;
 }
 
-const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectProcedure }) => {
+const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectProcedure, initialSearchTerm = '', onSearchClear }) => {
   // Recherche
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [isSearching, setIsSearching] = useState(initialSearchTerm !== '');
   const [searchResults, setSearchResults] = useState<Procedure[]>([]);
 
   // Navigation Storage
   const [currentPath, setCurrentPath] = useState<string>(''); // '' = root
   const [storageItems, setStorageItems] = useState<StorageItem[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Charger les résultats initiaux si un terme est passé depuis le dashboard
+  useEffect(() => {
+    if (initialSearchTerm) {
+      handleSearch(initialSearchTerm);
+    }
+  }, [initialSearchTerm]);
 
   // Charger le contenu du dossier actuel (si pas de recherche en cours)
   useEffect(() => {
@@ -57,7 +66,6 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
 
       if (error) throw error;
       
-      // Filtrer le fichier placeholder (.emptyFolderPlaceholder) que Supabase crée parfois
       const filteredData = (data || []).filter(item => item.name !== '.emptyFolderPlaceholder');
       setStorageItems(filteredData as StorageItem[]);
     } catch (e) {
@@ -67,9 +75,11 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
+  const handleSearch = async (termOverride?: string) => {
+    const termToSearch = termOverride ?? searchTerm;
+    if (!termToSearch.trim()) {
       setIsSearching(false);
+      onSearchClear?.();
       return;
     }
     setLoading(true);
@@ -80,7 +90,7 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchTerm })
+        body: JSON.stringify({ query: termToSearch })
       });
 
       if (!response.ok) throw new Error('Erreur recherche');
@@ -106,19 +116,16 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
   };
 
   const handleItemClick = (item: StorageItem) => {
-    // Si c'est un dossier (pas de metadata ou id null dans certains contextes, mais le plus fiable est souvent de vérifier s'il a un mimetype)
-    // Dans Supabase list(), les dossiers n'ont souvent pas de metadata.mimetype
     const isFolder = !item.metadata;
 
     if (isFolder) {
       const newPath = currentPath ? `${currentPath}/${item.name}` : item.name;
       setCurrentPath(newPath);
     } else {
-      // C'est un fichier, on l'ouvre
       const procedure: Procedure = {
         id: item.id || item.name,
         title: item.name,
-        category: currentPath || 'RACINE', // Le dossier parent est la catégorie
+        category: currentPath || 'RACINE',
         createdAt: new Date(item.created_at).toLocaleDateString(),
         views: 0,
         status: 'validated'
@@ -136,7 +143,6 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
 
   return (
     <div className="space-y-8 h-full flex flex-col">
-      {/* Header & Recherche */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div className="flex-1 max-w-2xl relative">
           <input 
@@ -146,14 +152,17 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              if (e.target.value === '') setIsSearching(false);
+              if (e.target.value === '') {
+                setIsSearching(false);
+                onSearchClear?.();
+              }
             }}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
           {searchTerm && (
             <button 
-              onClick={handleSearch}
+              onClick={() => handleSearch()}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors"
             >
               Go
@@ -172,10 +181,7 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
         )}
       </div>
 
-      {/* Contenu Principal */}
-      <div className="flex-1 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm flex flex-col min-h-[400px]">
-        
-        {/* Breadcrumb / Navigation */}
+      <div className="flex-1 bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm flex flex-col min-h-[400px]">
         {!isSearching && (
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
              <button 
@@ -198,7 +204,6 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
           </div>
         )}
 
-        {/* Liste des items */}
         <div className="flex-1">
           {loading ? (
              <div className="h-full flex flex-col items-center justify-center gap-4 text-slate-400">
@@ -206,7 +211,6 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
                <span className="font-bold text-sm animate-pulse">Chargement...</span>
              </div>
           ) : isSearching ? (
-             // Résultats de recherche N8N
              <div className="space-y-2">
                 <h3 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-4">Résultats de recherche</h3>
                 {searchResults.length > 0 ? (
@@ -223,29 +227,31 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-10 text-slate-400">Aucun résultat trouvé.</div>
+                  <div className="text-center py-20 text-slate-400 flex flex-col items-center gap-4">
+                    <i className="fa-solid fa-face-frown text-4xl"></i>
+                    <p className="font-bold">Aucune procédure ne correspond à votre recherche.</p>
+                  </div>
                 )}
              </div>
           ) : (
-            // Explorateur Storage
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                {storageItems.length > 0 ? (
                  storageItems.map((item, idx) => {
-                   const isFolder = !item.metadata; // Supabase convention: folders often have no metadata object in listing
+                   const isFolder = !item.metadata;
                    return (
                      <div 
                         key={item.id || idx} 
                         onClick={() => handleItemClick(item)}
-                        className={`aspect-square rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg border group ${
+                        className={`aspect-square rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg border group ${
                           isFolder 
                             ? 'bg-slate-50 border-slate-100 hover:border-blue-300 hover:bg-blue-50/50' 
                             : 'bg-white border-slate-200 hover:border-blue-400'
                         }`}
                      >
-                        <div className={`text-4xl transition-colors ${isFolder ? 'text-blue-400 group-hover:text-blue-600' : 'text-slate-400 group-hover:text-red-500'}`}>
+                        <div className={`text-3xl md:text-4xl transition-colors ${isFolder ? 'text-blue-400 group-hover:text-blue-600' : 'text-slate-400 group-hover:text-red-500'}`}>
                           <i className={`fa-solid ${isFolder ? 'fa-folder' : 'fa-file-pdf'}`}></i>
                         </div>
-                        <span className="text-xs font-bold text-slate-700 line-clamp-2 break-words w-full">
+                        <span className="text-[11px] md:text-xs font-bold text-slate-700 line-clamp-2 break-words w-full">
                           {item.name}
                         </span>
                         {!isFolder && (

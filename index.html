@@ -10,58 +10,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.35);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.4);
         }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+            background: radial-gradient(circle at top left, #f8fafc 0%, #eef2ff 50%, #e0e7ff 100%);
             min-height: 100vh;
-            color: #0f172a;
+            color: #1e1b4b;
         }
         .glass-card { 
             background: var(--glass-bg); 
-            backdrop-filter: blur(16px); 
+            backdrop-filter: blur(20px); 
             border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+            box-shadow: 0 10px 40px -10px rgba(79, 70, 229, 0.1);
             border-radius: 2.5rem;
         }
         .glass-sidebar {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(24px);
+            background: rgba(30, 27, 75, 0.9);
+            backdrop-filter: blur(30px);
             border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .glossy-button {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glossy-button::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
-            transform: rotate(45deg);
-            transition: 0.6s;
-        }
-        .glossy-button:hover::after {
-            left: 120%;
         }
         @keyframes slideUp { 
             from { opacity: 0; transform: translateY(30px); filter: blur(10px); } 
             to { opacity: 1; transform: translateY(0); filter: blur(0); } 
         }
         .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .glow-blue:hover { box-shadow: 0 0 25px rgba(59, 130, 246, 0.4); }
         
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(79, 70, 229, 0.3); }
     </style>
 <script type="importmap">
 {
