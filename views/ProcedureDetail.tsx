@@ -37,13 +37,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   const [sharing, setSharing] = useState(false);
   
   // Feedback notification
-  const [notification, setNotification] = useState<{msg: string, type: 'success' | 'info'} | null>(null);
+  const [notification, setNotification] = useState<{msg: string, type: 'success' | 'info' | 'error'} | null>(null);
 
   // Simulation d'une liste de techniciens
   const mockTechnicians = [
-    { id: 'tech-1', name: 'Julien Vernet', initial: 'JV' },
-    { id: 'tech-2', name: 'Sarah Koné', initial: 'SK' },
-    { id: 'tech-3', name: 'Marc Dupont', initial: 'MD' }
+    { id: 'tech-1', name: 'Julien Vernet', initial: 'JV', email: 'j.vernet@procedio.fr' },
+    { id: 'tech-2', name: 'Sarah Koné', initial: 'SK', email: 's.kone@procedio.fr' },
+    { id: 'tech-3', name: 'Marc Dupont', initial: 'MD', email: 'm.dupont@procedio.fr' }
   ];
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,27 +101,42 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
     }
   };
 
-  const handleShareWithTech = async (tech: any) => {
+  const sendToWebhook = async (email: string, recipientName?: string) => {
     setSharing(true);
-    // Simulation d'envoi d'une notification de partage
-    setTimeout(() => {
-      setSharing(false);
+    try {
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/df536e5c-60ae-4f58-b0ca-2ec41dfc7339', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          procedure_id: procedure.id,
+          procedure_title: procedure.title,
+          procedure_url: docUrl,
+          recipient_email: email,
+          recipient_name: recipientName || email,
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) throw new Error('Webhook failed');
+
+      setNotification({ msg: `Procédure envoyée avec succès à ${recipientName || email}`, type: 'success' });
       setIsShareModalOpen(false);
-      setNotification({ msg: `Procédure partagée avec ${tech.name}`, type: 'success' });
+      setShareEmail('');
+    } catch (error) {
+      setNotification({ msg: "Erreur lors de l'envoi du mail", type: 'error' });
+    } finally {
+      setSharing(false);
       setTimeout(() => setNotification(null), 3000);
-    }, 800);
+    }
+  };
+
+  const handleShareWithTech = (tech: any) => {
+    sendToWebhook(tech.email, tech.name);
   };
 
   const handleShareByEmail = () => {
     if (!shareEmail.includes('@')) return;
-    setSharing(true);
-    setTimeout(() => {
-      setSharing(false);
-      setShareEmail('');
-      setIsShareModalOpen(false);
-      setNotification({ msg: `Lien envoyé à ${shareEmail}`, type: 'success' });
-      setTimeout(() => setNotification(null), 3000);
-    }, 1000);
+    sendToWebhook(shareEmail);
   };
 
   const submitSuggestion = () => {
@@ -140,8 +155,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
       {/* Notifications Toast */}
       {notification && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-slide-up">
-           <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3">
-              <i className={`fa-solid ${notification.type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-blue-400'}`}></i>
+           <div className={`${notification.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'} text-white px-6 py-3 rounded-2xl shadow-2xl border ${notification.type === 'error' ? 'border-rose-400' : 'border-slate-700'} flex items-center gap-3`}>
+              <i className={`fa-solid ${notification.type === 'success' ? 'fa-circle-check text-emerald-400' : notification.type === 'error' ? 'fa-triangle-exclamation text-white' : 'fa-circle-info text-blue-400'}`}></i>
               <span className="font-bold text-sm tracking-tight">{notification.msg}</span>
            </div>
         </div>
@@ -173,13 +188,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
              <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-black text-2xl text-slate-800 tracking-tight">Partager</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Envoyer à un collègue</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Partager avec un collègue</p>
                 </div>
                 <button onClick={() => setIsShareModalOpen(false)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"><i className="fa-solid fa-xmark"></i></button>
              </div>
 
              <div className="space-y-4">
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Techniciens disponibles</span>
+                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Collègues disponibles</span>
                 <div className="grid grid-cols-1 gap-2">
                    {mockTechnicians.map(tech => (
                      <button 
@@ -194,7 +209,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
                            </div>
                            <span className="font-bold text-slate-700 group-hover:text-indigo-600">{tech.name}</span>
                         </div>
-                        <i className="fa-solid fa-paper-plane text-slate-200 group-hover:text-indigo-600"></i>
+                        <i className={`fa-solid ${sharing ? 'fa-spinner animate-spin' : 'fa-paper-plane'} text-slate-200 group-hover:text-indigo-600`}></i>
                      </button>
                    ))}
                 </div>
