@@ -3,7 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
 
-const Account: React.FC<{ user: User }> = ({ user }) => {
+interface AccountProps {
+  user: User;
+  onGoToReset: () => void;
+}
+
+const Account: React.FC<AccountProps> = ({ user, onGoToReset }) => {
   const [displayName, setDisplayName] = useState(user.firstName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [uploading, setUploading] = useState(false);
@@ -20,7 +25,6 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
 
       if (error) throw error;
       setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
-      // On rafraîchit la page pour propager les changements dans l'App State
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
@@ -43,7 +47,6 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
       const fileName = `${user.id}_${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload vers le bucket 'avatars' (assurez-vous qu'il existe et est public)
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
@@ -53,7 +56,6 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
 
-      // Mise à jour des métadonnées de l'utilisateur
       const { error: updateError } = await supabase.auth.updateUser({
         data: { avatarUrl: publicUrl }
       });
@@ -71,14 +73,14 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-slide-up">
+    <div className="max-w-2xl mx-auto space-y-8 animate-slide-up pb-10">
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-black text-slate-900 tracking-tight">Mon Profil</h2>
         <p className="text-slate-500 font-medium">Gérez votre identité sur Procedio</p>
       </div>
 
       {message && (
-        <div className={`p-4 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 animate-slide-up ${
+        <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-slide-up ${
           message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
         }`}>
           <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}`}></i>
@@ -87,7 +89,6 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
       )}
 
       <section className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl space-y-10">
-        {/* Section Photo */}
         <div className="flex flex-col items-center gap-6">
           <div className="relative group">
             <div className="w-32 h-32 rounded-[2rem] overflow-hidden ring-4 ring-slate-50 shadow-2xl transition-transform group-hover:scale-105">
@@ -107,12 +108,8 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
               <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
             </label>
           </div>
-          <div className="text-center">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Format: JPG, PNG • Max 2MB</p>
-          </div>
         </div>
 
-        {/* Section Nom */}
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-[0.2em]">Nom d'affichage</label>
@@ -142,11 +139,23 @@ const Account: React.FC<{ user: User }> = ({ user }) => {
         </div>
       </section>
 
-      <div className="text-center">
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
-          ID Utilisateur: {user.id}
-        </p>
-      </div>
+      <section className="bg-indigo-50 rounded-[2.5rem] border border-indigo-100 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
+            <i className="fa-solid fa-shield-halved text-xl"></i>
+          </div>
+          <div>
+            <h4 className="font-black text-slate-900 text-sm tracking-tight">Mot de passe & Sécurité</h4>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Dernière modification : Inconnue</p>
+          </div>
+        </div>
+        <button 
+          onClick={onGoToReset}
+          className="bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95"
+        >
+          Modifier le mot de passe
+        </button>
+      </section>
     </div>
   );
 };

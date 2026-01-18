@@ -53,15 +53,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
       if (error) throw error;
       if (data) {
-        setNotes(data.map(n => ({
-          id: n.id,
-          title: n.title,
-          content: n.content,
-          is_protected: n.is_protected || false,
-          tags: n.tags || [],
-          updatedAt: new Date(n.updated_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-          user_id: n.user_id
-        })));
+        // FILTRAGE : On ignore les notes qui sont des logs techniques
+        const userNotes = data
+          .filter(n => !n.title.startsWith('LOG_VIEW_'))
+          .map(n => ({
+            id: n.id,
+            title: n.title,
+            content: n.content,
+            is_protected: n.is_protected || false,
+            tags: n.tags || [],
+            updatedAt: new Date(n.updated_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            user_id: n.user_id
+          }));
+        setNotes(userNotes);
       }
     } catch (err) {
       console.error("Erreur de récupération des notes:", err);

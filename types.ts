@@ -34,7 +34,7 @@ export interface Procedure {
   createdAt: string;
   views: number;
   status: 'pending' | 'validated';
-  lastViewedAt?: string; // Ajout pour l'historique
+  lastViewedAt?: string;
 }
 
 export interface Note {
@@ -56,4 +56,4 @@ export interface Suggestion {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history';
+export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password';

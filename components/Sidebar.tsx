@@ -23,12 +23,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
 
   return (
     <aside 
-      className={`fixed lg:static inset-y-0 left-0 w-72 glass-sidebar text-slate-400 flex flex-col z-[70] transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      className={`fixed lg:relative inset-y-0 left-0 w-72 h-full glass-sidebar text-slate-400 flex flex-col z-[70] transition-transform duration-300 ease-in-out lg:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Navigation principale"
     >
-      <div className="p-8 flex items-center gap-4">
+      <div className="p-8 flex items-center gap-4 shrink-0">
         <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0" aria-hidden="true">
           <i className="fa-solid fa-bolt"></i>
         </div>
@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto mt-4">
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto mt-4 scrollbar-hide">
         {filteredItems.map((item) => (
           <button
             key={item.id}
@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
         ))}
       </nav>
 
-      <div className="p-6 mt-auto border-t border-white/5">
+      <div className="p-6 mt-auto border-t border-white/5 shrink-0">
         <button
           onClick={onLogout}
           className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-rose-500/10 text-rose-400 font-bold hover:bg-rose-500 hover:text-white transition-all text-xs tracking-wider"
