@@ -56,4 +56,4 @@ export interface Suggestion {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password';
+export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password' | 'administration';

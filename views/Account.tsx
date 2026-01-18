@@ -1,19 +1,24 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AccountProps {
   user: User;
-  onGoToReset: () => void;
+  onGoToReset: () => void; // Gardé pour la compatibilité types mais géré en local ici
 }
 
-const Account: React.FC<AccountProps> = ({ user, onGoToReset }) => {
+const Account: React.FC<AccountProps> = ({ user }) => {
   const [displayName, setDisplayName] = useState(user.firstName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // États pour la modale de mot de passe
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({ old: '', new: '', confirm: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const handleUpdateProfile = async () => {
     setSaving(true);
@@ -22,9 +27,8 @@ const Account: React.FC<AccountProps> = ({ user, onGoToReset }) => {
       const { error } = await supabase.auth.updateUser({
         data: { firstName: displayName }
       });
-
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
+      setMessage({ type: 'success', text: 'Profil mis à jour !' });
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
@@ -33,37 +37,55 @@ const Account: React.FC<AccountProps> = ({ user, onGoToReset }) => {
     }
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.new !== passwordData.confirm) {
+      setMessage({ type: 'error', text: 'Les nouveaux mots de passe ne correspondent pas.' });
+      return;
+    }
+    if (passwordData.new.length < 6) {
+      setMessage({ type: 'error', text: 'Le nouveau mot de passe est trop court (min 6 car.).' });
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      // 1. Vérifier l'ancien mot de passe en tentant une ré-authentification
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordData.old
+      });
+      if (authError) throw new Error("L'ancien mot de passe est incorrect.");
+
+      // 2. Mettre à jour avec le nouveau
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.new
+      });
+      if (updateError) throw updateError;
+
+      setMessage({ type: 'success', text: 'Mot de passe modifié avec succès !' });
+      setShowPasswordModal(false);
+      setPasswordData({ old: '', new: '', confirm: '' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setPasswordLoading(false);
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
-      setMessage(null);
-
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('Vous devez sélectionner une image.');
-      }
-
+      if (!event.target.files || event.target.files.length === 0) throw new Error('Sélectionnez une image.');
       const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}_${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
+      const fileName = `${user.id}_${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
       if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      const publicUrl = data.publicUrl;
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { avatarUrl: publicUrl }
-      });
-
-      if (updateError) throw updateError;
-
-      setAvatarUrl(publicUrl);
-      setMessage({ type: 'success', text: 'Photo de profil mise à jour !' });
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      await supabase.auth.updateUser({ data: { avatarUrl: data.publicUrl } });
+      setAvatarUrl(data.publicUrl);
+      setMessage({ type: 'success', text: 'Photo mise à jour !' });
       setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
@@ -73,89 +95,151 @@ const Account: React.FC<AccountProps> = ({ user, onGoToReset }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-slide-up pb-10">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Mon Profil</h2>
-        <p className="text-slate-500 font-medium">Gérez votre identité sur Procedio</p>
+    <div className="max-w-4xl mx-auto space-y-12 animate-slide-up pb-24">
+      <div className="text-center space-y-3">
+        <h2 className="text-5xl font-black text-slate-900 tracking-tighter">Mon Compte</h2>
+        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.4em]">Identité & Sécurité</p>
       </div>
 
       {message && (
-        <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-slide-up ${
-          message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
+        <div className={`p-6 rounded-[2rem] text-[11px] font-black uppercase tracking-widest flex items-center gap-4 animate-slide-up shadow-sm border ${
+          message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
         }`}>
-          <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}`}></i>
+          <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check text-base' : 'fa-circle-exclamation text-base'}`}></i>
           {message.text}
         </div>
       )}
 
-      <section className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl space-y-10">
-        <div className="flex flex-col items-center gap-6">
+      {/* PROFIL PERSO */}
+      <section className="bg-white rounded-[3rem] border border-slate-200 p-12 shadow-xl shadow-indigo-500/5 space-y-12">
+        <div className="flex flex-col items-center gap-8">
           <div className="relative group">
-            <div className="w-32 h-32 rounded-[2rem] overflow-hidden ring-4 ring-slate-50 shadow-2xl transition-transform group-hover:scale-105">
+            <div className="w-48 h-48 rounded-[3.5rem] overflow-hidden ring-[16px] ring-slate-50 shadow-2xl transition-all duration-500 group-hover:scale-105 border border-slate-200">
               <img 
                 src={avatarUrl || `https://ui-avatars.com/api/?name=${displayName}&background=random`} 
                 className="w-full h-full object-cover" 
                 alt="Profil"
               />
               {uploading && (
-                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
-                  <i className="fa-solid fa-circle-notch animate-spin text-white text-2xl"></i>
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                  <i className="fa-solid fa-circle-notch animate-spin text-indigo-600 text-4xl"></i>
                 </div>
               )}
             </div>
-            <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-blue-600 text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-all active:scale-90">
-              <i className="fa-solid fa-camera text-sm"></i>
+            <label className="absolute -bottom-2 -right-2 w-16 h-16 bg-indigo-600 text-white rounded-2xl shadow-2xl flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-all active:scale-90 border-[6px] border-white">
+              <i className="fa-solid fa-camera text-xl"></i>
               <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
             </label>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-[0.2em]">Nom d'affichage</label>
-            <div className="relative">
-              <input 
-                type="text" 
-                value={displayName} 
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Ex: Jean Tech"
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-slate-700"
-              />
-              <i className="fa-solid fa-user-tag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <div className="space-y-8 max-w-md mx-auto text-center">
+          <div className="space-y-3 text-left">
+            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom d'affichage</label>
+            <input 
+              type="text" 
+              value={displayName} 
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner text-center text-lg"
+            />
+          </div>
+
+          <div className="space-y-4">
+            <button 
+              onClick={handleUpdateProfile}
+              disabled={saving || uploading || displayName === user.firstName}
+              className="w-full bg-indigo-600 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-[0.98] disabled:opacity-50"
+            >
+              {saving ? "Synchronisation..." : "Enregistrer le nom"}
+            </button>
+            
+            <button 
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full bg-white text-indigo-600 border-2 border-indigo-50 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all active:scale-95"
+            >
+              <i className="fa-solid fa-key mr-2"></i> Modifier le mot de passe
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* MODALE CHANGEMENT MOT DE PASSE */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-12 shadow-2xl space-y-10 animate-slide-up border border-white">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
+                <i className="fa-solid fa-shield-lock text-2xl"></i>
+              </div>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight">Sécurité</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Mise à jour des identifiants</p>
             </div>
-          </div>
 
-          <button 
-            onClick={handleUpdateProfile}
-            disabled={saving || uploading || displayName === user.firstName}
-            className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
-          >
-            {saving ? (
-              <><i className="fa-solid fa-circle-notch animate-spin"></i> Enregistrement...</>
-            ) : (
-              <><i className="fa-solid fa-check-circle"></i> Mettre à jour mon nom</>
-            )}
-          </button>
-        </div>
-      </section>
+            <form onSubmit={handleUpdatePassword} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Ancien mot de passe</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="••••••••"
+                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  value={passwordData.old}
+                  onChange={e => setPasswordData({...passwordData, old: e.target.value})}
+                />
+              </div>
 
-      <section className="bg-indigo-50 rounded-[2.5rem] border border-indigo-100 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
-            <i className="fa-solid fa-shield-halved text-xl"></i>
-          </div>
-          <div>
-            <h4 className="font-black text-slate-900 text-sm tracking-tight">Mot de passe & Sécurité</h4>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Dernière modification : Inconnue</p>
+              <div className="h-px bg-slate-100 w-full"></div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nouveau mot de passe</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="••••••••"
+                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  value={passwordData.new}
+                  onChange={e => setPasswordData({...passwordData, new: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Confirmer le nouveau</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="••••••••"
+                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  value={passwordData.confirm}
+                  onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
+                />
+              </div>
+
+              <div className="flex flex-col gap-4 pt-4">
+                <button 
+                  type="submit"
+                  disabled={passwordLoading || !passwordData.old || !passwordData.new}
+                  className="w-full bg-slate-900 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95 disabled:opacity-50"
+                >
+                  {passwordLoading ? "Mise à jour..." : "Valider le changement"}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="w-full py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-        <button 
-          onClick={onGoToReset}
-          className="bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95"
-        >
-          Modifier le mot de passe
-        </button>
-      </section>
+      )}
+
+      <div className="bg-slate-50 rounded-[3rem] border border-slate-100 p-8 text-center">
+        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">
+          Compte lié à l'organisation Procedio • {user.role}
+        </p>
+      </div>
     </div>
   );
 };

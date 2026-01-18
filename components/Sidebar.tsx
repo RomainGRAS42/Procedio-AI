@@ -13,10 +13,11 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLogout, isOpen }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Accueil', icon: 'fa-house', roles: [UserRole.MANAGER, UserRole.TECHNICIAN] },
-    { id: 'statistics', label: 'Analyses', icon: 'fa-chart-pie', roles: [UserRole.MANAGER] },
-    { id: 'procedures', label: 'Procédures', icon: 'fa-book-open', roles: [UserRole.MANAGER, UserRole.TECHNICIAN] },
+    { id: 'procedures', label: 'Catalogue', icon: 'fa-book-open', roles: [UserRole.MANAGER, UserRole.TECHNICIAN] },
     { id: 'notes', label: 'Mes Notes', icon: 'fa-note-sticky', roles: [UserRole.MANAGER, UserRole.TECHNICIAN] },
-    { id: 'account', label: 'Paramètres', icon: 'fa-user-gear', roles: [UserRole.MANAGER, UserRole.TECHNICIAN] },
+    { id: 'statistics', label: 'Analyses', icon: 'fa-chart-pie', roles: [UserRole.MANAGER] },
+    { id: 'administration', label: 'Administration', icon: 'fa-users-gear', roles: [UserRole.MANAGER] },
+    { id: 'account', label: 'Mon Compte', icon: 'fa-user-gear', roles: [UserRole.MANAGER, UserRole.TECHNICIAN] },
   ];
 
   const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
@@ -63,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
       <div className="p-6 mt-auto border-t border-white/5 shrink-0">
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-rose-500/10 text-rose-400 font-bold hover:bg-rose-500 hover:text-white transition-all text-xs tracking-wider"
+          className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-rose-500/10 text-rose-400 font-bold hover:bg-rose-50 hover:text-white transition-all text-xs tracking-wider"
           aria-label="Se déconnecter de Procedio"
         >
           <i className="fa-solid fa-power-off"></i>

@@ -10,6 +10,7 @@ import Procedures from './views/Procedures';
 import ProcedureDetail from './views/ProcedureDetail';
 import Notes from './views/Notes';
 import Account from './views/Account';
+import Administration from './views/Administration';
 import UploadProcedure from './views/UploadProcedure';
 import History from './views/History';
 import Login from './views/Login';
@@ -40,7 +41,6 @@ const App: React.FC = () => {
   ]);
 
   useEffect(() => {
-    // 1. Vérifier si on revient d'un email de récupération de mot de passe
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash && hash.includes('type=recovery')) {
@@ -52,7 +52,6 @@ const App: React.FC = () => {
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
 
-    // 2. Initialisation de la session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         mapSupabaseUser(session.user);
@@ -111,7 +110,6 @@ const App: React.FC = () => {
   };
 
   const renderView = () => {
-    // Si on est en mode récupération, on force l'affichage du reset
     if (isRecoveryMode) {
        return <ResetPassword userEmail={user?.email || "Récupération en cours"} onBack={() => { setIsRecoveryMode(false); setCurrentView('dashboard'); }} />;
     }
@@ -119,6 +117,8 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'dashboard': 
         return <Dashboard user={user!} onQuickNote={() => {setAutoOpenNoteEditor(true); setCurrentView('notes');}} onSelectProcedure={handleSelectProcedure} onViewHistory={() => setCurrentView('history')} />;
+      case 'administration':
+        return <Administration />;
       case 'history':
         return <History onSelectProcedure={handleSelectProcedure} />;
       case 'statistics': return <Statistics />;
@@ -129,7 +129,7 @@ const App: React.FC = () => {
       case 'notes': 
         return <Notes initialIsAdding={autoOpenNoteEditor} onEditorClose={() => setAutoOpenNoteEditor(false)} />;
       case 'account': 
-        return <Account user={user!} onGoToReset={() => setCurrentView('reset-password')} />;
+        return <Account user={user!} onGoToReset={() => {}} />; // Redirection inutile car géré par modale
       case 'reset-password':
         return <ResetPassword userEmail={user?.email || ""} onBack={() => setCurrentView('account')} />;
       case 'upload': return <UploadProcedure onBack={() => setCurrentView('procedures')} />;
@@ -143,9 +143,6 @@ const App: React.FC = () => {
   };
 
   if (loading) return null;
-  
-  // Si on est en mode récupération mais pas encore "auth" (session en cours de chargement par le lien)
-  // On laisse passer vers renderView qui affichera le ResetPassword
   if (!isAuthenticated && !isRecoveryMode) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (

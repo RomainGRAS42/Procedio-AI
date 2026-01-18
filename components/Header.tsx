@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], on
     statistics: 'Analyses',
     procedures: 'Catalogue',
     notes: 'Mes Notes',
-    account: 'Profil',
+    account: 'Mon Compte',
     upload: 'Publication'
   };
 
