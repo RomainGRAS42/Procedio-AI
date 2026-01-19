@@ -1,15 +1,16 @@
 
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AccountProps {
   user: User;
-  onGoToReset: () => void; // Gardé pour la compatibilité types mais géré en local ici
+  onGoToReset: () => void;
 }
 
 const Account: React.FC<AccountProps> = ({ user }) => {
   const [displayName, setDisplayName] = useState(user.firstName);
+  const [lastName, setLastName] = useState(user.lastName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,11 +25,43 @@ const Account: React.FC<AccountProps> = ({ user }) => {
     setSaving(true);
     setMessage(null);
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          first_name: displayName,
+          last_name: lastName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      const { error: authError } = await supabase.auth.updateUser({
         data: { firstName: displayName }
       });
+      if (authError) throw authError;
+
+      setMessage({ type: 'success', text: 'Profil synchronisé avec succès !' });
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleRole = async () => {
+    if (!window.confirm("Voulez-vous vraiment changer votre rôle ? Cela modifiera vos accès immédiatement.")) return;
+    setSaving(true);
+    try {
+      const newRole = user.role === UserRole.MANAGER ? 'technician' : 'manager';
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ role: newRole })
+        .eq('id', user.id);
+
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Profil mis à jour !' });
+      setMessage({ type: 'success', text: 'Rôle mis à jour. Rechargement...' });
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
@@ -43,50 +76,46 @@ const Account: React.FC<AccountProps> = ({ user }) => {
       setMessage({ type: 'error', text: 'Les nouveaux mots de passe ne correspondent pas.' });
       return;
     }
-    if (passwordData.new.length < 6) {
-      setMessage({ type: 'error', text: 'Le nouveau mot de passe est trop court (min 6 car.).' });
-      return;
-    }
-
     setPasswordLoading(true);
     try {
-      // 1. Vérifier l'ancien mot de passe en tentant une ré-authentification
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: passwordData.old
       });
-      if (authError) throw new Error("L'ancien mot de passe est incorrect.");
+      if (authError) throw new Error("Ancien mot de passe incorrect.");
 
-      // 2. Mettre à jour avec le nouveau
       const { error: updateError } = await supabase.auth.updateUser({
         password: passwordData.new
       });
       if (updateError) throw updateError;
 
-      setMessage({ type: 'success', text: 'Mot de passe modifié avec succès !' });
+      setMessage({ type: 'success', text: 'Mot de passe modifié !' });
       setShowPasswordModal(false);
       setPasswordData({ old: '', new: '', confirm: '' });
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setPasswordLoading(false);
-      setTimeout(() => setMessage(null), 4000);
     }
   };
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
-      if (!event.target.files || event.target.files.length === 0) throw new Error('Sélectionnez une image.');
+      if (!event.target.files || event.target.files.length === 0) throw new Error('Fichier requis.');
       const file = event.target.files[0];
-      const fileName = `${user.id}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
+      const fileName = `${user.id}_avatar.${file.name.split('.').pop()}`;
+      
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
       if (uploadError) throw uploadError;
+
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      
+      await supabase.from('user_profiles').update({ avatar_url: data.publicUrl }).eq('id', user.id);
       await supabase.auth.updateUser({ data: { avatarUrl: data.publicUrl } });
+      
       setAvatarUrl(data.publicUrl);
-      setMessage({ type: 'success', text: 'Photo mise à jour !' });
-      setTimeout(() => window.location.reload(), 1000);
+      setMessage({ type: 'success', text: 'Avatar mis à jour !' });
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     } finally {
@@ -98,7 +127,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
     <div className="max-w-4xl mx-auto space-y-12 animate-slide-up pb-24">
       <div className="text-center space-y-3">
         <h2 className="text-5xl font-black text-slate-900 tracking-tighter">Mon Compte</h2>
-        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.4em]">Identité & Sécurité</p>
+        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.4em]">Profil & Synchronisation Base</p>
       </div>
 
       {message && (
@@ -110,8 +139,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
         </div>
       )}
 
-      {/* PROFIL PERSO */}
-      <section className="bg-white rounded-[3rem] border border-slate-200 p-12 shadow-xl shadow-indigo-500/5 space-y-12">
+      <section className="bg-white rounded-[3rem] border border-slate-200 p-12 shadow-xl shadow-indigo-500/5 grid grid-cols-1 md:grid-cols-3 gap-12">
         <div className="flex flex-col items-center gap-8">
           <div className="relative group">
             <div className="w-48 h-48 rounded-[3.5rem] overflow-hidden ring-[16px] ring-slate-50 shadow-2xl transition-all duration-500 group-hover:scale-105 border border-slate-200">
@@ -131,101 +159,129 @@ const Account: React.FC<AccountProps> = ({ user }) => {
               <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
             </label>
           </div>
+          
+          <div className="text-center space-y-2">
+            <div className={`inline-flex px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+              user.role === UserRole.MANAGER ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+            }`}>
+              {user.role}
+            </div>
+            {user.role === UserRole.MANAGER && (
+              <button 
+                onClick={handleToggleRole}
+                className="block mx-auto text-[8px] font-bold text-slate-400 hover:text-rose-500 uppercase tracking-tighter underline underline-offset-4"
+              >
+                Changer de rôle (Debug)
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-8 max-w-md mx-auto text-center">
-          <div className="space-y-3 text-left">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom d'affichage</label>
+        <div className="md:col-span-2 space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Prénom</label>
+              <input 
+                type="text" 
+                value={displayName} 
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom de famille</label>
+              <input 
+                type="text" 
+                value={lastName} 
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Email (Lecture seule)</label>
             <input 
               type="text" 
-              value={displayName} 
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner text-center text-lg"
+              readOnly
+              value={user.email} 
+              className="w-full px-6 py-4 rounded-2xl bg-slate-100 border-none font-bold text-slate-400 cursor-not-allowed"
             />
           </div>
 
-          <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <button 
               onClick={handleUpdateProfile}
-              disabled={saving || uploading || displayName === user.firstName}
-              className="w-full bg-indigo-600 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-[0.98] disabled:opacity-50"
+              disabled={saving || uploading}
+              className="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 disabled:opacity-50"
             >
-              {saving ? "Synchronisation..." : "Enregistrer le nom"}
+              {saving ? "Sauvegarde..." : "Enregistrer les modifications"}
             </button>
             
             <button 
               onClick={() => setShowPasswordModal(true)}
-              className="w-full bg-white text-indigo-600 border-2 border-indigo-50 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all active:scale-95"
+              className="px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-50 transition-all"
             >
-              <i className="fa-solid fa-key mr-2"></i> Modifier le mot de passe
+              <i className="fa-solid fa-key mr-2"></i> Mot de passe
             </button>
           </div>
         </div>
       </section>
 
-      {/* MODALE CHANGEMENT MOT DE PASSE */}
+      {/* MODALE DE SÉCURITÉ RE-DESIGNÉE - SANS OVERLAY SOMBRE */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[3rem] p-12 shadow-2xl space-y-10 animate-slide-up border border-white">
-            <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
-                <i className="fa-solid fa-shield-lock text-2xl"></i>
+        <div className="fixed inset-0 z-[100] backdrop-blur-2xl flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white/95 w-full max-w-md rounded-[3.5rem] p-12 shadow-[0_40px_100px_-20px_rgba(79,70,229,0.25)] space-y-10 border border-indigo-50 relative overflow-hidden animate-slide-up">
+            {/* Background design subtil dans la modale */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 opacity-40"></div>
+            
+            <div className="text-center space-y-3 relative z-10">
+              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
+                <i className="fa-solid fa-shield-halved text-2xl"></i>
               </div>
-              <h3 className="text-3xl font-black text-slate-900 tracking-tight">Sécurité</h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Mise à jour des identifiants</p>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Sécurité</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Mise à jour du mot de passe</p>
             </div>
 
-            <form onSubmit={handleUpdatePassword} className="space-y-6">
+            <form onSubmit={handleUpdatePassword} className="space-y-6 relative z-10">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Ancien mot de passe</label>
+                <label className="text-[9px] font-black text-slate-400 ml-4 uppercase tracking-widest">Ancien mot de passe</label>
                 <input 
-                  type="password" 
-                  required
-                  placeholder="••••••••"
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  type="password" required placeholder="••••••••"
+                  className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
                   value={passwordData.old}
                   onChange={e => setPasswordData({...passwordData, old: e.target.value})}
                 />
               </div>
-
-              <div className="h-px bg-slate-100 w-full"></div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nouveau mot de passe</label>
+              
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-[9px] font-black text-slate-400 ml-4 uppercase tracking-widest">Nouveau mot de passe</label>
                 <input 
-                  type="password" 
-                  required
-                  placeholder="••••••••"
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  type="password" required placeholder="Min. 6 caractères"
+                  className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
                   value={passwordData.new}
                   onChange={e => setPasswordData({...passwordData, new: e.target.value})}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Confirmer le nouveau</label>
                 <input 
-                  type="password" 
-                  required
-                  placeholder="••••••••"
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  type="password" required placeholder="Confirmer le nouveau"
+                  className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner mt-3"
                   value={passwordData.confirm}
                   onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
                 />
               </div>
 
-              <div className="flex flex-col gap-4 pt-4">
+              <div className="pt-6 flex flex-col gap-4">
                 <button 
-                  type="submit"
-                  disabled={passwordLoading || !passwordData.old || !passwordData.new}
-                  className="w-full bg-slate-900 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95 disabled:opacity-50"
+                  type="submit" 
+                  disabled={passwordLoading} 
+                  className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50"
                 >
-                  {passwordLoading ? "Mise à jour..." : "Valider le changement"}
+                  {passwordLoading ? "Mise à jour..." : "Confirmer"}
                 </button>
                 <button 
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="w-full py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
+                  type="button" 
+                  onClick={() => setShowPasswordModal(false)} 
+                  className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors py-2"
                 >
                   Annuler
                 </button>
@@ -234,12 +290,6 @@ const Account: React.FC<AccountProps> = ({ user }) => {
           </div>
         </div>
       )}
-
-      <div className="bg-slate-50 rounded-[3rem] border border-slate-100 p-8 text-center">
-        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">
-          Compte lié à l'organisation Procedio • {user.role}
-        </p>
-      </div>
     </div>
   );
 };

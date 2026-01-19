@@ -19,13 +19,19 @@ const Administration: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Simulation pour l'exemple (à lier à votre table profiles réelle dans Supabase)
-      const mockUsers = [
-        { id: 'u1', email: 'romain.gras42@hotmail.fr', role: UserRole.MANAGER, firstName: 'romain.gras42', initial: 'R' },
-        { id: 'u2', email: 'tech.support@procedio.fr', role: UserRole.TECHNICIAN, firstName: 'Julien', initial: 'J' },
-        { id: 'u3', email: 'it.lead@procedio.fr', role: UserRole.TECHNICIAN, firstName: 'Sarah', initial: 'S' }
-      ];
-      setUsersList(mockUsers);
+      // UTILISATION DE LA TABLE user_profiles
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('email', { ascending: true });
+
+      if (error) {
+        console.error("Erreur de récupération :", error.message);
+        setUsersList([]);
+        return;
+      }
+      
+      setUsersList(data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -38,12 +44,28 @@ const Administration: React.FC = () => {
     setInviting(true);
     try {
       const tempPassword = Math.random().toString(36).slice(-12) + "A1!";
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: inviteEmail,
         password: tempPassword,
-        options: { data: { role: inviteRole, firstName: inviteEmail.split('@')[0] } }
+        options: { 
+          data: { 
+            role: inviteRole, 
+            firstName: inviteEmail.split('@')[0] 
+          } 
+        }
       });
+      
       if (signUpError) throw signUpError;
+
+      if (data.user) {
+        const { error: profileError } = await supabase.from('user_profiles').insert([{
+          id: data.user.id,
+          email: inviteEmail,
+          role: inviteRole,
+          first_name: inviteEmail.split('@')[0]
+        }]);
+        if (profileError) console.warn("Le profil existe déjà.");
+      }
 
       await supabase.auth.resetPasswordForEmail(inviteEmail, { redirectTo: window.location.origin });
       
@@ -60,17 +82,29 @@ const Administration: React.FC = () => {
     }
   };
 
-  const handleChangeUserRole = (targetUserId: string, newRole: UserRole) => {
-    setUsersList(prev => prev.map(u => u.id === targetUserId ? { ...u, role: newRole } : u));
-    setMessage({ type: 'success', text: "Le rôle de l'utilisateur a été mis à jour." });
-    setTimeout(() => setMessage(null), 3000);
+  const handleChangeUserRole = async (targetUserId: string, newRole: UserRole) => {
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ role: newRole })
+        .eq('id', targetUserId);
+
+      if (error) throw error;
+
+      setUsersList(prev => prev.map(u => u.id === targetUserId ? { ...u, role: newRole } : u));
+      setMessage({ type: 'success', text: "Rôle mis à jour avec succès." });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: "Erreur : " + err.message });
+    } finally {
+      setTimeout(() => setMessage(null), 3000);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 animate-slide-up pb-20">
       <div className="text-center space-y-3">
         <h2 className="text-5xl font-black text-slate-900 tracking-tighter">Administration</h2>
-        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.4em]">Gérer les accès de l'organisation</p>
+        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.4em]">Comptes réels (user_profiles)</p>
       </div>
 
       {message && (
@@ -89,8 +123,8 @@ const Administration: React.FC = () => {
               <i className="fa-solid fa-users-gear text-2xl"></i>
             </div>
             <div>
-              <h4 className="font-black text-2xl text-slate-900 tracking-tight">Répertoire des Accès</h4>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Membres actifs et rôles</p>
+              <h4 className="font-black text-2xl text-slate-900 tracking-tight">Utilisateurs</h4>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Table user_profiles synchronisée</p>
             </div>
           </div>
           <button 
@@ -98,22 +132,22 @@ const Administration: React.FC = () => {
             className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-200 active:scale-95 flex items-center gap-3"
           >
             <i className="fa-solid fa-plus-circle text-lg"></i>
-            Nouvel Utilisateur
+            Inviter
           </button>
         </div>
 
         <div className="space-y-4">
           {loading ? (
-            <div className="py-20 text-center text-slate-400 font-black text-xs uppercase animate-pulse">Chargement du répertoire...</div>
-          ) : (
+            <div className="py-20 text-center text-slate-400 font-black text-xs uppercase animate-pulse">Chargement...</div>
+          ) : usersList.length > 0 ? (
             usersList.map((u) => (
               <div key={u.id} className="group p-6 rounded-[2rem] bg-slate-50 border border-transparent hover:bg-white hover:border-slate-200 transition-all flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm hover:shadow-md">
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-300 text-xl shadow-sm transition-transform group-hover:scale-105 group-hover:text-indigo-400">
-                    {u.initial}
+                    {u.first_name?.[0] || u.email?.[0].toUpperCase() || '?'}
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900 text-lg">{u.firstName}</h5>
+                    <h5 className="font-bold text-slate-900 text-lg">{u.first_name || u.email.split('@')[0]}</h5>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{u.email}</p>
                   </div>
                 </div>
@@ -124,7 +158,7 @@ const Administration: React.FC = () => {
                       ? 'bg-amber-50 text-amber-600 border-amber-200' 
                       : 'bg-indigo-50 text-indigo-600 border-indigo-200'
                   }`}>
-                    {u.role}
+                    {u.role || 'TECHNICIAN'}
                   </div>
                   <button 
                     onClick={() => handleChangeUserRole(u.id, u.role === UserRole.MANAGER ? UserRole.TECHNICIAN : UserRole.MANAGER)}
@@ -136,6 +170,13 @@ const Administration: React.FC = () => {
                 </div>
               </div>
             ))
+          ) : (
+            <div className="py-20 text-center flex flex-col items-center gap-4">
+               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                 <i className="fa-solid fa-user-slash text-2xl"></i>
+               </div>
+               <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Aucun profil trouvé dans 'user_profiles'.</p>
+            </div>
           )}
         </div>
       </section>
@@ -147,8 +188,7 @@ const Administration: React.FC = () => {
                 <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
                   <i className="fa-solid fa-user-plus text-2xl"></i>
                 </div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Accès membre</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Un mail de configuration sera transmis</p>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Nouvel Accès</h3>
               </div>
 
               <div className="space-y-8">
@@ -156,7 +196,7 @@ const Administration: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-300 ml-2 uppercase tracking-widest">Email professionnel</label>
                   <input 
                     type="email" 
-                    placeholder="collègue@procedio.fr"
+                    placeholder="nom@procedio.fr"
                     className="w-full px-6 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 transition-all"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
@@ -164,7 +204,7 @@ const Administration: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-300 ml-2 uppercase tracking-widest">Attribution du rôle</label>
+                  <label className="text-[10px] font-black text-slate-300 ml-2 uppercase tracking-widest">Rôle</label>
                   <div className="grid grid-cols-2 gap-4">
                      <button 
                       onClick={() => setInviteRole(UserRole.TECHNICIAN)}
@@ -185,15 +225,15 @@ const Administration: React.FC = () => {
                   <button 
                     onClick={handleInviteUser}
                     disabled={inviting || !inviteEmail || !inviteRole}
-                    className="w-full bg-slate-900 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95 disabled:opacity-10 disabled:grayscale"
+                    className="w-full bg-slate-900 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95 disabled:opacity-50"
                   >
-                    {inviting ? "Transmission..." : "Lancer l'invitation"}
+                    {inviting ? "Envoi..." : "Inviter l'utilisateur"}
                   </button>
                   <button 
                     onClick={() => {setShowInvitePopup(false); setInviteRole(null);}}
                     className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
                   >
-                    Abandonner
+                    Fermer
                   </button>
                 </div>
               </div>

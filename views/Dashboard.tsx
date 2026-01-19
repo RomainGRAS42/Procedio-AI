@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, UserRole, Procedure } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface DashboardProps {
   user: User;
@@ -9,16 +10,22 @@ interface DashboardProps {
   onViewHistory: () => void;
 }
 
+interface Announcement {
+  id: string;
+  content: string;
+  author_name: string;
+  author_initials: string;
+  created_at: string;
+  author_id?: string;
+}
+
 const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProcedure, onViewHistory }) => {
   const [isRead, setIsRead] = useState(false);
-  const [managerAnnouncement, setManagerAnnouncement] = useState({
-    author: "RO",
-    fullName: "ROMS",
-    content: "Bonjour l'équipe ! La maintenance de ce soir à 22h est cruciale pour la stabilité du réseau. Vérifiez bien vos checklist avant de clore votre service. Vous faites du super boulot ! 🚀",
-  });
-
-  const [newTeamMsg, setNewTeamMsg] = useState('');
-  const [showManagerTools, setShowManagerTools] = useState(false);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
 
   const stats = [
     { label: 'Consultations', value: '42', icon: 'fa-book-open', color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -32,12 +39,94 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
     { id: '3', title: 'Guide Intégration SSO', category: 'LOGICIEL', createdAt: 'Hier', views: 156, status: 'validated' },
   ];
 
-  const handleUpdateTeamMsg = () => {
-    if (newTeamMsg.trim()) {
-      setManagerAnnouncement({ ...managerAnnouncement, content: newTeamMsg });
-      setNewTeamMsg('');
-      setIsRead(false); // Réinitialiser le statut de lecture pour l'équipe
-      setShowManagerTools(false); // Ferme automatiquement le bloc (PJ n°2)
+  useEffect(() => {
+    fetchLatestAnnouncement();
+  }, []);
+
+  const fetchLatestAnnouncement = async () => {
+    setLoadingAnnouncement(true);
+    try {
+      const { data, error } = await supabase
+        .from('team_announcements')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data) {
+        setAnnouncement(data);
+        setEditContent(data.content);
+      } else {
+        const defaultAnn = {
+          id: 'default',
+          content: "Bienvenue sur Procedio. Aucune annonce d'équipe pour le moment.",
+          author_name: "Système",
+          author_initials: "SY",
+          created_at: new Date().toISOString()
+        };
+        setAnnouncement(defaultAnn);
+        setEditContent(defaultAnn.content);
+      }
+    } catch (err) {
+      console.error("Erreur annonces:", err);
+    } finally {
+      setLoadingAnnouncement(false);
+    }
+  };
+
+  const handleSaveAnnouncement = async () => {
+    if (!editContent.trim()) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('team_announcements')
+        .insert([{
+          content: editContent,
+          author_name: user.firstName,
+          author_initials: user.firstName.substring(0, 2).toUpperCase(),
+          author_id: user.id
+        }]);
+
+      if (error) throw error;
+      
+      setIsEditing(false);
+      await fetchLatestAnnouncement();
+      setIsRead(false);
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement de l'annonce");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkAsRead = async () => {
+    if (!announcement) return;
+    setIsRead(true);
+
+    try {
+      // Envoyer une notification au manager via la table des notes (utilisée comme log de notification)
+      // On préfixe par NOTIF_READ pour que l'interface puisse le filtrer si besoin
+      await supabase.from('notes').insert([{
+        title: `LOG_READ_${announcement.id}`,
+        content: `L'annonce "${announcement.content.substring(0, 30)}..." a été lue par ${user.firstName} ${user.lastName || ''}.`,
+        is_protected: false,
+        user_id: user.id,
+        tags: ['NOTIFICATION', 'SYSTEM']
+      }]);
+
+      // Optionnel: Envoyer aussi un log à un webhook pour archivage manager
+      fetch('https://n8n.srv901593.hstgr.cloud/webhook/announcement-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_name: user.firstName,
+          announcement_id: announcement.id,
+          timestamp: new Date().toISOString()
+        })
+      }).catch(() => {});
+
+    } catch (err) {
+      console.error("Erreur log lecture:", err);
     }
   };
 
@@ -55,91 +144,83 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
           </h2>
           <p className="text-slate-400 font-medium text-lg">Prêt à simplifier le support IT aujourd'hui ?</p>
         </div>
-        
-        {user.role === UserRole.MANAGER && (
-          <button 
-            onClick={() => setShowManagerTools(!showManagerTools)}
-            className={`px-10 py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-3 shadow-xl ${
-              showManagerTools 
-                ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-indigo-100/20' 
-                : 'bg-indigo-600 text-white shadow-indigo-500/30 hover:bg-indigo-700'
-            }`}
-          >
-            <i className={`fa-solid ${showManagerTools ? 'fa-xmark' : 'fa-bolt-lightning text-lg'}`}></i>
-            {showManagerTools ? 'Fermer Command Center' : 'Open Command Center'}
-          </button>
-        )}
       </section>
 
-      {/* 2. DASHBOARD TOOLS */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        
-        {/* MESSAGE DU MANAGER */}
+      {/* 2. MESSAGE DU MANAGER */}
+      <div className="grid grid-cols-1 gap-8">
         <section className={`relative border border-slate-100 rounded-[3rem] p-10 flex flex-col justify-between items-start gap-10 transition-all duration-500 ${
           isRead ? 'bg-slate-50 opacity-60' : 'bg-white shadow-xl shadow-indigo-500/5'
         }`}>
-          <div className="flex items-center gap-6 w-full">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xl border border-indigo-100">
-              {managerAnnouncement.author}
+          {loadingAnnouncement ? (
+            <div className="w-full py-10 flex items-center justify-center gap-4">
+              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Récupération de l'annonce...</span>
             </div>
-            <div className="flex-1">
-               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Annonce Équipe</h4>
-               <p className={`text-xl font-semibold leading-relaxed tracking-tight text-slate-700`}>
-                 "{managerAnnouncement.content}"
-               </p>
-            </div>
-          </div>
-          <div className="w-full flex justify-between items-center">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Posté à l'instant</span>
-            {user.role === UserRole.TECHNICIAN && !isRead && (
-              <button onClick={() => setIsRead(true)} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100">
-                Lu et compris
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* COMMAND CENTER OU INFRA */}
-        {user.role === UserRole.MANAGER && showManagerTools ? (
-          <section className="bg-indigo-950 rounded-[3rem] p-10 text-white shadow-2xl space-y-8 animate-slide-up">
-            <div className="flex items-center justify-between border-b border-white/10 pb-6">
-               <h3 className="font-black text-xs uppercase tracking-[0.2em] text-indigo-300">Command Center</h3>
-               <i className="fa-solid fa-tower-broadcast text-indigo-400 animate-pulse"></i>
-            </div>
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Update Global</label>
-                <textarea 
-                  value={newTeamMsg}
-                  onChange={(e) => setNewTeamMsg(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:bg-white/10 outline-none transition-all resize-none h-24"
-                  placeholder="Écrire le message..."
-                />
+          ) : isEditing ? (
+            <div className="w-full space-y-6">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Édition de l'annonce équipe</h4>
+                <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
               </div>
-              <button onClick={handleUpdateTeamMsg} className="w-full bg-indigo-600 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 shadow-lg shadow-indigo-900/50 transition-all">
-                Diffuser le message
-              </button>
-            </div>
-          </section>
-        ) : (
-          <section className="bg-white border border-slate-100 rounded-[3rem] p-10 flex flex-col justify-between shadow-xl shadow-indigo-500/5 animate-slide-up">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400">Santé de l'infrastructure</h3>
-              <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Normal</span>
+              <textarea 
+                className="w-full h-32 p-6 bg-slate-50 border-2 border-indigo-100 rounded-3xl focus:bg-white focus:border-indigo-500 outline-none resize-none font-bold text-slate-700 text-lg transition-all"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Écrivez votre message à l'équipe ici..."
+              />
+              <div className="flex justify-end gap-4">
+                <button 
+                  onClick={handleSaveAnnouncement}
+                  disabled={saving || !editContent.trim()}
+                  className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-lg disabled:opacity-50 transition-all"
+                >
+                  {saving ? "Publication..." : "Publier l'annonce"}
+                </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {['Réseau Core', 'Datacenter', 'VPN Access', 'Identity'].map((s) => (
-                <div key={s} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm group hover:bg-white hover:border-indigo-100 transition-all">
-                  <span className="text-[10px] font-bold text-slate-600 group-hover:text-indigo-600 transition-colors">{s}</span>
-                  <i className="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
+          ) : (
+            <>
+              <div className="flex items-center gap-6 w-full">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-xl border border-indigo-100">
+                  {announcement?.author_initials || '??'}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Annonce Équipe • Par {announcement?.author_name}</h4>
+                    {user.role === UserRole.MANAGER && (
+                      <button 
+                        onClick={() => setIsEditing(true)}
+                        className="text-[10px] font-black text-indigo-500 hover:text-slate-900 uppercase tracking-widest flex items-center gap-2"
+                      >
+                        <i className="fa-solid fa-pen-to-square"></i> Modifier
+                      </button>
+                    )}
+                  </div>
+                  <p className={`text-xl font-semibold leading-relaxed tracking-tight text-slate-700 mt-2`}>
+                    "{announcement?.content}"
+                  </p>
+                </div>
+              </div>
+              <div className="w-full flex justify-between items-center">
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                  Posté le {announcement ? new Date(announcement.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '...'}
+                </span>
+                {user.role === UserRole.TECHNICIAN && !isRead && (
+                  <button onClick={handleMarkAsRead} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                    Lu et compris
+                  </button>
+                )}
+                {isRead && (
+                  <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fa-solid fa-circle-check"></i> Lu et notifié
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </section>
       </div>
 
       {/* 3. STATS */}

@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ViewType, UserRole, Suggestion } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface HeaderProps {
   user: User;
@@ -13,17 +14,40 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], onMenuClick, onSearch }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
+  const [readLogs, setReadLogs] = useState<any[]>([]);
   
   const titles: Record<string, string> = {
     dashboard: 'Tableau de bord',
     statistics: 'Analyses',
-    procedures: 'Catalogue',
+    procedures: 'Procédures',
     notes: 'Mes Notes',
     account: 'Mon Compte',
     upload: 'Publication'
   };
 
+  useEffect(() => {
+    if (user.role === UserRole.MANAGER) {
+      fetchReadLogs();
+    }
+  }, [user.role, showNotifications]);
+
+  const fetchReadLogs = async () => {
+    try {
+      const { data } = await supabase
+        .from('notes')
+        .select('*')
+        .like('title', 'LOG_READ_%')
+        .order('updated_at', { ascending: false })
+        .limit(5);
+      
+      if (data) setReadLogs(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
+  const totalNotifs = pendingSuggestions.length + readLogs.length;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +71,6 @@ const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], on
         </h2>
       </div>
 
-      {/* BARRE DE RECHERCHE GLOBALE - TOUJOURS PRÉSENTE */}
       <div className="flex-1 max-w-2xl px-4">
         <form onSubmit={handleSearchSubmit} className="relative group">
           <input 
@@ -68,12 +91,12 @@ const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], on
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center relative border border-slate-100"
-              aria-label={`${pendingSuggestions.length} notifications`}
+              aria-label={`${totalNotifs} notifications`}
             >
-              <i className={`fa-solid fa-bell ${pendingSuggestions.length > 0 ? 'animate-bounce' : ''}`}></i>
-              {pendingSuggestions.length > 0 && (
+              <i className={`fa-solid fa-bell ${totalNotifs > 0 ? 'animate-bounce' : ''}`}></i>
+              {totalNotifs > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
-                  {pendingSuggestions.length}
+                  {totalNotifs}
                 </span>
               )}
             </button>
@@ -81,20 +104,37 @@ const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], on
             {showNotifications && (
               <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-50 overflow-hidden">
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                   <h4 className="font-bold text-slate-800 text-sm tracking-tight">Suggestions</h4>
+                   <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
                 </div>
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                  {pendingSuggestions.length > 0 ? (
-                    pendingSuggestions.map(s => (
-                      <div key={s.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <div className="flex justify-between items-start mb-1 gap-2">
-                           <span className="text-xs font-bold text-slate-800 truncate">{s.userName}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-1">{s.procedureTitle}</p>
-                        <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2">"{s.content}"</p>
+                  {/* Logs de lecture */}
+                  {readLogs.map(log => (
+                    <div key={log.id} className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <i className="fa-solid fa-circle-check text-indigo-500 text-[10px]"></i>
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Confirmation de lecture</span>
                       </div>
-                    ))
-                  ) : (
+                      <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
+                        {log.content}
+                      </p>
+                      <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                        {new Date(log.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                  ))}
+
+                  {/* Suggestions */}
+                  {pendingSuggestions.map(s => (
+                    <div key={s.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="flex justify-between items-start mb-1 gap-2">
+                         <span className="text-xs font-bold text-slate-800 truncate">{s.userName}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 line-clamp-1">{s.procedureTitle}</p>
+                      <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2">"{s.content}"</p>
+                    </div>
+                  ))}
+
+                  {totalNotifs === 0 && (
                     <div className="text-center py-10 text-slate-400 text-xs">Tout est à jour</div>
                   )}
                 </div>

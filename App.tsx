@@ -16,6 +16,13 @@ import History from './views/History';
 import Login from './views/Login';
 import ResetPassword from './views/ResetPassword';
 
+export interface ActiveTransfer {
+  fileName: string;
+  step: string;
+  progress: number;
+  abortController: AbortController | null;
+}
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -27,6 +34,9 @@ const App: React.FC = () => {
   const [autoOpenNoteEditor, setAutoOpenNoteEditor] = useState(false);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   
+  // État global du transfert
+  const [activeTransfer, setActiveTransfer] = useState<ActiveTransfer | null>(null);
+
   const [suggestions, setSuggestions] = useState<Suggestion[]>([
     {
       id: 'mock-1',
@@ -51,27 +61,20 @@ const App: React.FC = () => {
 
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
+    checkUser();
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        mapSupabaseUser(session.user);
-        setIsAuthenticated(true);
-      }
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
         setCurrentView('reset-password');
       }
-      
       if (session) {
-        mapSupabaseUser(session.user);
+        await mapSupabaseUser(session.user);
         setIsAuthenticated(true);
       } else {
         setUser(null);
         setIsAuthenticated(false);
+        setLoading(false);
       }
     });
 
@@ -81,32 +84,65 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const mapSupabaseUser = (sbUser: any) => {
-    const email = sbUser.email || '';
-    let role = sbUser.user_metadata?.role || UserRole.TECHNICIAN;
-    if (email.toLowerCase() === 'romain.gras42@hotmail.fr') {
-      role = UserRole.MANAGER;
+  const checkUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await mapSupabaseUser(session.user);
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (e) {
+      console.error("Erreur session:", e);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setUser({
-      id: sbUser.id,
-      email: email,
-      firstName: sbUser.user_metadata?.firstName || email.split('@')[0] || 'Utilisateur',
-      lastName: sbUser.user_metadata?.lastName || '',
-      role: role as UserRole,
-      avatarUrl: sbUser.user_metadata?.avatarUrl || `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=4f46e5&color=fff&size=128`,
-      position: role === UserRole.MANAGER ? 'Manager IT' : 'Technicien Support',
-      level: 1,
-      currentXp: 0,
-      nextLevelXp: 1000,
-      badges: []
-    });
+  const mapSupabaseUser = async (sbUser: any) => {
+    try {
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', sbUser.id)
+        .maybeSingle();
+
+      let finalRole: UserRole = UserRole.TECHNICIAN;
+      if (profileData?.role) {
+        const dbRole = profileData.role.toString().toUpperCase();
+        finalRole = dbRole === 'MANAGER' ? UserRole.MANAGER : UserRole.TECHNICIAN;
+      }
+
+      const firstName = profileData?.first_name || sbUser.user_metadata?.firstName || sbUser.email?.split('@')[0] || 'Utilisateur';
+
+      setUser({
+        id: sbUser.id,
+        email: sbUser.email || '',
+        firstName: firstName,
+        lastName: profileData?.last_name || '',
+        role: finalRole,
+        avatarUrl: profileData?.avatar_url || `https://ui-avatars.com/api/?name=${firstName}&background=4f46e5&color=fff&size=128`,
+        position: finalRole === UserRole.MANAGER ? 'Manager IT' : 'Technicien Support',
+        level: 1, currentXp: 0, nextLevelXp: 1000, badges: []
+      });
+    } catch (err) {
+      console.error("Erreur mapping utilisateur:", err);
+    }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsAuthenticated(false);
     setUser(null);
+    setCurrentView('dashboard');
+  };
+
+  const cancelTransfer = () => {
+    if (activeTransfer?.abortController) {
+      activeTransfer.abortController.abort();
+    }
+    setActiveTransfer(null);
   };
 
   const renderView = () => {
@@ -117,10 +153,8 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'dashboard': 
         return <Dashboard user={user!} onQuickNote={() => {setAutoOpenNoteEditor(true); setCurrentView('notes');}} onSelectProcedure={handleSelectProcedure} onViewHistory={() => setCurrentView('history')} />;
-      case 'administration':
-        return <Administration />;
-      case 'history':
-        return <History onSelectProcedure={handleSelectProcedure} />;
+      case 'administration': return <Administration />;
+      case 'history': return <History onSelectProcedure={handleSelectProcedure} />;
       case 'statistics': return <Statistics />;
       case 'procedures': 
         return <Procedures user={user!} onUploadClick={() => setCurrentView('upload')} onSelectProcedure={handleSelectProcedure} initialSearchTerm={globalSearchTerm} onSearchClear={() => setGlobalSearchTerm('')} />;
@@ -128,12 +162,10 @@ const App: React.FC = () => {
         return selectedProcedure ? <ProcedureDetail procedure={selectedProcedure} onBack={() => setCurrentView('history')} /> : null;
       case 'notes': 
         return <Notes initialIsAdding={autoOpenNoteEditor} onEditorClose={() => setAutoOpenNoteEditor(false)} />;
-      case 'account': 
-        return <Account user={user!} onGoToReset={() => {}} />; // Redirection inutile car géré par modale
-      case 'reset-password':
-        return <ResetPassword userEmail={user?.email || ""} onBack={() => setCurrentView('account')} />;
-      case 'upload': return <UploadProcedure onBack={() => setCurrentView('procedures')} />;
-      default: return null;
+      case 'account': return <Account user={user!} onGoToReset={() => {}} />;
+      case 'reset-password': return <ResetPassword userEmail={user?.email || ""} onBack={() => setCurrentView('account')} />;
+      case 'upload': return <UploadProcedure onBack={() => setCurrentView('procedures')} activeTransfer={activeTransfer} setActiveTransfer={setActiveTransfer} />;
+      default: return <Dashboard user={user!} onQuickNote={() => {}} onSelectProcedure={() => {}} onViewHistory={() => {}} />;
     }
   };
 
@@ -142,25 +174,35 @@ const App: React.FC = () => {
     setCurrentView('procedure-detail');
   };
 
-  if (loading) return null;
-  if (!isAuthenticated && !isRecoveryMode) return <Login onLogin={() => setIsAuthenticated(true)} />;
+  if (loading) return (
+    <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin shadow-xl"></div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Initialisation Procedio...</p>
+      </div>
+    </div>
+  );
+  
+  if (!isAuthenticated && !isRecoveryMode) return <Login onLogin={() => checkUser()} />;
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden">
-      {!isRecoveryMode && (
+      {!isRecoveryMode && user && (
         <Sidebar 
           currentView={currentView} 
           setView={setCurrentView} 
-          userRole={user?.role || UserRole.TECHNICIAN} 
+          userRole={user.role} 
           onLogout={handleLogout}
           isOpen={isSidebarOpen}
+          activeTransfer={activeTransfer}
+          onCancelTransfer={cancelTransfer}
         />
       )}
       
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {!isRecoveryMode && (
+        {!isRecoveryMode && user && (
           <Header 
-            user={user!} 
+            user={user} 
             currentView={currentView} 
             suggestions={suggestions} 
             onMenuClick={() => setIsSidebarOpen(true)}
@@ -169,10 +211,14 @@ const App: React.FC = () => {
         )}
         <main className={`flex-1 overflow-y-auto scroll-smooth ${isRecoveryMode ? 'flex items-center justify-center bg-slate-100' : ''}`}>
           <div className={`${isRecoveryMode ? 'w-full max-w-xl' : 'max-w-screen-2xl mx-auto w-full px-4 py-6 md:p-10'}`}>
-            {renderView()}
+            {user ? renderView() : null}
           </div>
         </main>
       </div>
+      
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[65] lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
     </div>
   );
 };
