@@ -17,11 +17,14 @@ interface Message {
 }
 
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, onSuggest }) => {
+  // Utilisation du titre nettoyé pour l'accueil de l'IA
+  const cleanTitle = procedure.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim();
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       sender: 'ai',
-      text: `Expert Procedio prêt. Je connais parfaitement la procédure "${procedure.title}". Que souhaitez-vous savoir ?`,
+      text: `Expert Procedio prêt. Je connais parfaitement la procédure "${cleanTitle}". Que souhaitez-vous savoir ?`,
       timestamp: new Date()
     }
   ]);
@@ -29,7 +32,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   const [isTyping, setIsTyping] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
   
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'info' | 'error'} | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -42,12 +44,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
     if (procedure.id.startsWith('http')) {
       setDocUrl(procedure.id);
     } else {
-      // Chemin standard : Categorie/Titre
-      // On s'assure que si le titre ne contient pas .pdf, on l'ajoute pour le storage si nécessaire
-      let path = procedure.id; 
-      // procedure.id contient déjà souvent le chemin complet si mappé depuis le storage
-      
-      const { data } = supabase.storage.from('procedures').getPublicUrl(path);
+      const { data } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
       setDocUrl(data.publicUrl);
     }
   }, [procedure]);
@@ -62,21 +59,45 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
     setIsTyping(true);
 
     try {
+      // APPEL WEBHOOK N8N - Données enrichies pour le RAG
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          // On envoie l'ID (chemin storage) ET le titre pour aider l'IA à mapper les vecteurs
           document_id: procedure.id, 
           query: textToSend,
-          context: procedure.title
+          title: cleanTitle,
+          category: procedure.category,
+          full_path: procedure.id,
+          // Context système additionnel envoyé dans le body
+          system_context: `L'utilisateur pose une question sur le document technique : ${cleanTitle}`
         })
       });
-      if (!response.ok) throw new Error('IA Error');
+
+      if (!response.ok) throw new Error('Erreur de communication avec le serveur IA');
+      
       const data = await response.json();
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: data.output || data.text || "Je n'ai pas trouvé de réponse précise dans cette documentation.", timestamp: new Date() };
+      
+      // Extraction de la réponse (on gère plusieurs formats de retour n8n possibles)
+      const aiResponseText = data.output || data.text || data.response || "Désolé, je ne parviens pas à analyser ce document pour le moment.";
+      
+      const aiMsg: Message = { 
+        id: (Date.now() + 1).toString(), 
+        sender: 'ai', 
+        text: aiResponseText, 
+        timestamp: new Date() 
+      };
+      
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
-      setMessages(prev => [...prev, { id: 'err', sender: 'ai', text: "L'IA est temporairement indisponible. Veuillez réessayer.", timestamp: new Date() }]);
+      console.error("Chat Error:", error);
+      setMessages(prev => [...prev, { 
+        id: 'err', 
+        sender: 'ai', 
+        text: "Une erreur est survenue lors de l'interrogation de l'IA. Vérifiez la connexion au webhook.", 
+        timestamp: new Date() 
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -91,10 +112,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
       {notification && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-slide-up">
-           <div className={`${notification.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'} text-white px-6 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3`}>
-              <i className="fa-solid fa-circle-info"></i>
-              <span className="font-bold text-sm tracking-tight">{notification.msg}</span>
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-slide-up">
+           <div className={`${notification.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'} text-white px-8 py-4 rounded-[2rem] shadow-2xl border border-white/10 flex items-center gap-4`}>
+              <i className="fa-solid fa-circle-check text-emerald-400"></i>
+              <span className="font-black text-xs uppercase tracking-widest">{notification.msg}</span>
            </div>
         </div>
       )}
@@ -106,15 +127,15 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
             <i className="fa-solid fa-brain text-lg"></i>
           </div>
           <div>
-            <h3 className="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Contextual RAG Assistant</h3>
-            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">Analysé avec succès</p>
+            <h3 className="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Assistant IA Contextuel</h3>
+            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">RAG Indexé & Prêt</p>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/20">
+        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/10">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] p-5 rounded-3xl text-sm font-bold leading-relaxed shadow-sm ${
+              <div className={`max-w-[90%] p-5 rounded-3xl text-sm font-bold leading-relaxed shadow-sm animate-slide-up ${
                 msg.sender === 'user' ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white text-slate-600 border border-slate-100 rounded-tl-none'
               }`}>
                 {msg.text}
@@ -123,10 +144,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
           ))}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex gap-1.5 animate-pulse">
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+              <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex gap-1.5">
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
               </div>
             </div>
           )}
@@ -137,14 +158,18 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
           <div className="relative">
             <input 
               type="text"
-              placeholder="Poser une question à la doc..."
-              className="w-full pl-6 pr-14 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-700"
+              placeholder="Question sur la procédure..."
+              className="w-full pl-6 pr-14 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-700 focus:bg-slate-100 transition-all"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
               disabled={isTyping}
             />
-            <button onClick={() => handleSendMessage()} disabled={!input.trim() || isTyping} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg disabled:opacity-30">
+            <button 
+              onClick={() => handleSendMessage()} 
+              disabled={!input.trim() || isTyping} 
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg disabled:opacity-30 active:scale-90 transition-transform"
+            >
               <i className="fa-solid fa-paper-plane text-sm"></i>
             </button>
           </div>
@@ -159,7 +184,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
               <i className="fa-solid fa-arrow-left"></i>
             </button>
             <div className="max-w-md">
-              <h2 className="font-black text-slate-900 text-xl leading-none truncate mb-2">{procedure.title}</h2>
+              <h2 className="font-black text-slate-900 text-xl leading-none truncate mb-2">{cleanTitle}</h2>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{procedure.category}</span>
             </div>
           </div>
@@ -172,8 +197,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
                 Consulter en externe
              </button>
              <button 
-                onClick={() => setNotification({msg: "Lien copié dans le presse-papier !", type: 'success'})} 
-                className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all"
+                onClick={() => {
+                  navigator.clipboard.writeText(docUrl || '');
+                  setNotification({msg: "Lien copié !", type: 'success'});
+                  setTimeout(() => setNotification(null), 3000);
+                }} 
+                className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all active:scale-95"
              >
                 Partager
              </button>
