@@ -28,13 +28,13 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [selectedProcedure, setSelectedProcedure] = useState<Procedure | null>(null);
+  const [lastFolder, setLastFolder] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [autoOpenNoteEditor, setAutoOpenNoteEditor] = useState(false);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   
-  // État global du transfert
   const [activeTransfer, setActiveTransfer] = useState<ActiveTransfer | null>(null);
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([
@@ -145,6 +145,10 @@ const App: React.FC = () => {
     setActiveTransfer(null);
   };
 
+  const handleBackToProcedures = () => {
+    setCurrentView('procedures');
+  };
+
   const renderView = () => {
     if (isRecoveryMode) {
        return <ResetPassword userEmail={user?.email || "Récupération en cours"} onBack={() => { setIsRecoveryMode(false); setCurrentView('dashboard'); }} />;
@@ -157,9 +161,17 @@ const App: React.FC = () => {
       case 'history': return <History onSelectProcedure={handleSelectProcedure} />;
       case 'statistics': return <Statistics />;
       case 'procedures': 
-        return <Procedures user={user!} onUploadClick={() => setCurrentView('upload')} onSelectProcedure={handleSelectProcedure} initialSearchTerm={globalSearchTerm} onSearchClear={() => setGlobalSearchTerm('')} />;
+        return <Procedures 
+          user={user!} 
+          onUploadClick={() => setCurrentView('upload')} 
+          onSelectProcedure={handleSelectProcedure} 
+          initialSearchTerm={globalSearchTerm} 
+          onSearchClear={() => setGlobalSearchTerm('')}
+          initialFolder={lastFolder}
+          onFolderChange={(f) => setLastFolder(f)}
+        />;
       case 'procedure-detail':
-        return selectedProcedure ? <ProcedureDetail procedure={selectedProcedure} onBack={() => setCurrentView('history')} /> : null;
+        return selectedProcedure ? <ProcedureDetail procedure={selectedProcedure} onBack={handleBackToProcedures} /> : null;
       case 'notes': 
         return <Notes initialIsAdding={autoOpenNoteEditor} onEditorClose={() => setAutoOpenNoteEditor(false)} />;
       case 'account': return <Account user={user!} onGoToReset={() => {}} />;
@@ -190,7 +202,7 @@ const App: React.FC = () => {
       {!isRecoveryMode && user && (
         <Sidebar 
           currentView={currentView} 
-          setView={setCurrentView} 
+          setView={(v) => { if(v !== 'procedure-detail') setLastFolder(null); setCurrentView(v); }} 
           userRole={user.role} 
           onLogout={handleLogout}
           isOpen={isSidebarOpen}

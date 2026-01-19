@@ -9,61 +9,126 @@ interface ProceduresProps {
   onSelectProcedure: (procedure: Procedure) => void;
   initialSearchTerm?: string;
   onSearchClear?: () => void;
+  initialFolder?: string | null;
+  onFolderChange?: (folder: string | null) => void;
 }
 
-interface StorageItem {
-  name: string;
-  id?: string;
-  metadata?: any;
-}
-
-const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectProcedure, initialSearchTerm = '', onSearchClear }) => {
+const Procedures: React.FC<ProceduresProps> = ({ 
+  user, 
+  onUploadClick, 
+  onSelectProcedure, 
+  initialSearchTerm = '', 
+  onSearchClear,
+  initialFolder = null,
+  onFolderChange
+}) => {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isSearching, setIsSearching] = useState(initialSearchTerm !== '');
   const [searchResults, setSearchResults] = useState<Procedure[]>([]);
   
-  // Navigation Storage
-  const [currentFolder, setCurrentFolder] = useState<string | null>(null); // null = Racine
-  const [items, setItems] = useState<StorageItem[]>([]);
+  const [currentFolder, setCurrentFolder] = useState<string | null>(initialFolder); 
+  const [folders, setFolders] = useState<string[]>([]);
+  const [files, setFiles] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Catégories racines statiques (simule les dossiers si le bucket est vide ou pour forcer la structure)
-  const rootCategories = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEUR'];
 
   useEffect(() => {
     if (initialSearchTerm) {
       handleSearch(initialSearchTerm);
+    } else {
+      fetchStructure();
     }
-  }, [initialSearchTerm]);
+    onFolderChange?.(currentFolder);
+  }, [currentFolder, initialSearchTerm]);
 
   useEffect(() => {
-    if (!searchTerm) {
-      fetchStorageContent();
-    }
-  }, [currentFolder, searchTerm]);
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'procedures' },
+        () => {
+          fetchStructure();
+          if (isSearching) handleSearch();
+        }
+      )
+      .subscribe();
 
-  const fetchStorageContent = async () => {
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentFolder, isSearching, searchTerm]);
+
+  const cleanFileName = (name: string) => {
+    let clean = name.replace(/\.[^/.]+$/, "");
+    clean = clean.replace(/^[0-9a-f.-]+-/i, "");
+    return clean.replace(/_/g, ' ').trim();
+  };
+
+  const fetchStructure = async () => {
     setLoading(true);
     try {
       if (currentFolder === null) {
-        // À la racine, on affiche nos catégories principales
-        setItems(rootCategories.map(c => ({ name: c })));
-      } else {
-        // Dans un dossier, on liste le contenu réel du bucket Supabase
-        const { data, error } = await supabase.storage.from('procedures').list(currentFolder, {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'name', order: 'asc' },
+        // 1. Lister le storage
+        const { data: storageItems, error: storageError } = await supabase
+          .storage
+          .from('procedures')
+          .list('', { sortBy: { column: 'name', order: 'asc' } });
+
+        if (storageError) throw storageError;
+
+        // 2. Définir les catégories de base (Singulier pour la norme)
+        const defaultCats = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEUR'];
+        
+        // 3. Extraire les dossiers du storage
+        const storageFolders = storageItems
+          ?.filter(item => !item.name.includes('.'))
+          .map(item => item.name.toUpperCase()) || [];
+
+        /**
+         * LOGIQUE DE FUSION ANTI-DOUBLON (UTILISATEUR vs UTILISATEURS)
+         * On normalise en enlevant le "S" final et les espaces pour comparer
+         */
+        const normalizedSet = new Set<string>();
+        const finalFolders: string[] = [];
+
+        [...defaultCats, ...storageFolders].forEach(folder => {
+          const normal = folder.trim().replace(/S$/, ""); // Normalise "UTILISATEURS" -> "UTILISATEUR"
+          if (!normalizedSet.has(normal)) {
+            normalizedSet.add(normal);
+            finalFolders.push(folder); // On garde le premier nom rencontré (souvent la constante)
+          }
         });
 
-        if (error) throw error;
-        
-        // On ne garde que les fichiers (pas les placeholders .emptyFolder s'il y en a)
-        const filtered = data ? data.filter(i => i.name !== '.emptyFolder') : [];
-        setItems(filtered);
+        setFolders(finalFolders.sort());
+      } else {
+        const { data: dbFiles } = await supabase
+          .from('procedures')
+          .select('*')
+          .eq('category', currentFolder);
+
+        if (dbFiles && dbFiles.length > 0) {
+          setFiles(dbFiles.map(f => ({ ...f, title: cleanFileName(f.title) })));
+        } else {
+          const { data: storageFiles } = await supabase
+            .storage
+            .from('procedures')
+            .list(currentFolder, { sortBy: { column: 'name', order: 'asc' } });
+
+          const mappedFiles: Procedure[] = (storageFiles || [])
+            .filter(f => f.name.toLowerCase().endsWith('.pdf'))
+            .map(f => ({
+              id: `${currentFolder}/${f.name}`,
+              title: cleanFileName(f.name),
+              category: currentFolder,
+              createdAt: f.created_at,
+              views: 0,
+              status: 'validated'
+            }));
+          setFiles(mappedFiles);
+        }
       }
     } catch (e) {
-      console.error("Erreur Storage:", e);
+      console.error("Erreur de synchronisation Drive:", e);
     } finally {
       setLoading(false);
     }
@@ -74,20 +139,20 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
     if (!termToSearch.trim()) {
       setIsSearching(false);
       onSearchClear?.();
+      fetchStructure();
       return;
     }
     setLoading(true);
     setIsSearching(true);
     
     try {
-      // Recherche dans la table DB 'procedures' pour avoir les résultats sémantiques
       const { data, error } = await supabase
         .from('procedures')
         .select('*')
         .ilike('title', `%${termToSearch}%`);
         
       if (error) throw error;
-      setSearchResults(data || []);
+      setSearchResults((data || []).map(f => ({ ...f, title: cleanFileName(f.title) })));
     } catch (e) {
       console.error("Erreur recherche:", e);
       setSearchResults([]);
@@ -96,34 +161,15 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
     }
   };
 
-  const handleItemClick = (item: StorageItem) => {
-    if (currentFolder === null) {
-      // C'est un dossier (catégorie)
-      setCurrentFolder(item.name);
-    } else {
-      // C'est un fichier PDF
-      // On construit l'objet Procedure
-      const fullPath = `${currentFolder}/${item.name}`;
-      onSelectProcedure({
-        id: fullPath, // On utilise le path comme ID pour ProcedureDetail
-        title: item.name,
-        category: currentFolder,
-        createdAt: item.metadata?.created_at ? new Date(item.metadata.created_at).toLocaleDateString() : 'N/A',
-        views: 0,
-        status: 'validated'
-      });
-    }
-  };
-
   return (
     <div className="space-y-12 h-full flex flex-col pb-10 animate-fade-in">
-      {/* HEADER DE RECHERCHE */}
+      {/* RECHERCHE & ACTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
         <div className="flex-1 max-w-2xl relative">
           <input 
             type="text" 
             placeholder="Rechercher une documentation technique..."
-            className="w-full pl-14 pr-4 py-5 rounded-[2rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300"
+            className="w-full pl-14 pr-4 py-5 rounded-[2.5rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -142,36 +188,48 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
         )}
       </div>
 
-      {/* ZONE PRINCIPALE */}
       <div className="flex-1 space-y-10">
         {!isSearching && (
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <i className="fa-solid fa-database text-sm"></i>
+          <div className="flex flex-col items-start gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 shrink-0 relative">
+                <i className="fa-solid fa-hard-drive text-lg"></i>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-slate-900 text-sm uppercase tracking-[0.2em]">Procedio Cloud Drive</h3>
+                <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                  <i className="fa-solid fa-sync text-indigo-400 animate-spin-slow"></i>
+                  {currentFolder ? `Navigation dans : ${currentFolder}` : 'Sélectionnez un dossier technique pour commencer.'}
+                </p>
+              </div>
             </div>
-            <h3 className="font-black text-slate-900 text-sm uppercase tracking-[0.2em]">Base de Connaissances</h3>
             
             {currentFolder !== null && (
               <button 
                 onClick={() => setCurrentFolder(null)} 
-                className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors flex items-center gap-2"
+                className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
               >
-                <i className="fa-solid fa-arrow-left"></i> Retour Racine
+                <i className="fa-solid fa-arrow-left"></i> 
+                Retour aux catégories
               </button>
             )}
           </div>
         )}
 
         <div className="min-h-[400px]">
-          {loading ? (
+          {loading && (files.length === 0 && folders.length === 0) ? (
             <div className="h-64 flex flex-col items-center justify-center gap-4">
               <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement Supabase...</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Analyse du stockage...</p>
             </div>
           ) : isSearching ? (
             <div className="grid grid-cols-1 gap-4">
               {searchResults.length > 0 ? searchResults.map(res => (
-                <div key={res.id} onClick={() => onSelectProcedure(res)} className="p-6 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 cursor-pointer hover:shadow-xl transition-all">
+                <div key={res.id} onClick={() => onSelectProcedure(res)} className="p-6 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 cursor-pointer hover:shadow-xl transition-all animate-slide-up">
                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><i className="fa-solid fa-file-pdf"></i></div>
                    <div className="flex-1">
                      <span className="font-bold text-slate-700 block">{res.title}</span>
@@ -179,41 +237,70 @@ const Procedures: React.FC<ProceduresProps> = ({ user, onUploadClick, onSelectPr
                    </div>
                 </div>
               )) : (
-                 <div className="py-20 text-center text-slate-300">Aucun résultat trouvé dans la base.</div>
+                 <div className="py-20 text-center text-slate-300">Aucun résultat pour cette recherche.</div>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-              {/* Affichage des items (Dossiers ou Fichiers) */}
-              {items.map((item) => {
-                 const isFolder = currentFolder === null;
-                 return (
-                  <div 
-                    key={item.id || item.name}
-                    onClick={() => handleItemClick(item)}
-                    className={`group relative flex flex-col items-center justify-center aspect-square rounded-[2.5rem] p-8 cursor-pointer transition-all hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(79,70,229,0.15)] ${
-                      isFolder ? 'bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-indigo-200' : 'bg-white border border-slate-100 hover:border-indigo-300'
-                    }`}
-                  >
-                    <div className={`text-5xl mb-6 transition-all group-hover:scale-110 ${isFolder ? 'text-indigo-400 group-hover:text-indigo-600' : 'text-slate-200 group-hover:text-indigo-500'}`}>
-                      <i className={`fa-solid ${isFolder ? 'fa-folder' : 'fa-file-pdf'}`}></i>
-                    </div>
-                    <span className="font-black text-slate-800 text-[11px] uppercase tracking-widest text-center leading-tight line-clamp-2">
-                      {item.name}
-                    </span>
-                    
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 rounded-[2.5rem] border-2 border-indigo-500/0 group-hover:border-indigo-500/30 pointer-events-none transition-all"></div>
+            <div className="space-y-8">
+              {/* TITRE DU DOSSIER COURANT AVEC DESIGN ÉPURÉ */}
+              {currentFolder && (
+                <div className="flex items-center gap-6 mb-4 animate-fade-in">
+                  <div className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100">
+                    {currentFolder}
                   </div>
-                 );
-              })}
-
-              {!loading && items.length === 0 && (
-                <div className="col-span-full py-20 text-center text-slate-300">
-                   <i className="fa-regular fa-folder-open text-4xl mb-4 block"></i>
-                   <p className="text-[10px] font-black uppercase tracking-widest">Dossier vide</p>
+                  <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent"></div>
+                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                    {files.length} document{files.length > 1 ? 's' : ''} trouvé{files.length > 1 ? 's' : ''}
+                  </span>
                 </div>
               )}
+
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                {/* AFFICHAGE DES DOSSIERS (RACINE) */}
+                {currentFolder === null && folders.map((folder) => (
+                  <div 
+                    key={folder}
+                    onClick={() => setCurrentFolder(folder)}
+                    className="group relative flex flex-col items-center justify-center aspect-square rounded-[3rem] p-8 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-indigo-300 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
+                  >
+                    <div className="text-6xl mb-6 text-indigo-100 transition-all group-hover:scale-110 group-hover:text-indigo-500">
+                      <i className="fa-solid fa-folder"></i>
+                    </div>
+                    <span className="font-black text-slate-800 text-[11px] uppercase tracking-widest text-center leading-tight">
+                      {folder}
+                    </span>
+                  </div>
+                ))}
+
+                {/* AFFICHAGE DES FICHIERS (DANS UN DOSSIER) */}
+                {currentFolder !== null && files.map((file) => (
+                  <div 
+                    key={file.id}
+                    onClick={() => onSelectProcedure(file)}
+                    className="group relative flex flex-col items-center justify-center aspect-square rounded-[3rem] p-8 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
+                  >
+                    <div className="text-6xl mb-6 text-slate-50 transition-all group-hover:scale-110 group-hover:text-rose-500">
+                      <i className="fa-solid fa-file-pdf"></i>
+                    </div>
+                    <span className="font-black text-slate-800 text-[11px] uppercase tracking-widest text-center leading-tight line-clamp-2 px-2">
+                      {file.title}
+                    </span>
+                    <div className="mt-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                      <span className="w-1.5 h-1.5 bg-indigo-300 rounded-full"></span>
+                      <span className="w-1.5 h-1.5 bg-indigo-100 rounded-full"></span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* ETAT VIDE */}
+                {currentFolder !== null && files.length === 0 && !loading && (
+                  <div className="col-span-full py-20 text-center text-slate-300 flex flex-col items-center gap-4">
+                     <i className="fa-regular fa-folder-open text-5xl mb-2 opacity-20"></i>
+                     <p className="text-[10px] font-black uppercase tracking-widest">Aucune procédure disponible ici</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

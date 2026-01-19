@@ -29,11 +29,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   const [isTyping, setIsTyping] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
   
-  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [suggestionText, setSuggestionText] = useState('');
-  const [shareEmail, setShareEmail] = useState('');
-  const [sharing, setSharing] = useState(false);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'info' | 'error'} | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,15 +39,14 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
   }, [messages]);
 
   useEffect(() => {
-    // Si l'id de la procédure ressemble à une URL Cloudinary, on l'utilise directement
-    // Sinon on tente de récupérer l'URL depuis Supabase
     if (procedure.id.startsWith('http')) {
       setDocUrl(procedure.id);
     } else {
-      const path = procedure.category === 'RACINE' 
-        ? procedure.title 
-        : `${procedure.category}/${procedure.title}`;
-
+      // Chemin standard : Categorie/Titre
+      // On s'assure que si le titre ne contient pas .pdf, on l'ajoute pour le storage si nécessaire
+      let path = procedure.id; 
+      // procedure.id contient déjà souvent le chemin complet si mappé depuis le storage
+      
       const { data } = supabase.storage.from('procedures').getPublicUrl(path);
       setDocUrl(data.publicUrl);
     }
@@ -67,7 +62,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
     setIsTyping(true);
 
     try {
-      // Le webhook de chat reçoit le "document_id" pour filtrer le RAG dans Supabase
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,6 +79,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
       setMessages(prev => [...prev, { id: 'err', sender: 'ai', text: "L'IA est temporairement indisponible. Veuillez réessayer.", timestamp: new Date() }]);
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleOpenExternal = () => {
+    if (docUrl) {
+      window.open(docUrl, '_blank');
     }
   };
 
@@ -153,18 +153,30 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
 
       {/* DOCUMENT (DROITE) */}
       <div className="flex-1 flex flex-col gap-6">
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
+        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4">
           <div className="flex items-center gap-6">
             <button onClick={onBack} className="w-12 h-12 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
               <i className="fa-solid fa-arrow-left"></i>
             </button>
-            <div>
+            <div className="max-w-md">
               <h2 className="font-black text-slate-900 text-xl leading-none truncate mb-2">{procedure.title}</h2>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{procedure.category}</span>
             </div>
           </div>
           <div className="flex gap-3">
-             <button onClick={() => setIsShareModalOpen(true)} className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Partager</button>
+             <button 
+                onClick={handleOpenExternal}
+                className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2"
+             >
+                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                Consulter en externe
+             </button>
+             <button 
+                onClick={() => setNotification({msg: "Lien copié dans le presse-papier !", type: 'success'})} 
+                className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all"
+             >
+                Partager
+             </button>
           </div>
         </div>
 
@@ -174,7 +186,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-6">
                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-               <p className="font-black text-[10px] uppercase tracking-widest">Récupération Cloudinary...</p>
+               <p className="font-black text-[10px] uppercase tracking-widest">Chargement du document...</p>
             </div>
           )}
         </div>
