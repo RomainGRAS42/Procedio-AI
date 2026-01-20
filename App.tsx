@@ -50,7 +50,25 @@ const App: React.FC = () => {
     }
   ]);
 
+  // Fonction déplacée en dehors pour être accessible par useEffect et Login
+  const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await mapSupabaseUser(session.user);
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (e) {
+        console.error("Erreur session:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
   useEffect(() => {
+    // Gestion du mode récupération via hash
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash && hash.includes('type=recovery')) {
@@ -58,47 +76,49 @@ const App: React.FC = () => {
         setCurrentView('reset-password');
       }
     };
-
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
-    checkUser();
 
+    initSession();
+
+    // Timeout de sécurité pour éviter le chargement infini (5s max)
+    const safetyTimeout = setTimeout(() => {
+      setLoading((currentLoading) => {
+        if (currentLoading) {
+          console.warn("Délai de chargement dépassé, affichage forcé.");
+          return false;
+        }
+        return currentLoading;
+      });
+    }, 5000);
+
+    // Écoute des changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
         setCurrentView('reset-password');
       }
+      
       if (session) {
-        await mapSupabaseUser(session.user);
+        // On ne re-mappe que si l'utilisateur n'est pas déjà chargé ou si c'est un changement significatif
+        if (!user || event === 'SIGNED_IN') {
+           await mapSupabaseUser(session.user);
+        }
         setIsAuthenticated(true);
       } else {
         setUser(null);
         setIsAuthenticated(false);
-        setLoading(false);
       }
+      // On s'assure de couper le chargement si l'event d'auth survient
+      setLoading(false);
     });
 
     return () => {
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
-
-  const checkUser = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await mapSupabaseUser(session.user);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    } catch (e) {
-      console.error("Erreur session:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const mapSupabaseUser = async (sbUser: any) => {
     try {
@@ -128,6 +148,17 @@ const App: React.FC = () => {
       });
     } catch (err) {
       console.error("Erreur mapping utilisateur:", err);
+      // En cas d'erreur critique de mapping, on crée un user par défaut pour éviter de bloquer
+      setUser({
+         id: sbUser.id,
+         email: sbUser.email || '',
+         firstName: 'Utilisateur',
+         lastName: '',
+         role: UserRole.TECHNICIAN,
+         avatarUrl: '',
+         position: 'Technicien Support',
+         level: 1, currentXp: 0, nextLevelXp: 1000, badges: []
+      });
     }
   };
 
@@ -195,7 +226,10 @@ const App: React.FC = () => {
     </div>
   );
   
-  if (!isAuthenticated && !isRecoveryMode) return <Login onLogin={() => checkUser()} />;
+  if (!isAuthenticated && !isRecoveryMode) return <Login onLogin={() => {
+    setLoading(true);
+    initSession();
+  }} />;
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden">
