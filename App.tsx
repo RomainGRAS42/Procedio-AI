@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, UserRole, ViewType, Procedure, Suggestion } from './types';
-import { supabase } from './lib/supabase';
+import { User, UserRole, ViewType, Procedure } from './types';
+import { supabase, checkSupabaseConnection } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './views/Dashboard';
@@ -35,18 +35,12 @@ const App: React.FC = () => {
   const [autoOpenNoteEditor, setAutoOpenNoteEditor] = useState(false);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [activeTransfer, setActiveTransfer] = useState<ActiveTransfer | null>(null);
-
-  // Timer de sécurité raccourci pour éviter de laisser l'utilisateur sur un écran blanc trop longtemps
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const [connectionStatus, setConnectionStatus] = useState<'loading' | 'ok' | 'error' | 'warning'>('loading');
+  const [initError, setInitError] = useState<string | null>(null);
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
-      // Profil temporaire immédiat pour éviter les erreurs de rendu
+      // 1. Profil par défaut immédiat (données Auth)
       const defaultUser: User = {
         id: sbUser.id,
         email: sbUser.email || '',
@@ -59,13 +53,16 @@ const App: React.FC = () => {
       };
       setUser(defaultUser);
 
-      const { data: profile } = await supabase
+      // 2. Tentative d'enrichissement via la table user_profiles
+      const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', sbUser.id)
         .maybeSingle();
 
-      if (profile) {
+      if (error) {
+        console.warn("Table user_profiles non accessible (RLS ou inexistante).");
+      } else if (profile) {
         const finalRole = profile.role?.toUpperCase() === 'MANAGER' ? UserRole.MANAGER : UserRole.TECHNICIAN;
         setUser(prev => prev ? ({
           ...prev,
@@ -77,23 +74,23 @@ const App: React.FC = () => {
         }) : null);
       }
     } catch (err) {
-      console.warn("Profil synchronisé ultérieurement.");
+      console.error("Erreur critique syncUserProfile:", err);
     }
   }, []);
 
   useEffect(() => {
-    // 1. Détection Reset Password
-    const handleHash = () => {
-      if (window.location.hash.includes('type=recovery')) {
-        setIsRecoveryMode(true);
-        setCurrentView('reset-password');
+    const initApp = async () => {
+      // 1. Diagnostic de connexion
+      const diag = await checkSupabaseConnection();
+      setConnectionStatus(diag.status as any);
+      
+      if (diag.status === 'error') {
+        setInitError("Erreur de configuration Cloud : " + diag.msg);
+        setLoading(false);
+        return;
       }
-    };
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
 
-    // 2. Vérification Session IMMÉDIATE
-    const initAuth = async () => {
+      // 2. Vérification Session
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -106,18 +103,28 @@ const App: React.FC = () => {
         setLoading(false);
       }
     };
-    initAuth();
 
-    // 3. Écouteur de changement d'état
+    initApp();
+
+    // 3. Écouteur de hash pour le reset password
+    const handleHash = () => {
+      if (window.location.hash.includes('type=recovery')) {
+        setIsRecoveryMode(true);
+        setCurrentView('reset-password');
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+
+    // 4. Écouteur Auth dynamique
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setIsAuthenticated(true);
         syncUserProfile(session.user);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setUser(null);
       }
-      setLoading(false);
     });
 
     return () => {
@@ -129,6 +136,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     setLoading(true);
     await supabase.auth.signOut();
+    window.location.reload(); 
   };
 
   const renderView = () => {
@@ -152,7 +160,18 @@ const App: React.FC = () => {
   if (loading) return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
       <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] animate-pulse">PROCEDIO</p>
+      <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] animate-pulse">PROCEDIO INITIALIZATION</p>
+    </div>
+  );
+
+  if (initError) return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-white p-10 text-center">
+      <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center text-3xl mb-6">
+        <i className="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Problème de Configuration</h2>
+      <p className="text-slate-500 max-w-md mb-8">{initError}</p>
+      <button onClick={() => window.location.reload()} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl">Réessayer</button>
     </div>
   );
 
@@ -166,4 +185,40 @@ const App: React.FC = () => {
           setView={v => { setLastFolder(null); setCurrentView(v); }} 
           userRole={user.role} 
           onLogout={handleLogout}
-          isOpen={
+          isOpen={isSidebarOpen}
+          activeTransfer={activeTransfer}
+          onCancelTransfer={() => setActiveTransfer(null)}
+        />
+      )}
+      
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        {user && (
+          <Header 
+            user={user} 
+            currentView={currentView} 
+            onMenuClick={() => setIsSidebarOpen(true)}
+            onSearch={t => { setGlobalSearchTerm(t); setCurrentView('procedures'); }}
+          />
+        )}
+        <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">
+          <div className="max-w-screen-2xl mx-auto w-full">
+            {renderView()}
+          </div>
+        </main>
+      </div>
+      
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[65] lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      {/* Indicateur de statut de connexion Cloud (discret) */}
+      <div className="fixed bottom-4 right-4 z-[100] pointer-events-none group">
+        <div className={`w-2 h-2 rounded-full ${
+          connectionStatus === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'
+        } opacity-50 shadow-sm transition-opacity group-hover:opacity-100`}></div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
