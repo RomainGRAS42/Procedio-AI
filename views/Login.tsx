@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
-import { UserRole } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface LoginProps {
-  onLogin: (role: UserRole) => void;
+  onLogin: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -21,20 +20,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError(null);
     try {
       if (view === 'login') {
+        // Tentative de connexion
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw new Error("Identifiants incorrects.");
-        onLogin(UserRole.TECHNICIAN);
+        if (error) throw error;
+        
+        // Si succès, on signale simplement au parent (pour afficher le loader)
+        // Le listener onAuthStateChange dans App.tsx fera la bascule réelle
+        onLogin(); 
       } else {
+        // Récupération mot de passe
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/#type=recovery`,
         });
         if (error) throw error;
         setSuccess("Lien de récupération envoyé ! Vérifiez vos emails.");
         setTimeout(() => setView('login'), 3000);
+        setLoading(false);
       }
     } catch (e: any) {
-      setError(e.message);
-    } finally {
+      setError(e.message === "Invalid login credentials" ? "Identifiants incorrects." : e.message);
       setLoading(false);
     }
   };
