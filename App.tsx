@@ -151,7 +151,7 @@ const App: React.FC = () => {
       case 'account': return <Account user={user} onGoToReset={() => {}} />;
       case 'statistics': return <Statistics />;
       case 'administration': return <Administration />;
-      case 'history': return <History onSelectProcedure={p => {setSelectedProcedure(p); setCurrentView('procedure-detail');}} />;
+      case 'history': return <History onBack={() => setCurrentView('dashboard')} onSelectProcedure={p => {setSelectedProcedure(p); setCurrentView('procedure-detail');}} />;
       case 'upload': return <UploadProcedure onBack={() => setCurrentView('procedures')} activeTransfer={activeTransfer} setActiveTransfer={setActiveTransfer} />;
       default: return <Dashboard user={user} onQuickNote={() => {}} onSelectProcedure={() => {}} onViewHistory={() => {}} />;
     }

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, UserRole, Procedure } from '../types';
+import { User, Procedure, UserRole } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface DashboardProps {
@@ -26,6 +26,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
   const [editContent, setEditContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
+  
+  const [recentProcedures, setRecentProcedures] = useState<Procedure[]>([]);
+  const [loadingProcedures, setLoadingProcedures] = useState(true);
 
   const stats = [
     { label: 'Consultations', value: '42', icon: 'fa-book-open', color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -33,15 +36,38 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
     { label: 'Mes Notes', value: '12', icon: 'fa-note-sticky', color: 'text-cyan-600', bg: 'bg-cyan-50' },
   ];
 
-  const recentProcedures: Procedure[] = [
-    { id: '1', title: 'Audit Sécurité Réseau v2.4', category: 'INFRASTRUCTURE', createdAt: 'Aujourd\'hui', views: 89, status: 'validated' },
-    { id: '2', title: 'Provisioning Script WS', category: 'AUTOMATION', createdAt: 'Hier', views: 234, status: 'validated' },
-    { id: '3', title: 'Guide Intégration SSO', category: 'LOGICIEL', createdAt: 'Hier', views: 156, status: 'validated' },
-  ];
-
   useEffect(() => {
     fetchLatestAnnouncement();
+    fetchRecentProcedures();
   }, []);
+
+  const fetchRecentProcedures = async () => {
+    setLoadingProcedures(true);
+    try {
+      const { data, error } = await supabase
+        .from('procedures')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      if (data) {
+        setRecentProcedures(data.map(p => ({
+          id: p.id,
+          title: p.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim(),
+          category: p.category,
+          // CRITIQUE : Supabase renvoie created_at (snake_case), on doit le mapper vers createdAt (camelCase) utilisé dans les types
+          createdAt: p.created_at,
+          views: p.views || 0,
+          status: p.status || 'validated'
+        })));
+      }
+    } catch (err) {
+      console.error("Erreur fetch procedures:", err);
+    } finally {
+      setLoadingProcedures(false);
+    }
+  };
 
   const fetchLatestAnnouncement = async () => {
     setLoadingAnnouncement(true);
@@ -104,8 +130,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
     setIsRead(true);
 
     try {
-      // Envoyer une notification au manager via la table des notes (utilisée comme log de notification)
-      // On préfixe par NOTIF_READ pour que l'interface puisse le filtrer si besoin
       await supabase.from('notes').insert([{
         title: `LOG_READ_${announcement.id}`,
         content: `L'annonce "${announcement.content.substring(0, 30)}..." a été lue par ${user.firstName} ${user.lastName || ''}.`,
@@ -113,21 +137,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
         user_id: user.id,
         tags: ['NOTIFICATION', 'SYSTEM']
       }]);
-
-      // Optionnel: Envoyer aussi un log à un webhook pour archivage manager
-      fetch('https://n8n.srv901593.hstgr.cloud/webhook/announcement-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_name: user.firstName,
-          announcement_id: announcement.id,
-          timestamp: new Date().toISOString()
-        })
-      }).catch(() => {});
-
     } catch (err) {
       console.error("Erreur log lecture:", err);
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Format Invalide';
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -238,27 +261,45 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
         ))}
       </section>
 
-      {/* 4. RECENTS */}
+      {/* 4. RECENTS - DYNAMIQUE VIA SUPABASE */}
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+        <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
           <h3 className="font-black text-slate-900 text-xl tracking-tight">Activité Récente</h3>
           <button onClick={onViewHistory} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">Tout voir</button>
         </div>
         <div className="divide-y divide-slate-50">
-           {recentProcedures.map(proc => (
-             <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="p-10 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
-                <div className="flex items-center gap-8">
-                   <div className="w-16 h-16 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
-                     <i className="fa-regular fa-file-lines text-2xl"></i>
-                   </div>
-                   <div>
-                     <h4 className="font-bold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors leading-tight mb-2">{proc.title}</h4>
-                     <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-3 py-1 rounded-lg">{proc.category}</span>
-                   </div>
-                </div>
-                <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-2 transition-all"></i>
+           {loadingProcedures ? (
+             <div className="p-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement des fichiers...</p>
              </div>
-           ))}
+           ) : recentProcedures.length > 0 ? (
+             recentProcedures.map(proc => (
+               <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="p-10 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-8">
+                     <div className="w-16 h-16 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
+                       <i className="fa-regular fa-file-lines text-2xl"></i>
+                     </div>
+                     <div className="space-y-2">
+                       <h4 className="font-bold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors leading-tight">{proc.title}</h4>
+                       <div className="flex items-center gap-3">
+                         <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-3 py-1 rounded-lg">{proc.category}</span>
+                         <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase bg-indigo-50 px-3 py-1 rounded-lg flex items-center gap-2">
+                           <i className="fa-solid fa-clock-rotate-left"></i>
+                           {formatDate(proc.createdAt)}
+                         </span>
+                       </div>
+                     </div>
+                  </div>
+                  <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-2 transition-all"></i>
+               </div>
+             ))
+           ) : (
+             <div className="p-20 text-center text-slate-300 flex flex-col items-center gap-4">
+                <i className="fa-solid fa-folder-open text-4xl opacity-20"></i>
+                <p className="text-[10px] font-black uppercase tracking-widest">Aucune activité récente détectée</p>
+             </div>
+           )}
         </div>
       </section>
     </div>

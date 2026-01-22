@@ -5,9 +5,10 @@ import { supabase } from '../lib/supabase';
 
 interface HistoryProps {
   onSelectProcedure: (procedure: Procedure) => void;
+  onBack: () => void;
 }
 
-const History: React.FC<HistoryProps> = ({ onSelectProcedure }) => {
+const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
   const [history, setHistory] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,21 +19,39 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure }) => {
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      // Dans une app réelle, on fetcherait une table de logs jointe aux procédures
-      // Ici on simule les données basées sur l'utilisateur
-      const mockHistory: Procedure[] = [
-        { id: '1', title: 'Audit Sécurité Réseau v2.4', category: 'INFRASTRUCTURE', createdAt: '17 Jan 2024', views: 89, status: 'validated' },
-        { id: '2', title: 'Provisioning Script WS', category: 'AUTOMATION', createdAt: '16 Jan 2024', views: 234, status: 'validated' },
-        { id: '3', title: 'Guide Intégration SSO', category: 'LOGICIEL', createdAt: '15 Jan 2024', views: 156, status: 'validated' },
-        { id: '4', title: 'Backup Policy 2024', category: 'CLOUD', createdAt: '14 Jan 2024', views: 42, status: 'validated' },
-      ];
-      
-      setHistory(mockHistory);
+      // Récupération des données réelles triées par date de création décroissante
+      const { data, error } = await supabase
+        .from('procedures')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        setHistory(data.map(p => ({
+          id: p.id,
+          title: p.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim(),
+          category: p.category,
+          createdAt: p.created_at,
+          views: p.views || 0,
+          status: p.status || 'validated'
+        })));
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Erreur chargement historique:", e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Format Invalide';
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -47,8 +66,13 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure }) => {
             <h3 className="font-black text-slate-900 text-2xl tracking-tight">Dernières procédures consultées</h3>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Affichage : 4 derniers jours</span>
-            <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white border border-slate-100 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all">Tout voir</button>
+            <button 
+              onClick={onBack}
+              className="text-[10px] font-black text-slate-900 uppercase tracking-widest bg-white border border-slate-200 px-6 py-3 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-3 shadow-sm active:scale-95"
+            >
+              <i className="fa-solid fa-arrow-left"></i>
+              PRÉCÉDENT
+            </button>
           </div>
         </div>
 
@@ -59,7 +83,7 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure }) => {
               <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
               <span className="text-slate-400 font-black text-xs uppercase tracking-widest">Reconstitution de votre parcours...</span>
             </div>
-          ) : (
+          ) : history.length > 0 ? (
             history.map(proc => (
               <div 
                 key={proc.id} 
@@ -82,6 +106,10 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure }) => {
                         </span>
                         <div className="h-1.5 w-1.5 bg-slate-200 rounded-full"></div>
                         <span className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+                          {formatDate(proc.createdAt)}
+                        </span>
+                        <div className="h-1.5 w-1.5 bg-slate-200 rounded-full"></div>
+                        <span className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
                           {proc.views} VUES
                         </span>
                      </div>
@@ -96,6 +124,11 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure }) => {
                 </div>
               </div>
             ))
+          ) : (
+            <div className="py-20 text-center text-slate-300 flex flex-col items-center gap-4">
+               <i className="fa-solid fa-folder-open text-4xl opacity-20"></i>
+               <p className="text-[10px] font-black uppercase tracking-widest">Aucun historique disponible</p>
+            </div>
           )}
         </div>
         

@@ -19,7 +19,7 @@ interface Message {
 
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBack, onSuggest }) => {
   // Utilisation du titre nettoyé pour l'accueil de l'IA
-  const cleanTitle = procedure.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim();
+  const cleanTitle = procedure?.title?.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim() || "Procédure sans titre";
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -42,6 +42,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
   }, [messages]);
 
   useEffect(() => {
+    if (!procedure?.id) return;
+
     if (procedure.id.startsWith('http')) {
       setDocUrl(procedure.id);
     } else {
@@ -52,7 +54,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
 
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input;
-    if (!textToSend.trim()) return;
+    if (!textToSend.trim() || !procedure?.id) return;
     
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: textToSend, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
@@ -184,7 +186,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
             </button>
             <div className="max-w-md">
               <h2 className="font-black text-slate-900 text-xl leading-none truncate mb-2">{cleanTitle}</h2>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{procedure.category}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{procedure?.category || 'SANS CATÉGORIE'}</span>
             </div>
           </div>
           <div className="flex gap-3">
