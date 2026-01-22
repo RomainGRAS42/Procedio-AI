@@ -97,6 +97,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     }
   };
 
+  const handleLock = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
+    setUnlockedNotes(prev => {
+      const next = new Set(prev);
+      next.delete(noteId);
+      return next;
+    });
+  };
+
   const saveNote = async () => {
     if (!activeNote.title.trim()) return;
     setSaving(true);
@@ -266,6 +275,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
             .filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()) || n.content.toLowerCase().includes(searchTerm.toLowerCase()))
             .map((note) => {
               const isLocked = note.is_protected && !unlockedNotes.has(note.id);
+              const isProtectedAndUnlocked = note.is_protected && unlockedNotes.has(note.id);
               
               return (
                 <div 
@@ -280,6 +290,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                     </div>
                     {!isLocked && (
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {isProtectedAndUnlocked && (
+                          <button 
+                            onClick={(e) => handleLock(e, note.id)}
+                            className="w-10 h-10 bg-amber-50 rounded-xl shadow-lg border border-amber-100 text-amber-500 hover:text-amber-700 hover:border-amber-300 transition-all flex items-center justify-center"
+                            title="Re-verrouiller la note"
+                          >
+                            <i className="fa-solid fa-lock text-sm"></i>
+                          </button>
+                        )}
                         <button 
                           onClick={(e) => handleDelete(e, note.id)}
                           className="w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-50 text-rose-400 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center"
@@ -341,7 +360,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lire en plein écran <i className="fa-solid fa-arrow-right ml-1"></i></span>
                        {note.is_protected && (
                          <div className="flex items-center gap-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                           <i className="fa-solid fa-shield-check"></i> Sécurisé
+                           <i className="fa-solid fa-shield-check"></i> SÉCURISÉ
                          </div>
                        )}
                     </div>

@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Procedure, User, UserRole } from '../types';
+import { Procedure, User } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface ProcedureDetailProps {
   procedure: Procedure;
+  user: User;
   onBack: () => void;
   onSuggest?: (content: string) => void;
 }
@@ -16,7 +17,7 @@ interface Message {
   timestamp: Date;
 }
 
-const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, onSuggest }) => {
+const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBack, onSuggest }) => {
   // Utilisation du titre nettoyé pour l'accueil de l'IA
   const cleanTitle = procedure.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim();
 
@@ -59,19 +60,17 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, onBack, on
     setIsTyping(true);
 
     try {
-      // APPEL WEBHOOK N8N - Données enrichies pour le RAG
+      // APPEL WEBHOOK N8N - Données structurées : question + procedure_id + user_id
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          // On envoie l'ID (chemin storage) ET le titre pour aider l'IA à mapper les vecteurs
-          document_id: procedure.id, 
-          query: textToSend,
+          question: textToSend,
+          procedure_id: procedure.id,
+          user_id: user.id,
+          // Informations additionnelles pour le contexte IA
           title: cleanTitle,
-          category: procedure.category,
-          full_path: procedure.id,
-          // Context système additionnel envoyé dans le body
-          system_context: `L'utilisateur pose une question sur le document technique : ${cleanTitle}`
+          category: procedure.category
         })
       });
 
