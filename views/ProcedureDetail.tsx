@@ -18,7 +18,15 @@ interface Message {
 }
 
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBack, onSuggest }) => {
-  const cleanTitle = procedure?.title?.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim() || "Procédure sans titre";
+  // Nettoyage du titre pour l'IA et l'affichage
+  const cleanTitle = useMemo(() => {
+    if (!procedure?.title) return "Procédure sans titre";
+    return procedure.title
+      .replace(/\.[^/.]+$/, "") // Enlever .pdf
+      .replace(/^[0-9a-f.-]+-/i, "") // Enlever les préfixes UUID n8n/Supabase
+      .replace(/_/g, ' ') // Remplacer underscores par espaces
+      .trim();
+  }, [procedure.title]);
   
   const chatSessionId = useMemo(() => crypto.randomUUID(), [procedure.id, user.id]);
 
@@ -44,18 +52,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
   useEffect(() => {
     if (!procedure?.id) return;
 
-    // Construction de l'URL du document. 
-    // Si votre structure est Dossier/NomFichier, on utilise 'category/id' ou simplement l'ID si c'est le chemin complet.
     const getFileUrl = () => {
-      // Chemin typique : CATEGORY/ID.pdf
-      const path = `${procedure.category}/${procedure.id}.pdf`;
-      const { data } = supabase.storage.from('procedures').getPublicUrl(path);
-      
-      // Fallback si pas de catégorie dans le chemin
-      if (!data.publicUrl || data.publicUrl.includes('null')) {
-        const { data: fallbackData } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
-        return fallbackData.publicUrl;
-      }
+      // On essaie de récupérer l'URL publique du fichier via son ID (chemin complet ou UUID)
+      const { data } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
       return data.publicUrl;
     };
 
@@ -72,15 +71,18 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
     setIsTyping(true);
 
     try {
+      // Construction du nom complet de l'utilisateur
+      const fullUserName = `${user.firstName} ${user.lastName || ''}`.trim();
+
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           question: textToSend,
-          fileName: cleanTitle,
-          userName: `${user.firstName} ${user.lastName || ''}`.trim(),
-          sessionid: chatSessionId,
-          file_id: procedure.file_id || procedure.id
+          title: cleanTitle, // Titre de la procédure demandé
+          file_id: procedure.file_id || procedure.id, // ID du fichier demandé
+          userName: fullUserName, // Nom de la personne connectée demandé
+          sessionid: chatSessionId // Pour la mémoire de n8n
         })
       });
 
@@ -88,7 +90,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
       let data: any = {};
       
       if (responseText) {
-        try { data = JSON.parse(responseText); } catch (e) { data = { output: responseText }; }
+        try { 
+          data = JSON.parse(responseText); 
+        } catch (e) { 
+          // Si n8n renvoie du texte brut au lieu de JSON
+          data = { output: responseText }; 
+        }
       } else {
         data = { output: "Le serveur n'a pas renvoyé de réponse." };
       }
@@ -96,7 +103,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
       const aiMsg: Message = { 
         id: (Date.now() + 1).toString(), 
         sender: 'ai', 
-        text: data.output || data.text || (typeof data === 'string' ? data : "Analyse terminée."), 
+        text: data.output || data.text || (typeof data === 'string' ? data : "J'ai bien analysé votre demande."), 
         timestamp: new Date() 
       };
       setMessages(prev => [...prev, aiMsg]);
@@ -104,7 +111,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
       setMessages(prev => [...prev, { 
         id: 'err', 
         sender: 'ai', 
-        text: "Désolé, l'IA rencontre une difficulté temporaire.", 
+        text: "Désolé, je rencontre une difficulté pour joindre mon cerveau IA.", 
         timestamp: new Date() 
       }]);
     } finally {
@@ -123,6 +130,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
       )}
 
+      {/* CHAT IA SECTION */}
       <div className="lg:w-1/3 flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
         <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
@@ -178,6 +186,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
       </div>
 
+      {/* DOCUMENT PREVIEW SECTION */}
       <div className="flex-1 flex flex-col gap-6">
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 overflow-hidden">
