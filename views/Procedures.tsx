@@ -34,7 +34,6 @@ const Procedures: React.FC<ProceduresProps> = ({
 
   const cleanFileName = (name: string) => {
     if (!name) return "Document sans titre";
-    // Nettoyage pour l'affichage uniquement
     let clean = name.replace(/\.[^/.]+$/, "");
     clean = clean.replace(/^[0-9a-f.-]+-/i, "");
     return clean.replace(/_/g, ' ').trim();
@@ -43,7 +42,6 @@ const Procedures: React.FC<ProceduresProps> = ({
   const fetchStructure = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Récupération depuis la table 'procedures'
       const { data: allProcs, error: dbError } = await supabase
         .from('procedures')
         .select('*')
@@ -53,17 +51,14 @@ const Procedures: React.FC<ProceduresProps> = ({
 
       const results = (allProcs || []) as any[];
       
-      // 2. Extraire les catégories uniques via la colonne 'Type' (vue dans votre capture)
       const uniqueCategories = Array.from(new Set(
         results.map(p => (p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ'))
       ));
       
       const defaultCats = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEUR'];
-      // On fusionne les catégories par défaut avec celles trouvées en base
       const finalFolders = Array.from(new Set([...defaultCats, ...uniqueCategories])).sort() as string[];
       setFolders(finalFolders);
 
-      // 3. Filtrer les fichiers si on est dans un dossier
       if (currentFolder) {
         const filteredFiles = results
           .filter(p => {
@@ -71,10 +66,11 @@ const Procedures: React.FC<ProceduresProps> = ({
             return cat === currentFolder.toUpperCase();
           })
           .map(f => ({
-            id: f.uuid, // On utilise l'UUID comme ID unique
+            id: f.uuid,
             file_id: f.uuid,
             title: f.title || "Sans titre",
             category: f.Type || 'NON CLASSÉ',
+            fileUrl: f.file_url, // On récupère l'URL liée
             createdAt: f.created_at,
             views: f.views || 0,
             status: f.status || 'validated'
@@ -140,6 +136,7 @@ const Procedures: React.FC<ProceduresProps> = ({
         file_id: f.uuid,
         title: f.title || "Sans titre",
         category: f.Type || 'NON CLASSÉ',
+        fileUrl: f.file_url,
         createdAt: f.created_at,
         views: f.views || 0,
         status: f.status || 'validated'
@@ -171,6 +168,7 @@ const Procedures: React.FC<ProceduresProps> = ({
           <button 
             onClick={() => fetchStructure()}
             className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all hover:shadow-lg active:scale-95"
+            title="Actualiser la base"
           >
             <i className={`fa-solid fa-arrows-rotate ${loading ? 'animate-spin' : ''}`}></i>
           </button>
@@ -196,6 +194,10 @@ const Procedures: React.FC<ProceduresProps> = ({
             {isRealtimeActive ? 'Base synchronisée' : 'Synchro en cours...'}
           </span>
         </div>
+        <div className="h-4 w-px bg-slate-200"></div>
+        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
+          {isSearching ? `${searchResults.length} résultats` : currentFolder ? `${currentFolder} - ${files.length} fichiers` : 'Dossiers'}
+        </span>
       </div>
 
       <div className="flex-1 space-y-10">
@@ -213,7 +215,7 @@ const Procedures: React.FC<ProceduresProps> = ({
           {loading && (files.length === 0 && folders.length === 0) ? (
             <div className="h-64 flex flex-col items-center justify-center gap-4">
               <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement des données...</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
             </div>
           ) : isSearching ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -227,7 +229,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                    <i className="fa-solid fa-chevron-right text-slate-100 group-hover:text-indigo-600 transition-colors"></i>
                 </div>
               )) : (
-                 <div className="col-span-full py-20 text-center text-slate-300">Aucun résultat.</div>
+                 <div className="col-span-full py-20 text-center text-slate-300">Aucune procédure ne correspond à votre recherche.</div>
               )}
             </div>
           ) : (
@@ -272,8 +274,11 @@ const Procedures: React.FC<ProceduresProps> = ({
 
                 {currentFolder !== null && files.length === 0 && !loading && (
                   <div className="col-span-full py-20 text-center text-slate-300 flex flex-col items-center gap-6">
-                     <i className="fa-regular fa-folder-open text-4xl"></i>
-                     <p className="text-[10px] font-black uppercase tracking-[0.3em]">Ce dossier est vide</p>
+                     <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-100 text-4xl">
+                       <i className="fa-regular fa-folder-open"></i>
+                     </div>
+                     <p className="text-[10px] font-black uppercase tracking-[0.3em]">Ce dossier est actuellement vide</p>
+                     <button onClick={() => setCurrentFolder(null)} className="text-indigo-600 font-black text-[9px] uppercase tracking-widest hover:underline">Retourner à la racine</button>
                   </div>
                 )}
               </div>

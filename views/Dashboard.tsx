@@ -52,12 +52,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
 
       if (error) throw error;
       if (data) {
-        // Fix: Add missing file_id and ensure all required Procedure fields are present
         setRecentProcedures(data.map(p => ({
-          id: p.id,
-          file_id: p.file_id,
-          title: p.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim(),
-          category: p.category,
+          id: p.uuid,
+          file_id: p.uuid,
+          title: p.title || "Sans titre",
+          category: p.Type || "GÉNÉRAL",
+          fileUrl: p.file_url,
           createdAt: p.created_at,
           views: p.views || 0,
           status: p.status || 'validated'
@@ -156,8 +156,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
 
   return (
     <div className="space-y-10 animate-slide-up pb-12">
-      
-      {/* 1. BIENVENUE */}
       <section className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="space-y-2 text-center md:text-left">
           <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-3">
@@ -170,7 +168,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
         </div>
       </section>
 
-      {/* 2. MESSAGE DU MANAGER */}
       <div className="grid grid-cols-1 gap-8">
         <section className={`relative border border-slate-100 rounded-[3rem] p-10 flex flex-col justify-between items-start gap-10 transition-all duration-500 ${
           isRead ? 'bg-slate-50 opacity-60' : 'bg-white shadow-xl shadow-indigo-500/5'
@@ -222,7 +219,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
                       </button>
                     )}
                   </div>
-                  <p className={`text-xl font-semibold leading-relaxed tracking-tight text-slate-700 mt-2`}>
+                  <p className="text-xl font-semibold leading-relaxed tracking-tight text-slate-700 mt-2">
                     "{announcement?.content}"
                   </p>
                 </div>
@@ -247,7 +244,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
         </section>
       </div>
 
-      {/* 3. STATS */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, idx) => (
           <article key={idx} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group">
@@ -262,7 +258,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
         ))}
       </section>
 
-      {/* 4. RECENTS - DYNAMIQUE VIA SUPABASE */}
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
           <h3 className="font-black text-slate-900 text-xl tracking-tight">Activité Récente</h3>

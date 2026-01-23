@@ -23,7 +23,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
     if (!procedure?.title) return "Procédure sans titre";
     return procedure.title
       .replace(/\.[^/.]+$/, "") // Enlever .pdf
-      .replace(/^[0-9a-f.-]+-/i, "") // Enlever les préfixes UUID n8n/Supabase
+      .replace(/^[0-9a-f.-]+-/i, "") // Enlever les préfixes UUID
       .replace(/_/g, ' ') // Remplacer underscores par espaces
       .trim();
   }, [procedure.title]);
@@ -50,15 +50,16 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
   }, [messages]);
 
   useEffect(() => {
-    if (!procedure?.id) return;
+    if (!procedure) return;
 
-    const getFileUrl = () => {
-      // On essaie de récupérer l'URL publique du fichier via son ID (chemin complet ou UUID)
+    // Priorité à l'URL présente dans la base de données
+    if (procedure.fileUrl) {
+      setDocUrl(procedure.fileUrl);
+    } else {
+      // Fallback vers Supabase Storage si fileUrl est manquant
       const { data } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
-      return data.publicUrl;
-    };
-
-    setDocUrl(getFileUrl());
+      setDocUrl(data.publicUrl);
+    }
   }, [procedure]);
 
   const handleSendMessage = async (textOverride?: string) => {
@@ -71,7 +72,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
     setIsTyping(true);
 
     try {
-      // Construction du nom complet de l'utilisateur
       const fullUserName = `${user.firstName} ${user.lastName || ''}`.trim();
 
       const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
@@ -79,10 +79,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           question: textToSend,
-          title: cleanTitle, // Titre de la procédure demandé
-          file_id: procedure.file_id || procedure.id, // ID du fichier demandé
-          userName: fullUserName, // Nom de la personne connectée demandé
-          sessionid: chatSessionId // Pour la mémoire de n8n
+          title: cleanTitle,
+          file_id: procedure.file_id || procedure.id,
+          userName: fullUserName,
+          sessionid: chatSessionId
         })
       });
 
@@ -93,7 +93,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         try { 
           data = JSON.parse(responseText); 
         } catch (e) { 
-          // Si n8n renvoie du texte brut au lieu de JSON
           data = { output: responseText }; 
         }
       } else {
@@ -103,7 +102,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
       const aiMsg: Message = { 
         id: (Date.now() + 1).toString(), 
         sender: 'ai', 
-        text: data.output || data.text || (typeof data === 'string' ? data : "J'ai bien analysé votre demande."), 
+        text: data.output || data.text || (typeof data === 'string' ? data : "Analyse terminée."), 
         timestamp: new Date() 
       };
       setMessages(prev => [...prev, aiMsg]);
@@ -111,7 +110,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
       setMessages(prev => [...prev, { 
         id: 'err', 
         sender: 'ai', 
-        text: "Désolé, je rencontre une difficulté pour joindre mon cerveau IA.", 
+        text: "Désolé, je rencontre une difficulté technique avec le moteur IA.", 
         timestamp: new Date() 
       }]);
     } finally {
@@ -130,7 +129,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
       )}
 
-      {/* CHAT IA SECTION */}
+      {/* CHAT IA */}
       <div className="lg:w-1/3 flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
         <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
@@ -186,7 +185,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
       </div>
 
-      {/* DOCUMENT PREVIEW SECTION */}
+      {/* VISIONNEUSE PDF */}
       <div className="flex-1 flex flex-col gap-6">
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 overflow-hidden">
@@ -199,9 +198,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
             </div>
           </div>
           <button 
-            onClick={() => {
-              window.open(docUrl || '', '_blank');
-            }} 
+            onClick={() => window.open(docUrl || '', '_blank')} 
             className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shrink-0"
           >
             Plein écran

@@ -19,7 +19,6 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      // Récupération des données réelles triées par date de création décroissante
       const { data, error } = await supabase
         .from('procedures')
         .select('*')
@@ -27,12 +26,12 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
 
       if (error) throw error;
       if (data) {
-        // Fix: Add missing file_id and ensure all required Procedure fields are present
         setHistory(data.map(p => ({
-          id: p.id,
-          file_id: p.file_id,
-          title: p.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim(),
-          category: p.category,
+          id: p.uuid,
+          file_id: p.uuid,
+          title: p.title || "Sans titre",
+          category: p.Type || "GÉNÉRAL",
+          fileUrl: p.file_url,
           createdAt: p.created_at,
           views: p.views || 0,
           status: p.status || 'validated'
@@ -59,7 +58,6 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
-        {/* Header Historique */}
         <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
           <div className="flex items-center gap-5">
             <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-lg shadow-xl shadow-indigo-100">
@@ -78,7 +76,6 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
           </div>
         </div>
 
-        {/* Liste History */}
         <div className="divide-y divide-slate-50 flex-1">
           {loading ? (
             <div className="h-full flex items-center justify-center py-40 flex-col gap-4">
@@ -93,7 +90,6 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
                 className="px-10 py-10 flex items-center justify-between hover:bg-slate-50 transition-all group cursor-pointer border-l-4 border-transparent hover:border-indigo-500"
               >
                 <div className="flex items-center gap-10">
-                   {/* Icône Fichier style capture */}
                    <div className="w-16 h-16 bg-white border border-slate-100 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
                      <i className="fa-regular fa-file text-2xl"></i>
                    </div>
@@ -134,9 +130,8 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
           )}
         </div>
         
-        {/* Footer info */}
         <div className="p-8 border-t border-slate-50 text-center">
-           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Procedio conserve vos 50 dernières consultations pour un accès rapide.</p>
+           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Procedio conserve vos dernières consultations pour un accès rapide.</p>
         </div>
       </div>
     </div>

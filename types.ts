@@ -28,10 +28,11 @@ export interface User {
 }
 
 export interface Procedure {
-  id: string; // Chemin du fichier dans le storage (ex: LOGICIEL/mon-fichier.pdf)
-  file_id: string; // Identifiant unique UUID pour l'IA n8n
+  id: string; // UUID du document
+  file_id: string; // Identifiant pour l'IA
   title: string;
   category: string;
+  fileUrl?: string; // URL directe vers le document (PDF)
   createdAt: string;
   views: number;
   status: 'pending' | 'validated';
@@ -46,7 +47,6 @@ export interface Note {
   updatedAt: string;
 }
 
-// Added Suggestion interface to fix the exported member error in Header.tsx
 export interface Suggestion {
   id: string;
   userName: string;
