@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Procedure, User } from '../types';
 import { supabase } from '../lib/supabase';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ProcedureDetailProps {
   procedure: Procedure;
@@ -18,13 +20,12 @@ interface Message {
 }
 
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBack, onSuggest }) => {
-  // Nettoyage du titre pour l'IA et l'affichage
   const cleanTitle = useMemo(() => {
     if (!procedure?.title) return "Procédure sans titre";
     return procedure.title
-      .replace(/\.[^/.]+$/, "") // Enlever .pdf
-      .replace(/^[0-9a-f.-]+-/i, "") // Enlever les préfixes UUID
-      .replace(/_/g, ' ') // Remplacer underscores par espaces
+      .replace(/\.[^/.]+$/, "")
+      .replace(/^[0-9a-f.-]+-/i, "")
+      .replace(/_/g, ' ')
       .trim();
   }, [procedure.title]);
   
@@ -34,7 +35,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
     {
       id: '1',
       sender: 'ai',
-      text: `Expert Procedio prêt. Je connais parfaitement le document "${cleanTitle}". En quoi puis-je vous aider, ${user.firstName} ?`,
+      text: `Expert Procedio prêt. Je connais parfaitement le document **${cleanTitle}**. En quoi puis-je vous aider, ${user.firstName} ?`,
       timestamp: new Date()
     }
   ]);
@@ -45,7 +46,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Questions pré-établies
   const quickActions = [
     { label: 'Résumé', icon: 'fa-align-left', prompt: 'Peux-tu me faire un résumé concis de cette procédure ?' },
     { label: 'Étapes (tirets)', icon: 'fa-list-ul', prompt: 'Extrais les étapes à suivre sous forme de liste à puces (tirets).' },
@@ -59,12 +59,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
 
   useEffect(() => {
     if (!procedure) return;
-
-    // Priorité à l'URL présente dans la base de données
     if (procedure.fileUrl) {
       setDocUrl(procedure.fileUrl);
     } else {
-      // Fallback vers Supabase Storage si fileUrl est manquant
       const { data } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
       setDocUrl(data.publicUrl);
     }
@@ -149,13 +146,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/10 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/10 scrollbar-hide">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] p-5 rounded-3xl text-sm font-bold shadow-sm ${
-                msg.sender === 'user' ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white text-slate-600 border border-slate-100 rounded-tl-none'
+              <div className={`max-w-[92%] p-5 rounded-3xl shadow-sm ${
+                msg.sender === 'user' 
+                  ? 'bg-slate-900 text-white rounded-tr-none font-bold text-sm' 
+                  : 'bg-white text-slate-600 border border-slate-100 rounded-tl-none text-[13px] leading-relaxed'
               }`}>
-                {msg.text}
+                {msg.sender === 'ai' ? (
+                  <div className="procedio-markdown">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                  </div>
+                ) : (
+                  msg.text
+                )}
               </div>
             </div>
           ))}
@@ -172,14 +177,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
 
         <div className="p-6 bg-white border-t border-slate-50 space-y-4">
-          {/* QUESTIONS PRÉ-ÉTABLIES (QUICK ACTIONS) */}
           <div className="flex flex-wrap gap-2 mb-2 px-1">
             {quickActions.map((action, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(action.prompt)}
                 disabled={isTyping}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-50/50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm active:scale-95 disabled:opacity-50"
               >
                 <i className={`fa-solid ${action.icon}`}></i>
                 {action.label}
@@ -191,7 +195,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
             <input 
               type="text"
               placeholder="Posez votre question sur ce document..."
-              className="w-full pl-6 pr-14 py-6 rounded-3xl bg-slate-50 border-none outline-none font-bold text-slate-700 text-sm shadow-inner"
+              className="w-full pl-6 pr-14 py-6 rounded-3xl bg-slate-50 border-none outline-none font-bold text-slate-700 text-sm shadow-inner focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -200,7 +204,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
             <button 
               onClick={() => handleSendMessage()} 
               disabled={!input.trim() || isTyping} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-indigo-600/20 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-2xl flex items-center justify-center transition-all"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-indigo-600/20 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-2xl flex items-center justify-center transition-all disabled:opacity-20"
             >
               <i className="fa-solid fa-paper-plane text-sm"></i>
             </button>
