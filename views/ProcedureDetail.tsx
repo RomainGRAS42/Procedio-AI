@@ -74,7 +74,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
       // Construction du nom complet de l'utilisateur
       const fullUserName = `${user.firstName} ${user.lastName || ''}`.trim();
 
-      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/chat', {
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
