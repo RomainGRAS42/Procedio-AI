@@ -1,5 +1,5 @@
 {
   "name": "Procedio",
-  "description": "A modern IT support procedure simplification SaaS with role-based access for Managers and Technicians, featuring real-time search and rich personal notes.",
+  "description": "Application SaaS de simplification de procédures informatiques avec indexation IA via n8n et synchronisation en temps réel.",
   "requestFramePermissions": []
 }

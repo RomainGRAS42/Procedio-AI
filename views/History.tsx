@@ -27,8 +27,10 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
 
       if (error) throw error;
       if (data) {
+        // Fix: Add missing file_id and ensure all required Procedure fields are present
         setHistory(data.map(p => ({
           id: p.id,
+          file_id: p.file_id,
           title: p.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim(),
           category: p.category,
           createdAt: p.created_at,

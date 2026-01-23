@@ -52,11 +52,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onQuickNote, onSelectProced
 
       if (error) throw error;
       if (data) {
+        // Fix: Add missing file_id and ensure all required Procedure fields are present
         setRecentProcedures(data.map(p => ({
           id: p.id,
+          file_id: p.file_id,
           title: p.title.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim(),
           category: p.category,
-          // CRITIQUE : Supabase renvoie created_at (snake_case), on doit le mapper vers createdAt (camelCase) utilisé dans les types
           createdAt: p.created_at,
           views: p.views || 0,
           status: p.status || 'validated'

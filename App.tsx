@@ -146,7 +146,14 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'dashboard': return <Dashboard user={user} onQuickNote={() => {setAutoOpenNoteEditor(true); setCurrentView('notes');}} onSelectProcedure={p => {setSelectedProcedure(p); setCurrentView('procedure-detail');}} onViewHistory={() => setCurrentView('history')} />;
       case 'procedures': return <Procedures user={user} onUploadClick={() => setCurrentView('upload')} onSelectProcedure={p => {setSelectedProcedure(p); setCurrentView('procedure-detail');}} initialSearchTerm={globalSearchTerm} onSearchClear={() => setGlobalSearchTerm('')} initialFolder={lastFolder} onFolderChange={setLastFolder} />;
-      case 'procedure-detail': return selectedProcedure ? <ProcedureDetail procedure={selectedProcedure} user={user} onBack={() => setCurrentView('procedures')} /> : null;
+      case 'procedure-detail': return selectedProcedure ? (
+        <ProcedureDetail 
+          key={selectedProcedure.id} // CRITIQUE : Force le remontage du composant si l'ID change
+          procedure={selectedProcedure} 
+          user={user} 
+          onBack={() => setCurrentView('procedures')} 
+        />
+      ) : null;
       case 'notes': return <Notes initialIsAdding={autoOpenNoteEditor} onEditorClose={() => setAutoOpenNoteEditor(false)} />;
       case 'account': return <Account user={user} onGoToReset={() => {}} />;
       case 'statistics': return <Statistics />;

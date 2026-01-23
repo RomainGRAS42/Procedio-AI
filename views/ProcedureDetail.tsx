@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Procedure, User } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -18,21 +18,21 @@ interface Message {
 }
 
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBack, onSuggest }) => {
-  // Utilisation du titre nettoyé pour l'accueil de l'IA
   const cleanTitle = procedure?.title?.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, ' ').trim() || "Procédure sans titre";
+  
+  const chatSessionId = useMemo(() => crypto.randomUUID(), [procedure.id, user.id]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       sender: 'ai',
-      text: `Expert Procedio prêt. Je connais parfaitement la procédure "${cleanTitle}". Que souhaitez-vous savoir ?`,
+      text: `Expert Procedio prêt. Je connais parfaitement le document "${cleanTitle}". En quoi puis-je vous aider, ${user.firstName} ?`,
       timestamp: new Date()
     }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
-  
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'info' | 'error'} | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,17 +44,27 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
   useEffect(() => {
     if (!procedure?.id) return;
 
-    if (procedure.id.startsWith('http')) {
-      setDocUrl(procedure.id);
-    } else {
-      const { data } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
-      setDocUrl(data.publicUrl);
-    }
+    // Construction de l'URL du document. 
+    // Si votre structure est Dossier/NomFichier, on utilise 'category/id' ou simplement l'ID si c'est le chemin complet.
+    const getFileUrl = () => {
+      // Chemin typique : CATEGORY/ID.pdf
+      const path = `${procedure.category}/${procedure.id}.pdf`;
+      const { data } = supabase.storage.from('procedures').getPublicUrl(path);
+      
+      // Fallback si pas de catégorie dans le chemin
+      if (!data.publicUrl || data.publicUrl.includes('null')) {
+        const { data: fallbackData } = supabase.storage.from('procedures').getPublicUrl(procedure.id);
+        return fallbackData.publicUrl;
+      }
+      return data.publicUrl;
+    };
+
+    setDocUrl(getFileUrl());
   }, [procedure]);
 
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input;
-    if (!textToSend.trim() || !procedure?.id) return;
+    if (!textToSend.trim()) return;
     
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: textToSend, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
@@ -62,41 +72,39 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
     setIsTyping(true);
 
     try {
-      // APPEL WEBHOOK N8N - Données structurées : question + procedure_id + user_id
-      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/chat', {
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           question: textToSend,
-          procedure_id: procedure.id,
-          user_id: user.id,
-          // Informations additionnelles pour le contexte IA
-          title: cleanTitle,
-          category: procedure.category
+          fileName: cleanTitle,
+          userName: `${user.firstName} ${user.lastName || ''}`.trim(),
+          sessionid: chatSessionId,
+          file_id: procedure.file_id || procedure.id
         })
       });
 
-      if (!response.ok) throw new Error('Erreur de communication avec le serveur IA');
+      const responseText = await response.text();
+      let data: any = {};
       
-      const data = await response.json();
-      
-      // Extraction de la réponse (on gère plusieurs formats de retour n8n possibles)
-      const aiResponseText = data.output || data.text || data.response || "Désolé, je ne parviens pas à analyser ce document pour le moment.";
+      if (responseText) {
+        try { data = JSON.parse(responseText); } catch (e) { data = { output: responseText }; }
+      } else {
+        data = { output: "Le serveur n'a pas renvoyé de réponse." };
+      }
       
       const aiMsg: Message = { 
         id: (Date.now() + 1).toString(), 
         sender: 'ai', 
-        text: aiResponseText, 
+        text: data.output || data.text || (typeof data === 'string' ? data : "Analyse terminée."), 
         timestamp: new Date() 
       };
-      
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
-      console.error("Chat Error:", error);
       setMessages(prev => [...prev, { 
         id: 'err', 
         sender: 'ai', 
-        text: "Une erreur est survenue lors de l'interrogation de l'IA. Vérifiez la connexion au webhook.", 
+        text: "Désolé, l'IA rencontre une difficulté temporaire.", 
         timestamp: new Date() 
       }]);
     } finally {
@@ -104,39 +112,32 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
     }
   };
 
-  const handleOpenExternal = () => {
-    if (docUrl) {
-      window.open(docUrl, '_blank');
-    }
-  };
-
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden">
       {notification && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-slide-up">
-           <div className={`${notification.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'} text-white px-8 py-4 rounded-[2rem] shadow-2xl border border-white/10 flex items-center gap-4`}>
+           <div className="bg-slate-900 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4">
               <i className="fa-solid fa-circle-check text-emerald-400"></i>
               <span className="font-black text-xs uppercase tracking-widest">{notification.msg}</span>
            </div>
         </div>
       )}
 
-      {/* CHAT IA (GAUCHE) */}
       <div className="lg:w-1/3 flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
         <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
-            <i className="fa-solid fa-brain text-lg"></i>
+            <i className="fa-solid fa-brain"></i>
           </div>
           <div>
-            <h3 className="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Assistant IA Contextuel</h3>
-            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">RAG Indexé & Prêt</p>
+            <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">Expert Procedio</h3>
+            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">IA Connectée</p>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/10">
+        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/10 scrollbar-hide">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] p-5 rounded-3xl text-sm font-bold leading-relaxed shadow-sm animate-slide-up ${
+              <div className={`max-w-[90%] p-5 rounded-3xl text-sm font-bold shadow-sm ${
                 msg.sender === 'user' ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white text-slate-600 border border-slate-100 rounded-tl-none'
               }`}>
                 {msg.text}
@@ -155,12 +156,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-6 bg-white border-t border-slate-50">
+        <div className="p-6 bg-white border-t border-slate-50 space-y-4">
           <div className="relative">
             <input 
               type="text"
-              placeholder="Question sur la procédure..."
-              className="w-full pl-6 pr-14 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-700 focus:bg-slate-100 transition-all"
+              placeholder="Posez votre question sur ce document..."
+              className="w-full pl-6 pr-14 py-6 rounded-3xl bg-slate-50 border-none outline-none font-bold text-slate-700 text-sm shadow-inner"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -169,7 +170,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
             <button 
               onClick={() => handleSendMessage()} 
               disabled={!input.trim() || isTyping} 
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg disabled:opacity-30 active:scale-90 transition-transform"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-indigo-600/20 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-2xl flex items-center justify-center transition-all"
             >
               <i className="fa-solid fa-paper-plane text-sm"></i>
             </button>
@@ -177,46 +178,34 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
       </div>
 
-      {/* DOCUMENT (DROITE) */}
       <div className="flex-1 flex flex-col gap-6">
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4">
-          <div className="flex items-center gap-6">
-            <button onClick={onBack} className="w-12 h-12 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
+        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-6 overflow-hidden">
+            <button onClick={onBack} className="w-12 h-12 rounded-2xl border border-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center shrink-0">
               <i className="fa-solid fa-arrow-left"></i>
             </button>
-            <div className="max-w-md">
-              <h2 className="font-black text-slate-900 text-xl leading-none truncate mb-2">{cleanTitle}</h2>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{procedure?.category || 'SANS CATÉGORIE'}</span>
+            <div className="min-w-0">
+              <h2 className="font-black text-slate-900 text-xl truncate mb-1">{cleanTitle}</h2>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">{procedure?.category}</span>
             </div>
           </div>
-          <div className="flex gap-3">
-             <button 
-                onClick={handleOpenExternal}
-                className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2"
-             >
-                <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                Consulter en externe
-             </button>
-             <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(docUrl || '');
-                  setNotification({msg: "Lien copié !", type: 'success'});
-                  setTimeout(() => setNotification(null), 3000);
-                }} 
-                className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all active:scale-95"
-             >
-                Partager
-             </button>
-          </div>
+          <button 
+            onClick={() => {
+              window.open(docUrl || '', '_blank');
+            }} 
+            className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shrink-0"
+          >
+            Plein écran
+          </button>
         </div>
 
         <div className="flex-1 bg-white rounded-[3rem] border border-slate-100 shadow-inner relative overflow-hidden">
           {docUrl ? (
-            <iframe src={`${docUrl}#toolbar=0`} className="w-full h-full" title="PDF Reader" allowFullScreen></iframe>
+            <iframe src={`${docUrl}#toolbar=0`} className="w-full h-full" title="PDF Viewer" allowFullScreen></iframe>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-6">
                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-               <p className="font-black text-[10px] uppercase tracking-widest">Chargement du document...</p>
+               <p className="font-black text-[10px] uppercase tracking-widest">Récupération du PDF...</p>
             </div>
           )}
         </div>

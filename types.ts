@@ -28,7 +28,8 @@ export interface User {
 }
 
 export interface Procedure {
-  id: string;
+  id: string; // Chemin du fichier dans le storage (ex: LOGICIEL/mon-fichier.pdf)
+  file_id: string; // Identifiant unique UUID pour l'IA n8n
   title: string;
   category: string;
   createdAt: string;
@@ -45,15 +46,14 @@ export interface Note {
   updatedAt: string;
 }
 
+// Added Suggestion interface to fix the exported member error in Header.tsx
 export interface Suggestion {
   id: string;
-  procedureId: string;
-  procedureTitle: string;
-  userId: string;
   userName: string;
+  procedureTitle: string;
   content: string;
-  createdAt: Date;
   status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
 }
 
 export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password' | 'administration';
