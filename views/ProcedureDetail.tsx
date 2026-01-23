@@ -45,6 +45,14 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Questions pré-établies
+  const quickActions = [
+    { label: 'Résumé', icon: 'fa-align-left', prompt: 'Peux-tu me faire un résumé concis de cette procédure ?' },
+    { label: 'Étapes (tirets)', icon: 'fa-list-ul', prompt: 'Extrais les étapes à suivre sous forme de liste à puces (tirets).' },
+    { label: 'Pré-requis', icon: 'fa-tools', prompt: 'Quels sont les pré-requis et outils nécessaires pour cette intervention ?' },
+    { label: 'Points de vigilance', icon: 'fa-triangle-exclamation', prompt: 'Quels sont les points de vigilance ou erreurs classiques à éviter ?' },
+  ];
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -164,6 +172,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({ procedure, user, onBa
         </div>
 
         <div className="p-6 bg-white border-t border-slate-50 space-y-4">
+          {/* QUESTIONS PRÉ-ÉTABLIES (QUICK ACTIONS) */}
+          <div className="flex flex-wrap gap-2 mb-2 px-1">
+            {quickActions.map((action, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSendMessage(action.prompt)}
+                disabled={isTyping}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm active:scale-95 disabled:opacity-50"
+              >
+                <i className={`fa-solid ${action.icon}`}></i>
+                {action.label}
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
             <input 
               type="text"
