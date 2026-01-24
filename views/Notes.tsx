@@ -74,13 +74,26 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     }, 5000);
 
     try {
-      const { data, error } = await supabase
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let query = supabase
         .from("notes")
-        .select("id, title, content, is_protected, tags, updated_at, user_id") // Sélection explicite des champs pour optimiser
+        .select("id, title, content, is_protected, tags, updated_at, user_id")
         .order("updated_at", { ascending: false });
+
+      // Si un utilisateur est connecté, on filtre explicitement par son ID
+      // C'est une double sécurité en plus des politiques RLS (Row Level Security)
+      if (user) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       if (data) {
+        console.log("Notes récupérées:", data.length);
         // FILTRAGE : On ignore les notes qui sont des logs techniques
         const userNotes = data
           .filter(
