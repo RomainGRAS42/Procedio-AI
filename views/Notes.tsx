@@ -43,7 +43,11 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
   // Sécurité & Synchro
   const [unlockedNotes, setUnlockedNotes] = useState<Set<string>>(new Set());
-  const [passwordVerify, setPasswordVerify] = useState<{ id: string; value: string } | null>(null);
+  const [passwordVerify, setPasswordVerify] = useState<{
+    id: string;
+    value: string;
+    action: "UNLOCK" | "TOGGLE_LOCK";
+  } | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const backBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -132,7 +136,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     return () => window.removeEventListener("keydown", handler);
   }, [viewingNote]);
 
-  const toggleLockStatus = async () => {
+  const executeToggleLock = async () => {
     if (!viewingNote) return;
     const newStatus = !viewingNote.is_protected;
 
@@ -166,6 +170,11 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       setViewingNote({ ...viewingNote, is_protected: !newStatus });
       fetchNotes();
     }
+  };
+
+  const toggleLockStatus = async () => {
+    if (!viewingNote) return;
+    setPasswordVerify({ id: viewingNote.id, value: "", action: "TOGGLE_LOCK" });
   };
 
   const handleAddNew = () => {
@@ -245,21 +254,27 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     }
   };
 
-  const verifyPassword = async (noteId: string) => {
+  const verifyPassword = async () => {
     if (!passwordVerify?.value) return;
+    const { id, value, action } = passwordVerify;
+
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       const { error } = await supabase.auth.signInWithPassword({
         email: user?.email || "",
-        password: passwordVerify.value,
+        password: value,
       });
 
       if (!error) {
-        setUnlockedNotes((prev) => new Set(prev).add(noteId));
-        const note = notes.find((n) => n.id === noteId) || null;
-        if (note) setViewingNote(note);
+        if (action === "TOGGLE_LOCK") {
+          await executeToggleLock();
+        } else {
+          setUnlockedNotes((prev) => new Set(prev).add(id));
+          const note = notes.find((n) => n.id === id) || null;
+          if (note) setViewingNote(note);
+        }
         setPasswordVerify(null);
       } else {
         setAuthError("Mot de passe de session incorrect");
@@ -514,7 +529,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                     setPasswordVerify({ ...passwordVerify, value: e.target.value });
                     setAuthError(null);
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && verifyPassword(passwordVerify.id)}
+                  onKeyDown={(e) => e.key === "Enter" && verifyPassword()}
                 />
 
                 {authError && (
@@ -534,7 +549,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                     Annuler
                   </button>
                   <button
-                    onClick={() => verifyPassword(passwordVerify.id)}
+                    onClick={() => verifyPassword()}
                     className="py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg hover:shadow-amber-200">
                     Déverrouiller
                   </button>
@@ -748,8 +763,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
               return (
                 <div
                   key={note.id}
-                  className={`group glass-card p-8 flex flex-col min-h-[350px] transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl relative overflow-hidden border-none ${isLocked ? "cursor-default" : "cursor-pointer"}`}
-                  onClick={() => !isLocked && setViewingNote(note)}>
+                  className={`group glass-card p-8 flex flex-col min-h-[350px] transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl relative overflow-hidden border-none cursor-pointer`}
+                  onClick={() => {
+                    if (isLocked) {
+                      setPasswordVerify({ id: note.id, value: "", action: "UNLOCK" });
+                    } else {
+                      setViewingNote(note);
+                    }
+                  }}>
                   <div className="flex justify-between items-start mb-8 relative z-10">
                     <div className="bg-white/50 backdrop-blur-md rounded-xl px-4 py-2 border border-white shadow-sm flex items-center gap-3">
                       <i className="fa-solid fa-calendar-day text-blue-500 text-[11px]"></i>
@@ -761,7 +782,10 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         {isProtectedAndUnlocked && (
                           <button
-                            onClick={(e) => handleLock(e, note.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLock(e, note.id);
+                            }}
                             className="w-10 h-10 bg-amber-50 rounded-xl shadow-lg border border-amber-100 text-amber-500 hover:text-amber-700 hover:border-amber-300 transition-all flex items-center justify-center"
                             title="Re-verrouiller la note">
                             <i className="fa-solid fa-lock text-sm"></i>
@@ -792,61 +816,17 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
                   <div className="relative flex-1 z-10">
                     <p
-                      className={`text-slate-500 text-base leading-relaxed line-clamp-5 font-medium ${isLocked ? "blur-2xl select-none opacity-10" : ""}`}>
+                      className={`text-slate-500 text-base leading-relaxed line-clamp-5 font-medium ${
+                        isLocked ? "blur-sm select-none opacity-50" : ""
+                      }`}>
                       {note.content || "Aucune description."}
                     </p>
 
                     {isLocked && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-                        {passwordVerify?.id === note.id ? (
-                          <div
-                            className="w-full space-y-4 animate-slide-up"
-                            onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="password"
-                              placeholder="Mot de passe session"
-                              autoFocus
-                              autoComplete="off"
-                              name="unlock-password-inline"
-                              inputMode="none"
-                              autoCapitalize="none"
-                              spellCheck={false}
-                              className="w-full p-4 rounded-2xl border-2 border-slate-100 text-xs text-center outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
-                              value={passwordVerify.value}
-                              onChange={(e) => {
-                                setPasswordVerify({ ...passwordVerify, value: e.target.value });
-                                setAuthError(null);
-                              }}
-                              onKeyDown={(e) => e.key === "Enter" && verifyPassword(note.id)}
-                            />
-                            {authError && (
-                              <p className="text-[9px] text-rose-500 font-black uppercase animate-bounce">
-                                {authError}
-                              </p>
-                            )}
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => verifyPassword(note.id)}
-                                className="flex-1 py-3 bg-slate-900 text-white text-[10px] font-black rounded-xl uppercase tracking-widest">
-                                Valider
-                              </button>
-                              <button
-                                onClick={() => setPasswordVerify(null)}
-                                className="px-4 py-3 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200">
-                                <i className="fa-solid fa-xmark"></i>
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPasswordVerify({ id: note.id, value: "" });
-                            }}
-                            className="w-20 h-20 bg-white shadow-2xl rounded-3xl flex items-center justify-center text-amber-500 border-4 border-white hover:scale-110 transition-transform active:scale-95 group/lock">
-                            <i className="fa-solid fa-lock text-3xl group-hover/lock:fa-unlock-keyhole"></i>
-                          </button>
-                        )}
+                        <div className="w-20 h-20 bg-white shadow-2xl rounded-3xl flex items-center justify-center text-amber-500 border-4 border-white hover:scale-110 transition-transform active:scale-95 group/lock">
+                          <i className="fa-solid fa-lock text-3xl group-hover/lock:fa-unlock-keyhole"></i>
+                        </div>
                       </div>
                     )}
                   </div>
