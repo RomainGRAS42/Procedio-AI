@@ -151,9 +151,16 @@ const App: React.FC = () => {
   }, [syncUserProfile]);
 
   const handleLogout = async () => {
-    setLoading(true);
-    await supabase.auth.signOut();
-    window.location.reload();
+    try {
+      setLoading(true);
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      // Force la déconnexion locale même en cas d'erreur réseau
+      setIsAuthenticated(false);
+      setUser(null);
+      setLoading(false);
+    }
   };
 
   const renderView = () => {
