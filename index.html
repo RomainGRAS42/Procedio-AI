@@ -1,76 +1,112 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Procedio - Simplification de procédures IT</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet" />
     <style>
-        :root {
-            --brand-primary: #4f46e5;
+      :root {
+        --brand-primary: #4f46e5;
+      }
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: #f8fafc;
+        margin: 0;
+        overflow: hidden;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 20px 50px -12px rgba(79, 70, 229, 0.1);
+        border-radius: 2.5rem;
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #f8fafc;
-            margin: 0;
-            overflow: hidden;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-        .glass-card { 
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 20px 50px -12px rgba(79, 70, 229, 0.1);
-            border-radius: 2.5rem;
-        }
-        @keyframes slideUp { 
-            from { opacity: 0; transform: translateY(20px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
-        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
-        
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      }
+      .animate-slide-up {
+        animation: slideUp 0.5s ease-out forwards;
+      }
 
-        /* Styles pour le rendu Markdown dans le chat */
-        .procedio-markdown ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .procedio-markdown ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .procedio-markdown li { margin-bottom: 0.25rem; }
-        .procedio-markdown p { margin-bottom: 0.75rem; }
-        .procedio-markdown p:last-child { margin-bottom: 0; }
-        .procedio-markdown strong { font-weight: 800; color: inherit; }
-        .procedio-markdown h1, .procedio-markdown h2, .procedio-markdown h3 { 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            font-size: 0.75rem; 
-            letter-spacing: 0.05em; 
-            margin-top: 1rem; 
-            margin-bottom: 0.5rem;
-            opacity: 0.8;
-        }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Styles pour le rendu Markdown dans le chat */
+      .procedio-markdown ul {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .procedio-markdown ol {
+        list-style-type: decimal;
+        padding-left: 1.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .procedio-markdown li {
+        margin-bottom: 0.25rem;
+      }
+      .procedio-markdown p {
+        margin-bottom: 0.75rem;
+      }
+      .procedio-markdown p:last-child {
+        margin-bottom: 0;
+      }
+      .procedio-markdown strong {
+        font-weight: 800;
+        color: inherit;
+      }
+      .procedio-markdown h1,
+      .procedio-markdown h2,
+      .procedio-markdown h3 {
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.8;
+      }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "recharts": "https://esm.sh/recharts@3.6.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
-    "react-markdown": "https://esm.sh/react-markdown@9.0.1",
-    "remark-gfm": "https://esm.sh/remark-gfm@4.0.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-<body>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19.0.0",
+          "react-dom": "https://esm.sh/react-dom@19.0.0",
+          "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+          "recharts": "https://esm.sh/recharts@3.6.0",
+          "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
+          "react-markdown": "https://esm.sh/react-markdown@9.0.1",
+          "remark-gfm": "https://esm.sh/remark-gfm@4.0.0",
+          "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+          "react/": "https://esm.sh/react@^19.2.3/"
+        }
+      }
+    </script>
+  </head>
+  <body>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>
