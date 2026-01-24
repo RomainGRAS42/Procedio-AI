@@ -179,6 +179,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       if (result.error) throw result.error;
 
       setIsEditing(false);
+      setSearchTerm(""); // Réinitialiser la recherche pour voir la nouvelle note
       onEditorClose?.();
       await fetchNotes();
     } catch (err) {
@@ -343,6 +344,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
             className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-none shadow-inner focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
+            name="search-notes-procedio"
           />
           <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
         </div>
@@ -361,6 +364,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
               <button
                 onClick={() => {
                   setIsEditing(false);
+                  setSearchTerm("");
                   onEditorClose?.();
                 }}
                 className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500">
@@ -499,6 +503,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                     setViewingEdit(false);
                     setViewDraft(null);
                     setViewingNote(null);
+                    setSearchTerm("");
                   }}
                   className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-label="Fermer la lecture et revenir à la liste">
