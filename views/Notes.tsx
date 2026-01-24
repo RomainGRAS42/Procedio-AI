@@ -493,7 +493,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       {passwordVerify &&
         createPortal(
           <div
-            className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+            className="fixed inset-0 z-[3000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
             onClick={() => {
               setPasswordVerify(null);
               setAuthError(null);

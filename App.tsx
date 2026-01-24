@@ -115,9 +115,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // Timeout de sécurité pour éviter le blocage infini (augmenté à 15s)
+      // Timeout de sécurité pour éviter le blocage infini (augmenté à 45s)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout d'initialisation")), 15000)
+        setTimeout(() => reject(new Error("Timeout d'initialisation")), 45000)
       );
 
       try {
@@ -144,7 +144,7 @@ const App: React.FC = () => {
       } catch (err: any) {
         if (err.message === "Timeout d'initialisation") {
           console.warn(
-            "L'initialisation a pris trop de temps (Timeout 15s). Passage en mode déconnecté."
+            "L'initialisation prend du temps (Timeout 45s). L'application continue en mode optimiste."
           );
         } else {
           console.error("Auth init error:", err);
