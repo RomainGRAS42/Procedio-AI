@@ -86,9 +86,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // Timeout de sécurité pour éviter le blocage infini
+      // Timeout de sécurité pour éviter le blocage infini (augmenté à 15s)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout d'initialisation")), 8000)
+        setTimeout(() => reject(new Error("Timeout d'initialisation")), 15000)
       );
 
       try {
@@ -112,8 +112,14 @@ const App: React.FC = () => {
           })(),
           timeoutPromise,
         ]);
-      } catch (err) {
-        console.error("Auth init error or timeout:", err);
+      } catch (err: any) {
+        if (err.message === "Timeout d'initialisation") {
+          console.warn(
+            "L'initialisation a pris trop de temps (Timeout 15s). Passage en mode déconnecté."
+          );
+        } else {
+          console.error("Auth init error:", err);
+        }
         // En cas de timeout ou erreur critique, on laisse l'utilisateur accéder (mode dégradé ou login)
       } finally {
         setLoading(false);
@@ -156,7 +162,7 @@ const App: React.FC = () => {
       // On tente une déconnexion serveur avec un timeout de 2s
       await Promise.race([
         supabase.auth.signOut(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Logout Timeout")), 2000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Logout Timeout")), 2000)),
       ]);
     } catch (error) {
       console.warn("Déconnexion serveur incomplète, forçage local:", error);
