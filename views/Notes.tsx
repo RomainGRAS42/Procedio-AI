@@ -568,8 +568,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                   <i className="fa-solid fa-arrow-left text-lg"></i>
                 </button>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                    Lecture Zen
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest max-w-[200px] truncate">
+                    {viewingNote.title}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
@@ -584,6 +584,21 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleLockStatus}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                    viewingNote.is_protected
+                      ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                      : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  }`}
+                  title={
+                    viewingNote.is_protected ? "Retirer la protection" : "Protéger cette note"
+                  }>
+                  <i
+                    className={`fa-solid ${
+                      viewingNote.is_protected ? "fa-lock" : "fa-lock-open"
+                    }`}></i>
+                </button>
                 <button
                   onClick={(e) => handleDelete(e as any, viewingNote.id)}
                   className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
