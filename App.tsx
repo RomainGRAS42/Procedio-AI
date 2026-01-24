@@ -87,19 +87,21 @@ const App: React.FC = () => {
   useEffect(() => {
     const initApp = async () => {
       // Timeout de sécurité pour éviter le blocage infini
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Timeout d'initialisation")), 8000)
       );
 
       try {
         await Promise.race([
           (async () => {
-            const diag = await checkSupabaseConnection();
-            setConnectionStatus(diag.status as any);
-            if (diag.status === "error") {
-              setInitError("Erreur Cloud : " + diag.msg);
-              return;
-            }
+            // Optimisation : On lance la connexion en parallèle mais on ne bloque pas si c'est lent
+            checkSupabaseConnection().then((diag) => {
+              setConnectionStatus(diag.status as any);
+              if (diag.status === "error") {
+                console.error("Erreur Cloud : " + diag.msg);
+              }
+            });
+
             const {
               data: { session },
             } = await supabase.auth.getSession();
@@ -108,7 +110,7 @@ const App: React.FC = () => {
               await syncUserProfile(session.user);
             }
           })(),
-          timeoutPromise
+          timeoutPromise,
         ]);
       } catch (err) {
         console.error("Auth init error or timeout:", err);

@@ -67,10 +67,16 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
   const fetchNotes = async () => {
     setLoading(true);
+
+    // Timeout pour éviter le chargement infini
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     try {
       const { data, error } = await supabase
         .from("notes")
-        .select("*")
+        .select("id, title, content, is_protected, tags, updated_at, user_id") // Sélection explicite des champs pour optimiser
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
@@ -98,6 +104,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     } catch (err) {
       console.error("Erreur de récupération des notes:", err);
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
