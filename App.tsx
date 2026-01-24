@@ -63,9 +63,22 @@ const App: React.FC = () => {
         .eq("id", sbUser.id)
         .maybeSingle();
 
+      if (error) {
+        console.error("Erreur lors de la récupération du profil:", error);
+      }
+
+      // Logique robuste pour déterminer le rôle (insensible à la casse et aux espaces)
+      let finalRole = UserRole.TECHNICIAN;
+      const rawRole = profile?.role || sbUser.user_metadata?.role;
+
+      if (rawRole) {
+        const normalizedRole = String(rawRole).trim().toUpperCase();
+        if (normalizedRole === "MANAGER") {
+          finalRole = UserRole.MANAGER;
+        }
+      }
+
       if (profile) {
-        const finalRole =
-          profile.role?.toUpperCase() === "MANAGER" ? UserRole.MANAGER : UserRole.TECHNICIAN;
         setUser((prev) =>
           prev
             ? {
@@ -77,6 +90,22 @@ const App: React.FC = () => {
                 position: finalRole === UserRole.MANAGER ? "Manager IT" : "Technicien Support",
               }
             : null
+        );
+      } else {
+        // Fallback si pas de profil trouvé (ex: problème RLS), on met à jour au moins le rôle si trouvé dans les métadonnées
+        if (finalRole === UserRole.MANAGER) {
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  role: finalRole,
+                  position: "Manager IT",
+                }
+              : null
+          );
+        }
+        console.warn(
+          "Profil utilisateur non trouvé dans 'user_profiles'. Vérifiez les politiques RLS (Row Level Security)."
         );
       }
     } catch (err) {
