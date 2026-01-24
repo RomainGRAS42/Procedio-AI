@@ -18,8 +18,9 @@
 - **IA/Automation** : n8n (Webhooks & Indexation)
 
 ## 🚀 Installation & Déploiement
-1. Clonez le dépôt : `git clone https://github.com/votre-user/procedio.git`
+1. Clonez le dépôt : `git clone https://github.com/RomainGRAS42/Procedio-AI.git`
 2. Ouvrez `index.html` dans un serveur local (ou utilisez l'extension Live Server de VS Code).
+3. Déploiement automatique : Configuré pour Vercel (synchronisé avec la branche `main`).
 
 ## 📝 Licence
 MIT - Copyright (c) 2024 Procedio
