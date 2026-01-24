@@ -87,7 +87,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const initApp = async () => {
       // Timeout de sécurité pour éviter le blocage infini
-      const timeoutPromise = new Promise((_, reject) =>
+      const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Timeout d'initialisation")), 8000)
       );
 
@@ -108,7 +108,7 @@ const App: React.FC = () => {
               await syncUserProfile(session.user);
             }
           })(),
-          timeoutPromise,
+          timeoutPromise
         ]);
       } catch (err) {
         console.error("Auth init error or timeout:", err);
