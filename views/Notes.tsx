@@ -17,6 +17,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState<ProtectedNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   // États pour l'édition/création (Mode Plein Écran)
   const [isEditing, setIsEditing] = useState(false);
@@ -80,20 +81,23 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
       let query = supabase
         .from("notes")
-        .select("id, title, content, is_protected, tags, updated_at, user_id")
+        .select("*") // Utilisation de * pour éviter les erreurs de noms de colonnes
         .order("updated_at", { ascending: false });
 
       // Si un utilisateur est connecté, on filtre explicitement par son ID
-      // C'est une double sécurité en plus des politiques RLS (Row Level Security)
       if (user) {
         query = query.eq("user_id", user.id);
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        setDebugInfo(`Erreur Supabase: ${error.message} (Code: ${error.code})`);
+        throw error;
+      }
+
       if (data) {
-        console.log("Notes récupérées:", data.length);
+        const rawCount = data.length;
         // FILTRAGE : On ignore les notes qui sont des logs techniques
         const userNotes = data
           .filter(
@@ -112,10 +116,17 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
             }),
             user_id: n.user_id,
           }));
+
         setNotes(userNotes);
+        setDebugInfo(
+          `Succès. User: ${user?.id || "Aucun"}. Raw: ${rawCount}, Filtered: ${userNotes.length}`
+        );
+      } else {
+        setDebugInfo(`Aucune donnée retournée. User: ${user?.id || "Aucun"}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur de récupération des notes:", err);
+      setDebugInfo((prev) => prev || `Erreur JS: ${err.message}`);
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
@@ -375,6 +386,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
           <i className="fa-solid fa-plus-circle text-lg"></i> Créer une note
         </button>
       </div>
+
+      {/* DEBUG INFO - À RETIRER PLUS TARD */}
+      {notes.length === 0 && !loading && (
+        <div className="bg-slate-100 p-4 rounded-xl text-xs text-slate-500 font-mono break-all">
+          <p className="font-bold mb-1">Diagnostic de connexion :</p>
+          {debugInfo || "Aucune information de debug disponible."}
+        </div>
+      )}
 
       {/* MODALE ÉDITEUR PLEIN ÉCRAN */}
       {isEditing &&
