@@ -404,6 +404,49 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     }
   };
 
+  const getModalContent = () => {
+    if (!passwordVerify)
+      return {
+        title: "Note Verrouillée",
+        msg: "Saisissez votre mot de passe de session pour débloquer le contenu.",
+        btn: "Déverrouiller",
+        icon: "fa-lock",
+      };
+
+    const targetNote =
+      viewingNote?.id === passwordVerify.id
+        ? viewingNote
+        : notes.find((n) => n.id === passwordVerify.id);
+    const isProtected = targetNote?.is_protected;
+
+    if (passwordVerify.action === "TOGGLE_LOCK") {
+      if (isProtected) {
+        return {
+          title: "Déverrouillage",
+          msg: "Saisissez votre mot de passe pour retirer la protection de cette note.",
+          btn: "Déverrouiller",
+          icon: "fa-lock-open",
+        };
+      } else {
+        return {
+          title: "Verrouillage",
+          msg: "Par sécurité, saisissez votre mot de passe pour verrouiller cette note.",
+          btn: "Verrouiller",
+          icon: "fa-lock",
+        };
+      }
+    }
+
+    return {
+      title: "Contenu Protégé",
+      msg: "Cette note est verrouillée. Saisissez votre mot de passe pour y accéder.",
+      btn: "Accéder",
+      icon: "fa-shield-halved",
+    };
+  };
+
+  const modalContent = getModalContent();
+
   return (
     <div className="space-y-8 animate-slide-up relative">
       {/* Barre de recherche et Action globale */}
@@ -503,14 +546,12 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
               onClick={(e) => e.stopPropagation()}>
               <div className="text-center space-y-2">
                 <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg shadow-amber-100">
-                  <i className="fa-solid fa-lock"></i>
+                  <i className={`fa-solid ${modalContent.icon}`}></i>
                 </div>
                 <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                  Note Verrouillée
+                  {modalContent.title}
                 </h3>
-                <p className="text-xs font-medium text-slate-400">
-                  Saisissez votre mot de passe de session pour débloquer le contenu.
-                </p>
+                <p className="text-xs font-medium text-slate-400">{modalContent.msg}</p>
               </div>
 
               <div className="space-y-4">
@@ -551,7 +592,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                   <button
                     onClick={() => verifyPassword()}
                     className="py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg hover:shadow-amber-200">
-                    Déverrouiller
+                    {modalContent.btn}
                   </button>
                 </div>
               </div>
