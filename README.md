@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# ⚡ Procedio
 
-This contains everything you need to run your app locally.
+**Procedio** est une application SaaS conçue pour simplifier la gestion et la consultation des procédures informatiques. Grâce à l'indexation par IA (via n8n) et une interface ultra-rapide, le support informatique gagne en efficacité et en clarté.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1qle-JJocqeCZuDWTHAOlfksgy4W1FbqD
+## ✨ Fonctionnalités
+- 🤖 **Expert IA** : Chatbot contextuel qui répond aux questions basées sur le contenu des PDFs.
+- 📂 **Gestion de Dossiers** : Organisation intuitive des procédures par catégories (Logiciel, Infra, etc.).
+- 🔒 **Notes Sécurisées** : Prise de notes avec verrouillage par mot de passe de session.
+- 📈 **Analyses & KPI** : Tableau de bord pour les managers afin de suivre l'engagement des techniciens.
+- 🔄 **Real-time Sync** : Synchronisation instantanée via Supabase.
+- ✨ **Interface Premium** : Design minimaliste avec effets de particules interactives (MDI).
 
-## Run Locally
+## 🛠️ Stack Technique
+- **Frontend** : React 19 (ES6 Modules & Importmaps)
+- **Design** : Tailwind CSS
+- **Backend-as-a-Service** : Supabase (Auth, DB, Storage)
+- **IA/Automation** : n8n (Webhooks & Indexation)
 
-**Prerequisites:**  Node.js
+## 🚀 Installation & Déploiement
+1. Clonez le dépôt : `git clone https://github.com/votre-user/procedio.git`
+2. Ouvrez `index.html` dans un serveur local (ou utilisez l'extension Live Server de VS Code).
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📝 Licence
+MIT - Copyright (c) 2024 Procedio

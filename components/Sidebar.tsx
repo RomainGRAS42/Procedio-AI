@@ -30,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
 
   return (
     <aside 
-      className={`fixed lg:relative inset-y-0 left-0 w-72 h-full glass-sidebar text-slate-400 flex flex-col z-[70] transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      className={`fixed lg:relative inset-y-0 left-0 w-72 h-full bg-white text-slate-500 flex flex-col z-[70] transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-slate-100 shadow-xl lg:shadow-none ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Navigation principale"
@@ -40,8 +40,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
           <i className="fa-solid fa-bolt"></i>
         </div>
         <div className="flex flex-col">
-          <span className="text-xl font-black text-white tracking-tight leading-none">Procedio</span>
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">v2.1 Stable</span>
+          <span className="text-xl font-black text-slate-900 tracking-tight leading-none">Procedio</span>
+          <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">v2.1 Stable</span>
         </div>
       </div>
 
@@ -52,13 +52,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
               onClick={() => setView(item.id as ViewType)}
               className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-200 group relative ${
                 currentView === item.id 
-                  ? 'bg-blue-600/10 text-white shadow-sm' 
-                  : 'hover:bg-white/5 hover:text-slate-200'
+                  ? 'bg-indigo-50 text-indigo-600 shadow-sm border border-indigo-100' 
+                  : 'hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
               <div className="w-5 flex justify-center">
                 <i className={`fa-solid ${item.icon} text-lg ${
-                  currentView === item.id ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'
+                  currentView === item.id ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
                 }`}></i>
               </div>
               <span className="font-bold tracking-tight text-sm">{item.label}</span>
@@ -70,9 +70,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
 
             {/* Barre de transfert dynamique sous Procédures */}
             {item.id === 'procedures' && activeTransfer && (
-              <div className="mx-2 p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 animate-slide-up">
+              <div className="mx-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100 animate-slide-up">
                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[8px] font-black text-indigo-300 uppercase tracking-widest truncate max-w-[120px]">
+                    <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest truncate max-w-[120px]">
                       {activeTransfer.fileName}
                     </span>
                     <button 
@@ -82,9 +82,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
                       <i className="fa-solid fa-circle-xmark"></i>
                     </button>
                  </div>
-                 <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                 <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-indigo-400 transition-all duration-500 ease-out shadow-[0_0_8px_rgba(129,140,248,0.5)]" 
+                      className="h-full bg-indigo-500 transition-all duration-500 ease-out shadow-[0_0_8px_rgba(99,102,241,0.5)]" 
                       style={{ width: `${activeTransfer.progress}%` }}
                     ></div>
                  </div>
@@ -97,10 +97,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, userRole, onLog
         ))}
       </nav>
 
-      <div className="p-6 mt-auto border-t border-white/5 shrink-0">
+      <div className="p-6 mt-auto border-t border-slate-100 shrink-0">
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-rose-500/10 text-rose-400 font-bold hover:bg-rose-500 hover:text-white transition-all text-xs tracking-wider"
+          className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-rose-50 text-rose-500 font-bold hover:bg-rose-500 hover:text-white transition-all text-xs tracking-wider border border-rose-100 hover:border-rose-500"
         >
           <i className="fa-solid fa-power-off"></i>
           DÉCONNEXION
