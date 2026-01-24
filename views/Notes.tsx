@@ -364,64 +364,66 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       </div>
 
       {/* MODALE ÉDITEUR PLEIN ÉCRAN */}
-      {isEditing && (
-        <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-slide-up">
-          <header className="h-20 border-b border-slate-100 px-6 md:px-12 flex items-center justify-between bg-white sticky top-0">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setSearchTerm("");
-                  onEditorClose?.();
-                }}
-                className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500">
-                <i className="fa-solid fa-xmark text-xl"></i>
-              </button>
-              <h3 className="font-bold text-slate-400 uppercase tracking-[0.2em] text-[10px]">
-                {activeNote.id ? "Mode Édition" : "Nouveau Brouillon"}
-              </h3>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() =>
-                  setActiveNote({ ...activeNote, is_protected: !activeNote.is_protected })
-                }
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeNote.is_protected ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-slate-50 text-slate-400 border border-slate-200"}`}>
-                <i
-                  className={`fa-solid ${activeNote.is_protected ? "fa-lock" : "fa-lock-open"}`}></i>
-                {activeNote.is_protected ? "Protégée" : "Publique"}
-              </button>
-              <button
-                onClick={saveNote}
-                disabled={saving || !activeNote.title.trim()}
-                className="bg-slate-900 text-white px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50 shadow-xl">
-                {saving ? (
-                  <i className="fa-solid fa-circle-notch animate-spin"></i>
-                ) : (
-                  <i className="fa-solid fa-cloud-arrow-up"></i>
-                )}
-                Synchroniser
-              </button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-y-auto p-6 md:p-20 max-w-5xl mx-auto w-full space-y-12">
-            <input
-              type="text"
-              placeholder="Titre de la note..."
-              className="w-full text-4xl md:text-6xl font-black text-slate-900 border-none outline-none placeholder:text-slate-200 tracking-tighter bg-transparent"
-              value={activeNote.title}
-              onChange={(e) => setActiveNote({ ...activeNote, title: e.target.value })}
-              autoFocus
-            />
-            <textarea
-              placeholder="Commencez à documenter ici..."
-              className="w-full h-[60vh] text-lg md:text-2xl text-slate-600 border-none outline-none resize-none leading-relaxed placeholder:text-slate-200 font-medium bg-transparent"
-              value={activeNote.content}
-              onChange={(e) => setActiveNote({ ...activeNote, content: e.target.value })}
-            />
-          </main>
-        </div>
-      )}
+      {isEditing &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-slide-up">
+            <header className="h-20 border-b border-slate-100 px-6 md:px-12 flex items-center justify-between bg-white sticky top-0">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setSearchTerm("");
+                    onEditorClose?.();
+                  }}
+                  className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500">
+                  <i className="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <h3 className="font-bold text-slate-400 uppercase tracking-[0.2em] text-[10px]">
+                  {activeNote.id ? "Mode Édition" : "Nouveau Brouillon"}
+                </h3>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() =>
+                    setActiveNote({ ...activeNote, is_protected: !activeNote.is_protected })
+                  }
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeNote.is_protected ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-slate-50 text-slate-400 border border-slate-200"}`}>
+                  <i
+                    className={`fa-solid ${activeNote.is_protected ? "fa-lock" : "fa-lock-open"}`}></i>
+                  {activeNote.is_protected ? "Protégée" : "Publique"}
+                </button>
+                <button
+                  onClick={saveNote}
+                  disabled={saving || !activeNote.title.trim()}
+                  className="bg-slate-900 text-white px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50 shadow-xl">
+                  {saving ? (
+                    <i className="fa-solid fa-circle-notch animate-spin"></i>
+                  ) : (
+                    <i className="fa-solid fa-cloud-arrow-up"></i>
+                  )}
+                  Synchroniser
+                </button>
+              </div>
+            </header>
+            <main className="flex-1 overflow-y-auto p-6 md:p-20 max-w-5xl mx-auto w-full space-y-12">
+              <input
+                type="text"
+                placeholder="Titre de la note..."
+                className="w-full text-4xl md:text-6xl font-black text-slate-900 border-none outline-none placeholder:text-slate-200 tracking-tighter bg-transparent"
+                value={activeNote.title}
+                onChange={(e) => setActiveNote({ ...activeNote, title: e.target.value })}
+                autoFocus
+              />
+              <textarea
+                placeholder="Commencez à documenter ici..."
+                className="w-full h-[60vh] text-lg md:text-2xl text-slate-600 border-none outline-none resize-none leading-relaxed placeholder:text-slate-200 font-medium bg-transparent"
+                value={activeNote.content}
+                onChange={(e) => setActiveNote({ ...activeNote, content: e.target.value })}
+              />
+            </main>
+          </div>,
+          document.body
+        )}
 
       {/* POPUP DÉVERROUILLAGE (MODALE CENTRÉE) */}
       {passwordVerify &&
