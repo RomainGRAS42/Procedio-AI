@@ -151,15 +151,22 @@ const App: React.FC = () => {
   }, [syncUserProfile]);
 
   const handleLogout = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      await supabase.auth.signOut();
+      // On tente une déconnexion serveur avec un timeout de 2s
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Logout Timeout")), 2000))
+      ]);
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
-      // Force la déconnexion locale même en cas d'erreur réseau
+      console.warn("Déconnexion serveur incomplète, forçage local:", error);
+    } finally {
+      // Nettoyage impératif de l'état local pour ne jamais bloquer l'UI
       setIsAuthenticated(false);
       setUser(null);
       setLoading(false);
+      // Retour à l'accueil
+      window.location.hash = "";
     }
   };
 
