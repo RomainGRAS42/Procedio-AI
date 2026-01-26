@@ -150,6 +150,16 @@ const App: React.FC = () => {
     };
     window.addEventListener("beforeunload", handleUnload);
 
+    // Nettoyage drastique au chargement de la page (demande utilisateur)
+    // Cela garantit qu'on repart de zéro à chaque visite/rafraîchissement
+    localStorage.clear();
+    sessionStorage.clear();
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
     const initApp = async () => {
       // Timeout de sécurité pour éviter le blocage infini (restauré à 10s pour prod)
       const timeoutPromise = new Promise((_, reject) =>
