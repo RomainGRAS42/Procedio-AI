@@ -73,11 +73,20 @@ const App: React.FC = () => {
       const metaRole = sbUser.user_metadata?.role;
       const dbRole = profile?.role;
 
+      // DEBUG: Affichage des rôles bruts pour diagnostic
+      console.log("DEBUG ROLE SYNC:", {
+        email: sbUser.email,
+        metaRole,
+        dbRole,
+        profileData: profile,
+      });
+
       // Priorité au profil DB, sinon fallback sur métadonnées
       const rawRole = dbRole || metaRole;
 
       if (rawRole) {
         const normalizedRole = String(rawRole).trim().toUpperCase();
+        console.log("DEBUG NORMALIZED ROLE:", normalizedRole); // DEBUG
         if (normalizedRole === "MANAGER") {
           finalRole = UserRole.MANAGER;
         }
@@ -124,9 +133,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // Timeout de sécurité pour éviter le blocage infini (augmenté à 45s)
+      // Timeout de sécurité pour éviter le blocage infini (réduit à 2s pour test)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout d'initialisation")), 45000)
+        setTimeout(() => reject(new Error("Timeout d'initialisation")), 2000)
       );
 
       try {
@@ -153,7 +162,7 @@ const App: React.FC = () => {
       } catch (err: any) {
         if (err.message === "Timeout d'initialisation") {
           console.warn(
-            "L'initialisation prend du temps (Timeout 45s). L'application continue en mode optimiste."
+            "L'initialisation prend du temps (Timeout 2s). L'application continue en mode optimiste."
           );
         } else {
           console.error("Auth init error:", err);
