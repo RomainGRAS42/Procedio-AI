@@ -136,6 +136,20 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Nettoyage complet du cache à la fermeture/actualisation
+    const handleUnload = () => {
+      // On vide le stockage local (token Supabase, préférences, etc.)
+      localStorage.clear();
+      sessionStorage.clear();
+      // On tente de vider les cookies accessibles via JS
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+    };
+    window.addEventListener("beforeunload", handleUnload);
+
     const initApp = async () => {
       // Timeout de sécurité pour éviter le blocage infini (restauré à 10s pour prod)
       const timeoutPromise = new Promise((_, reject) =>
@@ -204,6 +218,7 @@ const App: React.FC = () => {
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("hashchange", handleHash);
+      window.removeEventListener("beforeunload", handleUnload);
     };
   }, [syncUserProfile]);
 
