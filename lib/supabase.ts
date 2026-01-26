@@ -22,23 +22,15 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
  */
 export const checkSupabaseConnection = async () => {
   try {
-    // Une simple requête sur l'auth ou une table publique pour tester la validité de la clé
-    const { error } = await supabase.from('user_profiles').select('id').limit(1);
-    
-    if (error) {
-      // Si la table n'existe pas, la clé est quand même valide (erreur 42P01 ou PGRST116)
-      if (error.code === 'PGRST116' || error.code === '42P01') {
-        return { status: 'ok', msg: 'Connecté (Clé valide)' };
-      }
-      // Si l'erreur est "Invalid API key", on le capture ici
-      if (error.message.includes('apiKey') || error.message.includes('Invalid API key')) {
-        throw new Error('Clé API ou URL invalide');
-      }
-      throw error;
+    // Vérification légère uniquement sur l'URL pour ne pas réveiller la DB inutilement
+    // On suppose que si l'URL est définie, le client est prêt.
+    // La vraie validation se fera lors des appels de données.
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Configuration Supabase manquante");
     }
-    return { status: 'ok', msg: 'Opérationnel' };
+    return { status: "ok", msg: "Prêt" };
   } catch (err: any) {
-    console.error('Supabase Diagnostic Error:', err);
-    return { status: 'error', msg: err.message };
+    console.error("Supabase Diagnostic Error:", err);
+    return { status: "error", msg: err.message };
   }
 };

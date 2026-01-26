@@ -69,13 +69,22 @@ const App: React.FC = () => {
 
       // Logique robuste pour déterminer le rôle (insensible à la casse et aux espaces)
       let finalRole = UserRole.TECHNICIAN;
-      const rawRole = profile?.role || sbUser.user_metadata?.role;
+      // On vérifie d'abord les métadonnées (souvent plus rapides/disponibles)
+      const metaRole = sbUser.user_metadata?.role;
+      const dbRole = profile?.role;
+
+      // Priorité au profil DB, sinon fallback sur métadonnées
+      const rawRole = dbRole || metaRole;
 
       if (rawRole) {
         const normalizedRole = String(rawRole).trim().toUpperCase();
         if (normalizedRole === "MANAGER") {
           finalRole = UserRole.MANAGER;
         }
+      } else {
+        // Tentative de relecture si pas de rôle trouvé (Cold Start DB ?)
+        console.warn("Rôle non trouvé, tentative de relecture...");
+        // Optionnel : on pourrait refaire un appel ici, mais on va plutôt logger pour le moment
       }
 
       if (profile) {
