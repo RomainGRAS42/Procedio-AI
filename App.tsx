@@ -234,6 +234,15 @@ const App: React.FC = () => {
       console.warn("Déconnexion serveur incomplète, forçage local:", error);
     } finally {
       // Nettoyage impératif de l'état local pour ne jamais bloquer l'UI
+      // Vidage complet du cache (localStorage, sessionStorage, cookies)
+      localStorage.clear();
+      sessionStorage.clear();
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
       setIsAuthenticated(false);
       setUser(null);
       setLoading(false);
