@@ -42,14 +42,26 @@ const App: React.FC = () => {
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
+      console.log("DEBUG: syncUserProfile démarré pour", sbUser.email); // LOG DEBUT
+
+      // 1. Détection optimiste via les métadonnées (disponible immédiatement)
+      const metaRole = sbUser.user_metadata?.role;
+      let initialRole = UserRole.TECHNICIAN;
+
+      if (metaRole && String(metaRole).trim().toUpperCase() === "MANAGER") {
+        initialRole = UserRole.MANAGER;
+      }
+
+      console.log("DEBUG: Rôle initial détecté (metadata):", initialRole);
+
       const defaultUser: User = {
         id: sbUser.id,
         email: sbUser.email || "",
         firstName: sbUser.user_metadata?.firstName || sbUser.email?.split("@")[0] || "Utilisateur",
         lastName: "",
-        role: UserRole.TECHNICIAN,
+        role: initialRole, // Utilisation immédiate du rôle métadata
         avatarUrl: `https://ui-avatars.com/api/?name=${sbUser.email}&background=4f46e5&color=fff`,
-        position: "Technicien Support",
+        position: initialRole === UserRole.MANAGER ? "Manager IT" : "Technicien Support",
         level: 1,
         currentXp: 0,
         nextLevelXp: 1000,
@@ -57,20 +69,22 @@ const App: React.FC = () => {
       };
       setUser(defaultUser);
 
+      // 2. Appel Base de Données (peut échouer ou être lent)
+      console.log("DEBUG: Appel DB user_profiles...");
       const { data: profile, error } = await supabase
         .from("user_profiles")
         .select("*")
         .eq("id", sbUser.id)
         .maybeSingle();
 
+      console.log("DEBUG: Réponse DB:", { profile, error });
+
       if (error) {
         console.error("Erreur lors de la récupération du profil:", error);
       }
 
-      // Logique robuste pour déterminer le rôle (insensible à la casse et aux espaces)
-      let finalRole = UserRole.TECHNICIAN;
-      // On vérifie d'abord les métadonnées (souvent plus rapides/disponibles)
-      const metaRole = sbUser.user_metadata?.role;
+      // Logique robuste pour déterminer le rôle final
+      let finalRole = initialRole;
       const dbRole = profile?.role;
 
       // DEBUG: Affichage des rôles bruts pour diagnostic
@@ -81,19 +95,14 @@ const App: React.FC = () => {
         profileData: profile,
       });
 
-      // Priorité au profil DB, sinon fallback sur métadonnées
-      const rawRole = dbRole || metaRole;
-
-      if (rawRole) {
-        const normalizedRole = String(rawRole).trim().toUpperCase();
-        console.log("DEBUG NORMALIZED ROLE:", normalizedRole); // DEBUG
+      // Priorité au profil DB s'il existe, sinon on garde le metaRole
+      if (dbRole) {
+        const normalizedRole = String(dbRole).trim().toUpperCase();
         if (normalizedRole === "MANAGER") {
           finalRole = UserRole.MANAGER;
+        } else {
+          finalRole = UserRole.TECHNICIAN;
         }
-      } else {
-        // Tentative de relecture si pas de rôle trouvé (Cold Start DB ?)
-        console.warn("Rôle non trouvé, tentative de relecture...");
-        // Optionnel : on pourrait refaire un appel ici, mais on va plutôt logger pour le moment
       }
 
       if (profile) {
@@ -110,17 +119,12 @@ const App: React.FC = () => {
             : null
         );
       } else {
-        // Fallback si pas de profil trouvé (ex: problème RLS), on met à jour au moins le rôle si trouvé dans les métadonnées
+        // Fallback si pas de profil trouvé
+        // Si on avait détecté Manager via metadata, on le garde (déjà set dans defaultUser)
+        // Mais on force la mise à jour si jamais on veut être sûr
         if (finalRole === UserRole.MANAGER) {
-          setUser((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  role: finalRole,
-                  position: "Manager IT",
-                }
-              : null
-          );
+          // Rien à faire de plus car defaultUser avait déjà le bon rôle si metadata était bon
+          // Sauf si dbRole était null (pas de profil) et metadata disait Manager
         }
         console.warn(
           "Profil utilisateur non trouvé dans 'user_profiles'. Vérifiez les politiques RLS (Row Level Security)."
@@ -133,9 +137,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // Timeout de sécurité pour éviter le blocage infini (réduit à 2s pour test)
+      // Timeout de sécurité pour éviter le blocage infini (restauré à 10s pour prod)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout d'initialisation")), 2000)
+        setTimeout(() => reject(new Error("Timeout d'initialisation")), 10000)
       );
 
       try {
@@ -162,7 +166,7 @@ const App: React.FC = () => {
       } catch (err: any) {
         if (err.message === "Timeout d'initialisation") {
           console.warn(
-            "L'initialisation prend du temps (Timeout 2s). L'application continue en mode optimiste."
+            "L'initialisation prend du temps (Timeout 10s). L'application continue en mode optimiste."
           );
         } else {
           console.error("Auth init error:", err);
