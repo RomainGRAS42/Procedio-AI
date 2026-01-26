@@ -10,6 +10,7 @@ const Administration: React.FC = () => {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -94,6 +95,26 @@ const Administration: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+
+      if (error) throw error;
+
+      setMessage({
+        type: "success",
+        text: `Email de récupération envoyé à ${email}`,
+      });
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Erreur : " + err.message });
+    } finally {
+      setTimeout(() => setMessage(null), 3000);
+      setActiveMenuId(null);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-10 animate-slide-up pb-20">
       <div className="text-center space-y-3">
@@ -170,17 +191,49 @@ const Administration: React.FC = () => {
                     }`}>
                     {u.role || "TECHNICIAN"}
                   </div>
-                  <button
-                    onClick={() =>
-                      handleChangeUserRole(
-                        u.id,
-                        u.role === UserRole.MANAGER ? UserRole.TECHNICIAN : UserRole.MANAGER
-                      )
-                    }
-                    className="w-12 h-12 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex items-center justify-center shadow-sm"
-                    title="Changer le rôle">
-                    <i className="fa-solid fa-arrows-rotate"></i>
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === u.id ? null : u.id);
+                      }}
+                      className={`w-12 h-12 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex items-center justify-center shadow-sm ${
+                        activeMenuId === u.id
+                          ? "text-indigo-600 border-indigo-500 bg-indigo-50"
+                          : ""
+                      }`}
+                      title="Actions">
+                      <i className="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+
+                    {activeMenuId === u.id && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                            Actions
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            handleChangeUserRole(
+                              u.id,
+                              u.role === UserRole.MANAGER ? UserRole.TECHNICIAN : UserRole.MANAGER
+                            );
+                            setActiveMenuId(null);
+                          }}
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors">
+                          <i className="fa-solid fa-user-shield w-4 text-center"></i>
+                          {u.role === UserRole.MANAGER ? "Passer Technicien" : "Passer Manager"}
+                        </button>
+                        <button
+                          onClick={() => handleResetPassword(u.email)}
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors border-t border-slate-50">
+                          <i className="fa-solid fa-key w-4 text-center"></i>
+                          Renvoyer accès
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
@@ -301,6 +354,12 @@ const Administration: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {activeMenuId && (
+        <div
+          className="fixed inset-0 z-40 cursor-default"
+          onClick={() => setActiveMenuId(null)}></div>
       )}
     </div>
   );

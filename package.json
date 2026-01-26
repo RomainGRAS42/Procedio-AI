@@ -20,7 +20,8 @@
   "author": "Romain Gras",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.7",
+    "@supabase/supabase-js": "^2.93.0",
+    "dotenv": "^17.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^9.0.1",
