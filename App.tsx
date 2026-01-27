@@ -69,13 +69,33 @@ const App: React.FC = () => {
       };
       setUser(defaultUser);
 
-      // 2. Appel Base de Données (peut échouer ou être lent)
+      // 2. Appel Base de Données avec Timeout (pour éviter le blocage infini)
       console.log("DEBUG: Appel DB user_profiles...");
-      const { data: profile, error } = await supabase
+      
+      const fetchProfilePromise = supabase
         .from("user_profiles")
         .select("*")
         .eq("id", sbUser.id)
         .maybeSingle();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("DB_TIMEOUT")), 5000)
+      );
+
+      let profile = null;
+      let error = null;
+
+      try {
+        const result: any = await Promise.race([fetchProfilePromise, timeoutPromise]);
+        profile = result.data;
+        error = result.error;
+      } catch (err: any) {
+        if (err.message === "DB_TIMEOUT") {
+          console.warn("Timeout lors de la récupération du profil utilisateur. Utilisation du profil par défaut.");
+        } else {
+          console.error("Erreur inattendue fetch profile:", err);
+        }
+      }
 
       console.log("DEBUG: Réponse DB:", { profile, error });
 
@@ -120,14 +140,11 @@ const App: React.FC = () => {
         );
       } else {
         // Fallback si pas de profil trouvé
-        // Si on avait détecté Manager via metadata, on le garde (déjà set dans defaultUser)
-        // Mais on force la mise à jour si jamais on veut être sûr
         if (finalRole === UserRole.MANAGER) {
           // Rien à faire de plus car defaultUser avait déjà le bon rôle si metadata était bon
-          // Sauf si dbRole était null (pas de profil) et metadata disait Manager
         }
         console.warn(
-          "Profil utilisateur non trouvé dans 'user_profiles'. Vérifiez les politiques RLS (Row Level Security)."
+          "Profil utilisateur non trouvé dans 'user_profiles' ou timeout. Vérifiez les politiques RLS."
         );
       }
     } catch (err) {
@@ -414,6 +431,8 @@ const App: React.FC = () => {
               setGlobalSearchTerm(t);
               setCurrentView("procedures");
             }}
+            onLogout={handleLogout}
+            onNavigate={(view) => setCurrentView(view)}
           />
         )}
         <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">

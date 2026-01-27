@@ -9,10 +9,13 @@ interface HeaderProps {
   suggestions?: Suggestion[];
   onMenuClick: () => void;
   onSearch: (term: string) => void;
+  onLogout: () => void;
+  onNavigate: (view: ViewType) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], onMenuClick, onSearch }) => {
+const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], onMenuClick, onSearch, onLogout, onNavigate }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
   const [readLogs, setReadLogs] = useState<any[]>([]);
   
@@ -143,16 +146,56 @@ const Header: React.FC<HeaderProps> = ({ user, currentView, suggestions = [], on
           </div>
         )}
 
-        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-sm font-black text-slate-800 leading-none">{user.firstName}</span>
-            <span className="text-[9px] font-black text-slate-400 mt-1 uppercase tracking-widest">{user.role}</span>
-          </div>
-          <img 
-            src={user.avatarUrl} 
-            alt="Mon profil" 
-            className="w-10 h-10 rounded-xl border border-slate-200 object-cover shadow-sm"
-          />
+        <div className="flex items-center gap-3 pl-4 border-l border-slate-200 relative">
+          <button 
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className="flex items-center gap-3 hover:bg-slate-50 p-2 -mr-2 rounded-xl transition-all outline-none"
+          >
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-sm font-black text-slate-800 leading-none">{user.firstName}</span>
+              <span className="text-[9px] font-black text-slate-400 mt-1 uppercase tracking-widest">{user.role}</span>
+            </div>
+            <img 
+              src={user.avatarUrl} 
+              alt="Mon profil" 
+              className="w-10 h-10 rounded-xl border border-slate-200 object-cover shadow-sm"
+            />
+          </button>
+
+          {isUserMenuOpen && (
+            <>
+              <div 
+                className="fixed inset-0 z-40 cursor-default" 
+                onClick={() => setIsUserMenuOpen(false)}
+              ></div>
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Mon Compte</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    onNavigate('account');
+                    setIsUserMenuOpen(false);
+                  }}
+                  className="w-full text-left px-5 py-3 text-[11px] font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors"
+                >
+                  <i className="fa-solid fa-user-gear w-4 text-center"></i>
+                  Profil & Préférences
+                </button>
+                <div className="border-t border-slate-50"></div>
+                <button 
+                  onClick={() => {
+                    onLogout();
+                    setIsUserMenuOpen(false);
+                  }}
+                  className="w-full text-left px-5 py-3 text-[11px] font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 flex items-center gap-3 transition-colors"
+                >
+                  <i className="fa-solid fa-power-off w-4 text-center"></i>
+                  Se déconnecter
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>

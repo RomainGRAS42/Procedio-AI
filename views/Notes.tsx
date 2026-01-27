@@ -40,6 +40,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
     is_protected: boolean;
   } | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const activeEditorRef = useRef<HTMLDivElement | null>(null);
 
   // Sécurité & Synchro
   const [unlockedNotes, setUnlockedNotes] = useState<Set<string>>(new Set());
@@ -68,6 +69,12 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       editorRef.current.innerHTML = viewDraft.content;
     }
   }, [viewingEdit]);
+
+  useEffect(() => {
+    if (isEditing && activeEditorRef.current) {
+      activeEditorRef.current.innerHTML = activeNote.content;
+    }
+  }, [isEditing]);
 
   const fetchNotes = async () => {
     setLoading(true);
@@ -360,15 +367,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
   const applyFormat = (cmd: string, value?: string) => {
     document.execCommand(cmd, false, value || "");
-    if (editorRef.current) {
+    if (viewingEdit && editorRef.current) {
       setViewDraft((prev) => (prev ? { ...prev, content: editorRef.current!.innerHTML } : prev));
+    } else if (isEditing && activeEditorRef.current) {
+      setActiveNote((prev) => ({ ...prev, content: activeEditorRef.current!.innerHTML }));
     }
   };
   const applyBgColor = (color: string) => {
     const ok = document.execCommand("hiliteColor", false, color);
     if (!ok) document.execCommand("backColor", false, color);
-    if (editorRef.current) {
+    if (viewingEdit && editorRef.current) {
       setViewDraft((prev) => (prev ? { ...prev, content: editorRef.current!.innerHTML } : prev));
+    } else if (isEditing && activeEditorRef.current) {
+      setActiveNote((prev) => ({ ...prev, content: activeEditorRef.current!.innerHTML }));
     }
   };
 
@@ -702,48 +713,58 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                     />
                     <div className="flex flex-wrap items-center gap-2 bg-white sticky top-20 z-10 p-2 rounded-xl border border-slate-100 shadow-sm">
                       <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("bold")}>
-                        Gras
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("bold"); }}
+                        title="Gras">
+                        <i className="fa-solid fa-bold"></i>
                       </button>
                       <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("italic")}>
-                        Italique
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("italic"); }}
+                        title="Italique">
+                        <i className="fa-solid fa-italic"></i>
                       </button>
                       <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("underline")}>
-                        Souligné
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("underline"); }}
+                        title="Souligné">
+                        <i className="fa-solid fa-underline"></i>
+                      </button>
+                      <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                      <button
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("insertUnorderedList"); }}
+                        title="Liste à puces">
+                        <i className="fa-solid fa-list-ul"></i>
                       </button>
                       <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("insertUnorderedList")}>
-                        Puces
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("insertOrderedList"); }}
+                        title="Liste numérotée">
+                        <i className="fa-solid fa-list-ol"></i>
                       </button>
+                      <div className="w-px h-6 bg-slate-200 mx-1"></div>
                       <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("insertOrderedList")}>
-                        Numérotation
-                      </button>
-                      <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("formatBlock", "H1")}>
+                        className="px-3 py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 font-bold text-xs transition-colors"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("formatBlock", "H1"); }}
+                        title="Grand titre">
                         H1
                       </button>
                       <button
-                        className="px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase"
-                        onClick={() => applyFormat("formatBlock", "H2")}>
+                        className="px-3 py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 font-bold text-xs transition-colors"
+                        onMouseDown={(e) => { e.preventDefault(); applyFormat("formatBlock", "H2"); }}
+                        title="Sous-titre">
                         H2
                       </button>
-                      <div className="flex items-center gap-1 ml-2">
+                      <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                      <div className="flex items-center gap-1">
                         {["#fff59d", "#bbdefb", "#c8e6c9", "#ffe0b2"].map((c) => (
                           <button
                             key={c}
-                            className="w-6 h-6 rounded-md border border-slate-200"
+                            className="w-6 h-6 rounded-md border border-slate-200 hover:scale-110 transition-transform shadow-sm"
                             style={{ backgroundColor: c }}
                             aria-label={`Surlignage ${c}`}
-                            onClick={() => applyBgColor(c)}
+                            onMouseDown={(e) => { e.preventDefault(); applyBgColor(c); }}
                           />
                         ))}
                       </div>
@@ -860,7 +881,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                       className={`text-slate-500 text-base leading-relaxed line-clamp-5 font-medium ${
                         isLocked ? "blur-sm select-none opacity-50" : ""
                       }`}>
-                      {note.content || "Aucune description."}
+                      {isLocked ? "Cette note est protégée. Veuillez la déverrouiller pour voir son contenu." : (note.content || "Aucune description.")}
                     </p>
 
                     {isLocked && (
