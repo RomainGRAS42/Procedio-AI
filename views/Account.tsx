@@ -10,7 +10,6 @@ interface AccountProps {
 
 const Account: React.FC<AccountProps> = ({ user }) => {
   const [displayName, setDisplayName] = useState(user.firstName);
-  const [lastName, setLastName] = useState(user.lastName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,7 +28,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
         .from('user_profiles')
         .update({ 
           first_name: displayName,
-          last_name: lastName,
+          last_name: '',
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -178,25 +177,14 @@ const Account: React.FC<AccountProps> = ({ user }) => {
         </div>
 
         <div className="md:col-span-2 space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Prénom</label>
-              <input 
-                type="text" 
-                value={displayName} 
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom de famille</label>
-              <input 
-                type="text" 
-                value={lastName} 
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom d'affichage</label>
+            <input 
+              type="text" 
+              value={displayName} 
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
+            />
           </div>
 
           <div className="space-y-2">
