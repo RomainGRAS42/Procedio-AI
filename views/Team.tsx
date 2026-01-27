@@ -28,6 +28,7 @@ const Team: React.FC<TeamProps> = ({ user }) => {
   // même si l'état local peut utiliser l'enum pour la logique UI
   const [inviteRole, setInviteRole] = useState<UserRole>(UserRole.TECHNICIAN);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "error";
@@ -92,6 +93,26 @@ const Team: React.FC<TeamProps> = ({ user }) => {
     } finally {
       setInviteLoading(false);
       setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const handleResetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+
+      if (error) throw error;
+
+      setNotification({
+        type: "success",
+        msg: `Email de récupération envoyé à ${email}`,
+      });
+    } catch (err: any) {
+      setNotification({ type: "error", msg: "Erreur : " + err.message });
+    } finally {
+      setActiveMenuId(null);
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -219,10 +240,33 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                         <td className="p-6 text-[10px] text-slate-400 font-medium">
                           {new Date(member.created_at).toLocaleDateString()}
                         </td>
-                        <td className="p-6 text-right">
-                          <button className="text-slate-300 hover:text-slate-600 transition-colors">
+                        <td className="p-6 text-right relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === member.id ? null : member.id);
+                            }}
+                            className={`text-slate-300 hover:text-slate-600 transition-colors w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center ${
+                              activeMenuId === member.id ? "bg-slate-100 text-slate-600" : ""
+                            }`}>
                             <i className="fa-solid fa-ellipsis"></i>
                           </button>
+
+                          {activeMenuId === member.id && (
+                            <div className="absolute right-6 top-12 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                  Actions
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleResetPassword(member.email)}
+                                className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors">
+                                <i className="fa-solid fa-key w-4 text-center"></i>
+                                Renvoyer accès
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -397,6 +441,11 @@ const Team: React.FC<TeamProps> = ({ user }) => {
             </form>
           </div>
         </div>
+      )}
+      {activeMenuId && (
+        <div
+          className="fixed inset-0 z-40 cursor-default"
+          onClick={() => setActiveMenuId(null)}></div>
       )}
     </div>
   );

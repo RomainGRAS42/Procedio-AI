@@ -9,7 +9,6 @@ import Procedures from "./views/Procedures";
 import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
-import Administration from "./views/Administration";
 import UploadProcedure from "./views/UploadProcedure";
 import History from "./views/History";
 import Team from "./views/Team";
@@ -344,8 +343,6 @@ const App: React.FC = () => {
         return <Account user={user} onGoToReset={() => {}} />;
       case "statistics":
         return <Statistics />;
-      case "administration":
-        return <Administration />;
       case "team":
         return <Team user={user} />;
       case "history":
