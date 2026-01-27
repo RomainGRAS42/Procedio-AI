@@ -12,6 +12,7 @@ import Account from "./views/Account";
 import Administration from "./views/Administration";
 import UploadProcedure from "./views/UploadProcedure";
 import History from "./views/History";
+import Team from "./views/Team";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
@@ -71,14 +72,14 @@ const App: React.FC = () => {
 
       // 2. Appel Base de Données avec Timeout (pour éviter le blocage infini)
       console.log("DEBUG: Appel DB user_profiles...");
-      
+
       const fetchProfilePromise = supabase
         .from("user_profiles")
         .select("*")
         .eq("id", sbUser.id)
         .maybeSingle();
 
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("DB_TIMEOUT")), 5000)
       );
 
@@ -91,7 +92,9 @@ const App: React.FC = () => {
         error = result.error;
       } catch (err: any) {
         if (err.message === "DB_TIMEOUT") {
-          console.warn("Timeout lors de la récupération du profil utilisateur. Utilisation du profil par défaut.");
+          console.warn(
+            "Timeout lors de la récupération du profil utilisateur. Utilisation du profil par défaut."
+          );
         } else {
           console.error("Erreur inattendue fetch profile:", err);
         }
@@ -343,6 +346,8 @@ const App: React.FC = () => {
         return <Statistics />;
       case "administration":
         return <Administration />;
+      case "team":
+        return <Team user={user} />;
       case "history":
         return (
           <History

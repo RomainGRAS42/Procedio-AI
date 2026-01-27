@@ -34,6 +34,7 @@ const Header: React.FC<HeaderProps> = ({
     notes: "Mes Notes",
     account: "Mon Compte",
     upload: "Publication",
+    team: "Gestion d'Équipe",
   };
 
   useEffect(() => {

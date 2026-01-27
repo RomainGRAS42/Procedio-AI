@@ -56,4 +56,4 @@ export interface Suggestion {
   createdAt: string;
 }
 
-export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password' | 'administration';
+export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password' | 'administration' | 'team';

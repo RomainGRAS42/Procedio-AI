@@ -42,6 +42,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     },
     { id: "statistics", label: "Analyses", icon: "fa-chart-pie", roles: [UserRole.MANAGER] },
     {
+      id: "team",
+      label: "Équipe",
+      icon: "fa-users-line",
+      roles: [UserRole.MANAGER],
+    },
+    {
       id: "administration",
       label: "Administration",
       icon: "fa-users-gear",
