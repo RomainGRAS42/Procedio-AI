@@ -1,7 +1,6 @@
-
 export enum UserRole {
-  MANAGER = 'MANAGER',
-  TECHNICIAN = 'TECHNICIAN'
+  MANAGER = "MANAGER",
+  TECHNICIAN = "TECHNICIAN",
 }
 
 export interface Badge {
@@ -35,7 +34,7 @@ export interface Procedure {
   fileUrl?: string; // URL directe vers le document (PDF)
   createdAt: string;
   views: number;
-  status: 'pending' | 'validated';
+  status: "pending" | "validated";
   lastViewedAt?: string;
 }
 
@@ -52,8 +51,24 @@ export interface Suggestion {
   userName: string;
   procedureTitle: string;
   content: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   createdAt: string;
+  type?: "correction" | "update" | "add_step";
+  priority?: "low" | "medium" | "high";
+  // Helper fields for detailed views
+  user_id?: string;
+  procedure_id?: string;
 }
 
-export type ViewType = 'dashboard' | 'statistics' | 'procedures' | 'procedure-detail' | 'notes' | 'account' | 'upload' | 'history' | 'reset-password' | 'administration' | 'team';
+export type ViewType =
+  | "dashboard"
+  | "statistics"
+  | "procedures"
+  | "procedure-detail"
+  | "notes"
+  | "account"
+  | "upload"
+  | "history"
+  | "reset-password"
+  | "administration"
+  | "team";

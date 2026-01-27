@@ -52,6 +52,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   } | null>(null);
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
   const [suggestionContent, setSuggestionContent] = useState("");
+  const [suggestionType, setSuggestionType] = useState<"correction" | "update" | "add_step">("correction");
+  const [suggestionPriority, setSuggestionPriority] = useState<"low" | "medium" | "high">("medium");
   const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -345,6 +347,35 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                   Aidez-nous à améliorer cette procédure
                 </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Type de suggestion
+                </label>
+                <select
+                  value={suggestionType}
+                  onChange={(e) => setSuggestionType(e.target.value as any)}
+                  className="w-full p-3 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-600 text-xs appearance-none cursor-pointer">
+                  <option value="correction">Correction d'erreur</option>
+                  <option value="update">Mise à jour du contenu</option>
+                  <option value="add_step">Ajout d'étape</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Priorité
+                </label>
+                <select
+                  value={suggestionPriority}
+                  onChange={(e) => setSuggestionPriority(e.target.value as any)}
+                  className="w-full p-3 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-600 text-xs appearance-none cursor-pointer">
+                  <option value="low">Basse</option>
+                  <option value="medium">Moyenne</option>
+                  <option value="high">Haute</option>
+                </select>
               </div>
             </div>
 
