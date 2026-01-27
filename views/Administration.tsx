@@ -75,26 +75,6 @@ const Administration: React.FC = () => {
     }
   };
 
-  const handleChangeUserRole = async (targetUserId: string, newRole: UserRole) => {
-    try {
-      const { error } = await supabase
-        .from("user_profiles")
-        .update({ role: newRole })
-        .eq("id", targetUserId);
-
-      if (error) throw error;
-
-      setUsersList((prev) =>
-        prev.map((u) => (u.id === targetUserId ? { ...u, role: newRole } : u))
-      );
-      setMessage({ type: "success", text: "Rôle mis à jour avec succès." });
-    } catch (err: any) {
-      setMessage({ type: "error", text: "Erreur : " + err.message });
-    } finally {
-      setTimeout(() => setMessage(null), 3000);
-    }
-  };
-
   const handleResetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -214,20 +194,8 @@ const Administration: React.FC = () => {
                           </p>
                         </div>
                         <button
-                          onClick={() => {
-                            handleChangeUserRole(
-                              u.id,
-                              u.role === UserRole.MANAGER ? UserRole.TECHNICIAN : UserRole.MANAGER
-                            );
-                            setActiveMenuId(null);
-                          }}
-                          className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors">
-                          <i className="fa-solid fa-user-shield w-4 text-center"></i>
-                          {u.role === UserRole.MANAGER ? "Passer Technicien" : "Passer Manager"}
-                        </button>
-                        <button
                           onClick={() => handleResetPassword(u.email)}
-                          className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors border-t border-slate-50">
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors">
                           <i className="fa-solid fa-key w-4 text-center"></i>
                           Renvoyer accès
                         </button>
