@@ -79,8 +79,10 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
       </div>
 
       {/* --- SECTION 1: OPPORTUNITÉS MANQUÉES (PRIORITÉ HAUTE) --- */}
-      <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50"></div>
+      <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50 relative">
+        <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50"></div>
+        </div>
 
         <div className="flex items-center gap-3 mb-8 relative z-10">
           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl shadow-lg shadow-rose-100">
@@ -254,8 +256,10 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
       </div>
 
       {/* --- SECTION 4: CHAMPIONS (ENGAGEMENT) --- */}
-      <section className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+      <section className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative">
+        <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        </div>
 
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           <div className="flex items-center gap-4">
