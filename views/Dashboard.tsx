@@ -532,6 +532,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
         </div>
       </section>
+      </div>
 
       {/* MODAL REVIEW SUGGESTION */}
       {showSuggestionModal && selectedSuggestion && (

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   PieChart,
   Pie,
@@ -64,9 +63,11 @@ const champions = [
   { name: "Marc D.", role: "Support N1", suggestions: 5, impact: "Low" },
 ];
 
-const Statistics: React.FC = () => {
-  const navigate = useNavigate();
+interface StatisticsProps {
+  onUploadClick: () => void;
+}
 
+const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
   return (
     <div className="space-y-8 animate-fade-in pb-20">
       {/* HEADER */}
@@ -80,7 +81,7 @@ const Statistics: React.FC = () => {
       {/* --- SECTION 1: OPPORTUNITÉS MANQUÉES (PRIORITÉ HAUTE) --- */}
       <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50"></div>
-        
+
         <div className="flex items-center gap-3 mb-8 relative z-10">
           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl shadow-lg shadow-rose-100">
             <i className="fa-solid fa-magnifying-glass-minus"></i>
@@ -88,27 +89,33 @@ const Statistics: React.FC = () => {
           <div>
             <h3 className="font-black text-slate-900 text-xl flex items-center">
               Opportunités Manquées
-              <InfoTooltip 
-                title="Zone de Demande Non Comblée" 
-                desc="Liste des mots-clés recherchés par vos équipes qui n'ont retourné aucun résultat. C'est votre priorité de rédaction immédiate pour combler les manques." 
+              <InfoTooltip
+                title="Zone de Demande Non Comblée"
+                desc="Liste des mots-clés recherchés par vos équipes qui n'ont retourné aucun résultat. C'est votre priorité de rédaction immédiate pour combler les manques."
               />
             </h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ce que vos équipes cherchent sans trouver</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Ce que vos équipes cherchent sans trouver
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
           {searchGaps.map((item, idx) => (
-            <div key={idx} className="bg-white border-2 border-slate-50 rounded-2xl p-5 hover:border-rose-100 hover:shadow-lg hover:-translate-y-1 transition-all group">
+            <div
+              key={idx}
+              className="bg-white border-2 border-slate-50 rounded-2xl p-5 hover:border-rose-100 hover:shadow-lg hover:-translate-y-1 transition-all group">
               <div className="flex justify-between items-start mb-3">
                 <span className="bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-1 rounded-lg">
                   {item.count} échecs
                 </span>
-                <span className="text-[9px] font-bold text-slate-300 uppercase">{item.lastSearch}</span>
+                <span className="text-[9px] font-bold text-slate-300 uppercase">
+                  {item.lastSearch}
+                </span>
               </div>
               <h4 className="font-bold text-slate-800 text-sm mb-4 leading-tight">"{item.term}"</h4>
-              <button 
-                onClick={() => navigate('/upload')}
+              <button
+                onClick={onUploadClick}
                 className="w-full py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 transition-colors flex items-center justify-center gap-2">
                 <i className="fa-solid fa-plus"></i>
                 Créer la procédure
@@ -119,7 +126,6 @@ const Statistics: React.FC = () => {
       </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
         {/* --- SECTION 2: SANTÉ DE LA BASE (DOUGHNUT) --- */}
         <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
           <div className="flex items-center gap-3 mb-6">
@@ -129,9 +135,9 @@ const Statistics: React.FC = () => {
             <div>
               <h3 className="font-black text-slate-900 text-lg flex items-center">
                 Santé de la Base
-                <InfoTooltip 
-                  title="Indice d'Obsolescence" 
-                  desc="Répartition de vos procédures par date de dernière mise à jour. Une base saine doit avoir un maximum de vert. Le rouge indique un risque technique élevé (info périmée)." 
+                <InfoTooltip
+                  title="Indice d'Obsolescence"
+                  desc="Répartition de vos procédures par date de dernière mise à jour. Une base saine doit avoir un maximum de vert. Le rouge indique un risque technique élevé (info périmée)."
                 />
               </h3>
             </div>
@@ -148,24 +154,31 @@ const Statistics: React.FC = () => {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  stroke="none"
-                >
+                  stroke="none">
                   {healthData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <RechartsTooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }} 
+                <RechartsTooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
-            
+
             {/* Légende Custom */}
             <div className="w-full space-y-3 mt-4">
               {healthData.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: item.color }}></div>
                     <span className="font-bold text-slate-600">{item.name}</span>
                   </div>
                   <span className="font-black text-slate-900">{item.value}%</span>
@@ -184,9 +197,9 @@ const Statistics: React.FC = () => {
             <div>
               <h3 className="font-black text-slate-900 text-lg flex items-center">
                 Performance du Contenu
-                <InfoTooltip 
-                  title="Qualité & Pertinence" 
-                  desc="Identifiez ce qui marche (Top) et ce qui doit être réécrit (Flop). Un temps de lecture très court sur un Flop indique souvent un titre trompeur ou un contenu inutile." 
+                <InfoTooltip
+                  title="Qualité & Pertinence"
+                  desc="Identifiez ce qui marche (Top) et ce qui doit être réécrit (Flop). Un temps de lecture très court sur un Flop indique souvent un titre trompeur ou un contenu inutile."
                 />
               </h3>
             </div>
@@ -200,7 +213,9 @@ const Statistics: React.FC = () => {
               </h4>
               <div className="space-y-4">
                 {topProcedures.map((proc, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <span className="font-black text-slate-200 text-lg">#{idx + 1}</span>
                       <p className="text-xs font-bold text-slate-700 truncate">{proc.title}</p>
@@ -220,7 +235,9 @@ const Statistics: React.FC = () => {
               </h4>
               <div className="space-y-4">
                 {flopProcedures.map((proc, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                     <div className="overflow-hidden mr-2">
                       <p className="text-xs font-bold text-slate-700 truncate">{proc.title}</p>
                       <p className="text-[9px] text-slate-400 mt-0.5">Lu en {proc.readTime} moy.</p>
@@ -234,13 +251,12 @@ const Statistics: React.FC = () => {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* --- SECTION 4: CHAMPIONS (ENGAGEMENT) --- */}
       <section className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        
+
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-indigo-400 text-xl backdrop-blur-sm">
@@ -249,19 +265,23 @@ const Statistics: React.FC = () => {
             <div>
               <h3 className="font-black text-white text-xl flex items-center">
                 Top Contributeurs
-                <InfoTooltip 
-                  title="Engagement Qualitatif" 
-                  desc="Ces techniciens ne font pas que lire : ils améliorent l'outil. Le nombre de suggestions est le meilleur indicateur d'implication dans la vie de l'équipe." 
+                <InfoTooltip
+                  title="Engagement Qualitatif"
+                  desc="Ces techniciens ne font pas que lire : ils améliorent l'outil. Le nombre de suggestions est le meilleur indicateur d'implication dans la vie de l'équipe."
                 />
               </h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ils construisent la base avec vous</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Ils construisent la base avec vous
+              </p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
           {champions.map((champ, idx) => (
-            <div key={idx} className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:bg-white/10 transition-colors group">
+            <div
+              key={idx}
+              className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:bg-white/10 transition-colors group">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white text-xs shadow-lg shadow-indigo-900/50">
@@ -272,19 +292,24 @@ const Statistics: React.FC = () => {
                     <p className="text-[10px] text-slate-400 font-medium">{champ.role}</p>
                   </div>
                 </div>
-                {idx === 0 && <i className="fa-solid fa-crown text-amber-400 text-lg animate-bounce"></i>}
+                {idx === 0 && (
+                  <i className="fa-solid fa-crown text-amber-400 text-lg animate-bounce"></i>
+                )}
               </div>
-              
+
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-black text-white tracking-tighter">{champ.suggestions}</span>
-                <span className="text-[10px] font-bold text-indigo-300 uppercase mb-1.5">Suggestions envoyées</span>
+                <span className="text-3xl font-black text-white tracking-tighter">
+                  {champ.suggestions}
+                </span>
+                <span className="text-[10px] font-bold text-indigo-300 uppercase mb-1.5">
+                  Suggestions envoyées
+                </span>
               </div>
-              
+
               <div className="mt-4 w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-500 rounded-full" 
-                  style={{ width: `${(champ.suggestions / 15) * 100}%` }}
-                ></div>
+                <div
+                  className="h-full bg-indigo-500 rounded-full"
+                  style={{ width: `${(champ.suggestions / 15) * 100}%` }}></div>
               </div>
             </div>
           ))}
