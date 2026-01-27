@@ -12,6 +12,7 @@ interface Invitation {
   role: string;
   status: string;
   created_at: string;
+  token?: string;
 }
 
 const Team: React.FC<TeamProps> = ({ user }) => {
