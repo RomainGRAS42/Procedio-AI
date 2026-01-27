@@ -165,26 +165,24 @@ const Account: React.FC<AccountProps> = ({ user }) => {
             }`}>
               {user.role}
             </div>
-            {user.role === UserRole.MANAGER && (
-              <button 
-                onClick={handleToggleRole}
-                className="block mx-auto text-[8px] font-bold text-slate-400 hover:text-rose-500 uppercase tracking-tighter underline underline-offset-4"
-              >
-                Changer de rôle (Debug)
-              </button>
-            )}
           </div>
         </div>
 
         <div className="md:col-span-2 space-y-8">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom d'affichage</label>
-            <input 
-              type="text" 
-              value={displayName} 
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
-            />
+            <div className="relative">
+              <input 
+                type="text" 
+                value={displayName} 
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
+              />
+              <div className="mt-2 flex items-center gap-2 text-amber-500 text-[10px] font-bold uppercase tracking-wider animate-fade-in">
+                 <i className="fa-solid fa-triangle-exclamation"></i>
+                 <span>Toute modification entraînera une déconnexion immédiate</span>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
