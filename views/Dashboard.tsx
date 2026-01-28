@@ -275,7 +275,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         {
           user_id: user.id,
           title: `LOG_READ_${announcement?.id || "unknown"}`,
-          content: `✅ Annonce lue par ${user.firstName} ${user.lastName || ""} le ${new Date().toLocaleString("fr-FR")} : "${announcement?.content.substring(0, 50)}..."`,
+          content: `✅ ${user.firstName} ${user.lastName || ""} a lu l'annonce le ${new Date().toLocaleString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`,
           is_locked: false,
         },
       ]);
