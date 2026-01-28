@@ -125,24 +125,52 @@ const Procedures: React.FC<ProceduresProps> = ({
     setIsSearching(true);
     
     try {
-      const { data, error } = await supabase
-        .from('procedures')
-        .select('*')
-        .or(`title.ilike.%${termToSearch}%,Type.ilike.%${termToSearch}%`);
-        
-      if (error) throw error;
-      setSearchResults((data || []).map(f => ({
-        id: f.uuid,
-        file_id: f.uuid,
-        title: f.title || "Sans titre",
-        category: f.Type || 'NON CLASSÉ',
-        fileUrl: f.file_url,
-        createdAt: f.created_at,
-        views: f.views || 0,
-        status: f.status || 'validated'
-      })));
+      // 1. Recherche sémantique via n8n (RAG / Pinecone)
+      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: termToSearch })
+      });
+
+      if (!n8nResponse.ok) throw new Error("Erreur lors de la recherche sémantique");
+
+      const ragResults = await n8nResponse.json();
+      
+      // On s'attend à recevoir une liste d'objets avec un champ 'uuid'
+      const activeUuids = Array.isArray(ragResults) 
+        ? ragResults.map((r: any) => r.uuid).filter(Boolean)
+        : [];
+
+      if (activeUuids.length > 0) {
+        // 2. Récupération des métadonnées complètes depuis Supabase pour ces UUIDs
+        const { data, error } = await supabase
+          .from('procedures')
+          .select('*')
+          .in('uuid', activeUuids);
+
+        if (error) throw error;
+
+        // On trie les résultats Supabase pour qu'ils correspondent à l'ordre de pertinence de n8n
+        const sortedData = (data || []).sort((a, b) => {
+          return activeUuids.indexOf(a.uuid) - activeUuids.indexOf(b.uuid);
+        });
+
+        setSearchResults(sortedData.map(f => ({
+          id: f.uuid,
+          file_id: f.uuid,
+          title: f.title || "Sans titre",
+          category: f.Type || 'NON CLASSÉ',
+          fileUrl: f.file_url,
+          createdAt: f.created_at,
+          views: f.views || 0,
+          status: f.status || 'validated'
+        })));
+      } else {
+        // Si aucun résultat RAG n'est trouvé, on ne fait plus de fallback direct.
+        setSearchResults([]);
+      }
     } catch (e) {
-      console.error("Erreur recherche:", e);
+      console.error("Erreur recherche (RAG):", e);
       setSearchResults([]);
     } finally {
       setLoading(false);
