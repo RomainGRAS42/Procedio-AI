@@ -873,7 +873,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                   </div>
 
                   <h4 className="font-black text-slate-900 text-2xl group-hover:text-blue-600 transition-colors line-clamp-2 mb-6 leading-tight tracking-tight relative z-10">
-                    {note.title}
+                    {isLocked ? "Note Verrouillée" : note.title}
                   </h4>
 
                   <div className="relative flex-1 z-10">
@@ -882,7 +882,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                         isLocked ? "blur-sm select-none opacity-50" : ""
                       }`}
                       {...(isLocked
-                        ? { children: "Cette note est protégée. Veuillez la déverrouiller pour voir son contenu." }
+                        ? { children: "Cette note est protégée. Veuillez la déverrouiller pour accéder au contenu." }
                         : { dangerouslySetInnerHTML: { __html: note.content || "Aucune description." } }
                       )}
                     />
