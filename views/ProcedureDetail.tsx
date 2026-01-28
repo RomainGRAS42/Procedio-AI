@@ -193,7 +193,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden">
       {notification && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-slide-up">
-          <div className="bg-slate-900 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4">
+          <div className="bg-indigo-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4">
             <i className="fa-solid fa-circle-check text-emerald-400"></i>
             <span className="font-black text-xs uppercase tracking-widest">{notification.msg}</span>
           </div>
@@ -308,7 +308,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </button>
             <button
               onClick={() => window.open(docUrl || "", "_blank")}
-              className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl">
+              className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100">
               Plein écran
             </button>
           </div>

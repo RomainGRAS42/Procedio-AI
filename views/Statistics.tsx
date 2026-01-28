@@ -118,7 +118,7 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
               <h4 className="font-bold text-slate-800 text-sm mb-4 leading-tight">"{item.term}"</h4>
               <button
                 onClick={onUploadClick}
-                className="w-full py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 transition-colors flex items-center justify-center gap-2">
+                className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-100">
                 <i className="fa-solid fa-plus"></i>
                 Créer la procédure
               </button>

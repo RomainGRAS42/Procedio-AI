@@ -395,7 +395,7 @@ const App: React.FC = () => {
         <p className="text-slate-500 max-w-md mb-8">{initError}</p>
         <button
           onClick={() => window.location.reload()}
-          className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl">
+          className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-slate-900 transition-all">
           Réessayer
         </button>
       </div>

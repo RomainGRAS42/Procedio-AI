@@ -91,7 +91,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
                 Il apparaîtra dans votre liste d'ici quelques instants.
               </p>
             </div>
-            <button onClick={onBack} className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-xl active:scale-95">
+            <button onClick={onBack} className="w-full bg-indigo-600 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-900 transition-all shadow-xl active:scale-95 shadow-indigo-100">
               RETOUR AU DRIVE
             </button>
           </div>
@@ -158,7 +158,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
             <button 
               onClick={handlePublish}
               disabled={!title.trim() || !file || !!activeTransfer}
-              className="w-full md:w-auto bg-slate-900 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl disabled:opacity-30 min-w-[240px]"
+              className="w-full md:w-auto bg-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 disabled:opacity-30 min-w-[240px]"
             >
               {activeTransfer ? 'TRAITEMENT IA...' : 'LANCER LA PUBLICATION'}
             </button>

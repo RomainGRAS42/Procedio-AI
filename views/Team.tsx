@@ -428,7 +428,7 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                 <button
                   type="submit"
                   disabled={inviteLoading}
-                  className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
+                  className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
                   {inviteLoading ? (
                     <>
                       <i className="fa-solid fa-circle-notch animate-spin"></i>

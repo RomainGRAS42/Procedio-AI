@@ -175,7 +175,7 @@ const Procedures: React.FC<ProceduresProps> = ({
           {user.role === UserRole.MANAGER && (
             <button 
               onClick={onUploadClick}
-              className="bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-600 transition-all shadow-2xl active:scale-95"
+              className="bg-indigo-600 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-slate-900 transition-all shadow-2xl active:scale-95 shadow-indigo-200"
             >
               <i className="fa-solid fa-plus text-sm"></i>
               <span>Nouvelle Procédure</span>

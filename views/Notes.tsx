@@ -490,7 +490,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
         </div>
         <button
           onClick={handleAddNew}
-          className="w-full lg:w-auto bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95">
+          className="w-full lg:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100 active:scale-95">
           <i className="fa-solid fa-plus-circle text-lg"></i> Créer une note
         </button>
       </div>
@@ -527,7 +527,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                 <button
                   onClick={saveNote}
                   disabled={saving || !activeNote.title.trim()}
-                  className="bg-slate-900 text-white px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50 shadow-xl">
+                  className="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2 disabled:opacity-50 shadow-xl shadow-indigo-100">
                   {saving ? (
                     <i className="fa-solid fa-circle-notch animate-spin"></i>
                   ) : (
@@ -616,7 +616,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                   </button>
                   <button
                     onClick={() => verifyPassword()}
-                    className="py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg hover:shadow-amber-200">
+                    className="py-4 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-lg shadow-indigo-100">
                     {modalContent.btn}
                   </button>
                 </div>
@@ -686,7 +686,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                     <button
                       onClick={saveInlineEdit}
                       disabled={saving || !viewDraft?.title.trim()}
-                      className="px-6 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-blue-700 transition-all font-bold text-xs uppercase tracking-widest shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+                      className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
                       title="Enregistrer">
                       <i className="fa-solid fa-cloud-arrow-up"></i> Enregistrer
                     </button>
@@ -700,7 +700,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                 ) : (
                   <button
                     onClick={startInlineEdit}
-                    className="px-6 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-blue-700 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     title="Modifier">
                     <i className="fa-solid fa-pen-to-square"></i> Modifier
                   </button>

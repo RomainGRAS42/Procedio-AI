@@ -113,7 +113,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack, userEmail }) => {
           <button 
             type="submit"
             disabled={loading || !newPassword || !confirmPassword}
-            className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
           >
             {loading ? (
               <><i className="fa-solid fa-circle-notch animate-spin"></i> Mise à jour...</>

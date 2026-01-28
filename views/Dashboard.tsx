@@ -67,12 +67,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   useEffect(() => {
-    fetchLatestAnnouncement();
-    fetchRecentProcedures();
-    if (user.role === UserRole.MANAGER) {
-      fetchSuggestions();
+    if (user?.id) {
+      fetchLatestAnnouncement();
+      fetchRecentProcedures();
+      if (user.role === UserRole.MANAGER) {
+        fetchSuggestions();
+      }
     }
-  }, [user.role]);
+  }, [user?.id, user?.role]);
 
   const fetchSuggestions = async () => {
     setLoadingSuggestions(true);
@@ -274,7 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           user_id: user.id,
           title: `LOG_READ_${announcement?.id || "unknown"}`,
           content: `✅ Annonce lue par ${user.firstName} ${user.lastName || ""} le ${new Date().toLocaleString("fr-FR")} : "${announcement?.content.substring(0, 50)}..."`,
-          locked: false,
+          is_locked: false,
         },
       ]);
     } catch (err) {
@@ -303,7 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               .toUpperCase()}
           </p>
           <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
-            Hello, <span className="text-indigo-600">{user.firstName}</span>
+            Bonjour, <span className="text-indigo-600">{user.firstName}</span>
           </h2>
           <p className="text-slate-400 font-medium text-lg">
             Prêt à simplifier le support IT aujourd'hui ?
@@ -368,7 +370,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   onClick={handleSaveAnnouncement}
                   disabled={saving || !editContent.trim()}
-                  className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-xl disabled:opacity-50 transition-all active:scale-95 group flex items-center gap-3">
+                  className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-indigo-200 disabled:opacity-50 transition-all active:scale-95 group flex items-center gap-3">
                   {saving ? "Publication..." : "Publier l'annonce"}
                   <i className="fa-solid fa-paper-plane text-[8px] group-hover:translate-x-1 transition-transform"></i>
                 </button>
@@ -398,38 +400,45 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </p>
                 </div>
               </div>
-              <div className="w-full flex justify-between items-center">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                  Posté le{" "}
-                  {announcement
-                    ? new Date(announcement.created_at).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "..."}
-                </span>
-                <div className="flex items-center gap-4">
+              <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest whitespace-nowrap">
+                    Posté le{" "}
+                    {announcement
+                      ? new Date(announcement.created_at).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "..."}
+                  </span>
+                  {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50/50 rounded-lg border border-indigo-100/50 animate-fade-in">
+                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest leading-none">
+                        Le manager attend une confirmation de lecture
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4 self-end sm:self-auto">
                   {!announcement?.requires_confirmation && !isRead && (
                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl">
                       <i className="fa-solid fa-info-circle"></i> Information
                     </span>
                   )}
                   {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="text-[9px] font-bold text-slate-400 italic">
-                        Le manager attend une confirmation de lecture
-                      </span>
-                      <button
-                        onClick={handleMarkAsRead}
-                        className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95 animate-pulse">
-                        Lu et compris
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleMarkAsRead}
+                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-100 transition-all active:scale-95 group flex items-center gap-2">
+                      <span>Lu et compris</span>
+                      <i className="fa-solid fa-check text-[8px] transform group-hover:scale-125 transition-transform"></i>
+                    </button>
                   )}
                   {isRead && (
-                    <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
+                    <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
                       <i className="fa-solid fa-circle-check"></i> Lu et notifié
                     </span>
                   )}
@@ -504,7 +513,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                           setSelectedSuggestion(suggestion);
                           setShowSuggestionModal(true);
                         }}
-                        className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-sm active:scale-95 flex items-center gap-2 ml-auto"
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-sm active:scale-95 flex items-center gap-2 ml-auto shadow-indigo-100"
                       >
                         <i className="fa-regular fa-eye"></i> Examiner
                       </button>
