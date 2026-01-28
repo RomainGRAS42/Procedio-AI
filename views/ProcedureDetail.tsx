@@ -18,6 +18,19 @@ interface Message {
   timestamp: Date;
 }
 
+interface SuggestionItem {
+  id: string;
+  suggestion: string;
+  type: string;
+  priority: string;
+  status: string;
+  created_at: string;
+  manager_response?: string;
+  responded_at?: string;
+  user?: { first_name: string; last_name: string };
+  manager?: { first_name: string };
+}
+
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   procedure,
   user,
@@ -55,6 +68,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [suggestionType, setSuggestionType] = useState<"correction" | "update" | "add_step">("correction");
   const [suggestionPriority, setSuggestionPriority] = useState<"low" | "medium" | "high">("medium");
   const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false);
+  const [history, setHistory] = useState<SuggestionItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +108,31 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
       setDocUrl(data.publicUrl);
     }
+    fetchHistory();
   }, [procedure]);
+
+  const fetchHistory = async () => {
+    if (!procedure?.id) return;
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("procedure_suggestions")
+        .select(`
+          *,
+          user:user_profiles!user_id(first_name, last_name),
+          manager:user_profiles!manager_id(first_name)
+        `)
+        .eq("procedure_id", procedure.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (err) {
+      console.error("Erreur history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input;
@@ -164,25 +203,40 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     setIsSubmittingSuggestion(true);
 
     try {
-      const { error } = await supabase.from("procedure_suggestions").insert({
-        procedure_id: procedure.id,
-        user_id: user.id,
-        suggestion: suggestionContent,
-        status: "pending",
-      });
+      // 1. Insertion de la suggestion avec tous les champs
+      const { data: newSuggestion, error } = await supabase
+        .from("procedure_suggestions")
+        .insert({
+          procedure_id: procedure.id,
+          user_id: user.id,
+          suggestion: suggestionContent,
+          type: suggestionType,
+          priority: suggestionPriority,
+          status: "pending",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // 2. Notification temps réel pour le manager
+      await supabase.from("notes").insert([
+        {
+          user_id: user.id,
+          title: `LOG_SUGGESTION_${newSuggestion.id}`,
+          content: `💡 Suggestion de ${user.firstName} ${user.lastName || ""} sur "${cleanTitle}" [Priorité: ${suggestionPriority.toUpperCase()}]`,
+          is_locked: false,
+        },
+      ]);
 
       setNotification({ msg: "Suggestion envoyée au manager !", type: "success" });
       setIsSuggestionModalOpen(false);
       setSuggestionContent("");
+      fetchHistory(); // Rafraîchir l'historique
       setTimeout(() => setNotification(null), 3000);
     } catch (err) {
       console.error("Erreur suggestion:", err);
-      // Fallback UI si la table n'existe pas encore (simulation pour UX)
-      setNotification({ msg: "Suggestion envoyée (Simulation) !", type: "success" });
-      setIsSuggestionModalOpen(false);
-      setSuggestionContent("");
+      setNotification({ msg: "Erreur lors de l'envoi.", type: "error" });
       setTimeout(() => setNotification(null), 3000);
     } finally {
       setIsSubmittingSuggestion(false);
@@ -330,6 +384,77 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </div>
           )}
         </div>
+
+        {/* HISTORIQUE DES SUGGESTIONS */}
+        <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8 space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+              <i className="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">
+                Historique des améliorations
+              </h3>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                Retours de l'équipe sur ce document
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {loadingHistory ? (
+              <div className="col-span-full py-10 flex justify-center">
+                <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : history.length > 0 ? (
+              history.map((item) => (
+                <div key={item.id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-3 hover:shadow-md transition-all group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                       <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                        item.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                        item.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}>
+                        {item.priority === 'high' ? 'Haute' : item.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                        {new Date(item.created_at).toLocaleDateString("fr-FR")}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                      item.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {item.status === 'approved' ? 'Validé' : 'En attente'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
+                    "{item.suggestion}"
+                  </p>
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[9px] font-black text-slate-400 uppercase">
+                      Par {item.user?.first_name || "Un technicien"}
+                    </span>
+                  </div>
+                  {item.manager_response && (
+                    <div className="mt-4 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 relative">
+                      <div className="absolute -top-2 left-4 px-2 bg-white text-[7px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100 rounded">
+                        Réponse de {item.manager?.first_name || "Manager"}
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-600 leading-relaxed mt-1">
+                        {item.manager_response}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-10 text-center text-slate-300">
+                <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour le moment.</p>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
       {/* MODAL SUGGESTION */}

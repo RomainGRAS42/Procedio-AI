@@ -53,8 +53,10 @@ const Header: React.FC<HeaderProps> = ({
             table: 'notes',
           },
           (payload) => {
-            if (payload.new && payload.new.title && payload.new.title.startsWith("LOG_READ_")) {
-              setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
+            if (payload.new && payload.new.title) {
+              if (payload.new.title.startsWith("LOG_READ_") || payload.new.title.startsWith("LOG_SUGGESTION_")) {
+                setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
+              }
             }
           }
         )
@@ -107,7 +109,7 @@ const Header: React.FC<HeaderProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
-        .like("title", "LOG_READ_%")
+        .or("title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%")
         .order("updated_at", { ascending: false })
         .limit(5);
 
@@ -178,27 +180,45 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                   {/* Logs de lecture */}
-                  {readLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <i className="fa-solid fa-circle-check text-indigo-500 text-[10px]"></i>
-                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
-                          Confirmation de lecture
+                  {readLogs.map((log) => {
+                    const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
+                    const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
+                    const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
+                    
+                    const borderColor = priority === 'high' ? 'border-rose-200' : 
+                                      priority === 'medium' ? 'border-amber-200' : 
+                                      isSuggestion ? 'border-indigo-200' : 'border-indigo-100';
+                                      
+                    const bgColor = priority === 'high' ? 'bg-rose-50/50' : 
+                                  priority === 'medium' ? 'bg-amber-50/50' : 
+                                  isSuggestion ? 'bg-indigo-50/50' : 'bg-indigo-50/50';
+
+                    const textColor = priority === 'high' ? 'text-rose-600' : 
+                                    priority === 'medium' ? 'text-amber-600' : 
+                                    'text-indigo-600';
+
+                    return (
+                      <div
+                        key={log.id}
+                        className={`p-3 rounded-xl border ${borderColor} ${bgColor}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <i className={`fa-solid ${isSuggestion ? 'fa-lightbulb' : 'fa-circle-check'} ${textColor} text-[10px]`}></i>
+                          <span className={`${textColor} text-[10px] font-black uppercase tracking-widest`}>
+                            {isSuggestion ? "Nouvelle Suggestion" : "Confirmation de lecture"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
+                          {log.content}
+                        </p>
+                        <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                          {new Date(log.created_at || log.updated_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
-                        {log.content}
-                      </p>
-                      <span className="text-[9px] text-slate-400 font-bold block mt-1">
-                        {new Date(log.updated_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Suggestions */}
                   {pendingSuggestions.map((s) => (

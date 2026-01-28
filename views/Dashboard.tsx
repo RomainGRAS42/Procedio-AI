@@ -32,6 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [saving, setSaving] = useState(false);
   const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
+  const [managerResponse, setManagerResponse] = useState("");
 
   const [recentProcedures, setRecentProcedures] = useState<Procedure[]>([]);
   const [loadingProcedures, setLoadingProcedures] = useState(true);
@@ -129,7 +130,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     try {
       const { error } = await supabase
         .from("procedure_suggestions")
-        .update({ status })
+        .update({ 
+          status, 
+          manager_response: managerResponse,
+          responded_at: new Date().toISOString(),
+          manager_id: user.id
+        })
         .eq("id", selectedSuggestion.id);
 
       if (error) throw error;
@@ -138,6 +144,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       setPendingSuggestions((prev) => prev.filter((s) => s.id !== selectedSuggestion.id));
       setShowSuggestionModal(false);
       setSelectedSuggestion(null);
+      setManagerResponse("");
 
       // Add notification log
       await supabase.from("notes").insert([
@@ -658,6 +665,18 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="w-full p-5 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-slate-600 text-sm max-h-60 overflow-y-auto">
                 {selectedSuggestion.content}
               </div>
+            </div>
+
+            <div className="mb-6">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                Votre réponse au technicien
+              </span>
+              <textarea
+                value={managerResponse}
+                onChange={(e) => setManagerResponse(e.target.value)}
+                placeholder="Expliquez pourquoi vous validez ou refusez cette suggestion..."
+                className="w-full h-32 p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none text-sm"
+              />
             </div>
 
             <div className="flex items-center gap-3 justify-end pt-4 border-t border-slate-50">
