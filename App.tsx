@@ -39,7 +39,7 @@ const App: React.FC = () => {
     "loading"
   );
   const [initError, setInitError] = useState<string | null>(null);
-  const [notificationHandler, setNotificationHandler] = useState<((type: 'suggestion' | 'read', id: string) => void) | null>(null);
+  const [pendingAction, setPendingAction] = useState<{type: 'suggestion' | 'read', id: string} | null>(null);
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
@@ -307,7 +307,8 @@ const App: React.FC = () => {
                 setCurrentView("procedure-detail");
               }}
               onViewHistory={() => setCurrentView("history")}
-              onReferenceNotification={(handler) => setNotificationHandler(() => handler)}
+              targetAction={pendingAction}
+              onActionHandled={() => setPendingAction(null)}
             />
         );
       case "procedures":
@@ -438,12 +439,10 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             onNavigate={(view) => setCurrentView(view)}
             onNotificationClick={(type, id) => {
+              setPendingAction({ type, id });
               if (currentView !== "dashboard") {
                 setCurrentView("dashboard");
-                // Le handler sera appelé par le useEffect du Dashboard une fois monté
-                // Pour l'instant on se fie au fait que le manager est souvent sur le dashboard
               }
-              notificationHandler?.(type, id);
             }}
           />
         )}

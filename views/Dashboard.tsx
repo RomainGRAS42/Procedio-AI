@@ -7,7 +7,8 @@ interface DashboardProps {
   onQuickNote: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
   onViewHistory: () => void;
-  onReferenceNotification?: (handler: (type: 'suggestion' | 'read', id: string) => void) => void;
+  targetAction?: { type: 'suggestion' | 'read', id: string } | null;
+  onActionHandled?: () => void;
 }
 
 interface Announcement {
@@ -25,7 +26,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onQuickNote,
   onSelectProcedure,
   onViewHistory,
-  onReferenceNotification,
+  targetAction,
+  onActionHandled,
 }) => {
   const [isRead, setIsRead] = useState(false);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -84,21 +86,22 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [user?.id, user?.role]);
 
+  // Handle incoming notification action
   useEffect(() => {
-    if (onReferenceNotification) {
-      onReferenceNotification(handleNotificationClick);
-    }
-  }, [pendingSuggestions]);
-
-  const handleNotificationClick = (type: 'suggestion' | 'read', id: string) => {
-    if (type === 'suggestion') {
-      const sugg = pendingSuggestions.find(s => s.id === id);
-      if (sugg) {
-        setSelectedSuggestion(sugg);
-        setShowSuggestionModal(true);
+    if (targetAction && !loadingSuggestions && pendingSuggestions.length > 0) {
+      if (targetAction.type === 'suggestion') {
+        const sugg = pendingSuggestions.find(s => s.id === targetAction.id);
+        if (sugg) {
+          setSelectedSuggestion(sugg);
+          setShowSuggestionModal(true);
+          onActionHandled?.();
+        }
+      } else if (targetAction.type === 'read') {
+        // Optionnel : scroll to or highlight activity
+        onActionHandled?.();
       }
     }
-  };
+  }, [targetAction, pendingSuggestions, loadingSuggestions]);
 
   const fetchActivities = async () => {
     setLoadingActivities(true);
@@ -580,32 +583,18 @@ const Dashboard: React.FC<DashboardProps> = ({
         </section>
       )}
 
-      {/* NEW: RECENT ACTIVITY WIDGET (Manager Only) */}
+      {/* REDESIGNED ACTIVITY WIDGET: Compact & Discrete */}
       {user.role === UserRole.MANAGER && (
-        <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm animate-slide-up">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm">
-                <i className="fa-solid fa-bolt-lightning"></i>
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900 text-xl">Dernières Activités</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Flux temps réel de l'équipe
-                </p>
-              </div>
-            </div>
-            <button 
-              onClick={fetchActivities}
-              className="w-10 h-10 rounded-xl hover:bg-slate-50 text-slate-400 transition-colors flex items-center justify-center"
-              title="Rafraîchir">
-              <i className={`fa-solid fa-rotate ${loadingActivities ? 'animate-spin' : ''}`}></i>
-            </button>
+        <section className="mb-12">
+          <div className="flex items-center gap-3 mb-6 px-4">
+            <i className="fa-solid fa-bolt-lightning text-indigo-500 text-xs"></i>
+            <h3 className="font-black text-slate-800 text-[11px] uppercase tracking-[0.2em]">Flux d'Activité</h3>
+            <div className="h-[1px] flex-1 bg-slate-100"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {activities.length > 0 ? (
-              activities.map((act) => {
+              activities.slice(0, 4).map((act) => {
                 const isSugg = act.title.startsWith("LOG_SUGGESTION_");
                 const priorityMatch = act.content.match(/\[Priorité: (.*?)\]/);
                 const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
@@ -616,52 +605,49 @@ const Dashboard: React.FC<DashboardProps> = ({
                     onClick={() => {
                       if (isSugg) {
                         const sid = act.title.replace("LOG_SUGGESTION_", "");
-                        handleNotificationClick('suggestion', sid);
+                        const sugg = pendingSuggestions.find(s => s.id === sid);
+                        if (sugg) {
+                          setSelectedSuggestion(sugg);
+                          setShowSuggestionModal(true);
+                        }
                       }
                     }}
-                    className={`group p-6 rounded-3xl border transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 cursor-pointer flex flex-col justify-between h-full bg-slate-50/50 hover:bg-white ${
-                      isSugg ? 'border-indigo-100 hover:border-indigo-500/20' : 'border-slate-100 hover:border-emerald-500/20'
+                    className={`group p-4 rounded-[2rem] border transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 cursor-pointer flex flex-col justify-between h-32 bg-white/50 backdrop-blur-sm ${
+                      isSugg ? 'border-indigo-100 hover:border-indigo-400' : 'border-slate-100 hover:border-emerald-400'
                     }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm shadow-sm ${
-                          isSugg ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
-                        }`}>
-                          <i className={`fa-solid ${isSugg ? 'fa-lightbulb' : 'fa-circle-check'}`}></i>
-                        </div>
-                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                          {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] ${
+                        isSugg ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        <i className={`fa-solid ${isSugg ? 'fa-lightbulb' : 'fa-circle-check'}`}></i>
                       </div>
-                      
-                      <p className="text-xs font-bold text-slate-700 leading-relaxed">
-                        {act.content.split('[')[0]}
-                      </p>
-
-                      {priority && (
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                          priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                          priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-slate-100 text-slate-500 border-slate-200'
-                        }`}>
-                          Priorité {priority === 'high' ? 'Haute' : priority === 'medium' ? 'Moyenne' : 'Basse'}
-                        </span>
-                      )}
+                      <span className="text-[8px] font-black text-slate-300 uppercase">
+                        {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-                        {isSugg ? 'Examiner' : 'Vu'}
-                      </span>
-                      <i className={`fa-solid fa-arrow-right text-[8px] ${isSugg ? 'text-indigo-400' : 'text-emerald-400'}`}></i>
+                    <p className="text-[10px] font-bold text-slate-600 leading-tight line-clamp-2">
+                      {act.content.split('[')[0]}
+                    </p>
+
+                    <div className="flex items-center justify-between mt-2">
+                      {priority ? (
+                        <span className={`text-[7px] font-black uppercase tracking-tighter ${
+                          priority === 'high' ? 'text-rose-500' :
+                          priority === 'medium' ? 'text-amber-500' :
+                          'text-slate-400'
+                        }`}>
+                          {priority === 'high' ? 'High' : priority === 'medium' ? 'Médium' : 'Low'}
+                        </span>
+                      ) : <span />}
+                      <i className={`fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-all ${isSugg ? 'text-indigo-400' : 'text-emerald-400'}`}></i>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="col-span-full py-12 text-center text-slate-300">
-                <i className="fa-solid fa-wind text-2xl mb-3 opacity-20"></i>
-                <p className="text-[10px] font-black uppercase tracking-widest">Aucune activité récente.</p>
+              <div className="col-span-full py-6 text-center text-slate-300">
+                <p className="text-[9px] font-black uppercase tracking-widest">Aucune activité.</p>
               </div>
             )}
           </div>
