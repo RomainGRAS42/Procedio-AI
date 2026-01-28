@@ -10,6 +10,7 @@ interface HeaderProps {
   onSearch: (term: string) => void;
   onLogout: () => void;
   onNavigate: (view: ViewType) => void;
+  onNotificationClick?: (type: 'suggestion' | 'read', id: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -20,6 +21,7 @@ const Header: React.FC<HeaderProps> = ({
   onSearch,
   onLogout,
   onNavigate,
+  onNotificationClick,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -200,12 +202,22 @@ const Header: React.FC<HeaderProps> = ({
                     return (
                       <div
                         key={log.id}
-                        className={`p-3 rounded-xl border ${borderColor} ${bgColor}`}>
+                        onClick={() => {
+                          if (isSuggestion) {
+                            const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
+                            onNotificationClick?.('suggestion', suggestionId);
+                          } else {
+                            onNotificationClick?.('read', log.id);
+                          }
+                          setShowNotifications(false);
+                        }}
+                        className={`p-3 rounded-xl border ${borderColor} ${bgColor} cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group`}>
                         <div className="flex items-center gap-2 mb-1">
                           <i className={`fa-solid ${isSuggestion ? 'fa-lightbulb' : 'fa-circle-check'} ${textColor} text-[10px]`}></i>
                           <span className={`${textColor} text-[10px] font-black uppercase tracking-widest`}>
                             {isSuggestion ? "Nouvelle Suggestion" : "Confirmation de lecture"}
                           </span>
+                          <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
                         </div>
                         <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
                           {log.content}
