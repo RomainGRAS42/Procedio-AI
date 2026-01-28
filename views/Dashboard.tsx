@@ -319,23 +319,26 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder="Écrivez votre message à l'équipe ici..."
               />
-              <div className="flex items-center justify-between gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between gap-4 bg-slate-50/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-5">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
+                    <i className={`fa-solid ${requiresConfirmation ? "fa-bell text-indigo-500" : "fa-bell-slash text-slate-300"}`}></i>
+                  </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest leading-none">
-                      Confirmation de lecture
+                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest leading-none">
+                      Demander une confirmation de lecture
                     </span>
-                    <span className="text-[9px] font-bold text-slate-400 mt-1">
-                      {requiresConfirmation ? "Les techniciens devront cliquer sur 'Lu et compris'" : "Simple message informatif"}
+                    <span className="text-[9px] font-bold text-slate-400 mt-1.5">
+                      {requiresConfirmation ? "Exige un clic 'Lu et compris' du technicien" : "Message informatif simple sans validation"}
                     </span>
                   </div>
                   <button
                     onClick={() => setRequiresConfirmation(!requiresConfirmation)}
-                    className={`relative w-12 h-6 rounded-full transition-all duration-300 outline-none ${
+                    className={`relative w-11 h-6 rounded-full transition-all duration-300 outline-none ml-2 ${
                       requiresConfirmation ? "bg-indigo-600 shadow-md shadow-indigo-100" : "bg-slate-200"
                     }`}>
                     <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 transform ${
-                      requiresConfirmation ? "translate-x-6" : "translate-x-0 shadow-sm"
+                      requiresConfirmation ? "translate-x-5" : "translate-x-0 shadow-sm"
                     }`} />
                   </button>
                 </div>
@@ -343,8 +346,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   onClick={handleSaveAnnouncement}
                   disabled={saving || !editContent.trim()}
-                  className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 shadow-xl disabled:opacity-50 transition-all active:scale-95">
-                  {saving ? "Publication..." : "Mettre à jour l'annonce"}
+                  className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-xl disabled:opacity-50 transition-all active:scale-95 group flex items-center gap-3">
+                  {saving ? "Publication..." : "Publier l'annonce"}
+                  <i className="fa-solid fa-paper-plane text-[8px] group-hover:translate-x-1 transition-transform"></i>
                 </button>
               </div>
             </div>
