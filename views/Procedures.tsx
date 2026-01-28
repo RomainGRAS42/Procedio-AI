@@ -121,16 +121,19 @@ const Procedures: React.FC<ProceduresProps> = ({
       fetchStructure();
       return;
     }
+    console.log("DEBUG: handleSearch triggered with term:", termToSearch);
     setLoading(true);
     setIsSearching(true);
     
     try {
+      console.log("DEBUG: Sending request to n8n RAG webhook...");
       // 1. Recherche sémantique via n8n (RAG / Pinecone)
       const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: termToSearch })
       });
+      console.log("DEBUG: n8n response status:", n8nResponse.status);
 
       if (!n8nResponse.ok) throw new Error("Erreur lors de la recherche sémantique");
 
