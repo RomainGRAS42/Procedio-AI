@@ -395,8 +395,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </span>
                   )}
                   {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
-                    <>
-                      <span className="hidden md:block text-[9px] font-bold text-slate-400 italic">
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="text-[9px] font-bold text-slate-400 italic">
                         Le manager attend une confirmation de lecture
                       </span>
                       <button
@@ -404,7 +404,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95 animate-pulse">
                         Lu et compris
                       </button>
-                    </>
+                    </div>
                   )}
                   {isRead && (
                     <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
