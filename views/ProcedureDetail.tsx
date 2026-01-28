@@ -423,11 +423,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                       </span>
                     </div>
                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                      item.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 
-                      item.status === 'rejected' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                      'bg-amber-50 text-amber-600'
+                      item.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
                     }`}>
-                      {item.status === 'approved' ? 'Validé' : item.status === 'rejected' ? 'Refusé' : 'En attente'}
+                      {item.status === 'approved' ? 'Validé' : 'En attente'}
                     </span>
                   </div>
                   <p className="text-xs font-bold text-slate-700 leading-relaxed italic">

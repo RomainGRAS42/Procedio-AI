@@ -128,17 +128,24 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!selectedSuggestion) return;
 
     try {
-      const { error } = await supabase
-        .from("procedure_suggestions")
-        .update({ 
-          status, 
-          manager_response: managerResponse,
-          responded_at: new Date().toISOString(),
-          manager_id: user.id
-        })
-        .eq("id", selectedSuggestion.id);
-
-      if (error) throw error;
+      if (status === "rejected") {
+        const { error } = await supabase
+          .from("procedure_suggestions")
+          .delete()
+          .eq("id", selectedSuggestion.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("procedure_suggestions")
+          .update({ 
+            status, 
+            manager_response: managerResponse,
+            responded_at: new Date().toISOString(),
+            manager_id: user.id
+          })
+          .eq("id", selectedSuggestion.id);
+        if (error) throw error;
+      }
 
       // Update local state
       setPendingSuggestions((prev) => prev.filter((s) => s.id !== selectedSuggestion.id));
