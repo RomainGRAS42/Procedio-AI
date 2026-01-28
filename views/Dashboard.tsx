@@ -319,22 +319,32 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder="Écrivez votre message à l'équipe ici..."
               />
-              <div className="flex items-center justify-between gap-4">
-                <button
-                  onClick={() => setRequiresConfirmation(!requiresConfirmation)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-2xl border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
-                    requiresConfirmation 
-                      ? "bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm" 
-                      : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
-                  }`}>
-                  <i className={`fa-solid ${requiresConfirmation ? "fa-bell animate-bounce" : "fa-bell-slash"}`}></i>
-                  {requiresConfirmation ? "Confirmation exigée" : "Notification simple"}
-                </button>
+              <div className="flex items-center justify-between gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest leading-none">
+                      Confirmation de lecture
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-1">
+                      {requiresConfirmation ? "Les techniciens devront cliquer sur 'Lu et compris'" : "Simple message informatif"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                    className={`relative w-12 h-6 rounded-full transition-all duration-300 outline-none ${
+                      requiresConfirmation ? "bg-indigo-600 shadow-md shadow-indigo-100" : "bg-slate-200"
+                    }`}>
+                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 transform ${
+                      requiresConfirmation ? "translate-x-6" : "translate-x-0 shadow-sm"
+                    }`} />
+                  </button>
+                </div>
+                
                 <button
                   onClick={handleSaveAnnouncement}
                   disabled={saving || !editContent.trim()}
-                  className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-xl disabled:opacity-50 transition-all">
-                  {saving ? "Publication..." : "Publier l'annonce"}
+                  className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 shadow-xl disabled:opacity-50 transition-all active:scale-95">
+                  {saving ? "Publication..." : "Mettre à jour l'annonce"}
                 </button>
               </div>
             </div>
