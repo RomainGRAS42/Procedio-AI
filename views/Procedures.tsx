@@ -126,7 +126,7 @@ const Procedures: React.FC<ProceduresProps> = ({
     
     try {
       // 1. Recherche sémantique via n8n (RAG / Pinecone)
-      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
+      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: termToSearch })
