@@ -121,62 +121,28 @@ const Procedures: React.FC<ProceduresProps> = ({
       fetchStructure();
       return;
     }
-    console.log("DEBUG: handleSearch triggered with term:", termToSearch);
     setLoading(true);
     setIsSearching(true);
     
     try {
-      console.log("DEBUG: Sending request to n8n RAG webhook...");
-      // 1. Recherche sémantique via n8n (RAG / Pinecone)
-      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: termToSearch })
-      });
-      console.log("DEBUG: n8n response status:", n8nResponse.status);
-
-      if (!n8nResponse.ok) throw new Error("Erreur lors de la recherche sémantique");
-
-      const ragResults = await n8nResponse.json();
-      console.log("DEBUG: ragResults received:", ragResults);
-      
-      // Extraction des titres depuis le nouveau format [ { output: { titre: "...", ... } } ]
-      const searchTitles = Array.isArray(ragResults) 
-        ? ragResults.map((r: any) => r.output?.titre).filter(Boolean)
-        : [];
-
-      console.log("DEBUG: extracted searchTitles:", searchTitles);
-
-      if (searchTitles.length > 0) {
-        // 2. Récupération des métadonnées complètes depuis Supabase pour ces titres
-        const { data, error } = await supabase
-          .from('procedures')
-          .select('*')
-          .in('title', searchTitles);
-
-        if (error) throw error;
-
-        // Tri par pertinence (ordre retourné par n8n)
-        const sortedData = (data || []).sort((a, b) => {
-          return searchTitles.indexOf(a.title) - searchTitles.indexOf(b.title);
-        });
-
-        setSearchResults(sortedData.map(f => ({
-          id: f.uuid,
-          file_id: f.uuid,
-          title: f.title || "Sans titre",
-          category: f.Type || 'NON CLASSÉ',
-          fileUrl: f.file_url,
-          createdAt: f.created_at,
-          views: f.views || 0,
-          status: f.status || 'validated'
-        })));
-      } else {
-        // Si aucun résultat RAG n'est trouvé, on ne fait plus de fallback direct.
-        setSearchResults([]);
-      }
+      const { data, error } = await supabase
+        .from('procedures')
+        .select('*')
+        .or(`title.ilike.%${termToSearch}%,Type.ilike.%${termToSearch}%`);
+        
+      if (error) throw error;
+      setSearchResults((data || []).map(f => ({
+        id: f.uuid,
+        file_id: f.uuid,
+        title: f.title || "Sans titre",
+        category: f.Type || 'NON CLASSÉ',
+        fileUrl: f.file_url,
+        createdAt: f.created_at,
+        views: f.views || 0,
+        status: f.status || 'validated'
+      })));
     } catch (e) {
-      console.error("Erreur recherche (RAG):", e);
+      console.error("Erreur recherche:", e);
       setSearchResults([]);
     } finally {
       setLoading(false);
