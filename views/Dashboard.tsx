@@ -16,6 +16,7 @@ interface Announcement {
   author_initials: string;
   created_at: string;
   author_id?: string;
+  requires_confirmation?: boolean;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -30,6 +31,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
+  const [requiresConfirmation, setRequiresConfirmation] = useState(false);
 
   const [recentProcedures, setRecentProcedures] = useState<Procedure[]>([]);
   const [loadingProcedures, setLoadingProcedures] = useState(true);
@@ -195,6 +197,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (data) {
         setAnnouncement(data);
         setEditContent(data.content);
+        setRequiresConfirmation(data.requires_confirmation || false);
       } else {
         const defaultAnn = {
           id: "default",
@@ -223,6 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           author_name: user.firstName,
           author_initials: user.firstName.substring(0, 2).toUpperCase(),
           author_id: user.id,
+          requires_confirmation: requiresConfirmation,
         },
       ]);
 
@@ -245,11 +249,10 @@ const Dashboard: React.FC<DashboardProps> = ({
     try {
       await supabase.from("notes").insert([
         {
-          title: `LOG_READ_${announcement.id}`,
-          content: `L'annonce "${announcement.content.substring(0, 30)}..." a été lue par ${user.firstName} ${user.lastName || ""}.`,
-          is_protected: false,
           user_id: user.id,
-          tags: ["NOTIFICATION", "SYSTEM"],
+          title: `LOG_READ_${announcement?.id || "unknown"}`,
+          content: `✅ Annonce lue par ${user.firstName} ${user.lastName || ""} le ${new Date().toLocaleString("fr-FR")} : "${announcement?.content.substring(0, 50)}..."`,
+          locked: false,
         },
       ]);
     } catch (err) {
@@ -316,11 +319,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder="Écrivez votre message à l'équipe ici..."
               />
-              <div className="flex justify-end gap-4">
+              <div className="flex items-center justify-between gap-4">
+                <button
+                  onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                  className={`flex items-center gap-3 px-6 py-3 rounded-2xl border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
+                    requiresConfirmation 
+                      ? "bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm" 
+                      : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
+                  }`}>
+                  <i className={`fa-solid ${requiresConfirmation ? "fa-bell animate-bounce" : "fa-bell-slash"}`}></i>
+                  {requiresConfirmation ? "Confirmation exigée" : "Notification simple"}
+                </button>
                 <button
                   onClick={handleSaveAnnouncement}
                   disabled={saving || !editContent.trim()}
-                  className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-lg disabled:opacity-50 transition-all">
+                  className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-xl disabled:opacity-50 transition-all">
                   {saving ? "Publication..." : "Publier l'annonce"}
                 </button>
               </div>
@@ -361,18 +374,25 @@ const Dashboard: React.FC<DashboardProps> = ({
                       })
                     : "..."}
                 </span>
-                {user.role === UserRole.TECHNICIAN && !isRead && (
-                  <button
-                    onClick={handleMarkAsRead}
-                    className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95">
-                    Lu et compris
-                  </button>
-                )}
-                {isRead && (
-                  <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
-                    <i className="fa-solid fa-circle-check"></i> Lu et notifié
-                  </span>
-                )}
+                <div className="flex items-center gap-4">
+                  {!announcement?.requires_confirmation && !isRead && (
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl">
+                      <i className="fa-solid fa-info-circle"></i> Information
+                    </span>
+                  )}
+                  {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
+                    <button
+                      onClick={handleMarkAsRead}
+                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95 animate-pulse">
+                      Lu et compris
+                    </button>
+                  )}
+                  {isRead && (
+                    <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
+                      <i className="fa-solid fa-circle-check"></i> Lu et notifié
+                    </span>
+                  )}
+                </div>
               </div>
             </>
           )}
