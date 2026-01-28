@@ -411,21 +411,23 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <div key={item.id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-3 hover:shadow-md transition-all group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                       <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
                         item.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                         item.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                         'bg-slate-100 text-slate-500 border-slate-200'
                       }`}>
-                        {item.priority === 'high' ? 'Haute' : item.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                        PRIORITÉ {item.priority === 'high' ? 'HAUTE' : item.priority === 'medium' ? 'MOYENNE' : 'BASSE'}
                       </span>
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                         {new Date(item.created_at).toLocaleDateString("fr-FR")}
                       </span>
                     </div>
                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                      item.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                      item.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 
+                      item.status === 'rejected' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                      'bg-amber-50 text-amber-600'
                     }`}>
-                      {item.status === 'approved' ? 'Validé' : 'En attente'}
+                      {item.status === 'approved' ? 'Validé' : item.status === 'rejected' ? 'Refusé' : 'En attente'}
                     </span>
                   </div>
                   <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
