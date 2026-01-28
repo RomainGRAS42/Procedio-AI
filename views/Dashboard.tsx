@@ -88,16 +88,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Handle incoming notification action
   useEffect(() => {
-    if (targetAction && !loadingSuggestions && pendingSuggestions.length > 0) {
+    if (targetAction) {
+      console.log("Dashboard: Action reçue", targetAction);
+      
+      // On s'assure d'avoir les suggestions chargées
+      if (loadingSuggestions) return;
+      if (pendingSuggestions.length === 0) {
+        fetchSuggestions();
+        return;
+      }
+
       if (targetAction.type === 'suggestion') {
-        const sugg = pendingSuggestions.find(s => s.id === targetAction.id);
+        // Force string comparison for IDs
+        const sugg = pendingSuggestions.find(s => String(s.id) === String(targetAction.id));
+        console.log("Dashboard: Recherche suggestion", targetAction.id, "Trouvée ?", !!sugg);
+        
         if (sugg) {
           setSelectedSuggestion(sugg);
           setShowSuggestionModal(true);
           onActionHandled?.();
         }
       } else if (targetAction.type === 'read') {
-        // Optionnel : scroll to or highlight activity
         onActionHandled?.();
       }
     }
