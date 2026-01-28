@@ -132,9 +132,23 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
       setLoading(false);
     }
   };
+  const handleCloseNote = () => {
+    if (viewingNote?.is_protected) {
+      setUnlockedNotes((prev) => {
+        const next = new Set(prev);
+        next.delete(viewingNote.id);
+        return next;
+      });
+    }
+    setViewingEdit(false);
+    setViewDraft(null);
+    setViewingNote(null);
+    setSearchTerm("");
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setViewingNote(null);
+      if (e.key === "Escape") handleCloseNote();
     };
     if (viewingNote) {
       backBtnRef.current?.focus();
@@ -624,12 +638,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
               <div className="flex items-center gap-4">
                 <button
                   ref={backBtnRef}
-                  onClick={() => {
-                    setViewingEdit(false);
-                    setViewDraft(null);
-                    setViewingNote(null);
-                    setSearchTerm("");
-                  }}
+                  onClick={handleCloseNote}
                   className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-label="Fermer la lecture et revenir à la liste">
                   <i className="fa-solid fa-arrow-left text-lg"></i>
