@@ -180,7 +180,7 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
                 </div>
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto overflow-x-hidden pr-1 scrollbar-hide">
                   {/* Logs de lecture */}
                   {readLogs.map((log) => {
                     const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");

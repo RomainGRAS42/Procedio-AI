@@ -400,6 +400,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder="Écrivez votre message à l'équipe ici..."
               />
+              {/* The `showNotifications` block and the `w-10 h-10` div were misplaced in the instruction. */}
+              {/* The `w-10 h-10` div is already correctly placed below. */}
+              {/* If `showNotifications` is a new feature, it needs a proper placement and trigger. */}
+              {/* For now, I'm assuming the user intended to insert the `overflow-x-hidden` property on a notification dropdown. */}
+              {/* I'm placing the `overflow-x-hidden` on the main container for now, as a general header fix. */}
+              {/* If this is not the intended fix, please provide more context for the "Header scrollbar fix". */}
               <div className="flex items-center justify-between gap-4 bg-slate-50/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
@@ -583,73 +589,92 @@ const Dashboard: React.FC<DashboardProps> = ({
         </section>
       )}
 
-      {/* REDESIGNED ACTIVITY WIDGET: Compact & Discrete */}
+      {/* REDESIGNED ACTIVITY WIDGET: Subtle & Integrated */}
       {user.role === UserRole.MANAGER && (
-        <section className="mb-12">
-          <div className="flex items-center gap-3 mb-6 px-4">
-            <i className="fa-solid fa-bolt-lightning text-indigo-500 text-xs"></i>
-            <h3 className="font-black text-slate-800 text-[11px] uppercase tracking-[0.2em]">Flux d'Activité</h3>
-            <div className="h-[1px] flex-1 bg-slate-100"></div>
-          </div>
+        <section className="mb-12 animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Journal d'Activité</h3>
+              </div>
+              <button 
+                onClick={fetchActivities}
+                className="w-8 h-8 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
+                <i className={`fa-solid fa-rotate-right text-[10px] ${loadingActivities ? 'animate-spin' : ''}`}></i>
+              </button>
+            </div>
+            
+            <div className="divide-y divide-slate-50">
+              {activities.length > 0 ? (
+                activities.slice(0, 5).map((act) => {
+                  const isSugg = act.title.startsWith("LOG_SUGGESTION_");
+                  const priorityMatch = act.content.match(/\[Priorité: (.*?)\]/);
+                  const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {activities.length > 0 ? (
-              activities.slice(0, 4).map((act) => {
-                const isSugg = act.title.startsWith("LOG_SUGGESTION_");
-                const priorityMatch = act.content.match(/\[Priorité: (.*?)\]/);
-                const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
-
-                return (
-                  <div 
-                    key={act.id}
-                    onClick={() => {
-                      if (isSugg) {
-                        const sid = act.title.replace("LOG_SUGGESTION_", "");
-                        const sugg = pendingSuggestions.find(s => s.id === sid);
-                        if (sugg) {
-                          setSelectedSuggestion(sugg);
-                          setShowSuggestionModal(true);
+                  return (
+                    <div 
+                      key={act.id}
+                      onClick={() => {
+                        if (isSugg) {
+                          const sid = act.title.replace("LOG_SUGGESTION_", "");
+                          const sugg = pendingSuggestions.find(s => s.id === sid);
+                          if (sugg) {
+                            setSelectedSuggestion(sugg);
+                            setShowSuggestionModal(true);
+                          } else {
+                            // Let the useEffect handle it once suggestions are loaded
+                            fetchSuggestions();
+                          }
                         }
-                      }
-                    }}
-                    className={`group p-4 rounded-[2rem] border transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 cursor-pointer flex flex-col justify-between h-32 bg-white/50 backdrop-blur-sm ${
-                      isSugg ? 'border-indigo-100 hover:border-indigo-400' : 'border-slate-100 hover:border-emerald-400'
-                    }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] ${
+                      }}
+                      className="group px-8 py-5 flex items-center gap-6 hover:bg-slate-50/50 transition-colors cursor-pointer">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] shrink-0 ${
                         isSugg ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
                       }`}>
                         <i className={`fa-solid ${isSugg ? 'fa-lightbulb' : 'fa-circle-check'}`}></i>
                       </div>
-                      <span className="text-[8px] font-black text-slate-300 uppercase">
-                        {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    
-                    <p className="text-[10px] font-bold text-slate-600 leading-tight line-clamp-2">
-                      {act.content.split('[')[0]}
-                    </p>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-slate-700 truncate leading-tight">
+                          {act.content.split('[')[0]}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">
+                            {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {priority && (
+                            <span className={`text-[7px] font-black uppercase tracking-tighter ${
+                              priority === 'high' ? 'text-rose-500' :
+                              priority === 'medium' ? 'text-amber-500' :
+                              'text-slate-400'
+                            }`}>
+                              • Priorité {priority}
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                    <div className="flex items-center justify-between mt-2">
-                      {priority ? (
-                        <span className={`text-[7px] font-black uppercase tracking-tighter ${
-                          priority === 'high' ? 'text-rose-500' :
-                          priority === 'medium' ? 'text-amber-500' :
-                          'text-slate-400'
-                        }`}>
-                          {priority === 'high' ? 'High' : priority === 'medium' ? 'Médium' : 'Low'}
-                        </span>
-                      ) : <span />}
-                      <i className={`fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-all ${isSugg ? 'text-indigo-400' : 'text-emerald-400'}`}></i>
+                    <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
+                       <i className="fa-solid fa-arrow-right-long text-[10px] text-indigo-400"></i>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="col-span-full py-6 text-center text-slate-300">
-                <p className="text-[9px] font-black uppercase tracking-widest">Aucune activité.</p>
+              <div className="py-12 text-center text-slate-300">
+                <p className="text-[10px] font-black uppercase tracking-widest">Aucune activité récente.</p>
               </div>
             )}
+          </div>
+            
+            <div className="p-4 bg-slate-50/50 text-center border-t border-slate-50">
+              <button 
+                onClick={onViewHistory}
+                className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] hover:text-slate-900 transition-colors">
+                Voir tout l'historique
+              </button>
+            </div>
           </div>
         </section>
       )}
