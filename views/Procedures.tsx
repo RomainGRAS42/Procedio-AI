@@ -138,24 +138,27 @@ const Procedures: React.FC<ProceduresProps> = ({
       if (!n8nResponse.ok) throw new Error("Erreur lors de la recherche sémantique");
 
       const ragResults = await n8nResponse.json();
+      console.log("DEBUG: ragResults received:", ragResults);
       
-      // On s'attend à recevoir une liste d'objets avec un champ 'uuid'
-      const activeUuids = Array.isArray(ragResults) 
-        ? ragResults.map((r: any) => r.uuid).filter(Boolean)
+      // Extraction des titres depuis le nouveau format [ { output: { titre: "...", ... } } ]
+      const searchTitles = Array.isArray(ragResults) 
+        ? ragResults.map((r: any) => r.output?.titre).filter(Boolean)
         : [];
 
-      if (activeUuids.length > 0) {
-        // 2. Récupération des métadonnées complètes depuis Supabase pour ces UUIDs
+      console.log("DEBUG: extracted searchTitles:", searchTitles);
+
+      if (searchTitles.length > 0) {
+        // 2. Récupération des métadonnées complètes depuis Supabase pour ces titres
         const { data, error } = await supabase
           .from('procedures')
           .select('*')
-          .in('uuid', activeUuids);
+          .in('title', searchTitles);
 
         if (error) throw error;
 
-        // On trie les résultats Supabase pour qu'ils correspondent à l'ordre de pertinence de n8n
+        // Tri par pertinence (ordre retourné par n8n)
         const sortedData = (data || []).sort((a, b) => {
-          return activeUuids.indexOf(a.uuid) - activeUuids.indexOf(b.uuid);
+          return searchTitles.indexOf(a.title) - searchTitles.indexOf(b.title);
         });
 
         setSearchResults(sortedData.map(f => ({
