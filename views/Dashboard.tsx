@@ -86,33 +86,67 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [user?.id, user?.role]);
 
+  const openSuggestionById = async (id: string) => {
+    console.log("Dashboard: Tentative d'ouverture sugg", id);
+    
+    // 1. Chercher dans le cache
+    let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
+    
+    // 2. Si pas en cache (ex: déjà traitée ou pas encore chargée), fetch direct
+    if (!sugg) {
+      console.log("Dashboard: Suggestion non trouvée en cache, fetch direct...");
+      try {
+        const { data, error } = await supabase
+          .from("procedure_suggestions")
+          .select(`
+            id, suggestion, type, priority, created_at, status, user_id, procedure_id,
+            user:user_profiles!user_id(first_name, last_name, avatar_url),
+            procedure:procedures!procedure_id(title)
+          `)
+          .eq("id", id)
+          .single();
+          
+        if (data && !error) {
+          sugg = {
+            id: data.id,
+            content: data.suggestion,
+            status: data.status,
+            createdAt: data.created_at,
+            type: data.type,
+            priority: data.priority,
+            userName: data.user ? `${(data.user as any).first_name} ${(data.user as any).last_name}` : "Inconnu",
+            procedureTitle: data.procedure ? (data.procedure as any).title : "Procédure inconnue",
+            user_id: data.user_id,
+            procedure_id: data.procedure_id,
+          };
+        }
+      } catch (err) {
+        console.error("Erreur fetch suggestion direct:", err);
+      }
+    }
+
+    if (sugg) {
+      console.log("Dashboard: Succès - Ouverture du modal");
+      setSelectedSuggestion(sugg);
+      setShowSuggestionModal(true);
+      onActionHandled?.();
+    } else {
+      console.warn("Dashboard: Échec - Suggestion non trouvée");
+      onActionHandled?.(); // Reset pour éviter de boucler
+    }
+  };
+
   // Handle incoming notification action
   useEffect(() => {
     if (targetAction) {
-      console.log("Dashboard: Action reçue", targetAction);
-      
-      // On s'assure d'avoir les suggestions chargées
-      if (loadingSuggestions) return;
-      if (pendingSuggestions.length === 0) {
-        fetchSuggestions();
-        return;
-      }
-
+      console.log("Dashboard: targetAction détecté", targetAction);
       if (targetAction.type === 'suggestion') {
-        // Force string comparison for IDs
-        const sugg = pendingSuggestions.find(s => String(s.id) === String(targetAction.id));
-        console.log("Dashboard: Recherche suggestion", targetAction.id, "Trouvée ?", !!sugg);
-        
-        if (sugg) {
-          setSelectedSuggestion(sugg);
-          setShowSuggestionModal(true);
-          onActionHandled?.();
-        }
-      } else if (targetAction.type === 'read') {
+        openSuggestionById(targetAction.id);
+      } else {
         onActionHandled?.();
       }
     }
-  }, [targetAction, pendingSuggestions, loadingSuggestions]);
+  }, [targetAction]); // On ne dépend plus de pendingSuggestions pour éviter les retours bloquants
 
   const fetchActivities = async () => {
     setLoadingActivities(true);
