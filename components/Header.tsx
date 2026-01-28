@@ -41,8 +41,30 @@ const Header: React.FC<HeaderProps> = ({
     if (user.role === UserRole.MANAGER) {
       fetchReadLogs();
       fetchPendingSuggestions();
+
+      // Real-time subscription pour les confirmations de lecture
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notes',
+          },
+          (payload) => {
+            if (payload.new && payload.new.title && payload.new.title.startsWith("LOG_READ_")) {
+              setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user.role, showNotifications]);
+  }, [user.role]);
 
   const fetchPendingSuggestions = async () => {
     try {

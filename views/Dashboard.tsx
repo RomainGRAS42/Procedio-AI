@@ -198,6 +198,20 @@ const Dashboard: React.FC<DashboardProps> = ({
         setAnnouncement(data);
         setEditContent(data.content);
         setRequiresConfirmation(data.requires_confirmation || false);
+        
+        // Vérifier si l'utilisateur a déjà lu cette annonce de manière persistante
+        const { data: readRecord } = await supabase
+          .from("announcement_reads")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("announcement_id", data.id)
+          .maybeSingle();
+
+        if (readRecord) {
+          setIsRead(true);
+        } else {
+          setIsRead(false);
+        }
       } else {
         const defaultAnn = {
           id: "default",
@@ -247,6 +261,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     setIsRead(true);
 
     try {
+      // 1. Sauvegarde persistante dans la table dédiée
+      await supabase.from("announcement_reads").upsert({
+        user_id: user.id,
+        announcement_id: announcement.id,
+        read_at: new Date().toISOString()
+      }, { onConflict: 'user_id,announcement_id' });
+
+      // 2. Log pour le manager (legacy)
       await supabase.from("notes").insert([
         {
           user_id: user.id,
@@ -256,7 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         },
       ]);
     } catch (err) {
-      console.error("Erreur log lecture:", err);
+      console.error("Erreur log lecture persistante:", err);
     }
   };
 
