@@ -877,12 +877,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
                   </h4>
 
                   <div className="relative flex-1 z-10">
-                    <p
+                    <div
                       className={`text-slate-500 text-base leading-relaxed line-clamp-5 font-medium ${
                         isLocked ? "blur-sm select-none opacity-50" : ""
-                      }`}>
-                      {isLocked ? "Cette note est protégée. Veuillez la déverrouiller pour voir son contenu." : (note.content || "Aucune description.")}
-                    </p>
+                      }`}
+                      {...(isLocked
+                        ? { children: "Cette note est protégée. Veuillez la déverrouiller pour voir son contenu." }
+                        : { dangerouslySetInnerHTML: { __html: note.content || "Aucune description." } }
+                      )}
+                    />
 
                     {isLocked && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
