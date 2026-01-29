@@ -131,7 +131,7 @@ const Procedures: React.FC<ProceduresProps> = ({
         .or(`title.ilike.%${termToSearch}%,Type.ilike.%${termToSearch}%`);
         
       if (error) throw error;
-      setSearchResults((data || []).map(f => ({
+      const mappedResults = (data || []).map(f => ({
         id: f.uuid,
         file_id: f.uuid,
         title: f.title || "Sans titre",
@@ -140,7 +140,17 @@ const Procedures: React.FC<ProceduresProps> = ({
         createdAt: f.created_at,
         views: f.views || 0,
         status: f.status || 'validated'
-      })));
+      }));
+      setSearchResults(mappedResults);
+
+      // Log opportunité manquée si aucun résultat
+      if (mappedResults.length === 0 && termToSearch.trim().length > 2) {
+        await supabase.from('notes').insert({
+          title: `LOG_SEARCH_FAIL_${termToSearch.trim()}`,
+          content: `Échec de recherche par ${user.email}`,
+          user_id: user.id
+        });
+      }
     } catch (e) {
       console.error("Erreur recherche:", e);
       setSearchResults([]);

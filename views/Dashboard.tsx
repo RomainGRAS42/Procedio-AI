@@ -54,10 +54,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
 
+  // Stats dynamiques (Manager)
+  const [managerKPIs, setManagerKPIs] = useState({
+    searchGaps: 0,
+    health: 0,
+    usage: 0
+  });
+
   const stats = user.role === UserRole.MANAGER ? [
     {
       label: "Opportunités Manquées",
-      value: "4", // searchGaps.length
+      value: managerKPIs.searchGaps.toString(),
       icon: "fa-magnifying-glass-minus",
       color: "text-rose-600",
       bg: "bg-rose-50",
@@ -65,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     },
     {
       label: "Santé du Patrimoine",
-      value: "65%", // healthData fresh %
+      value: `${managerKPIs.health}%`,
       icon: "fa-heart-pulse",
       color: "text-emerald-600",
       bg: "bg-emerald-50",
@@ -73,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     },
     {
       label: "Usage Documentaire",
-      value: "42",
+      value: managerKPIs.usage.toString(),
       icon: "fa-chart-line",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
@@ -112,9 +119,43 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchActivities();
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
+        fetchManagerKPIs();
       }
     }
   }, [user?.id, user?.role]);
+
+  const fetchManagerKPIs = async () => {
+    try {
+      // 1. Opportunités Manquées (Logs de recherches échouées)
+      const { count: searchCount } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .ilike('title', 'LOG_SEARCH_FAIL_%');
+
+      // 2. Santé & Usage (depuis les procédures)
+      const { data: procs } = await supabase
+        .from('procedures')
+        .select('views, created_at');
+
+      if (procs) {
+        const totalViews = procs.reduce((acc, p) => acc + (p.views || 0), 0);
+        
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        
+        const freshCount = procs.filter(p => new Date(p.created_at) > threeMonthsAgo).length;
+        const healthPct = procs.length > 0 ? Math.round((freshCount / procs.length) * 100) : 0;
+
+        setManagerKPIs({
+          searchGaps: searchCount || 0,
+          health: healthPct,
+          usage: totalViews
+        });
+      }
+    } catch (err) {
+      console.error("Erreur KPIs Manager:", err);
+    }
+  };
 
   const openSuggestionById = async (id: string) => {
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
