@@ -29,11 +29,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       console.log("🤖 SearchResults: Démarrage recherche pour:", searchTerm);
       setLoading(true);
       try {
-        console.log("🌐 Appel Webhook:", "https://n8n.srv901593.hstgr.cloud/webhook/search-procedures");
+        console.log("🌐 Appel Webhook:", "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures");
         
-        // 1. Appel au webhook n8n (IA Sémantique) - PRODUCTION URL
+        // 1. Appel au webhook n8n (IA Sémantique) - TEST URL (Pour debug n8n Editor)
         const response = await fetch(
-          "https://n8n.srv901593.hstgr.cloud/webhook/search-procedures",
+          "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
