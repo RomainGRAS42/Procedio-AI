@@ -88,15 +88,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [user?.id, user?.role]);
 
   const openSuggestionById = async (id: string) => {
-    console.log("DEBUG: Dashboard.openSuggestionById appelé avec ID:", id);
-    
-    // 1. Chercher dans le cache
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
-    console.log("DEBUG: Trouvé dans le cache ?", !!sugg);
-    
-    // 2. Si pas en cache (ex: déjà traitée ou pas encore chargée), fetch direct
     if (!sugg) {
-      console.log("DEBUG: Suggestion non trouvée en cache, tentative fetch Supabase pour ID:", id);
       try {
         const { data, error } = await supabase
           .from("procedure_suggestions")
@@ -107,13 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           `)
           .eq("id", id)
           .single();
-          
-        if (error) {
-          console.error("DEBUG: Erreur Supabase fetch suggestion:", error);
-        }
-
-        if (data && !error) {
-          console.log("DEBUG: Suggestion récupérée avec succès depuis Supabase");
+        if (!error && data) {
           sugg = {
             id: data.id,
             content: data.suggestion,
@@ -127,37 +114,32 @@ const Dashboard: React.FC<DashboardProps> = ({
             procedure_id: data.procedure_id,
           };
         }
-      } catch (err) {
-        console.error("DEBUG: Erreur catch fetch suggestion direct:", err);
-      }
+      } catch {}
     }
-
-    if (sugg) {
-      console.log("DEBUG: Succès final - Ouverture du modal avec sugg:", sugg.id);
-      setSelectedSuggestion(sugg);
-      setShowSuggestionModal(true);
-      // On attend un peu avant de reset pour être sûr que l'état React a pris
-      setTimeout(() => {
-        onActionHandled?.();
-      }, 100);
-    } else {
-      console.warn("DEBUG: Échec final - Suggestion non trouvée pour ID:", id);
-      onActionHandled?.(); // Reset pour éviter de boucler
+    if (!sugg) {
+      sugg = {
+        id,
+        content: "Impossible de charger le détail de la suggestion pour le moment.",
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        userName: "Inconnu",
+        procedureTitle: "Procédure inconnue",
+      };
     }
+    setSelectedSuggestion(sugg);
+    setShowSuggestionModal(true);
+    onActionHandled?.();
   };
 
-  // Handle incoming notification action
   useEffect(() => {
     if (targetAction) {
-      console.log("DEBUG: Dashboard.useEffect targetAction détecté:", targetAction);
       if (targetAction.type === 'suggestion') {
         openSuggestionById(targetAction.id);
       } else {
-        console.log("DEBUG: Type d'action non géré ou 'read':", targetAction.type);
         onActionHandled?.();
       }
     }
-  }, [targetAction]); // On ne dépend plus de pendingSuggestions pour éviter les retours bloquants
+  }, [targetAction]);
 
   const fetchActivities = async () => {
     setLoadingActivities(true);
