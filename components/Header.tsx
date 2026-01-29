@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { User, ViewType, UserRole, Suggestion } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -29,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({
   const [readLogs, setReadLogs] = useState<any[]>([]);
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
   const [suggestionResponses, setSuggestionResponses] = useState<any[]>([]);
+  const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
 
   const titles: Record<string, string> = {
     dashboard: "Tableau de bord",
@@ -187,6 +189,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
+    <>
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40">
       <div className="flex items-center gap-4 min-w-[200px]">
         <button
@@ -337,12 +340,8 @@ const Header: React.FC<HeaderProps> = ({
                       setSuggestionResponses(prev => prev.filter(r => r.id !== response.id));
                       setShowNotifications(false);
                       
-                      // Afficher un alert avec la réponse (on pourra améliorer plus tard)
-                      alert(
-                        `${response.status === 'approved' ? '✅ Suggestion validée' : '❌ Suggestion refusée'}\n\n` +
-                        `Procédure: ${response.procedure_title}\n\n` +
-                        `Réponse du manager:\n${response.manager_response}`
-                      );
+                      // Ouvrir le modal stylisé
+                      setSelectedResponse(response);
                     }}
                     className={`p-3 rounded-xl border cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group ${
                       response.status === 'approved' 
@@ -437,6 +436,97 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
     </header>
+
+    {/* Modal Réponse Manager - Stylisé */}
+    {selectedResponse && createPortal(
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in"
+        onClick={() => setSelectedResponse(null)}>
+        <div 
+          className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 animate-slide-up"
+          onClick={(e) => e.stopPropagation()}>
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${
+                selectedResponse.status === 'approved' 
+                  ? 'bg-emerald-50 text-emerald-600' 
+                  : 'bg-rose-50 text-rose-600'
+              }`}>
+                <i className={`fa-solid ${selectedResponse.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'}`}></i>
+              </div>
+              <div>
+                <h3 className={`font-black text-lg ${
+                  selectedResponse.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'
+                }`}>
+                  {selectedResponse.status === 'approved' ? 'Suggestion Validée' : 'Suggestion Refusée'}
+                </h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Réponse du manager
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedResponse(null)}
+              className="w-10 h-10 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          {/* Procédure */}
+          <div className="mb-6">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Procédure concernée
+            </label>
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+              <p className="text-sm font-bold text-slate-800">
+                {selectedResponse.procedure_title}
+              </p>
+            </div>
+          </div>
+
+          {/* Suggestion originale */}
+          <div className="mb-6">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Votre suggestion
+            </label>
+            <div className="bg-indigo-50/30 rounded-xl p-4 border border-indigo-100">
+              <p className="text-xs text-slate-700 italic leading-relaxed">
+                "{selectedResponse.suggestion_content}"
+              </p>
+            </div>
+          </div>
+
+          {/* Réponse du manager */}
+          <div className="mb-6">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Commentaire du manager
+            </label>
+            <div className={`rounded-xl p-4 border ${
+              selectedResponse.status === 'approved' 
+                ? 'bg-emerald-50/30 border-emerald-100' 
+                : 'bg-rose-50/30 border-rose-100'
+            }`}>
+              <p className="text-sm text-slate-800 leading-relaxed">
+                {selectedResponse.manager_response}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setSelectedResponse(null)}
+              className="bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-sm active:scale-95">
+              Compris
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 };
 
