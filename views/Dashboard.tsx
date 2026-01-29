@@ -66,18 +66,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       label: "Opportunités Manquées",
       value: managerKPIs.searchGaps.toString(),
       icon: "fa-magnifying-glass-minus",
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      color: managerKPIs.searchGaps > 0 ? "text-amber-600" : "text-slate-400",
+      bg: managerKPIs.searchGaps > 0 ? "bg-amber-50" : "bg-slate-50",
       desc: "Recherches sans résultats",
       tooltipTitle: "Contenu non trouvé",
-      tooltipDesc: "Nombre de fois où votre équipe a cherché une information qui n'existe pas encore dans la base. C'est votre priorité de rédaction."
+      tooltipDesc: "Nombre de fois où votre équipe a cherché une information qui n'existe pas encore. C'est votre priorité de rédaction."
     },
     {
       label: "Santé du Patrimoine",
       value: `${managerKPIs.health}%`,
       icon: "fa-heart-pulse",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      color: managerKPIs.health > 80 ? "text-emerald-600" : managerKPIs.health > 40 ? "text-amber-600" : "text-rose-600",
+      bg: managerKPIs.health > 80 ? "bg-emerald-50" : managerKPIs.health > 40 ? "bg-amber-50" : "bg-rose-50",
       desc: "Procédures à jour",
       tooltipTitle: "Indice de fraîcheur",
       tooltipDesc: "Pourcentage de procédures créées ou mises à jour au cours des 6 derniers mois. Un score élevé garantit une info fiable."
@@ -86,8 +86,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       label: "Usage Documentaire",
       value: managerKPIs.usage.toString(),
       icon: "fa-chart-line",
-      color: "text-indigo-600",
-      bg: "bg-indigo-50",
+      color: managerKPIs.usage > 0 ? "text-indigo-600" : "text-slate-400",
+      bg: managerKPIs.usage > 0 ? "bg-indigo-50" : "bg-slate-50",
       desc: "Lectures cumulées",
       tooltipTitle: "Adoption de l'outil",
       tooltipDesc: "Nombre total de consultations réalisées par votre équipe. Mesure l'engagement global sur Procedio."
@@ -701,14 +701,19 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="lg:w-[70%]">
             <section className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm overflow-hidden h-full">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm border border-indigo-100">
                   <i className="fa-solid fa-lightbulb"></i>
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 text-xl">Centre de Révision</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter • {pendingSuggestions.length} au total
-                  </p>
+                  <h3 className="font-black text-slate-900 text-xl tracking-tight">Centre de Révision</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100/50">
+                      {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                      • {pendingSuggestions.length} au total
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -732,36 +737,37 @@ const Dashboard: React.FC<DashboardProps> = ({
                             {formatDate(suggestion.createdAt)}
                           </td>
                           <td className="p-4">
-                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
-                              suggestion.type === 'correction' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                              suggestion.type === 'update' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              'bg-emerald-50 text-emerald-600 border-emerald-100'
-                            }`}>
+                            <span className="px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-100">
                               {suggestion.type === 'correction' ? 'Correction' :
                                suggestion.type === 'update' ? 'Mise à jour' : 'Ajout'}
                             </span>
                           </td>
                           <td className="p-4 text-center">
-                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                            <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
                               suggestion.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                               suggestion.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              'bg-slate-50 text-slate-500 border-slate-100'
+                              'bg-slate-50 text-slate-400 border-slate-100'
                             }`}>
-                              {suggestion.priority === 'high' ? 'Haute' :
+                              {suggestion.priority === 'high' ? 'Urgent' :
                                suggestion.priority === 'medium' ? 'Moyenne' : 'Basse'}
                             </span>
                           </td>
-                          <td className="p-4 text-[11px] font-bold text-slate-700 truncate max-w-[100px]">
+                          <td className="p-4 text-[11px] font-bold text-slate-600 truncate max-w-[100px]">
                             {suggestion.userName}
                           </td>
                           <td className="p-4">
-                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
-                              suggestion.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              suggestion.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                              'bg-slate-50 text-slate-500 border-slate-100'
+                            <span className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${
+                              suggestion.status === 'pending' ? 'text-indigo-600' :
+                              suggestion.status === 'approved' ? 'text-emerald-500' :
+                              'text-slate-400'
                             }`}>
-                              {suggestion.status === 'pending' ? '⏳ À traiter' :
-                               suggestion.status === 'approved' ? '✅ Validé' : '❌ Refusé'}
+                              <i className={`fa-solid ${
+                                suggestion.status === 'pending' ? 'fa-clock animate-pulse' :
+                                suggestion.status === 'approved' ? 'fa-circle-check' :
+                                'fa-circle-xmark'
+                              }`}></i>
+                              {suggestion.status === 'pending' ? 'En attente' :
+                               suggestion.status === 'approved' ? 'Validé' : 'Refusé'}
                             </span>
                           </td>
                           <td className="p-4 text-right">
