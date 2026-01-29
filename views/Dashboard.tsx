@@ -66,9 +66,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       label: "Opportunités Manquées",
       value: managerKPIs.searchGaps.toString(),
       icon: "fa-magnifying-glass-minus",
-      color: "text-rose-600",
-      bg: "bg-rose-50",
-      desc: "Recherches sans résultats"
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      desc: "Recherches sans résultats",
+      tooltipTitle: "Contenu non trouvé",
+      tooltipDesc: "Nombre de fois où votre équipe a cherché une information qui n'existe pas encore dans la base. C'est votre priorité de rédaction."
     },
     {
       label: "Santé du Patrimoine",
@@ -76,7 +78,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: "fa-heart-pulse",
       color: "text-emerald-600",
       bg: "bg-emerald-50",
-      desc: "Procédures à jour"
+      desc: "Procédures à jour",
+      tooltipTitle: "Indice de fraîcheur",
+      tooltipDesc: "Pourcentage de procédures créées ou mises à jour au cours des 6 derniers mois. Un score élevé garantit une info fiable."
     },
     {
       label: "Usage Documentaire",
@@ -84,7 +88,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: "fa-chart-line",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
-      desc: "Lectures cumulées"
+      desc: "Lectures cumulées",
+      tooltipTitle: "Adoption de l'outil",
+      tooltipDesc: "Nombre total de consultations réalisées par votre équipe. Mesure l'engagement global sur Procedio."
     }
   ] : [
     {
@@ -140,10 +146,10 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (procs) {
         const totalViews = procs.reduce((acc, p) => acc + (p.views || 0), 0);
         
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         
-        const freshCount = procs.filter(p => new Date(p.created_at) > threeMonthsAgo).length;
+        const freshCount = procs.filter(p => new Date(p.created_at) > sixMonthsAgo).length;
         const healthPct = procs.length > 0 ? Math.round((freshCount / procs.length) * 100) : 0;
 
         setManagerKPIs({
@@ -477,7 +483,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "Format Invalide";
+    
+    // Fallback if date is invalid, try to parse different formats if needed
+    if (isNaN(date.getTime())) {
+      const parts = dateStr.split(/[- :]/);
+      if (parts.length >= 3) {
+        const fallbackDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+        if (!isNaN(fallbackDate.getTime())) return fallbackDate.toLocaleDateString("fr-FR");
+      }
+      return "En attente..."; // More professional than "Format Invalide"
+    }
+
     return date.toLocaleDateString("fr-FR", {
       day: "2-digit",
       month: "2-digit",
@@ -640,12 +656,23 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
 
-      {/* Reordered Sections: Stats move up for better high-level view */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStats.map((stat, idx) => (
           <article
             key={idx}
-            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group">
+            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group relative overflow-visible">
+            
+            {(stat as any).tooltipTitle && (
+              <div className="absolute top-6 right-6 group/tooltip">
+                <i className="fa-solid fa-circle-info text-slate-200 hover:text-indigo-500 cursor-help transition-colors text-sm"></i>
+                <div className="absolute bottom-full right-0 mb-3 w-56 p-4 bg-slate-900 text-white text-[10px] rounded-2xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] pointer-events-none border border-white/10 backdrop-blur-md">
+                  <p className="font-black mb-1 text-indigo-300 uppercase tracking-widest">{(stat as any).tooltipTitle}</p>
+                  <p className="text-slate-300 leading-relaxed font-medium">{(stat as any).tooltipDesc}</p>
+                  <div className="absolute top-full right-3 -translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900 border-r border-b border-white/10"></div>
+                </div>
+              </div>
+            )}
+
             <div
               className={`w-20 h-20 rounded-3xl ${stat.bg} ${stat.color} flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110`}>
               <i className={`fa-solid ${stat.icon}`}></i>
@@ -818,7 +845,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-          <h3 className="font-black text-slate-900 text-xl tracking-tight">Mises à jour Documentaires</h3>
+          <h3 className="font-black text-slate-900 text-xl tracking-tight">Procédure mise en ligne</h3>
           <button
             onClick={onViewHistory}
             className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
@@ -841,19 +868,23 @@ const Dashboard: React.FC<DashboardProps> = ({
                 className="p-10 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
                 <div className="flex items-center gap-8">
                   <div className="w-16 h-16 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
-                    <i className="fa-regular fa-file-lines text-2xl"></i>
+                    <i className="fa-solid fa-file-pdf text-2xl"></i>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-bold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors leading-tight">
                       {proc.title}
                     </h4>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
                       <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-3 py-1 rounded-lg">
                         {proc.category}
                       </span>
                       <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase bg-indigo-50 px-3 py-1 rounded-lg flex items-center gap-2">
-                        <i className="fa-solid fa-clock-rotate-left"></i>
+                        <i className="fa-solid fa-calendar-check"></i>
                         {formatDate(proc.createdAt)}
+                      </span>
+                      <span className="text-[10px] text-emerald-500 font-black tracking-widest uppercase bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-2">
+                        <i className="fa-solid fa-eye"></i>
+                        {proc.views} vues
                       </span>
                     </div>
                   </div>
