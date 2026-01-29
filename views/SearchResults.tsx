@@ -29,11 +29,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       console.log("🤖 SearchResults: Démarrage recherche pour:", searchTerm);
       setLoading(true);
       try {
-        console.log("🌐 Appel Webhook:", "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures");
+        console.log("🌐 Appel Webhook:", "https://n8n.srv901593.hstgr.cloud/webhook/search-procedures");
         
-        // 1. Appel au webhook n8n (IA Sémantique)
+        // 1. Appel au webhook n8n (IA Sémantique) - PRODUCTION URL
         const response = await fetch(
-          "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures",
+          "https://n8n.srv901593.hstgr.cloud/webhook/search-procedures",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -215,9 +215,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               <p className="text-slate-400 max-w-md mx-auto mb-8 font-medium">
                 Notre IA n'a trouvé aucune procédure correspondant à sens à "{searchTerm}".
                 <br />
-                <span className="text-amber-600 font-bold block mt-2 text-xs uppercase tracking-widest">
-                  <i className="fa-solid fa-check-circle mr-1"></i>
-                  Cette recherche a été signalée à votre manager.
+                <span className="text-indigo-500 font-medium block mt-3 text-sm">
+                  <i className="fa-solid fa-lightbulb mr-2"></i>
+                  Grâce à cette recherche, nous pourrons identifier et créer les procédures manquantes.
                 </span>
               </p>
               <button 
