@@ -147,7 +147,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
-        .or("title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%")
+        .or("title.ilike.LOG_READ_%")
         .order("created_at", { ascending: false })
         .limit(5);
       if (data) setActivities(data);
@@ -574,183 +574,153 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
         </section>
 
-      {/* Suggestions Widget (Manager Only) */}
-      {user.role === UserRole.MANAGER && pendingSuggestions.length > 0 && (
-        <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden animate-slide-up">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shadow-sm">
-              <i className="fa-solid fa-lightbulb"></i>
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900 text-xl">Suggestions</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter • {pendingSuggestions.length} au total
-              </p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-50">
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</th>
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Priorité</th>
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Auteur</th>
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Procédure</th>
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
-                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {pendingSuggestions.map((suggestion) => (
-                  <tr key={suggestion.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="p-4 text-[10px] font-bold text-slate-500">
-                      {formatDate(suggestion.createdAt)}
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                        suggestion.type === 'correction' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        suggestion.type === 'update' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-emerald-50 text-emerald-600 border-emerald-100'
-                      }`}>
-                        {suggestion.type === 'correction' ? 'Correction' :
-                         suggestion.type === 'update' ? 'Mise à jour' : 'Ajout'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                        suggestion.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        suggestion.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-slate-50 text-slate-500 border-slate-100'
-                      }`}>
-                        {suggestion.priority === 'high' ? 'Haute' :
-                         suggestion.priority === 'medium' ? 'Moyenne' : 'Basse'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-xs font-bold text-slate-700">
-                      {suggestion.userName}
-                    </td>
-                    <td className="p-4 text-xs font-bold text-slate-700">
-                      {suggestion.procedureTitle}
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                        suggestion.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        suggestion.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        'bg-slate-50 text-slate-500 border-slate-100'
-                      }`}>
-                        {suggestion.status === 'pending' ? '⏳ À traiter' :
-                         suggestion.status === 'approved' ? '✅ Validé' : '❌ Refusé'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button 
-                        onClick={() => {
-                          setSelectedSuggestion(suggestion);
-                          setShowSuggestionModal(true);
-                        }}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-sm active:scale-95 flex items-center gap-2 ml-auto shadow-indigo-100"
-                      >
-                        <i className="fa-regular fa-eye"></i> {suggestion.status === 'pending' ? 'Examiner' : 'Consulter'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* REDESIGNED ACTIVITY WIDGET: Subtle & Integrated */}
+      {/* Manager Specific Sections */}
       {user.role === UserRole.MANAGER && (
-        <section className="mb-12 animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Journal d'Activité</h3>
+        <div className="flex flex-col lg:flex-row gap-6 mb-12">
+          {/* Left Column: Suggestions (70%) */}
+          <div className="lg:w-[70%]">
+            <section className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm overflow-hidden h-full">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shadow-sm">
+                  <i className="fa-solid fa-lightbulb"></i>
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-xl">Suggestions</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter • {pendingSuggestions.length} au total
+                  </p>
+                </div>
               </div>
-              <button 
-                onClick={fetchActivities}
-                className="w-8 h-8 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
-                <i className={`fa-solid fa-rotate-right text-[10px] ${loadingActivities ? 'animate-spin' : ''}`}></i>
-              </button>
-            </div>
-            
-            <div className="divide-y divide-slate-50">
-              {activities.length > 0 ? (
-                activities.slice(0, 5).map((act) => {
-                  const isSugg = act.title.startsWith("LOG_SUGGESTION_");
-                  const priorityMatch = act.content.match(/\[Priorité: (.*?)\]/);
-                  const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
 
-                  return (
+              <div className="overflow-x-auto">
+                {pendingSuggestions.length > 0 ? (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-50">
+                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</th>
+                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Priorité</th>
+                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Auteur</th>
+                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
+                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {pendingSuggestions.map((suggestion) => (
+                        <tr key={suggestion.id} className="group hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                            {formatDate(suggestion.createdAt)}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                              suggestion.type === 'correction' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                              suggestion.type === 'update' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                              'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            }`}>
+                              {suggestion.type === 'correction' ? 'Correction' :
+                               suggestion.type === 'update' ? 'Mise à jour' : 'Ajout'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                              suggestion.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                              suggestion.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                              'bg-slate-50 text-slate-500 border-slate-100'
+                            }`}>
+                              {suggestion.priority === 'high' ? 'Haute' :
+                               suggestion.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-[11px] font-bold text-slate-700 truncate max-w-[100px]">
+                            {suggestion.userName}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                              suggestion.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                              suggestion.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                              'bg-slate-50 text-slate-500 border-slate-100'
+                            }`}>
+                              {suggestion.status === 'pending' ? '⏳ À traiter' :
+                               suggestion.status === 'approved' ? '✅ Validé' : '❌ Refusé'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button 
+                              onClick={() => {
+                                setSelectedSuggestion(suggestion);
+                                setShowSuggestionModal(true);
+                              }}
+                              className="bg-indigo-600 text-white px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-sm active:scale-95 flex items-center gap-2 ml-auto shadow-indigo-100"
+                            >
+                              <i className="fa-regular fa-eye"></i> {suggestion.status === 'pending' ? 'Examiner' : 'Consulter'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="py-20 text-center text-slate-300 flex flex-col items-center gap-4">
+                    <i className="fa-solid fa-check-double text-4xl opacity-20"></i>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Tout est à jour ! Aucune suggestion.</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column: Activity Journal (30%) */}
+          <div className="lg:w-[30%]">
+            <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
+              <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Journal d'Activité</h3>
+                </div>
+                <button 
+                  onClick={fetchActivities}
+                  className="w-8 h-8 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
+                  <i className={`fa-solid fa-rotate-right text-[10px] ${loadingActivities ? 'animate-spin' : ''}`}></i>
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-50 scrollbar-hide">
+                {activities.length > 0 ? (
+                  activities.map((act) => (
                     <div 
                       key={act.id}
-                      onClick={() => {
-                        if (isSugg) {
-                          const sid = act.title.replace("LOG_SUGGESTION_", "");
-                          const sugg = pendingSuggestions.find(s => s.id === sid);
-                          if (sugg) {
-                            setSelectedSuggestion(sugg);
-                            setShowSuggestionModal(true);
-                          } else {
-                            // Let the useEffect handle it once suggestions are loaded
-                            fetchSuggestions();
-                          }
-                        }
-                      }}
-                      className="group px-8 py-5 flex items-center gap-6 hover:bg-slate-50/50 transition-colors cursor-pointer">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] shrink-0 ${
-                        isSugg ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
-                      }`}>
-                        <i className={`fa-solid ${isSugg ? 'fa-lightbulb' : 'fa-circle-check'}`}></i>
+                      className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] shrink-0">
+                        <i className="fa-solid fa-circle-check"></i>
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-700 truncate leading-tight">
-                          {act.content.split('[')[0]}
+                        <p className="text-[11px] font-bold text-slate-700 leading-tight">
+                          {act.content}
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">
-                            {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          {priority && (
-                            <span className={`text-[7px] font-black uppercase tracking-tighter ${
-                              priority === 'high' ? 'text-rose-500' :
-                              priority === 'medium' ? 'text-amber-500' :
-                              'text-slate-400'
-                            }`}>
-                              • Priorité {priority}
-                            </span>
-                          )}
-                        </div>
+                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter mt-1 block">
+                          {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-
-                    <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
-                       <i className="fa-solid fa-arrow-right-long text-[10px] text-indigo-400"></i>
                     </div>
+                  ))
+                ) : (
+                  <div className="py-12 text-center text-slate-300 px-6">
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Aucune lecture enregistrée.</p>
                   </div>
-                );
-              })
-            ) : (
-              <div className="py-12 text-center text-slate-300">
-                <p className="text-[10px] font-black uppercase tracking-widest">Aucune activité récente.</p>
+                )}
               </div>
-            )}
+                
+              <div className="p-4 bg-slate-50 border-t border-slate-50">
+                <button 
+                  onClick={onViewHistory}
+                  className="w-full text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] hover:text-slate-900 transition-colors py-2 border border-indigo-100 rounded-xl bg-white">
+                  Voir tout l'historique
+                </button>
+              </div>
+            </section>
           </div>
-            
-            <div className="p-4 bg-slate-50/50 text-center border-t border-slate-50">
-              <button 
-                onClick={onViewHistory}
-                className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] hover:text-slate-900 transition-colors">
-                Voir tout l'historique
-              </button>
-            </div>
-          </div>
-        </section>
+        </div>
       )}
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
