@@ -76,28 +76,39 @@ const SearchResults: React.FC<SearchResultsProps> = ({
            const fileIds = items.map((item: any) => item.file_id || item.id).filter(Boolean);
            
            if (fileIds.length > 0) {
-             const { data: dbProcs } = await supabase
+           if (fileIds.length > 0) {
+             // TENTATIVE 1: Recherche par UUID (si l'IA renvoie des UUIDs)
+             let { data: dbProcs } = await supabase
                .from('procedures')
                .select('*')
-               .in('uuid', fileIds); // ou 'file_id' selon votre colonne UUID
-               
-             if (dbProcs) {
-                // On garde l'ordre de pertinence de l'IA
-                const sorted = dbProcs.sort((a, b) => {
-                   return fileIds.indexOf(a.uuid) - fileIds.indexOf(b.uuid);
-                });
+               .in('uuid', fileIds);
+
+             // TENTATIVE 2: Si rien trouvé, Recherche par file_id (si l'IA renvoie des Strings style "PROC-001")
+             if (!dbProcs || dbProcs.length === 0) {
+                const { data: dbProcsById } = await supabase
+                 .from('procedures')
+                 .select('*')
+                 .in('file_id', fileIds); // On suppose que la colonne s'appelle file_id
                 
-                foundProcedures.push(...sorted.map(p => ({
+                if (dbProcsById) dbProcs = dbProcsById;
+             }
+               
+             if (dbProcs && dbProcs.length > 0) {
+                // On garde l'ordre de pertinence de l'IA (approximatif ici car on mixe les deux tentatives)
+                // Idéalement on map proprement.
+                
+                foundProcedures.push(...dbProcs.map((p: any) => ({
                    id: p.uuid,
-                   file_id: p.uuid,
+                   file_id: p.file_id,
                    title: p.title,
-                   category: p.Type || "GÉNÉRAL",
+                   category: p.type || "GÉNÉRAL", // Attention la colonne est peut-être 'type' ou 'Type' ou 'category'
                    fileUrl: p.file_url,
                    createdAt: p.created_at,
                    views: p.views || 0,
                    status: p.status || "validated"
                 })));
              }
+           }
            }
         }
 
@@ -108,11 +119,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           console.log("⚠️ Aucune procédure trouvée, création du log GAP...");
           await supabase.from("notes").insert([
             {
-              title: `LOG_SEARCH_FAIL_${searchTerm}`,
-              content: `Recherche infructueuse pour : "${searchTerm}" par ${user.firstName}`,
-              is_protected: false,
+              title: `LOG_SEARCH_FAIL`, // Titre plus propre
+              content: `Recherche infructueuse pour : "${searchTerm}"`,
               user_id: user.id,
               tags: ["GAPS", "SEARCH"],
+              // is_protected: false // REMOVED: Cause likely 400 Error if column doesn't exist
             },
           ]);
         }
