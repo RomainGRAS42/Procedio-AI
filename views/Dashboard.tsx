@@ -803,8 +803,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* MODAL REVIEW SUGGESTION */}
-      {showSuggestionModal && selectedSuggestion && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+      {showSuggestionModal && selectedSuggestion && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
           <div
             className="bg-white rounded-[2rem] p-8 w-full max-w-lg shadow-2xl animate-scale-up"
             onClick={(e) => e.stopPropagation()}>
@@ -889,7 +889,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
