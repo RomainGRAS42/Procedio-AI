@@ -54,7 +54,32 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
 
-  const stats = [
+  const stats = user.role === UserRole.MANAGER ? [
+    {
+      label: "Opportunités Manquées",
+      value: "4", // searchGaps.length
+      icon: "fa-magnifying-glass-minus",
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+      desc: "Recherches sans résultats"
+    },
+    {
+      label: "Santé du Patrimoine",
+      value: "65%", // healthData fresh %
+      icon: "fa-heart-pulse",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      desc: "Procédures à jour"
+    },
+    {
+      label: "Usage Documentaire",
+      value: "42",
+      icon: "fa-chart-line",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      desc: "Lectures cumulées"
+    }
+  ] : [
     {
       label: "Consultations",
       value: "42",
@@ -78,7 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     },
   ];
 
-  const filteredStats = stats.filter(s => s.label !== "Suggestions" || user.role !== UserRole.MANAGER);
+  const filteredStats = stats;
 
   useEffect(() => {
     if (user?.id) {
@@ -591,6 +616,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">
                 {stat.label}
               </h3>
+              {stat.desc && (
+                <p className="text-[9px] font-bold text-slate-300 mt-1 italic">
+                  {stat.desc}
+                </p>
+              )}
             </div>
           </article>
         ))}
