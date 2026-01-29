@@ -12,7 +12,8 @@ DROP POLICY IF EXISTS "Users can view own profile" ON public.user_profiles;
 
 -- 3. Create a PERMISSIVE read policy for authenticated users
 -- "Authenticated users can see any profile"
--- This is standard for apps where you need to see who posted a comment/suggestion.
+DROP POLICY IF EXISTS "Allow read access for all authenticated users" ON public.user_profiles;
+
 CREATE POLICY "Allow read access for all authenticated users"
 ON public.user_profiles
 FOR SELECT
@@ -21,6 +22,8 @@ USING (true);
 
 -- 4. INSERT/UPDATE policies (keep strict)
 -- Users can only edit THEIR OWN profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.user_profiles;
+
 CREATE POLICY "Users can update own profile"
 ON public.user_profiles
 FOR UPDATE
@@ -29,6 +32,8 @@ USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
 -- Users can insert THEIR OWN profile
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.user_profiles;
+
 CREATE POLICY "Users can insert own profile"
 ON public.user_profiles
 FOR INSERT
