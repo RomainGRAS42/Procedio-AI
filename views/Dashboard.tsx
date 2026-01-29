@@ -605,7 +605,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <i className="fa-solid fa-lightbulb"></i>
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 text-xl">Suggestions</h3>
+                  <h3 className="font-black text-slate-900 text-xl">Centre de Révision</h3>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter • {pendingSuggestions.length} au total
                   </p>
@@ -695,7 +695,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Journal d'Activité</h3>
+                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Suivi des Émargements</h3>
                 </div>
                 <button 
                   onClick={fetchActivities}
@@ -745,7 +745,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-          <h3 className="font-black text-slate-900 text-xl tracking-tight">Activité Récente</h3>
+          <h3 className="font-black text-slate-900 text-xl tracking-tight">Mises à jour Documentaires</h3>
           <button
             onClick={onViewHistory}
             className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
