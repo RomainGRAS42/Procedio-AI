@@ -28,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({
   const [localSearch, setLocalSearch] = useState("");
   const [readLogs, setReadLogs] = useState<any[]>([]);
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
+  const [suggestionResponses, setSuggestionResponses] = useState<any[]>([]);
 
   const titles: Record<string, string> = {
     dashboard: "Tableau de bord",
@@ -67,8 +68,33 @@ const Header: React.FC<HeaderProps> = ({
       return () => {
         supabase.removeChannel(channel);
       };
+    } else if (user.role === UserRole.TECHNICIAN) {
+      fetchSuggestionResponses();
+
+      // Real-time pour nouvelles réponses
+      const channel = supabase
+        .channel('tech-responses')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'suggestion_responses',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            if (payload.new) {
+              setSuggestionResponses(prev => [payload.new, ...prev]);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user.role]);
+  }, [user.role, user.id]);
 
   const fetchPendingSuggestions = async () => {
     try {
@@ -121,7 +147,25 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const totalNotifs = pendingSuggestions.length + readLogs.length;
+  const fetchSuggestionResponses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("suggestion_responses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("read", false)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      if (data) setSuggestionResponses(data);
+    } catch (err) {
+      console.error("Erreur fetch responses:", err);
+    }
+  };
+
+  const totalNotifs = user.role === UserRole.MANAGER
+    ? pendingSuggestions.length + readLogs.length
+    : suggestionResponses.length;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

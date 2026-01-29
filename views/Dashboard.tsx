@@ -208,25 +208,41 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleUpdateStatus = async (status: "approved" | "rejected") => {
     if (!selectedSuggestion) return;
 
+    // Validation : le commentaire du manager est obligatoire
+    if (!managerResponse.trim()) {
+      alert("Veuillez fournir une réponse au technicien avant de valider ou rejeter la suggestion.");
+      return;
+    }
+
     try {
-      if (status === "rejected") {
-        const { error } = await supabase
-          .from("procedure_suggestions")
-          .delete()
-          .eq("id", selectedSuggestion.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("procedure_suggestions")
-          .update({ 
-            status, 
-            manager_response: managerResponse,
-            responded_at: new Date().toISOString(),
-            manager_id: user.id
-          })
-          .eq("id", selectedSuggestion.id);
-        if (error) throw error;
-      }
+      // Mise à jour du statut de la suggestion
+      const { error: updateError } = await supabase
+        .from("procedure_suggestions")
+        .update({ 
+          status, 
+          manager_response: managerResponse,
+          responded_at: new Date().toISOString(),
+          manager_id: user.id
+        })
+        .eq("id", selectedSuggestion.id);
+
+      if (updateError) throw updateError;
+
+      // Créer une notification pour le technicien
+      const { error: notifError } = await supabase
+        .from("suggestion_responses")
+        .insert({
+          suggestion_id: selectedSuggestion.id,
+          user_id: selectedSuggestion.user_id,
+          manager_id: user.id,
+          status,
+         manager_response: managerResponse,
+          procedure_title: selectedSuggestion.procedureTitle,
+          suggestion_content: selectedSuggestion.content,
+          read: false
+        });
+
+      if (notifError) throw notifError;
 
       // Update local state
       setPendingSuggestions((prev) => prev.filter((s) => s.id !== selectedSuggestion.id));
@@ -234,7 +250,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       setSelectedSuggestion(null);
       setManagerResponse("");
 
-      // Add notification log
+      // Add notification log (for manager tracking)
       await supabase.from("notes").insert([
         {
           title: `SUGGESTION_${status.toUpperCase()}`,
