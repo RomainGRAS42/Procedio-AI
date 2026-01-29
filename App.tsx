@@ -43,7 +43,7 @@ const App: React.FC = () => {
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
-      console.log("DEBUG: syncUserProfile démarré pour", sbUser.email); // LOG DEBUT
+      // console.log("DEBUG: syncUserProfile démarré pour", sbUser.email);
 
       // 1. Détection optimiste via les métadonnées (disponible immédiatement)
       const metaRole = sbUser.user_metadata?.role;
@@ -53,7 +53,7 @@ const App: React.FC = () => {
         initialRole = UserRole.MANAGER;
       }
 
-      console.log("DEBUG: Rôle initial détecté (metadata):", initialRole);
+      // console.log("DEBUG: Rôle initial détecté (metadata):", initialRole);
 
       const defaultUser: User = {
         id: sbUser.id,
@@ -71,7 +71,7 @@ const App: React.FC = () => {
       setUser(defaultUser);
 
       // 2. Appel Base de Données avec Timeout (pour éviter le blocage infini)
-      console.log("DEBUG: Appel DB user_profiles...");
+      // console.log("DEBUG: Appel DB user_profiles...");
 
       const fetchProfilePromise = supabase
         .from("user_profiles")
@@ -100,7 +100,7 @@ const App: React.FC = () => {
         }
       }
 
-      console.log("DEBUG: Réponse DB:", { profile, error });
+      // console.log("DEBUG: Réponse DB:", { profile, error });
 
       if (error) {
         console.error("Erreur lors de la récupération du profil:", error);
@@ -111,12 +111,12 @@ const App: React.FC = () => {
       const dbRole = profile?.role;
 
       // DEBUG: Affichage des rôles bruts pour diagnostic
-      console.log("DEBUG ROLE SYNC:", {
-        email: sbUser.email,
-        metaRole,
-        dbRole,
-        profileData: profile,
-      });
+      // console.log("DEBUG ROLE SYNC:", {
+      //   email: sbUser.email,
+      //   metaRole,
+      //   dbRole,
+      //   profileData: profile,
+      // });
 
       // Priorité au profil DB s'il existe, sinon on garde le metaRole
       if (dbRole) {
