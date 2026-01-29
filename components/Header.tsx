@@ -65,6 +65,18 @@ const Header: React.FC<HeaderProps> = ({
             }
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'procedure_suggestions',
+          },
+          () => {
+            // Re-fetch pour mettre à jour le badge immédiatement
+            fetchPendingSuggestions();
+          }
+        )
         .subscribe();
 
       return () => {
@@ -178,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const totalNotifs = user.role === UserRole.MANAGER
-    ? pendingSuggestions.length + readLogs.length
+    ? pendingSuggestions.filter(s => s.status === 'pending').length + readLogs.length
     : suggestionResponses.length;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -238,11 +250,14 @@ const Header: React.FC<HeaderProps> = ({
             <>
               {/* Overlay pour fermer au clic extérieur */}
               <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowNotifications(false)}
+                className="fixed inset-0 z-[100] cursor-default" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowNotifications(false);
+                }}
               ></div>
               
-              <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-50 overflow-hidden">
+              <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-[110] overflow-hidden">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
               </div>

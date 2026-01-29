@@ -196,6 +196,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             procedureTitle: item.procedure ? item.procedure.title : "Procédure inconnue",
             user_id: item.user_id,
             procedure_id: item.procedure_id,
+            managerResponse: item.manager_response,
+            respondedAt: item.responded_at,
           }))
         );
       }
@@ -650,7 +652,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         }}
                         className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-sm active:scale-95 flex items-center gap-2 ml-auto shadow-indigo-100"
                       >
-                        <i className="fa-regular fa-eye"></i> Examiner
+                        <i className="fa-regular fa-eye"></i> {suggestion.status === 'pending' ? 'Examiner' : 'Consulter'}
                       </button>
                     </td>
                   </tr>
@@ -840,7 +842,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <i className="fa-solid fa-clipboard-check"></i>
               </div>
               <div>
-                <h3 className="font-black text-slate-800 text-lg">Examiner la suggestion</h3>
+                <h3 className="font-black text-slate-800 text-lg">
+                  {selectedSuggestion.status === 'pending' ? 'Examiner la suggestion' : 'Consulter la suggestion'}
+                </h3>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                   {selectedSuggestion.procedureTitle}
                 </p>
@@ -887,33 +891,49 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="mb-6">
               <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                Votre réponse au technicien
+                {selectedSuggestion.status === 'pending' ? 'Votre réponse au technicien' : 'Réponse du manager'}
               </span>
-              <textarea
-                value={managerResponse}
-                onChange={(e) => setManagerResponse(e.target.value)}
-                placeholder="Expliquez pourquoi vous validez ou refusez cette suggestion..."
-                className="w-full h-32 p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none text-sm"
-              />
+              {selectedSuggestion.status === 'pending' ? (
+                <textarea
+                  value={managerResponse}
+                  onChange={(e) => setManagerResponse(e.target.value)}
+                  placeholder="Expliquez pourquoi vous validez ou refusez cette suggestion..."
+                  className="w-full h-32 p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none text-sm"
+                />
+              ) : (
+                <div className={`w-full p-5 rounded-2xl border font-medium text-slate-700 text-sm ${
+                  selectedSuggestion.status === 'approved' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'
+                }`}>
+                  {selectedSuggestion.managerResponse || "Aucune réponse fournie."}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 justify-end pt-4 border-t border-slate-50">
               <button
                 onClick={() => setShowSuggestionModal(false)}
-                className="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">
-                Fermer
+                className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center gap-2 ${
+                  selectedSuggestion.status === 'pending' 
+                    ? 'text-slate-400 hover:bg-slate-50 shadow-none' 
+                    : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-indigo-500/10'
+                }`}>
+                {selectedSuggestion.status === 'pending' ? 'Fermer' : 'Compris, Fermer'}
               </button>
-              <button
-                onClick={() => handleUpdateStatus('rejected')}
-                className="px-6 py-3 rounded-xl bg-rose-50 text-rose-600 font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all">
-                Rejeter
-              </button>
-              <button
-                onClick={() => handleUpdateStatus('approved')}
-                className="px-8 py-3 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
-                <i className="fa-solid fa-check"></i>
-                Valider
-              </button>
+              {selectedSuggestion.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => handleUpdateStatus('rejected')}
+                    className="px-6 py-3 rounded-xl bg-rose-50 text-rose-600 font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all">
+                    Rejeter
+                  </button>
+                  <button
+                    onClick={() => handleUpdateStatus('approved')}
+                    className="px-8 py-3 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                    <i className="fa-solid fa-check"></i>
+                    Valider
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>,

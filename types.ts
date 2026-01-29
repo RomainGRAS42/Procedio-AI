@@ -58,6 +58,8 @@ export interface Suggestion {
   // Helper fields for detailed views
   user_id?: string;
   procedure_id?: string;
+  managerResponse?: string;
+  respondedAt?: string;
 }
 
 export type ViewType =
