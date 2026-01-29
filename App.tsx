@@ -13,6 +13,7 @@ import UploadProcedure from "./views/UploadProcedure";
 import History from "./views/History";
 import Team from "./views/Team";
 import ComplianceHistory from "./views/ComplianceHistory";
+import SearchResults from "./views/SearchResults";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
@@ -367,6 +368,21 @@ const App: React.FC = () => {
             onBack={() => setCurrentView("dashboard")}
           />
         ) : null;
+      case "search-results":
+        return (
+          <SearchResults
+            user={user}
+            searchTerm={globalSearchTerm}
+            onSelectProcedure={(p) => {
+              setSelectedProcedure(p);
+              setCurrentView("procedure-detail");
+            }}
+            onBack={() => {
+              setGlobalSearchTerm("");
+              setCurrentView("dashboard");
+            }}
+          />
+        );
       case "upload":
         return (
           <UploadProcedure
@@ -444,7 +460,7 @@ const App: React.FC = () => {
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
-              setCurrentView("procedures");
+              setCurrentView("search-results");
             }}
             onLogout={handleLogout}
             onNavigate={(view) => setCurrentView(view)}

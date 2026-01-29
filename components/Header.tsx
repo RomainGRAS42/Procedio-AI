@@ -34,6 +34,8 @@ const Header: React.FC<HeaderProps> = ({
   const [lastClearedNotifs, setLastClearedNotifs] = useState<string>(
     localStorage.getItem("last_cleared_notifs_at") || new Date(0).toISOString()
   );
+  // Track IDs of notifications clicked in this session
+  const [viewedNotifIds, setViewedNotifIds] = useState<Set<string>>(new Set());
 
   const titles: Record<string, string> = {
     dashboard: "Tableau de bord",
@@ -137,11 +139,15 @@ const Header: React.FC<HeaderProps> = ({
           user_id,
           procedure_id,
           status,
+          procedure_id,
+          status,
+          viewed,
           user_profiles:user_id (first_name, last_name, email),
           procedures:procedure_id (title)
         `
         )
         .eq("status", "pending")
+        .eq("viewed", false) // Fetch only unviewed suggestions for the badge count
         .order("created_at", { ascending: false });
 
       if (data) {
@@ -152,6 +158,7 @@ const Header: React.FC<HeaderProps> = ({
           procedureTitle: item.procedures?.title || "Procédure",
           content: item.suggestion,
           status: item.status,
+          viewed: item.viewed,
           createdAt: item.created_at,
         }));
         setPendingSuggestions(formatted);
@@ -166,6 +173,7 @@ const Header: React.FC<HeaderProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
+        .eq("viewed", false) // Only fetch unviewed logs for badge
         .or("title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%")
         .order("updated_at", { ascending: false })
         .limit(5);
@@ -193,8 +201,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const totalNotifs = user.role === UserRole.MANAGER
-    ? (pendingSuggestions.filter(s => s.status === 'pending').length) + 
-      (readLogs.filter(log => new Date(log.created_at || log.updated_at) > new Date(lastClearedNotifs)).length)
+    ? (pendingSuggestions.length + readLogs.length) // Simplifié car on filtre déjà à la source (viewed=false)
     : suggestionResponses.length;
 
   const handleClearAll = async () => {
@@ -209,16 +216,28 @@ const Header: React.FC<HeaderProps> = ({
         setSuggestionResponses([]);
       }
     } else {
-      // Manager: Hide logs by updating timestamp
+      // Manager: Mark all as viewed in DB
       const now = new Date().toISOString();
-      localStorage.setItem("last_cleared_notifs_at", now);
+      
+      // Update local state immediately
       setLastClearedNotifs(now);
+      setReadLogs([]);
+      // We don't clear pending suggestions from the list, only from the count (they are still pending tasks)
+      // But user asked for "Clear All" to remove them from view? 
+      // User said: "si je clique sur supprimertoutes les notification [...] elle réapparaisse"
+      
+      // Let's mark all currently visible logs as viewed
+      const unviewedLogIds = readLogs.map(l => l.id);
+      if (unviewedLogIds.length > 0) {
+        await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
+      }
     }
     // We don't "clear" pending suggestions as they are tasks to do
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("🔍 Header: Recherche soumise avec:", localSearch);
     if (localSearch.trim()) {
       onSearch(localSearch);
     }
@@ -244,13 +263,14 @@ const Header: React.FC<HeaderProps> = ({
           <input
             type="text"
             placeholder="Rechercher une procédure..."
-            className="w-full pl-12 pr-4 py-2.5 rounded-2xl bg-slate-100 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-bold text-slate-700 text-sm shadow-inner"
+            className="w-full pl-12 pr-12 py-2.5 rounded-2xl bg-slate-100 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-bold text-slate-700 text-sm shadow-inner"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
           />
-          <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
-          <button type="submit" className="hidden">
-            Rechercher
+          <button 
+            type="submit"
+            className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-500 transition-colors hover:text-indigo-600 cursor-pointer">
+            <i className="fa-solid fa-magnifying-glass"></i>
           </button>
         </form>
       </div>
@@ -305,11 +325,15 @@ const Header: React.FC<HeaderProps> = ({
                       const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
                       const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
                       
+                      const isUnread = !log.viewed;
+                      
                       const borderColor = priority === 'high' ? 'border-rose-200' : 
                                         priority === 'medium' ? 'border-amber-200' : 
                                         isSuggestion ? 'border-indigo-200' : 'border-indigo-100';
                                         
-                      const bgColor = priority === 'high' ? 'bg-rose-50/50' : 
+                      // Visually distinct: Unread = Colored Background, Read = White/Grayish
+                      const bgColor = !isUnread ? 'bg-white opacity-60 grayscale-[0.5]' :
+                                    priority === 'high' ? 'bg-rose-50/50' : 
                                     priority === 'medium' ? 'bg-amber-50/50' : 
                                     isSuggestion ? 'bg-indigo-50/50' : 'bg-indigo-50/50';
 
@@ -320,11 +344,18 @@ const Header: React.FC<HeaderProps> = ({
                       return (
                         <div
                           key={log.id}
-                          onClick={() => {
+                          onClick={async () => {
+                            // Marquer comme vu en BDD
+                            await supabase.from("notes").update({ viewed: true }).eq("id", log.id);
+                            // Mise à jour locale
+                            setReadLogs(prev => prev.filter(l => l.id !== log.id));
+                            
                             if (isSuggestion) {
                               const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
+                              setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
                               onNotificationClick?.('suggestion', suggestionId);
                             } else {
+                              setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
                               onNotificationClick?.('read', log.id);
                             }
                             setShowNotifications(false);
@@ -354,7 +385,12 @@ const Header: React.FC<HeaderProps> = ({
                     {pendingSuggestions.map((s) => (
                       <div 
                         key={s.id} 
-                        onClick={() => {
+                        onClick={async () => {
+                          // Marquer comme vu en BDD
+                          await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", s.id);
+                          // Mise à jour locale
+                          setPendingSuggestions(prev => prev.filter(p => p.id !== s.id));
+                          
                           onNotificationClick?.('suggestion', s.id);
                           setShowNotifications(false);
                         }}

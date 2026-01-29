@@ -44,6 +44,7 @@ export interface Note {
   content: string;
   tags: string[];
   updatedAt: string;
+  viewed?: boolean;
 }
 
 export interface Suggestion {
@@ -52,6 +53,7 @@ export interface Suggestion {
   procedureTitle: string;
   content: string;
   status: "pending" | "approved" | "rejected";
+  viewed?: boolean;
   createdAt: string;
   type?: "correction" | "update" | "add_step";
   priority?: "low" | "medium" | "high";
@@ -74,4 +76,5 @@ export type ViewType =
   | "compliance-history"
   | "reset-password"
   | "administration"
-  | "team";
+  | "team"
+  | "search-results";

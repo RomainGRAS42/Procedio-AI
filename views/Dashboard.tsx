@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { User, Procedure, UserRole, Suggestion } from "../types";
+import { User, Procedure, Suggestion, UserRole } from "../types";
+import CustomToast from "../components/CustomToast";
 import { supabase } from "../lib/supabase";
 
 interface DashboardProps {
@@ -53,6 +54,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Activities
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
+
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState({
@@ -288,8 +292,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!selectedSuggestion) return;
 
     // Validation : le commentaire du manager est obligatoire
+    // Validation : le commentaire du manager est obligatoire
     if (!managerResponse.trim()) {
-      alert("Veuillez fournir une réponse au technicien avant de valider ou rejeter la suggestion.");
+      setToast({
+        message: "Veuillez fournir une réponse au technicien avant de valider ou rejeter la suggestion.",
+        type: "error"
+      });
       return;
     }
 
@@ -1018,6 +1026,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>,
         document.body
       )}
+      <CustomToast
+        message={toast?.message || ""}
+        type={toast?.type || "info"}
+        visible={!!toast}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 };
