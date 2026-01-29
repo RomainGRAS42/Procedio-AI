@@ -234,14 +234,22 @@ const Header: React.FC<HeaderProps> = ({
 
                   {/* Suggestions */}
                   {pendingSuggestions.map((s) => (
-                    <div key={s.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div 
+                      key={s.id} 
+                      onClick={() => {
+                        onNotificationClick?.('suggestion', s.id);
+                        setShowNotifications(false);
+                      }}
+                      className="p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group relative"
+                    >
                       <div className="flex justify-between items-start mb-1 gap-2">
                         <span className="text-xs font-bold text-slate-800 truncate">
                           {s.userName}
                         </span>
+                        <i className="fa-solid fa-chevron-right text-[8px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-4"></i>
                       </div>
-                      <p className="text-[11px] text-slate-500 line-clamp-1">{s.procedureTitle}</p>
-                      <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2">
+                      <p className="text-[11px] text-slate-500 line-clamp-1 pr-4">{s.procedureTitle}</p>
+                      <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2 group-hover:bg-indigo-50/30 transition-colors">
                         "{s.content}"
                       </p>
                     </div>
