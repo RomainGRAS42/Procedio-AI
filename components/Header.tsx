@@ -205,108 +205,162 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3 md:gap-6 min-w-[200px] justify-end">
-        {user.role === UserRole.MANAGER && (
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center relative border border-slate-100"
-              aria-label={`${totalNotifs} notifications`}>
-              <i className={`fa-solid fa-bell ${totalNotifs > 0 ? "animate-bounce" : ""}`}></i>
-              {totalNotifs > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
-                  {totalNotifs}
-                </span>
-              )}
-            </button>
+        {/* Notifications pour tous */}
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center relative border border-slate-100"
+            aria-label={`${totalNotifs} notifications`}>
+            <i className={`fa-solid fa-bell ${totalNotifs > 0 ? "animate-bounce" : ""}`}></i>
+            {totalNotifs > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
+                {totalNotifs}
+              </span>
+            )}
+          </button>
 
-            {showNotifications && (
-              <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-50 overflow-hidden">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                  <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
-                </div>
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto overflow-x-hidden pr-1 scrollbar-hide">
-                  {/* Logs de lecture */}
-                  {readLogs.map((log) => {
-                    const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
-                    const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
-                    const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
-                    
-                    const borderColor = priority === 'high' ? 'border-rose-200' : 
-                                      priority === 'medium' ? 'border-amber-200' : 
-                                      isSuggestion ? 'border-indigo-200' : 'border-indigo-100';
-                                      
-                    const bgColor = priority === 'high' ? 'bg-rose-50/50' : 
-                                  priority === 'medium' ? 'bg-amber-50/50' : 
-                                  isSuggestion ? 'bg-indigo-50/50' : 'bg-indigo-50/50';
+          {showNotifications && (
+            <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-50 overflow-hidden">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
+              </div>
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto overflow-x-hidden pr-1 scrollbar-hide">
+                {/* Pour les MANAGERS */}
+                {user.role === UserRole.MANAGER && (
+                  <>
+                    {/* Logs de lecture */}
+                    {readLogs.map((log) => {
+                      const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
+                      const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
+                      const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
+                      
+                      const borderColor = priority === 'high' ? 'border-rose-200' : 
+                                        priority === 'medium' ? 'border-amber-200' : 
+                                        isSuggestion ? 'border-indigo-200' : 'border-indigo-100';
+                                        
+                      const bgColor = priority === 'high' ? 'bg-rose-50/50' : 
+                                    priority === 'medium' ? 'bg-amber-50/50' : 
+                                    isSuggestion ? 'bg-indigo-50/50' : 'bg-indigo-50/50';
 
-                    const textColor = priority === 'high' ? 'text-rose-600' : 
-                                    priority === 'medium' ? 'text-amber-600' : 
-                                    'text-indigo-600';
+                      const textColor = priority === 'high' ? 'text-rose-600' : 
+                                      priority === 'medium' ? 'text-amber-600' : 
+                                      'text-indigo-600';
 
-                    return (
-                      <div
-                        key={log.id}
+                      return (
+                        <div
+                          key={log.id}
+                          onClick={() => {
+                            if (isSuggestion) {
+                              const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
+                              onNotificationClick?.('suggestion', suggestionId);
+                            } else {
+                              onNotificationClick?.('read', log.id);
+                            }
+                            setShowNotifications(false);
+                          }}
+                          className={`p-3 rounded-xl border ${borderColor} ${bgColor} cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <i className={`fa-solid ${isSuggestion ? 'fa-lightbulb' : 'fa-circle-check'} ${textColor} text-[10px]`}></i>
+                            <span className={`${textColor} text-[10px] font-black uppercase tracking-widest`}>
+                              {isSuggestion ? "Nouvelle Suggestion" : "Confirmation de lecture"}
+                            </span>
+                            <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                          </div>
+                          <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
+                            {log.content}
+                          </p>
+                          <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                            {new Date(log.created_at || log.updated_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      );
+                    })}
+
+                    {/* Suggestions en attente */}
+                    {pendingSuggestions.map((s) => (
+                      <div 
+                        key={s.id} 
                         onClick={() => {
-                          if (isSuggestion) {
-                            const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
-                            onNotificationClick?.('suggestion', suggestionId);
-                          } else {
-                            onNotificationClick?.('read', log.id);
-                          }
+                          onNotificationClick?.('suggestion', s.id);
                           setShowNotifications(false);
                         }}
-                        className={`p-3 rounded-xl border ${borderColor} ${bgColor} cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <i className={`fa-solid ${isSuggestion ? 'fa-lightbulb' : 'fa-circle-check'} ${textColor} text-[10px]`}></i>
-                          <span className={`${textColor} text-[10px] font-black uppercase tracking-widest`}>
-                            {isSuggestion ? "Nouvelle Suggestion" : "Confirmation de lecture"}
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group relative"
+                      >
+                        <div className="flex justify-between items-start mb-1 gap-2">
+                          <span className="text-xs font-bold text-slate-800 truncate">
+                            {s.userName}
                           </span>
-                          <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                          <i className="fa-solid fa-chevron-right text-[8px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-4"></i>
                         </div>
-                        <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
-                          {log.content}
+                        <p className="text-[11px] text-slate-500 line-clamp-1 pr-4">{s.procedureTitle}</p>
+                        <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2 group-hover:bg-indigo-50/30 transition-colors">
+                          "{s.content}"
                         </p>
-                        <span className="text-[9px] text-slate-400 font-bold block mt-1">
-                          {new Date(log.created_at || log.updated_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </>
+                )}
 
-                  {/* Suggestions */}
-                  {pendingSuggestions.map((s) => (
-                    <div 
-                      key={s.id} 
-                      onClick={() => {
-                        onNotificationClick?.('suggestion', s.id);
-                        setShowNotifications(false);
-                      }}
-                      className="p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group relative"
-                    >
-                      <div className="flex justify-between items-start mb-1 gap-2">
-                        <span className="text-xs font-bold text-slate-800 truncate">
-                          {s.userName}
-                        </span>
-                        <i className="fa-solid fa-chevron-right text-[8px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-4"></i>
-                      </div>
-                      <p className="text-[11px] text-slate-500 line-clamp-1 pr-4">{s.procedureTitle}</p>
-                      <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2 group-hover:bg-indigo-50/30 transition-colors">
-                        "{s.content}"
-                      </p>
+                {/* Pour les TECHNICIENS */}
+                {user.role === UserRole.TECHNICIAN && suggestionResponses.map((response) => (
+                  <div
+                    key={response.id}
+                    onClick={async () => {
+                      // Marquer comme lu
+                      await supabase
+                        .from('suggestion_responses')
+                        .update({ read: true })
+                        .eq('id', response.id);
+                      
+                      setSuggestionResponses(prev => prev.filter(r => r.id !== response.id));
+                      setShowNotifications(false);
+                      
+                      // Afficher un alert avec la réponse (on pourra améliorer plus tard)
+                      alert(
+                        `${response.status === 'approved' ? '✅ Suggestion validée' : '❌ Suggestion refusée'}\n\n` +
+                        `Procédure: ${response.procedure_title}\n\n` +
+                        `Réponse du manager:\n${response.manager_response}`
+                      );
+                    }}
+                    className={`p-3 rounded-xl border cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group ${
+                      response.status === 'approved' 
+                        ? 'border-emerald-200 bg-emerald-50/50' 
+                        : 'border-rose-200 bg-rose-50/50'
+                    }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <i className={`fa-solid ${response.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'} ${
+                        response.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'
+                      } text-[10px]`}></i>
+                      <span className={`${response.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'} text-[10px] font-black uppercase tracking-widest`}>
+                        {response.status === 'approved' ? 'Suggestion Validée' : 'Suggestion Refusée'}
+                      </span>
+                      <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
                     </div>
-                  ))}
+                    <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
+                      {response.procedure_title}
+                    </p>
+                    <p className="text-[10px] text-slate-500 italic mt-1 line-clamp-2">
+                      "{response.suggestion_content}"
+                    </p>
+                    <span className="text-[9px] text-slate-400 font-bold block mt-2">
+                      {new Date(response.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                ))}
 
-                  {totalNotifs === 0 && (
-                    <div className="text-center py-10 text-slate-400 text-xs">Tout est à jour</div>
-                  )}
-                </div>
+                {totalNotifs === 0 && (
+                  <div className="text-center py-10 text-slate-400 text-xs">Tout est à jour</div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200 relative">
           <button
