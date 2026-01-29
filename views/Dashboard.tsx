@@ -62,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     },
     {
       label: "Suggestions",
-      value: "7",
+      value: pendingSuggestions.length.toString(),
       icon: "fa-check-circle",
       color: "text-emerald-600",
       bg: "bg-emerald-50",
@@ -75,6 +75,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       bg: "bg-cyan-50",
     },
   ];
+
+  const filteredStats = stats.filter(s => s.label !== "Suggestions" || user.role !== UserRole.MANAGER);
 
   useEffect(() => {
     if (user?.id) {
@@ -463,12 +465,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder="Écrivez votre message à l'équipe ici..."
               />
-              {/* The `showNotifications` block and the `w-10 h-10` div were misplaced in the instruction. */}
-              {/* The `w-10 h-10` div is already correctly placed below. */}
-              {/* If `showNotifications` is a new feature, it needs a proper placement and trigger. */}
-              {/* For now, I'm assuming the user intended to insert the `overflow-x-hidden` property on a notification dropdown. */}
-              {/* I'm placing the `overflow-x-hidden` on the main container for now, as a general header fix. */}
-              {/* If this is not the intended fix, please provide more context for the "Header scrollbar fix". */}
               <div className="flex items-center justify-between gap-4 bg-slate-50/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
@@ -574,7 +570,31 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
         </section>
 
-      {/* Manager Specific Sections */}
+
+
+      {/* Reordered Sections: Stats move up for better high-level view */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredStats.map((stat, idx) => (
+          <article
+            key={idx}
+            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group">
+            <div
+              className={`w-20 h-20 rounded-3xl ${stat.bg} ${stat.color} flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110`}>
+              <i className={`fa-solid ${stat.icon}`}></i>
+            </div>
+            <div>
+              <p className="text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                {stat.value}
+              </p>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">
+                {stat.label}
+              </h3>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      {/* Manager Specific Sections (Operational) */}
       {user.role === UserRole.MANAGER && (
         <div className="flex flex-col lg:flex-row gap-6 mb-12">
           {/* Left Column: Suggestions (70%) */}
@@ -722,27 +742,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
-
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, idx) => (
-          <article
-            key={idx}
-            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group">
-            <div
-              className={`w-20 h-20 rounded-3xl ${stat.bg} ${stat.color} flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110`}>
-              <i className={`fa-solid ${stat.icon}`}></i>
-            </div>
-            <div>
-              <p className="text-5xl font-black text-slate-900 tracking-tighter leading-none">
-                {stat.value}
-              </p>
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">
-                {stat.label}
-              </h3>
-            </div>
-          </article>
-        ))}
-      </section>
 
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">

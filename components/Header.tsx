@@ -31,6 +31,9 @@ const Header: React.FC<HeaderProps> = ({
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
   const [suggestionResponses, setSuggestionResponses] = useState<any[]>([]);
   const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
+  const [lastClearedNotifs, setLastClearedNotifs] = useState<string>(
+    localStorage.getItem("last_cleared_notifs_at") || new Date(0).toISOString()
+  );
 
   const titles: Record<string, string> = {
     dashboard: "Tableau de bord",
@@ -190,8 +193,29 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const totalNotifs = user.role === UserRole.MANAGER
-    ? pendingSuggestions.filter(s => s.status === 'pending').length + readLogs.length
+    ? (pendingSuggestions.filter(s => s.status === 'pending').length) + 
+      (readLogs.filter(log => new Date(log.created_at || log.updated_at) > new Date(lastClearedNotifs)).length)
     : suggestionResponses.length;
+
+  const handleClearAll = async () => {
+    if (user.role === UserRole.TECHNICIAN) {
+      // Mark all responses as read
+      const { error } = await supabase
+        .from('suggestion_responses')
+        .update({ read: true })
+        .eq('user_id', user.id);
+      
+      if (!error) {
+        setSuggestionResponses([]);
+      }
+    } else {
+      // Manager: Hide logs by updating timestamp
+      const now = new Date().toISOString();
+      localStorage.setItem("last_cleared_notifs_at", now);
+      setLastClearedNotifs(now);
+    }
+    // We don't "clear" pending suggestions as they are tasks to do
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,13 +284,23 @@ const Header: React.FC<HeaderProps> = ({
               <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-[110] overflow-hidden">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
+                {totalNotifs > 0 && (
+                  <button 
+                    onClick={handleClearAll}
+                    className="text-[10px] font-black text-indigo-500 hover:text-slate-900 uppercase tracking-widest flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-50 transition-all">
+                    <i className="fa-solid fa-broom"></i>
+                    Tout effacer
+                  </button>
+                )}
               </div>
               <div className="space-y-3 max-h-[60vh] overflow-y-auto overflow-x-hidden pr-1 scrollbar-hide">
                 {/* Pour les MANAGERS */}
                 {user.role === UserRole.MANAGER && (
                   <>
                     {/* Logs de lecture */}
-                    {readLogs.map((log) => {
+                    {readLogs
+                      .filter(log => new Date(log.created_at || log.updated_at) > new Date(lastClearedNotifs))
+                      .map((log) => {
                       const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
                       const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
                       const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
@@ -388,7 +422,15 @@ const Header: React.FC<HeaderProps> = ({
                 ))}
 
                 {totalNotifs === 0 && (
-                  <div className="text-center py-10 text-slate-400 text-xs">Tout est à jour</div>
+                  <div className="text-center py-12 px-6 flex flex-col items-center gap-4 animate-fade-in">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-200">
+                      <i className="fa-solid fa-bell-slash text-xl"></i>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Tout est à jour !</p>
+                      <p className="text-[10px] text-slate-300 font-bold mt-1">Vous n'avez aucune nouvelle notification.</p>
+                    </div>
+                  </div>
                 )}
               </div>
               </div>
