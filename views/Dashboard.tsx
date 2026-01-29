@@ -173,11 +173,12 @@ const Dashboard: React.FC<DashboardProps> = ({
           status,
           user_id,
           procedure_id,
+          manager_response,
+          responded_at,
           user:user_profiles!user_id(first_name, last_name, avatar_url),
           procedure:procedures!procedure_id(title)
         `
         )
-        .eq("status", "pending")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -244,8 +245,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (notifError) throw notifError;
 
-      // Update local state
-      setPendingSuggestions((prev) => prev.filter((s) => s.id !== selectedSuggestion.id));
+      // Update local state - mettre à jour le statut au lieu de supprimer
+      setPendingSuggestions((prev) => 
+        prev.map((s) => 
+          s.id === selectedSuggestion.id 
+            ? { ...s, status, managerResponse, respondedAt: new Date().toISOString() }
+            : s
+        )
+      );
       setShowSuggestionModal(false);
       setSelectedSuggestion(null);
       setManagerResponse("");
@@ -573,9 +580,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               <i className="fa-solid fa-lightbulb"></i>
             </div>
             <div>
-              <h3 className="font-black text-slate-900 text-xl">Suggestions à traiter</h3>
+              <h3 className="font-black text-slate-900 text-xl">Suggestions</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {pendingSuggestions.length} en attente de validation
+                {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter • {pendingSuggestions.length} au total
               </p>
             </div>
           </div>
@@ -589,6 +596,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Priorité</th>
                   <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Auteur</th>
                   <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Procédure</th>
+                  <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
                   <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                 </tr>
               </thead>
@@ -623,6 +631,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </td>
                     <td className="p-4 text-xs font-bold text-slate-700">
                       {suggestion.procedureTitle}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+                        suggestion.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        suggestion.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        'bg-slate-50 text-slate-500 border-slate-100'
+                      }`}>
+                        {suggestion.status === 'pending' ? '⏳ À traiter' :
+                         suggestion.status === 'approved' ? '✅ Validé' : '❌ Refusé'}
+                      </span>
                     </td>
                     <td className="p-4 text-right">
                       <button 

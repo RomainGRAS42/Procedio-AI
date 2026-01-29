@@ -96,6 +96,18 @@ const Header: React.FC<HeaderProps> = ({
     }
   }, [user.role, user.id]);
 
+  // Fermeture des notifications avec Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showNotifications) {
+        setShowNotifications(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showNotifications]);
+
   const fetchPendingSuggestions = async () => {
     try {
       const { data } = await supabase
@@ -220,7 +232,14 @@ const Header: React.FC<HeaderProps> = ({
           </button>
 
           {showNotifications && (
-            <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-50 overflow-hidden">
+            <>
+              {/* Overlay pour fermer au clic extérieur */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowNotifications(false)}
+              ></div>
+              
+              <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-50 overflow-hidden">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
               </div>
@@ -358,7 +377,8 @@ const Header: React.FC<HeaderProps> = ({
                   <div className="text-center py-10 text-slate-400 text-xs">Tout est à jour</div>
                 )}
               </div>
-            </div>
+              </div>
+            </>
           )}
         </div>
 
