@@ -88,14 +88,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [user?.id, user?.role]);
 
   const openSuggestionById = async (id: string) => {
-    console.log("Dashboard: Tentative d'ouverture sugg", id);
+    console.log("DEBUG: Dashboard.openSuggestionById appelé avec ID:", id);
     
     // 1. Chercher dans le cache
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
+    console.log("DEBUG: Trouvé dans le cache ?", !!sugg);
     
     // 2. Si pas en cache (ex: déjà traitée ou pas encore chargée), fetch direct
     if (!sugg) {
-      console.log("Dashboard: Suggestion non trouvée en cache, fetch direct...");
+      console.log("DEBUG: Suggestion non trouvée en cache, tentative fetch Supabase pour ID:", id);
       try {
         const { data, error } = await supabase
           .from("procedure_suggestions")
@@ -107,7 +108,12 @@ const Dashboard: React.FC<DashboardProps> = ({
           .eq("id", id)
           .single();
           
+        if (error) {
+          console.error("DEBUG: Erreur Supabase fetch suggestion:", error);
+        }
+
         if (data && !error) {
+          console.log("DEBUG: Suggestion récupérée avec succès depuis Supabase");
           sugg = {
             id: data.id,
             content: data.suggestion,
@@ -122,17 +128,20 @@ const Dashboard: React.FC<DashboardProps> = ({
           };
         }
       } catch (err) {
-        console.error("Erreur fetch suggestion direct:", err);
+        console.error("DEBUG: Erreur catch fetch suggestion direct:", err);
       }
     }
 
     if (sugg) {
-      console.log("Dashboard: Succès - Ouverture du modal");
+      console.log("DEBUG: Succès final - Ouverture du modal avec sugg:", sugg.id);
       setSelectedSuggestion(sugg);
       setShowSuggestionModal(true);
-      onActionHandled?.();
+      // On attend un peu avant de reset pour être sûr que l'état React a pris
+      setTimeout(() => {
+        onActionHandled?.();
+      }, 100);
     } else {
-      console.warn("Dashboard: Échec - Suggestion non trouvée");
+      console.warn("DEBUG: Échec final - Suggestion non trouvée pour ID:", id);
       onActionHandled?.(); // Reset pour éviter de boucler
     }
   };
@@ -140,10 +149,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Handle incoming notification action
   useEffect(() => {
     if (targetAction) {
-      console.log("Dashboard: targetAction détecté", targetAction);
+      console.log("DEBUG: Dashboard.useEffect targetAction détecté:", targetAction);
       if (targetAction.type === 'suggestion') {
         openSuggestionById(targetAction.id);
       } else {
+        console.log("DEBUG: Type d'action non géré ou 'read':", targetAction.type);
         onActionHandled?.();
       }
     }

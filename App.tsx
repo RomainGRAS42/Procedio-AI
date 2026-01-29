@@ -439,8 +439,10 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             onNavigate={(view) => setCurrentView(view)}
             onNotificationClick={(type, id) => {
+              console.log("DEBUG: App.onNotificationClick déclenché:", { type, id });
               setPendingAction({ type, id });
               if (currentView !== "dashboard") {
+                console.log("DEBUG: Navigation vers dashboard pour afficher l'action");
                 setCurrentView("dashboard");
               }
             }}
