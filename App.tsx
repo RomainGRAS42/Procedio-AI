@@ -12,6 +12,7 @@ import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
 import History from "./views/History";
 import Team from "./views/Team";
+import ComplianceHistory from "./views/ComplianceHistory";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
@@ -307,6 +308,7 @@ const App: React.FC = () => {
                 setCurrentView("procedure-detail");
               }}
               onViewHistory={() => setCurrentView("history")}
+              onViewComplianceHistory={() => setCurrentView("compliance-history")}
               targetAction={pendingAction}
               onActionHandled={() => setPendingAction(null)}
             />
@@ -358,6 +360,13 @@ const App: React.FC = () => {
             }}
           />
         );
+      case "compliance-history":
+        return user ? (
+          <ComplianceHistory
+            user={user}
+            onBack={() => setCurrentView("dashboard")}
+          />
+        ) : null;
       case "upload":
         return (
           <UploadProcedure
@@ -373,6 +382,7 @@ const App: React.FC = () => {
             onQuickNote={() => {}}
             onSelectProcedure={() => {}}
             onViewHistory={() => {}}
+            onViewComplianceHistory={() => {}}
           />
         );
     }

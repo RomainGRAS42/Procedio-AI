@@ -8,6 +8,7 @@ interface DashboardProps {
   onQuickNote: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
   onViewHistory: () => void;
+  onViewComplianceHistory: () => void;
   targetAction?: { type: 'suggestion' | 'read', id: string } | null;
   onActionHandled?: () => void;
 }
@@ -27,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onQuickNote,
   onSelectProcedure,
   onViewHistory,
+  onViewComplianceHistory,
   targetAction,
   onActionHandled,
 }) => {
@@ -733,7 +735,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 
               <div className="p-4 bg-slate-50 border-t border-slate-50">
                 <button 
-                  onClick={onViewHistory}
+                  onClick={onViewComplianceHistory}
                   className="w-full text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] hover:text-slate-900 transition-colors py-2 border border-indigo-100 rounded-xl bg-white">
                   Voir tout l'historique
                 </button>

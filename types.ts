@@ -71,6 +71,7 @@ export type ViewType =
   | "account"
   | "upload"
   | "history"
+  | "compliance-history"
   | "reset-password"
   | "administration"
   | "team";

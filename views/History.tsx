@@ -63,7 +63,8 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
             <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-lg shadow-xl shadow-indigo-100">
               <i className="fa-regular fa-clock"></i>
             </div>
-            <h3 className="font-black text-slate-900 text-2xl tracking-tight">Dernières procédures consultées</h3>
+            <h3 className="font-black text-slate-900 text-2xl tracking-tight">Mises à jour Documentaires</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Historique des publications et révisions</p>
           </div>
           <div className="flex items-center gap-3">
             <button 
