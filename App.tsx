@@ -375,6 +375,10 @@ const App: React.FC = () => {
             searchTerm={globalSearchTerm}
             onSelectProcedure={(p) => {
               setSelectedProcedure(p);
+              // Smart Navigation: Pre-select the folder so "Back" goes to the category
+              if (p.category) {
+                  setLastFolder(p.category);
+              }
               setCurrentView("procedure-detail");
             }}
             onBack={() => {
