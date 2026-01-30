@@ -379,6 +379,8 @@ const App: React.FC = () => {
               if (p.category) {
                   setLastFolder(p.category);
               }
+              // CLEANUP: Force clear search term so Header and Procedures view are reset
+              setGlobalSearchTerm("");
               setCurrentView("procedure-detail");
             }}
             onBack={() => {

@@ -151,7 +151,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   return (
     <div className="space-y-8 animate-slide-up pb-12">
       {/* Header Resultats */}
-      <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center justify-between">
+      {/* Header Resultats */}
+      <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center gap-6">
+        <button 
+          onClick={onBack}
+          className="bg-slate-50 text-slate-400 w-12 h-12 rounded-2xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-600 transition-all shadow-sm order-first group">
+          <i className="fa-solid fa-arrow-left text-xl group-hover:-translate-x-1 transition-transform"></i>
+        </button>
         <div>
           <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2">
             Moteur de Recherche IA
@@ -160,11 +166,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             Résultats pour <span className="text-indigo-600">"{searchTerm}"</span>
           </h2>
         </div>
-        <button 
-          onClick={onBack}
-          className="bg-slate-50 text-slate-400 w-12 h-12 rounded-2xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-600 transition-all">
-          <i className="fa-solid fa-arrow-left text-xl"></i>
-        </button>
       </section>
 
       {/* Loading State */}
