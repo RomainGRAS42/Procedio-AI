@@ -225,7 +225,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               </div>
               <h3 className="text-2xl font-black text-slate-800 mb-2">Aucun résultat trouvé</h3>
               <p className="text-slate-400 max-w-md mx-auto mb-8 font-medium">
-                Notre IA n'a trouvé aucune procédure correspondant à sens à "{searchTerm}".
+                Notre IA n'a trouvé aucune procédure correspondant à "{searchTerm}".
                 <br />
                 <span className="text-indigo-500 font-medium block mt-3 text-sm">
                   <i className="fa-solid fa-lightbulb mr-2"></i>
