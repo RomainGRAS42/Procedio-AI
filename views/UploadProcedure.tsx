@@ -117,16 +117,26 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
             </div>
           )}
 
-          <div className="space-y-3">
+            <div className="space-y-3">
             <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Titre de la procédure</label>
             <input 
               type="text" 
               placeholder="Ex: Guide de configuration réseau..."
-              className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
+              className={`w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 outline-none transition-all font-bold text-slate-700 shadow-inner ${
+                title && !/^[a-zA-Z0-9\s\-_.]*$/.test(title) 
+                ? "border-rose-300 focus:border-rose-500 focus:bg-rose-50/10" 
+                : "border-transparent focus:bg-white focus:border-indigo-500"
+              }`}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={!!activeTransfer}
             />
+             {title && !/^[a-zA-Z0-9\s\-_.]*$/.test(title) && (
+              <p className="ml-2 text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2 animate-pulse">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                Format invalide : Utilisez uniquement lettres non accentuées, chiffres, espaces, tirets et points.
+              </p>
+            )}
           </div>
 
           <div className={`relative border-2 border-dashed rounded-[2.5rem] p-16 transition-all text-center group ${file ? 'bg-indigo-50 border-indigo-400' : 'border-slate-100 hover:border-indigo-400'}`}>
@@ -157,10 +167,10 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
             </div>
             <button 
               onClick={handlePublish}
-              disabled={!title.trim() || !file || !!activeTransfer}
+              disabled={!title.trim() || !file || !!activeTransfer || (!!title && !/^[a-zA-Z0-9\s\-_.]*$/.test(title))}
               className="w-full md:w-auto bg-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 disabled:opacity-30 min-w-[240px]"
             >
-              {activeTransfer ? 'TRAITEMENT IA...' : 'LANCER LA PUBLICATION'}
+              {activeTransfer ? 'TRAITEMENT IA...' : 'METTRE EN LIGNE LA PROCÉDURE'}
             </button>
           </div>
         </div>
