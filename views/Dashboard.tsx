@@ -809,7 +809,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Suivi des Émargements</h3>
+                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Dernières Activités</h3>
                 </div>
                 <button 
                   onClick={fetchActivities}
