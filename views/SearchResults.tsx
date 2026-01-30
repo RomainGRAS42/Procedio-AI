@@ -31,7 +31,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       try {
         console.log("🌐 Appel Webhook:", "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures");
         
-        // 1. Appel au webhook n8n (IA Sémantique) - TEST URL (Pour debug n8n Editor)
         const response = await fetch(
           "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures",
           {
@@ -48,85 +47,86 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         }
 
         const data = await response.json();
-        console.log("📦 Données reçues:", data);
+        console.log("📦 Données reçues (raw):", JSON.stringify(data).slice(0, 500)); // Log first 500 chars to verify structure
         
-        // On suppose que n8n renvoie un tableau d'objets avec au moins un ID ou titre
-        // Structure attendue probable : { results: [...], analysis: "..." } ou juste [...]
-        // Pour l'instant on adapte selon ce qu'on reçoit.
+        let items: any[] = [];
         
-        // Logique fictive d'adaptation des données reçues en type Procedure
-        // Idéalement n8n renvoie les file_id des procédures correspondantes
-        const foundProcedures: Procedure[] = [];
-        
-        // Si n8n renvoie directement une liste
-        const items = Array.isArray(data) ? data : data.results || [];
-        
-        // On récupère les vraies procédures depuis Supabase basées sur les retours n8n
-        // Supposons que n8n renvoie des titres ou des ID.
-        // Pour cette démo technique, nous allons faire une recherche textuelle élargie 
-        // ou utiliser les IDs renvoyés si disponibles.
-        
-        if (items.length > 0) {
-           // Si n8n renvoie des IDs, on fetch les procédures
-           // Sinon on simule pour l'instant avec une recherche Supabase "intelligente" côté client si n8n renvoie juste du texte
-           // MAIS le user demande que n8n fasse le travail.
-           // On va supposer que n8n renvoie un tableau d'objets contenant { file_id: "...", title: "...", score: ... }
-           
-           // Récupération des IDs renvoyés par l'IA
-           const fileIds = items.map((item: any) => item.file_id || item.id).filter(Boolean);
-           
-           if (fileIds.length > 0) {
-           if (fileIds.length > 0) {
-             // TENTATIVE 1: Recherche par UUID (si l'IA renvoie des UUIDs)
-             let { data: dbProcs } = await supabase
-               .from('procedures')
-               .select('*')
-               .in('uuid', fileIds);
-
-             // TENTATIVE 2: Si rien trouvé, Recherche par file_id (si l'IA renvoie des Strings style "PROC-001")
-             if (!dbProcs || dbProcs.length === 0) {
-                const { data: dbProcsById } = await supabase
-                 .from('procedures')
-                 .select('*')
-                 .in('file_id', fileIds); // On suppose que la colonne s'appelle file_id
-                
-                if (dbProcsById) dbProcs = dbProcsById;
-             }
-               
-             if (dbProcs && dbProcs.length > 0) {
-                // On garde l'ordre de pertinence de l'IA (approximatif ici car on mixe les deux tentatives)
-                // Idéalement on map proprement.
-                
-                foundProcedures.push(...dbProcs.map((p: any) => ({
-                   id: p.uuid,
-                   file_id: p.file_id,
-                   title: p.title,
-                   category: p.type || "GÉNÉRAL", // Attention la colonne est peut-être 'type' ou 'Type' ou 'category'
-                   fileUrl: p.file_url,
-                   createdAt: p.created_at,
-                   views: p.views || 0,
-                   status: p.status || "validated"
-                })));
-             }
-           }
-           }
+        // Parsing robuste
+        if (Array.isArray(data)) {
+            console.log(`📦 Data est un tableau de longueur ${data.length}`);
+            if (data.length > 0) {
+                // Cas 1: [{ results: [...] }] (Structure n8n standard)
+                if (data[0].results && Array.isArray(data[0].results)) {
+                    console.log("🔍 Trouvé data[0].results");
+                    items = data[0].results;
+                } 
+                // Cas 2: [{ title: "...", file_url: "..." }, ...] (Liste directe)
+                else if (data[0].title || data[0].file_url) {
+                    console.log("🔍 Trouvé liste directe d'objets");
+                    items = data;
+                }
+                // Cas 3: [{ output: { ... } }] (Autre format n8n)
+                else {
+                    console.log("⚠️ Structure tableau non reconnue, tentative de 'flat' ou premier élément");
+                    // On essaie de voir si le premier élément est un wrapper
+                     items = data[0].results || data; 
+                }
+            }
+        } else if (typeof data === 'object' && data !== null) {
+            console.log("📦 Data est un objet");
+            // Cas 4: { results: [...] }
+            if (data.results && Array.isArray(data.results)) {
+                console.log("🔍 Trouvé data.results");
+                items = data.results;
+            } else {
+                 console.log("⚠️ Objet sans propriété 'results' évidente. Keys:", Object.keys(data));
+                 // Peut-être que data est directement un item unique ?
+                 if (data.title || data.file_url) {
+                     items = [data];
+                 }
+            }
         }
 
+        console.log(`🔍 Items extraits: ${items.length}`, items);
+
+        const foundProcedures: Procedure[] = items.map((item: any, index: number) => {
+            let category = "GÉNÉRAL";
+            const url = item.file_url || item.url || ""; // Support file_url OR url
+            
+            if (url) {
+                try {
+                    // Decodage URL pour gérer les espaces et accents
+                    const decodedUrl = decodeURIComponent(url);
+                    const parts = decodedUrl.split('/');
+                    if (parts.length >= 2) {
+                        category = parts[parts.length - 2];
+                    }
+                } catch (e) {
+                    console.warn("Erreur parsing URL:", url);
+                }
+            }
+
+            return {
+                id: `search-result-${index}-${Date.now()}`,
+                file_id: `n8n-${index}`,
+                title: item.title || "Document sans titre",
+                category: category.toUpperCase(),
+                fileUrl: url,
+                createdAt: new Date().toISOString(),
+                views: 0,
+                status: "validated"
+            };
+        });
+
+        console.log("✨ Procédures finales:", foundProcedures);
         setResults(foundProcedures);
 
-        // 2. Logging "Opportunité Manquée" si aucun résultat
+        // 2. Logging DISABLED temporaire pour éviter confusion avec erreurs 400
+        /*
         if (foundProcedures.length === 0) {
-          console.log("⚠️ Aucune procédure trouvée, création du log GAP...");
-          await supabase.from("notes").insert([
-            {
-              title: `LOG_SEARCH_FAIL`, // Titre plus propre
-              content: `Recherche infructueuse pour : "${searchTerm}"`,
-              user_id: user.id,
-              tags: ["GAPS", "SEARCH"],
-              // is_protected: false // REMOVED: Cause likely 400 Error if column doesn't exist
-            },
-          ]);
+          console.log("⚠️ Aucune procédure, skip log note pour debug...");
         }
+        */
 
       } catch (err) {
         console.error("❌ Semantic search error:", err);
