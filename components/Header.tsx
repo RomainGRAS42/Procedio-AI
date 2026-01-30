@@ -12,6 +12,7 @@ interface HeaderProps {
   onLogout: () => void;
   onNavigate: (view: ViewType) => void;
   onNotificationClick?: (type: 'suggestion' | 'read', id: string) => void;
+  searchTerm?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -23,10 +24,18 @@ const Header: React.FC<HeaderProps> = ({
   onLogout,
   onNavigate,
   onNotificationClick,
+  searchTerm
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [localSearch, setLocalSearch] = useState("");
+  const [localSearch, setLocalSearch] = useState(searchTerm || "");
+
+  useEffect(() => {
+    if (searchTerm !== undefined) {
+      setLocalSearch(searchTerm);
+    }
+  }, [searchTerm]);
+
   const [readLogs, setReadLogs] = useState<any[]>([]);
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
   const [suggestionResponses, setSuggestionResponses] = useState<any[]>([]);

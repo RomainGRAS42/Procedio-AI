@@ -461,6 +461,7 @@ const App: React.FC = () => {
           <Header
             user={user}
             currentView={currentView}
+            searchTerm={globalSearchTerm}
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
