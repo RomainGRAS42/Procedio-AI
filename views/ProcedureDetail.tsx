@@ -153,7 +153,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         if (isUUID) {
             const { data, error } = await supabase
                 .from('procedures')
-                .select('pinecone_document_id')
+                .select('*')
                 .eq('uuid', procedure.id)
                 .limit(1)
                 .maybeSingle();
@@ -170,7 +170,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
              console.log("🔄 Tentative via Titre:", procedure.title);
              const { data, error } = await supabase
                 .from('procedures')
-                .select('pinecone_document_id')
+                .select('*')
                 .eq('title', procedure.title)
                 .limit(1)
                 .maybeSingle();
@@ -185,7 +185,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
              console.log("🔄 Tentative via URL:", procedure.fileUrl);
              const { data, error } = await supabase
                 .from('procedures')
-                .select('pinecone_document_id')
+                .select('*')
                 .eq('file_url', procedure.fileUrl)
                 .limit(1)
                 .maybeSingle();
@@ -235,21 +235,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           // Tentative 1 : UUID
           const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
           if (isUUID) {
-               const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('uuid', procedure.id).limit(1).maybeSingle();
+               const { data } = await supabase.from('procedures').select('*').eq('uuid', procedure.id).limit(1).maybeSingle();
                if (data) resultData = data;
           }
 
           // Tentative 2 : Titre (Fallback)
           if (!resultData) {
                console.log("⚠️ FORCE FETCH Fallback Titre...");
-               const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('title', procedure.title).limit(1).maybeSingle();
+               const { data } = await supabase.from('procedures').select('*').eq('title', procedure.title).limit(1).maybeSingle();
                if (data) resultData = data;
           }
 
           // Tentative 3 : URL (Ultimate Fallback)
           if (!resultData && procedure.fileUrl) {
                console.log("⚠️ FORCE FETCH Fallback URL...");
-               const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('file_url', procedure.fileUrl).limit(1).maybeSingle();
+               const { data } = await supabase.from('procedures').select('*').eq('file_url', procedure.fileUrl).limit(1).maybeSingle();
                if (data) resultData = data;
           }
             
