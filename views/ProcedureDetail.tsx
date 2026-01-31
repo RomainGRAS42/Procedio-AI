@@ -134,6 +134,36 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     }
   };
 
+  // State pour stocker l'ID Pinecone, initialisé avec la prop si présente
+  const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.pinecone_document_id);
+
+  // Sécurité : Si l'ID est manquant (ex: venant de la recherche), on le récupère en base
+  useEffect(() => {
+    const fetchMissingPineconeId = async () => {
+      if (pineconeId) return; // Déjà là, pas besoin de chercher
+
+      console.log("🔍 pinecone_document_id manquant, récupération via Supabase...");
+      try {
+        const { data, error } = await supabase
+          .from('procedures')
+          .select('pinecone_document_id')
+          .eq('uuid', procedure.id) // procedure.id correspond à la colonne uuid
+          .single();
+
+        if (data && data.pinecone_document_id) {
+          console.log("✅ pinecone_document_id récupéré :", data.pinecone_document_id);
+          setPineconeId(data.pinecone_document_id);
+        } else if (error) {
+          console.error("❌ Erreur recup pinecone_id:", error);
+        }
+      } catch (err) {
+        console.error("❌ Erreur critique recup pinecone_id:", err);
+      }
+    };
+
+    fetchMissingPineconeId();
+  }, [procedure.id, pineconeId]);
+
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input;
     if (!textToSend.trim()) return;
@@ -156,11 +186,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         question: textToSend,
         title: cleanTitle,
         file_id: procedure.file_id || procedure.id,
-        pinecone_document_id: procedure.pinecone_document_id,
+        pinecone_document_id: pineconeId, // On utilise le state local sécurisé
         userName: fullUserName,
         sessionid: chatSessionId,
       });
-      console.log('🔍 DEBUG - procedure object complet:', procedure);
 
       const response = await fetch("https://n8n.srv901593.hstgr.cloud/webhook-test/chat", {
         method: "POST",
@@ -169,7 +198,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           question: textToSend,
           title: cleanTitle,
           file_id: procedure.file_id || procedure.id,
-          pinecone_document_id: procedure.pinecone_document_id,
+          pinecone_document_id: pineconeId, // On utilise le state local sécurisé
           userName: fullUserName,
           sessionid: chatSessionId,
         }),
