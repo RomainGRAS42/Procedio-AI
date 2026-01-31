@@ -273,7 +273,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         sessionid: chatSessionId,
       });
 
-      const response = await fetch("https://n8n.srv901593.hstgr.cloud/webhook-test/chat", {
+      const response = await fetch("https://n8n.srv901593.hstgr.cloud/webhook/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
