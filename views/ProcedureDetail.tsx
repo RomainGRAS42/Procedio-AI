@@ -151,6 +151,17 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const fullUserName = `${user.firstName} ${user.lastName || ""}`.trim();
 
+      // DEBUG: Vérifier ce qui est envoyé
+      console.log('🔍 DEBUG - Données envoyées au webhook:', {
+        question: textToSend,
+        title: cleanTitle,
+        file_id: procedure.file_id || procedure.id,
+        pinecone_document_id: procedure.pinecone_document_id,
+        userName: fullUserName,
+        sessionid: chatSessionId,
+      });
+      console.log('🔍 DEBUG - procedure object complet:', procedure);
+
       const response = await fetch("https://n8n.srv901593.hstgr.cloud/webhook-test/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
