@@ -137,36 +137,54 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   // State pour stocker l'ID Pinecone, initialisé avec la prop si présente
   const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.pinecone_document_id);
 
-  // Sécurité : Si l'ID est manquant (ex: venant de la recherche), on le récupère en base
+  // Sécurité : Si l'ID est manquant, on le récupère en base avec stratégie de repli
   useEffect(() => {
     const fetchMissingPineconeId = async () => {
-      if (pineconeId) return; // Déjà là, pas besoin de chercher
+      if (pineconeId) return;
 
       console.log("🔍 pinecone_document_id manquant, tentative de récupération...");
       
       try {
-        // Validation basique UUID
+        let resultData = null;
+
+        // Tentative 1 : Par UUID (si valide)
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
         
-        let query = supabase.from('procedures').select('pinecone_document_id');
-        
         if (isUUID) {
-            query = query.eq('uuid', procedure.id);
-        } else {
-            console.log("⚠️ ID n'est pas un UUID (ex: recherche), tentative via Titre:", procedure.title);
-            query = query.eq('title', procedure.title);
+            const { data, error } = await supabase
+                .from('procedures')
+                .select('pinecone_document_id')
+                .eq('uuid', procedure.id)
+                .limit(1)
+                .maybeSingle();
+
+            if (!error && data) {
+                resultData = data;
+            } else if (error) {
+                console.warn("⚠️ Echec requête UUID (400 possible), passage au fallback Titre...", error.message);
+            }
         }
 
-        // On prend le premier qui match
-        const { data, error } = await query.limit(1).maybeSingle();
+        // Tentative 2 : Par Titre (Fallback) si UUID a échoué ou n'était pas valide
+        if (!resultData) {
+             console.log("🔄 Tentative via Titre:", procedure.title);
+             const { data, error } = await supabase
+                .from('procedures')
+                .select('pinecone_document_id')
+                .eq('title', procedure.title)
+                .limit(1)
+                .maybeSingle();
+             
+             if (!error && data) {
+                 resultData = data;
+             }
+        }
 
-        if (data && data.pinecone_document_id) {
-          console.log("✅ pinecone_document_id récupéré via", isUUID ? "UUID" : "TITRE", ":", data.pinecone_document_id);
-          setPineconeId(data.pinecone_document_id);
-        } else if (error) {
-          console.error("❌ Erreur recup pinecone_id:", error);
+        if (resultData && resultData.pinecone_document_id) {
+          console.log("✅ pinecone_document_id récupéré avec succès :", resultData.pinecone_document_id);
+          setPineconeId(resultData.pinecone_document_id);
         } else {
-          console.warn("⚠️ Aucun document trouvé pour récupérer l'ID Pinecone");
+          console.warn("⚠️ Impossible de récupérer pinecone_document_id (ni part UUID, ni par Titre)");
         }
       } catch (err) {
         console.error("❌ Erreur critique recup pinecone_id:", err);
@@ -193,29 +211,32 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const fullUserName = `${user.firstName} ${user.lastName || ""}`.trim();
 
-      // ULTIME SÉCURITÉ : Si pineconeId est toujours manquant, on le force ici
+      // ULTIME SÉCURITÉ : Force Fetch avec Failover
       let finalPineconeId = pineconeId;
       if (!finalPineconeId) {
-          console.log("⚠️ FORCE FETCH : pineconeId manquant au moment de l'envoi, récupération bloquante...");
-          
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
-          let query = supabase.from('procedures').select('pinecone_document_id');
+          console.log("⚠️ FORCE FETCH START...");
+          let resultData = null;
 
+          // Tentative 1 : UUID
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
           if (isUUID) {
-               query = query.eq('uuid', procedure.id);
-          } else {
-               query = query.eq('title', procedure.title);
+               const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('uuid', procedure.id).limit(1).maybeSingle();
+               if (data) resultData = data;
           }
 
-          const { data } = await query.limit(1).maybeSingle();
+          // Tentative 2 : Titre (Fallback)
+          if (!resultData) {
+               console.log("⚠️ FORCE FETCH Fallback Titre...");
+               const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('title', procedure.title).limit(1).maybeSingle();
+               if (data) resultData = data;
+          }
             
-          if (data?.pinecone_document_id) {
-            finalPineconeId = data.pinecone_document_id;
-            // On met à jour le state pour la suite
-            setPineconeId(data.pinecone_document_id);
-            console.log("✅ FORCE FETCH RÉUSSI :", finalPineconeId);
+          if (resultData?.pinecone_document_id) {
+            finalPineconeId = resultData.pinecone_document_id;
+            setPineconeId(finalPineconeId);
+            console.log("✅ FORCE FETCH SUCCESS :", finalPineconeId);
           } else {
-             console.warn("❌ FORCE FETCH ÉCHOUÉ : Impossible de trouver l'ID Pinecone");
+             console.warn("❌ FORCE FETCH FAILED");
           }
       }
 
