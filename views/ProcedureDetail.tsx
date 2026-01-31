@@ -181,12 +181,32 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const fullUserName = `${user.firstName} ${user.lastName || ""}`.trim();
 
+      // ULTIME SÉCURITÉ : Si pineconeId est toujours manquant, on le force ici
+      let finalPineconeId = pineconeId;
+      if (!finalPineconeId) {
+          console.log("⚠️ FORCE FETCH : pineconeId manquant au moment de l'envoi, récupération bloquante...");
+          const { data } = await supabase
+            .from('procedures')
+            .select('pinecone_document_id')
+            .eq('uuid', procedure.id)
+            .single();
+            
+          if (data?.pinecone_document_id) {
+            finalPineconeId = data.pinecone_document_id;
+            // On met à jour le state pour la suite
+            setPineconeId(data.pinecone_document_id);
+            console.log("✅ FORCE FETCH RÉUSSI :", finalPineconeId);
+          } else {
+             console.warn("❌ FORCE FETCH ÉCHOUÉ : Impossible de trouver l'ID Pinecone");
+          }
+      }
+
       // DEBUG: Vérifier ce qui est envoyé
       console.log('🔍 DEBUG - Données envoyées au webhook:', {
         question: textToSend,
         title: cleanTitle,
         file_id: procedure.file_id || procedure.id,
-        pinecone_document_id: pineconeId, // On utilise le state local sécurisé
+        pinecone_document_id: finalPineconeId, 
         userName: fullUserName,
         sessionid: chatSessionId,
       });
@@ -198,7 +218,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           question: textToSend,
           title: cleanTitle,
           file_id: procedure.file_id || procedure.id,
-          pinecone_document_id: pineconeId, // On utilise le state local sécurisé
+          pinecone_document_id: finalPineconeId,
           userName: fullUserName,
           sessionid: chatSessionId,
         }),
