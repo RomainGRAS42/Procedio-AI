@@ -159,6 +159,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 .maybeSingle();
 
             if (!error && data) {
+                console.log("✅ UUID FETCH RAW KEYS:", Object.keys(data));
                 resultData = data;
             } else if (error) {
                 console.warn("⚠️ Echec requête UUID (400 possible), passage au fallback Titre...", error.message);
