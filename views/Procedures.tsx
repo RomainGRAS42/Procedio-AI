@@ -71,6 +71,7 @@ const Procedures: React.FC<ProceduresProps> = ({
             title: f.title || "Sans titre",
             category: f.Type || 'NON CLASSÉ',
             fileUrl: f.file_url, // On récupère l'URL liée
+            pinecone_document_id: f.pinecone_document_id,
             createdAt: f.created_at,
             views: f.views || 0,
             status: f.status || 'validated'
@@ -137,6 +138,7 @@ const Procedures: React.FC<ProceduresProps> = ({
         title: f.title || "Sans titre",
         category: f.Type || 'NON CLASSÉ',
         fileUrl: f.file_url,
+        pinecone_document_id: f.pinecone_document_id,
         createdAt: f.created_at,
         views: f.views || 0,
         status: f.status || 'validated'

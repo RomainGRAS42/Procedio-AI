@@ -32,6 +32,7 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
           title: p.title || "Sans titre",
           category: p.Type || "GÉNÉRAL",
           fileUrl: p.file_url,
+          pinecone_document_id: p.pinecone_document_id,
           createdAt: p.created_at,
           views: p.views || 0,
           status: p.status || 'validated'
