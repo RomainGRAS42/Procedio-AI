@@ -180,6 +180,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
              }
         }
 
+        // Tentative 3 : Par URL (Ultimate Fallback)
+        if (!resultData && procedure.fileUrl) {
+             console.log("🔄 Tentative via URL:", procedure.fileUrl);
+             const { data, error } = await supabase
+                .from('procedures')
+                .select('pinecone_document_id')
+                .eq('file_url', procedure.fileUrl)
+                .limit(1)
+                .maybeSingle();
+             
+             if (!error && data) {
+                 resultData = data;
+             }
+        }
+
         if (resultData && resultData.pinecone_document_id) {
           console.log("✅ pinecone_document_id récupéré avec succès :", resultData.pinecone_document_id);
           setPineconeId(resultData.pinecone_document_id);
@@ -211,7 +226,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const fullUserName = `${user.firstName} ${user.lastName || ""}`.trim();
 
-      // ULTIME SÉCURITÉ : Force Fetch avec Failover
+      // ULTIME SÉCURITÉ : Force Fetch avec Failover (UUID -> Titre -> URL)
       let finalPineconeId = pineconeId;
       if (!finalPineconeId) {
           console.log("⚠️ FORCE FETCH START...");
@@ -230,13 +245,20 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('title', procedure.title).limit(1).maybeSingle();
                if (data) resultData = data;
           }
+
+          // Tentative 3 : URL (Ultimate Fallback)
+          if (!resultData && procedure.fileUrl) {
+               console.log("⚠️ FORCE FETCH Fallback URL...");
+               const { data } = await supabase.from('procedures').select('pinecone_document_id').eq('file_url', procedure.fileUrl).limit(1).maybeSingle();
+               if (data) resultData = data;
+          }
             
           if (resultData?.pinecone_document_id) {
             finalPineconeId = resultData.pinecone_document_id;
             setPineconeId(finalPineconeId);
             console.log("✅ FORCE FETCH SUCCESS :", finalPineconeId);
           } else {
-             console.warn("❌ FORCE FETCH FAILED");
+             console.warn("❌ FORCE FETCH FAILED (UUID, Titre et URL échoués)");
           }
       }
 
