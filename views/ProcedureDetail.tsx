@@ -142,19 +142,31 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     const fetchMissingPineconeId = async () => {
       if (pineconeId) return; // Déjà là, pas besoin de chercher
 
-      console.log("🔍 pinecone_document_id manquant, récupération via Supabase...");
+      console.log("🔍 pinecone_document_id manquant, tentative de récupération...");
+      
       try {
-        const { data, error } = await supabase
-          .from('procedures')
-          .select('pinecone_document_id')
-          .eq('uuid', procedure.id) // procedure.id correspond à la colonne uuid
-          .single();
+        // Validation basique UUID
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
+        
+        let query = supabase.from('procedures').select('pinecone_document_id');
+        
+        if (isUUID) {
+            query = query.eq('uuid', procedure.id);
+        } else {
+            console.log("⚠️ ID n'est pas un UUID (ex: recherche), tentative via Titre:", procedure.title);
+            query = query.eq('title', procedure.title);
+        }
+
+        // On prend le premier qui match
+        const { data, error } = await query.limit(1).maybeSingle();
 
         if (data && data.pinecone_document_id) {
-          console.log("✅ pinecone_document_id récupéré :", data.pinecone_document_id);
+          console.log("✅ pinecone_document_id récupéré via", isUUID ? "UUID" : "TITRE", ":", data.pinecone_document_id);
           setPineconeId(data.pinecone_document_id);
         } else if (error) {
           console.error("❌ Erreur recup pinecone_id:", error);
+        } else {
+          console.warn("⚠️ Aucun document trouvé pour récupérer l'ID Pinecone");
         }
       } catch (err) {
         console.error("❌ Erreur critique recup pinecone_id:", err);
@@ -162,7 +174,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     };
 
     fetchMissingPineconeId();
-  }, [procedure.id, pineconeId]);
+  }, [procedure.id, procedure.title, pineconeId]);
 
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input;
@@ -185,11 +197,17 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       let finalPineconeId = pineconeId;
       if (!finalPineconeId) {
           console.log("⚠️ FORCE FETCH : pineconeId manquant au moment de l'envoi, récupération bloquante...");
-          const { data } = await supabase
-            .from('procedures')
-            .select('pinecone_document_id')
-            .eq('uuid', procedure.id)
-            .single();
+          
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
+          let query = supabase.from('procedures').select('pinecone_document_id');
+
+          if (isUUID) {
+               query = query.eq('uuid', procedure.id);
+          } else {
+               query = query.eq('title', procedure.title);
+          }
+
+          const { data } = await query.limit(1).maybeSingle();
             
           if (data?.pinecone_document_id) {
             finalPineconeId = data.pinecone_document_id;
