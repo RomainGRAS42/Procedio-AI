@@ -112,6 +112,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 title: item.title || "Document sans titre",
                 category: category.toUpperCase(),
                 fileUrl: url,
+                pinecone_document_id: item.pinecone_document_id,
                 createdAt: new Date().toISOString(),
                 views: 0,
                 status: "validated"
