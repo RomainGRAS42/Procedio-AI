@@ -32,6 +32,7 @@ export interface Procedure {
   title: string;
   category: string;
   fileUrl?: string; // URL directe vers le document (PDF)
+  pinecone_document_id?: string; // ID du document dans Pinecone pour le filtrage
   createdAt: string;
   views: number;
   status: "pending" | "validated";

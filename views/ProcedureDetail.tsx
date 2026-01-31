@@ -158,6 +158,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           question: textToSend,
           title: cleanTitle,
           file_id: procedure.file_id || procedure.id,
+          pinecone_document_id: procedure.pinecone_document_id,
           userName: fullUserName,
           sessionid: chatSessionId,
         }),
