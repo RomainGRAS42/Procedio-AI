@@ -179,15 +179,19 @@ const Procedures: React.FC<ProceduresProps> = ({
               <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-xl"></i>
               
               {/* Search button - appears when typing */}
-              {searchTerm.trim() && (
-                <button
-                  onClick={() => handleSearch(searchTerm, true)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20 active:scale-95 animate-scale-in flex items-center gap-2"
-                >
-                  <span>Rechercher</span>
-                  <i className="fa-solid fa-arrow-right text-[10px]" />
-                </button>
-              )}
+              {(() => {
+                const shouldShowButton = searchTerm.trim();
+                console.log("🔘 Button visible?", shouldShowButton, "searchTerm:", searchTerm);
+                return shouldShowButton && (
+                  <button
+                    onClick={() => handleSearch(searchTerm, true)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20 active:scale-95 animate-scale-in flex items-center gap-2"
+                  >
+                    <span>Rechercher</span>
+                    <i className="fa-solid fa-arrow-right text-[10px]" />
+                  </button>
+                );
+              })()}
               
               {/* Hint - appears when typing */}
               {searchTerm.trim() && (
