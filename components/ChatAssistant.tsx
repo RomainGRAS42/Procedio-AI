@@ -94,28 +94,24 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
       let responseText = '';
       let procedures: Procedure[] = [];
 
-      // Case 1: Array with output [{ "output": "..." }]
-      if (Array.isArray(data) && data.length > 0 && data[0].output) {
-        responseText = data[0].output;
+      // Case 1: Array with output [{ "output": "...", "procedures": [...] }]
+      if (Array.isArray(data) && data.length > 0) {
+        if (data[0].output) responseText = data[0].output;
+        if (data[0].procedures) procedures = data[0].procedures;
       } 
-      // Case 2: Direct Object { "output": "..." }
-      else if (data.output && typeof data.output === 'string') {
-        responseText = data.output;
+      // Case 2: Direct Object { "output": "...", "procedures": [...] }
+      else if (typeof data === 'object') {
+        if (data.output && typeof data.output === 'string') responseText = data.output;
+        if (data.procedures) procedures = data.procedures;
       }
-      // Case 3: Legacy Format { "procedures": [...] }
-      else if (data.procedures) {
-        procedures = data.procedures;
-        responseText = procedures.length > 0 
-          ? `✅ J'ai trouvé **${procedures.length} procédure${procedures.length > 1 ? 's' : ''}** qui peuvent vous aider :`
-          : "❌ Désolé, je n'ai pas trouvé de procédure correspondant à votre demande.";
-      } 
-      // Case 4: Fallback - Dump content if it's a string
-      else if (typeof data === 'string') {
-        responseText = data;
-      }
-      else {
-        console.warn('⚠️ Unknown response format:', data);
-        responseText = "Désolé, je n'ai pas compris la réponse du serveur (Format inconnu).";
+      
+      // Fallback strategies if main parsing failed
+      if (!responseText && !procedures.length) {
+         if (typeof data === 'string') responseText = data;
+         else {
+           console.warn('⚠️ Unknown response format:', data);
+           responseText = "Désolé, je n'ai pas compris la réponse du serveur (Format inconnu).";
+         }
       }
       
       const assistantMessage: Message = {
@@ -207,7 +203,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-800 border border-slate-200'} px-4 py-3 rounded-2xl`}>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium" dangerouslySetInnerHTML={{ __html: msg.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                  <p 
+                    className="text-sm leading-relaxed whitespace-pre-wrap font-medium" 
+                    dangerouslySetInnerHTML={{ 
+                      __html: msg.content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline font-bold hover:text-indigo-800">$1</a>')
+                    }} 
+                  />
                   
                   {/* Procédures trouvées */}
                   {msg.procedures && msg.procedures.length > 0 && (
