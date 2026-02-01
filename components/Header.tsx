@@ -103,7 +103,8 @@ const Header: React.FC<HeaderProps> = ({
       if (selectedIndex >= 0) {
         e.preventDefault();
         const selected = autocompleteSuggestions[selectedIndex];
-        setLocalSearch(selected.title);
+        // Clear search instead of setting title
+        setLocalSearch("");
         setAutocompleteSuggestions([]);
         if (onSelectProcedure) {
           onSelectProcedure(selected);
@@ -380,7 +381,8 @@ const Header: React.FC<HeaderProps> = ({
                       key={proc.id}
                       type="button" 
                       onClick={() => {
-                        setLocalSearch(proc.title);
+                        // Clear search instead of setting title
+                        setLocalSearch(""); 
                         setAutocompleteSuggestions([]);
                         if (onSelectProcedure) {
                           onSelectProcedure(proc);
