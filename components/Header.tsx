@@ -45,6 +45,29 @@ const Header: React.FC<HeaderProps> = ({
   );
   // Track IDs of notifications clicked in this session
   const [viewedNotifIds, setViewedNotifIds] = useState<Set<string>>(new Set());
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]); // New State
+
+  // Autocomplete Logic
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (localSearch.trim().length < 2) {
+        setAutocompleteSuggestions([]);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('procedures')
+        .select('id, title')
+        .ilike('title', `%${localSearch}%`)
+        .limit(5);
+      
+      if (data) setAutocompleteSuggestions(data);
+    };
+
+    // Debounce simple
+    const timeoutId = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timeoutId);
+  }, [localSearch]);
 
   const titles: Record<string, string> = {
     dashboard: "Tableau de bord",
@@ -289,21 +312,45 @@ const Header: React.FC<HeaderProps> = ({
             {localSearch.trim() && (
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-md shadow-indigo-500/20 active:scale-95 animate-scale-in flex items-center gap-1.5"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white pl-4 pr-2 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-md shadow-indigo-500/20 active:scale-95 animate-scale-in flex items-center gap-2"
               >
                 <span>Rechercher</span>
-                <i className="fa-solid fa-arrow-right text-[8px]" />
+                <kbd className="hidden sm:inline-flex items-center justify-center h-5 px-1.5 bg-indigo-500 rounded text-white/90 border border-white/20 text-[9px] font-sans">
+                  ↵
+                </kbd>
+                <i className="fa-solid fa-arrow-right sm:hidden text-[10px]" />
               </button>
             )}
+
+            {/* Autocomplete Dropdown */}
+            {autocompleteSuggestions.length > 0 && localSearch.trim().length >= 2 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 z-50">
+                <div className="p-2">
+                  <p className="px-3 py-2 text-[10px] uppercase tracking-widest font-black text-slate-400">
+                    Suggestions
+                  </p>
+                  {autocompleteSuggestions.map((proc) => (
+                    <button
+                      key={proc.id}
+                      type="button" // Important pour ne pas submit le form
+                      onClick={() => {
+                        setLocalSearch(proc.title);
+                        setAutocompleteSuggestions([]);
+                        onSearch(proc.title); // Déclenche la recherche immédiate
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 text-sm font-bold transition-all flex items-center gap-3 group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                        <i className="fa-regular fa-file-lines"></i>
+                      </div>
+                      <span className="truncate flex-1">{proc.title}</span>
+                      <i className="fa-solid fa-arrow-right -ml-4 opacity-0 group-hover:opacity-100 group-hover:ml-0 transition-all text-xs text-indigo-400"></i>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </form>
-          
-          {/* Hint - appears when typing */}
-          {localSearch.trim() && (
-            <p className="absolute -bottom-4 left-12 text-[9px] text-slate-400 font-medium animate-fade-in flex items-center gap-1">
-              <i className="fa-solid fa-lightbulb text-amber-400" />
-              ou appuyez sur <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-bold text-[8px]">Enter ↵</kbd>
-            </p>
-          )}
         </div>
       </div>
 
