@@ -7,8 +7,8 @@ interface HeaderProps {
   user: {
     firstName: string;
     role: string;
-    avatarUrl: string;
-    id: string; // Add ID to fix type error
+    avatarUrl?: string; // Make optional to match User type
+    id: string; 
   };
   currentView: string;
   searchTerm: string;
@@ -50,7 +50,8 @@ const Header: React.FC<HeaderProps> = ({
   );
   // Track IDs of notifications clicked in this session
   const [viewedNotifIds, setViewedNotifIds] = useState<Set<string>>(new Set());
-  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]); // New State
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]); 
+  const [selectedIndex, setSelectedIndex] = useState(-1); // Keyboard navigation state
 
   // Autocomplete Logic
   useEffect(() => {
@@ -80,6 +81,7 @@ const Header: React.FC<HeaderProps> = ({
           // For now, passing full item + id mapping is safest for direct view.
         }));
         setAutocompleteSuggestions(formattedData);
+        setSelectedIndex(-1); // Reset selection on new search
       }
     };
 
@@ -87,6 +89,30 @@ const Header: React.FC<HeaderProps> = ({
     const timeoutId = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timeoutId);
   }, [localSearch]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (autocompleteSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev < autocompleteSuggestions.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0) {
+        e.preventDefault();
+        const selected = autocompleteSuggestions[selectedIndex];
+        setLocalSearch(selected.title);
+        setAutocompleteSuggestions([]);
+        if (onSelectProcedure) {
+          onSelectProcedure(selected);
+        } else {
+          onSearch(selected.title);
+        }
+      }
+    }
+  };
 
   const titles: Record<string, string> = {
     dashboard: "Tableau de bord",
@@ -320,6 +346,7 @@ const Header: React.FC<HeaderProps> = ({
               }`}
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
+              onKeyDown={handleKeyDown} // Attach Keyboard Handler
             />
             <button 
               type="submit"
@@ -348,28 +375,38 @@ const Header: React.FC<HeaderProps> = ({
                   <p className="px-3 py-2 text-[10px] uppercase tracking-widest font-black text-slate-400">
                     Suggestions
                   </p>
-                  {autocompleteSuggestions.map((proc) => (
+                  {autocompleteSuggestions.map((proc, index) => (
                     <button
                       key={proc.id}
-                      type="button" // Important pour ne pas submit le form
+                      type="button" 
                       onClick={() => {
                         setLocalSearch(proc.title);
                         setAutocompleteSuggestions([]);
-                        
-                        // Direct Navigation if available
                         if (onSelectProcedure) {
                           onSelectProcedure(proc);
                         } else {
                           onSearch(proc.title);
                         }
                       }}
-                      className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 text-sm font-bold transition-all flex items-center gap-3 group"
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-3 group ${
+                        index === selectedIndex 
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 scale-[1.02]' 
+                          : 'hover:bg-indigo-50 hover:text-indigo-700 text-slate-600'
+                      }`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                        index === selectedIndex 
+                          ? 'bg-white/20 text-white' 
+                          : 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-200'
+                      }`}>
                         <i className="fa-regular fa-file-lines"></i>
                       </div>
                       <span className="truncate flex-1">{proc.title}</span>
-                      <i className="fa-solid fa-arrow-right -ml-4 opacity-0 group-hover:opacity-100 group-hover:ml-0 transition-all text-xs text-indigo-400"></i>
+                      <i className={`fa-solid fa-arrow-right -ml-4 transition-all text-xs ${
+                        index === selectedIndex
+                          ? 'opacity-100 ml-0 text-white'
+                          : 'opacity-0 group-hover:opacity-100 group-hover:ml-0 text-indigo-400'
+                      }`}></i>
                     </button>
                   ))}
                 </div>
