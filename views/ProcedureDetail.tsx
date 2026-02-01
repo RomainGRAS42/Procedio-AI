@@ -501,31 +501,35 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            {/* Context Button Moved Here */}
+            {/* Context Button */}
             <button
                onClick={() => setIsChatOpen(!isChatOpen)}
-               className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm
+               className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm h-10
                  ${isChatOpen 
                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-indigo-200' 
                    : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
                  }`}
              >
-               <i className={`fa-solid ${isChatOpen ? 'fa-xmark' : 'fa-brain'}`}></i>
-               <span>{isChatOpen ? 'Fermer IA' : 'Interroger IA'}</span>
+               <i className={`fa-solid ${isChatOpen ? 'fa-xmark' : 'fa-comments'}`}></i>
+               <span>{isChatOpen ? 'Fermer IA' : 'Discuter avec le PDF'}</span>
              </button>
 
+            {/* Suggestion Button */}
             <button
               onClick={() => setIsSuggestionModalOpen(true)}
-              className="px-6 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm flex items-center gap-2">
+              className="px-4 py-3 h-10 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm flex items-center gap-2">
               <i className="fa-regular fa-lightbulb text-sm"></i>
-              <span className="hidden sm:inline">Suggérer</span>
+              <span className="hidden sm:inline">Suggérer une modif</span>
             </button>
+            
+            {/* Open in New Tab Button (Full Text) */}
             <button
               onClick={() => window.open(docUrl || "", "_blank")}
-              className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-100 transition-all"
-              title="Ouvrir dans un nouvel onglet"
+              className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-sm flex items-center gap-2"
+              title="Ouvrir le document PDF dans un nouvel onglet"
             >
-              <i className="fa-solid fa-expand"></i>
+              <i className="fa-solid fa-arrow-up-right-from-square"></i>
+              <span className="hidden sm:inline">Ouvrir dans un onglet</span>
             </button>
           </div>
         </div>
