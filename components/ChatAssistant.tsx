@@ -165,25 +165,22 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
       {/* Bouton sticky - toujours visible */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-[60] animate-bounce-in">
-          {/* Nouveau Bouton Premium "Holographique" */}
+          {/* Bouton "Indigo Search Sparkle" (Brand Color) */}
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative w-16 h-16 rounded-[2rem] bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 shadow-2xl shadow-indigo-500/40 hover:scale-105 hover:shadow-indigo-500/60 transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/20"
+            className="group relative w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-500 shadow-xl shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/10"
           >
-            {/* Effet Brillance (Glassmorphism) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            
-            {/* Effet de lueur interne */}
-            <div className="absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,0.3)] opacity-50"></div>
+            {/* Conteneur d'icônes avec rotation */}
+            <div className="relative w-full h-full flex items-center justify-center transition-transform duration-500">
+              
+              {/* État FERMÉ : Loupe + Sparkles */}
+              <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform scale-100 opacity-100 group-hover:scale-110">
+                <i className="fa-solid fa-magnifying-glass text-2xl text-white"></i>
+                <i className="fa-solid fa-sparkles text-sm text-yellow-300 absolute top-3 right-3 animate-pulse"></i>
+                <i className="fa-solid fa-sparkles text-[10px] text-white absolute bottom-4 left-3 opacity-70 animate-ping" style={{ animationDuration: '3s' }}></i>
+              </div>
 
-            {/* Icône animée */}
-            <i className="fa-solid fa-sparkles text-2xl text-white drop-shadow-md group-hover:animate-pulse"></i>
-
-            {/* Badge "Connecté" (pulsing dot) */}
-            <span className="absolute top-3 right-3 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border border-white/50"></span>
-            </span>
+            </div>
           </button>
         </div>
       )}
