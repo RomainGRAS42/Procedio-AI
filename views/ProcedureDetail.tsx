@@ -70,6 +70,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false);
   const [history, setHistory] = useState<SuggestionItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -509,23 +510,31 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           )}
         </div>
 
-        {/* HISTORIQUE DES SUGGESTIONS */}
-        <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8 space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
-              <i className="fa-solid fa-clock-rotate-left"></i>
+        {/* HISTORIQUE DES SUGGESTIONS - COLLAPSIBLE */}
+        <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+          <button
+            onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+            className="w-full p-8 flex items-center justify-between hover:bg-slate-50/50 transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-clock-rotate-left"></i>
+              </div>
+              <div className="text-left">
+                <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">
+                  Historique des améliorations
+                </h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  {isHistoryExpanded ? 'Cliquez pour masquer' : 'Cliquez pour afficher'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">
-                Historique des améliorations
-              </h3>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                Retours de l'équipe sur ce document
-              </p>
-            </div>
-          </div>
+            <i className={`fa-solid fa-chevron-down text-slate-300 transition-transform ${isHistoryExpanded ? 'rotate-180' : ''}`}></i>
+          </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {isHistoryExpanded && (
+            <div className="px-8 pb-8 space-y-6 animate-slide-up">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {loadingHistory ? (
               <div className="col-span-full py-10 flex justify-center">
                 <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
@@ -577,7 +586,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour le moment.</p>
               </div>
             )}
-          </div>
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
