@@ -470,6 +470,16 @@ const App: React.FC = () => {
               setGlobalSearchTerm(t);
               setCurrentView("search-results");
             }}
+            onSelectProcedure={(p) => {
+              setSelectedProcedure(p);
+              // Smart Navigation: Pre-select the folder so "Back" goes to the category
+              if (p.category) {
+                  setLastFolder(p.category);
+              }
+              // CLEANUP: Force clear search term so Header and Procedures view are reset
+              setGlobalSearchTerm("");
+              setCurrentView("procedure-detail");
+            }}
             onLogout={handleLogout}
             onNavigate={(view) => setCurrentView(view)}
             onNotificationClick={(type, id) => {

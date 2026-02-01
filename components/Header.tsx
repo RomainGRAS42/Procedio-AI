@@ -4,27 +4,32 @@ import { User, ViewType, UserRole, Suggestion } from "../types";
 import { supabase } from "../lib/supabase";
 
 interface HeaderProps {
-  user: User;
-  currentView: ViewType;
-  suggestions?: Suggestion[];
+  user: {
+    firstName: string;
+    role: string;
+    avatarUrl: string;
+    id: string; // Add ID to fix type error
+  };
+  currentView: string;
+  searchTerm: string;
   onMenuClick: () => void;
   onSearch: (term: string) => void;
+  onSelectProcedure?: (procedure: any) => void; // New Prop for Direct Navigation
   onLogout: () => void;
-  onNavigate: (view: ViewType) => void;
+  onNavigate: (view: any) => void;
   onNotificationClick?: (type: 'suggestion' | 'read', id: string) => void;
-  searchTerm?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({
   user,
   currentView,
-  suggestions = [],
+  searchTerm,
   onMenuClick,
   onSearch,
+  onSelectProcedure, // Destructure new prop
   onLogout,
   onNavigate,
   onNotificationClick,
-  searchTerm
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -57,17 +62,24 @@ const Header: React.FC<HeaderProps> = ({
 
       const { data } = await supabase
         .from('procedures')
-        .select('uuid, title') // Correction: la colonne ID s'appelle "uuid"
+        .select('*') // Full fetch for direct opening
         .ilike('title', `%${localSearch}%`)
         .limit(5);
       
       if (data) {
-        // Mapping pour que le reste du code (qui attend .id) fonctionne
-        const mappedData = data.map((item: any) => ({
-          id: item.uuid,
-          title: item.title
+        // Mapping: ensure keys match Procedure type if necessary (camelCase vs snake_case)
+        // Since Supabase returns snake_case, and app seems to handle it or cast it, we pass it raw or lightly mapped
+        // The previous ID mapping is still useful for React keys
+        const formattedData = data.map((item: any) => ({
+          ...item,
+          id: item.uuid, // React Key and ID for app logic
+          // Add camelCase mappings if your Procedure type strictly requires them
+          fileUrl: item.file_url,
+          createdAt: item.created_at,
+          // ... other fields if needed, but often mapped elsewhere. 
+          // For now, passing full item + id mapping is safest for direct view.
         }));
-        setAutocompleteSuggestions(mappedData);
+        setAutocompleteSuggestions(formattedData);
       }
     };
 
@@ -343,7 +355,13 @@ const Header: React.FC<HeaderProps> = ({
                       onClick={() => {
                         setLocalSearch(proc.title);
                         setAutocompleteSuggestions([]);
-                        onSearch(proc.title); // Déclenche la recherche immédiate
+                        
+                        // Direct Navigation if available
+                        if (onSelectProcedure) {
+                          onSelectProcedure(proc);
+                        } else {
+                          onSearch(proc.title);
+                        }
                       }}
                       className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 text-sm font-bold transition-all flex items-center gap-3 group"
                     >
