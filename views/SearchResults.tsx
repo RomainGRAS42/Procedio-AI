@@ -47,77 +47,50 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         }
 
         const data = await response.json();
-        console.log("📦 Données reçues (raw):", JSON.stringify(data).slice(0, 500)); // Log first 500 chars to verify structure
+        console.log("📦 Données reçues (raw):", JSON.stringify(data).slice(0, 500));
         
-        let items: any[] = [];
-        
-        // Parsing robuste
-        if (Array.isArray(data)) {
-            console.log(`📦 Data est un tableau de longueur ${data.length}`);
-            if (data.length > 0) {
-                // Cas 1: [{ results: [...] }] (Structure n8n standard)
-                if (data[0].results && Array.isArray(data[0].results)) {
-                    console.log("🔍 Trouvé data[0].results");
-                    items = data[0].results;
-                } 
-                // Cas 2: [{ title: "...", file_url: "..." }, ...] (Liste directe)
-                else if (data[0].title || data[0].file_url) {
-                    console.log("🔍 Trouvé liste directe d'objets");
-                    items = data;
-                }
-                // Cas 3: [{ output: { ... } }] (Autre format n8n)
-                else {
-                    console.log("⚠️ Structure tableau non reconnue, tentative de 'flat' ou premier élément");
-                    // On essaie de voir si le premier élément est un wrapper
-                     items = data[0].results || data; 
-                }
-            }
-        } else if (typeof data === 'object' && data !== null) {
-            console.log("📦 Data est un objet");
-            // Cas 4: { results: [...] }
-            if (data.results && Array.isArray(data.results)) {
-                console.log("🔍 Trouvé data.results");
-                items = data.results;
-            } else {
-                 console.log("⚠️ Objet sans propriété 'results' évidente. Keys:", Object.keys(data));
-                 // Peut-être que data est directement un item unique ?
-                 if (data.title || data.file_url) {
-                     items = [data];
-                 }
-            }
+        // Nouveau format webhook: Array<{ document: { metadata: { titre: string } }, score: number }>
+        if (!Array.isArray(data)) {
+          console.warn("⚠️ Format de réponse inattendu, attendu un tableau");
+          setResults([]);
+          return;
         }
 
-        console.log(`🔍 Items extraits: ${items.length}`, items);
-
-        const foundProcedures: Procedure[] = items.map((item: any, index: number) => {
-            let category = "GÉNÉRAL";
-            const url = item.file_url || item.url || ""; // Support file_url OR url
-            
-            if (url) {
-                try {
-                    // Decodage URL pour gérer les espaces et accents
-                    const decodedUrl = decodeURIComponent(url);
-                    const parts = decodedUrl.split('/');
-                    if (parts.length >= 2) {
-                        category = parts[parts.length - 2];
-                    }
-                } catch (e) {
-                    console.warn("Erreur parsing URL:", url);
-                }
-            }
-
-            return {
-                id: `search-result-${index}-${Date.now()}`,
-                file_id: `n8n-${index}`,
-                title: item.title || "Document sans titre",
-                category: category.toUpperCase(),
-                fileUrl: url,
-                pinecone_document_id: item.pinecone_document_id,
-                createdAt: new Date().toISOString(),
-                views: 0,
-                status: "validated"
-            };
+        // Extraction des titres uniques
+        const uniqueTitles = new Set<string>();
+        data.forEach((item: any) => {
+          if (item.document?.metadata?.titre) {
+            uniqueTitles.add(item.document.metadata.titre);
+          }
         });
+
+        console.log(`🔍 ${uniqueTitles.size} documents uniques trouvés:`, Array.from(uniqueTitles));
+
+        // Récupération des procédures complètes depuis Supabase
+        const { data: procedures, error } = await supabase
+          .from('procedures')
+          .select('*')
+          .in('title', Array.from(uniqueTitles));
+
+        if (error) {
+          console.error("❌ Erreur Supabase:", error);
+          setResults([]);
+          return;
+        }
+
+        console.log(`✅ ${procedures?.length || 0} procédures trouvées dans Supabase`);
+
+        const foundProcedures: Procedure[] = (procedures || []).map(f => ({
+          id: f.file_id || f.uuid,
+          file_id: f.file_id || f.uuid,
+          title: f.title || "Sans titre",
+          category: f.Type || 'NON CLASSÉ',
+          fileUrl: f.file_url,
+          pinecone_document_id: f.pinecone_document_id,
+          createdAt: f.created_at,
+          views: f.views || 0,
+          status: f.status || 'validated'
+        }));
 
         console.log("✨ Procédures finales:", foundProcedures);
         setResults(foundProcedures);
