@@ -482,15 +482,15 @@ const App: React.FC = () => {
         )}
         
         {/* Chat Assistant - Global Sticky */}
-        {user && (
-          <ChatAssistant
-            user={user}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
-          />
-        )}
+      {isAuthenticated && user && currentView !== "procedure-detail" && (
+        <ChatAssistant 
+          user={user} 
+          onSelectProcedure={(proc) => {
+            setSelectedProcedure(proc);
+            setCurrentView("procedure-detail");
+          }} 
+        />
+      )}
         
         <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">
           <div className="max-w-screen-2xl mx-auto w-full">{renderView()}</div>

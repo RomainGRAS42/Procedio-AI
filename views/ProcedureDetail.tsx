@@ -368,8 +368,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     }
   };
 
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // ... (previous states)
+
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden">
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
       {notification && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-slide-up">
           <div className="bg-indigo-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4">
@@ -379,22 +383,35 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         </div>
       )}
 
-      {/* CHAT IA */}
-      <div className="lg:w-1/3 flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
-        <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
-            <i className="fa-solid fa-brain"></i>
+      {/* CHAT IA (SIDEBAR) */}
+      <div 
+        className={`lg:w-1/3 flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden transition-all duration-500 ease-in-out absolute lg:relative z-20 h-full
+          ${isChatOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-120%] lg:translate-x-0 lg:w-0 lg:opacity-0 lg:pointer-events-none absolute'}
+        `}
+      >
+        <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
+              <i className="fa-solid fa-brain"></i>
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">
+                Expert Procedio
+              </h3>
+              <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">
+                IA Connectée
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">
-              Expert Procedio
-            </h3>
-            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">
-              IA Connectée
-            </p>
-          </div>
+          <button 
+            onClick={() => setIsChatOpen(false)}
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
+        {/* ... (Chat Content - kept same logic but ensuring container fits) ... */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/10 scrollbar-hide">
           {messages.map((msg) => (
             <div
@@ -463,7 +480,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       </div>
 
       {/* VISIONNEUSE PDF */}
-      <div className="flex-1 flex flex-col gap-6">
+      <div className="flex-1 flex flex-col gap-6 transition-all duration-500">
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 overflow-hidden">
             <button
@@ -473,9 +490,24 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </button>
             <div className="min-w-0">
               <h2 className="font-black text-slate-900 text-xl truncate mb-1">{cleanTitle}</h2>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                {procedure?.category}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
+                  {procedure?.category}
+                </span>
+                
+                {/* BOUTON INTERROGER LE DOCUMENT */}
+                <button
+                  onClick={() => setIsChatOpen(!isChatOpen)}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-widest
+                    ${isChatOpen 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-600' 
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+                    }`}
+                >
+                  <i className="fa-solid fa-magnifying-glass-text"></i>
+                  <span>Interroger le document</span>
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
