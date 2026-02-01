@@ -57,11 +57,18 @@ const Header: React.FC<HeaderProps> = ({
 
       const { data } = await supabase
         .from('procedures')
-        .select('id, title')
+        .select('uuid, title') // Correction: la colonne ID s'appelle "uuid"
         .ilike('title', `%${localSearch}%`)
         .limit(5);
       
-      if (data) setAutocompleteSuggestions(data);
+      if (data) {
+        // Mapping pour que le reste du code (qui attend .id) fonctionne
+        const mappedData = data.map((item: any) => ({
+          id: item.uuid,
+          title: item.title
+        }));
+        setAutocompleteSuggestions(mappedData);
+      }
     };
 
     // Debounce simple
