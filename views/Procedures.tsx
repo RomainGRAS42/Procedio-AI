@@ -157,8 +157,55 @@ const Procedures: React.FC<ProceduresProps> = ({
                   setSearchTerm(e.target.value);
                   handleSearch(e.target.value);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchTerm.trim()) {
+                    setIsSearching(true);
+                  }
+                }}
               />
               <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-xl"></i>
+              
+              {/* Dropdown suggestions */}
+              {searchTerm.trim() && searchResults.length > 0 && !isSearching && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-slide-down">
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {searchResults.slice(0, 5).map((proc) => (
+                      <button
+                        key={proc.id}
+                        onClick={() => {
+                          onSelectProcedure(proc);
+                          setSearchTerm('');
+                          setSearchResults([]);
+                        }}
+                        className="w-full px-6 py-4 text-left hover:bg-indigo-50 transition-all border-b border-slate-100 last:border-none group flex items-center gap-4"
+                      >
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <i className="fa-solid fa-file-pdf" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-800 text-sm mb-1 truncate group-hover:text-indigo-600 transition-colors">
+                            {proc.title}
+                          </h4>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {proc.category}
+                          </span>
+                        </div>
+                        <i className="fa-solid fa-arrow-right text-slate-300 group-hover:text-indigo-600 text-sm transition-colors" />
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {searchResults.length > 5 && (
+                    <button
+                      onClick={() => setIsSearching(true)}
+                      className="w-full px-6 py-4 bg-slate-50 hover:bg-indigo-50 text-indigo-600 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-t border-slate-200"
+                    >
+                      <span>Voir tous les {searchResults.length} résultats</span>
+                      <i className="fa-solid fa-chevron-right text-xs" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={() => setIsAIModalOpen(true)}
