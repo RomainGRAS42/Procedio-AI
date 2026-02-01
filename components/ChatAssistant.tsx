@@ -16,14 +16,167 @@ interface ChatAssistantProps {
 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  // ... (rest of states)
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatPanelRef = useRef<HTMLDivElement>(null);
 
-  // ... (useEffects)
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Scroll to bottom when opening or new messages
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(scrollToBottom, 100); // Small delay for animation
+    } else {
+      scrollToBottom();
+    }
+  }, [isOpen, messages]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isOpen && chatPanelRef.current && !chatPanelRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      // Message d'accueil
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: "👋 Bonjour ! Je suis votre **Copilote Procedio**.\n\nDécrivez-moi votre problème ou votre besoin, et je vais chercher les meilleures procédures pour vous aider.",
+        timestamp: new Date()
+      }]);
+    }
+  }, [isOpen]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: input,
+          user_email: user.email
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Webhook Error:', response.status, response.statusText);
+        throw new Error(`Erreur webhook: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('🤖 Chatbot Response:', data); // DEBUG
+      
+      // Handle response from n8n (Array or Object)
+      let responseText = '';
+      let procedures: Procedure[] = [];
+
+      // Case 1: Array with output [{ "output": "...", "procedures": [...] }]
+      if (Array.isArray(data) && data.length > 0) {
+        if (data[0].output) responseText = data[0].output;
+        if (data[0].procedures) procedures = data[0].procedures;
+      } 
+      // Case 2: Direct Object { "output": "...", "procedures": [...] }
+      else if (typeof data === 'object') {
+        if (data.output && typeof data.output === 'string') responseText = data.output;
+        if (data.procedures) procedures = data.procedures;
+      }
+      
+      // Fallback strategies if main parsing failed
+      if (!responseText && !procedures.length) {
+         if (typeof data === 'string') responseText = data;
+         else {
+           console.warn('⚠️ Unknown response format:', data);
+           responseText = "Désolé, je n'ai pas compris la réponse du serveur (Format inconnu).";
+         }
+      }
+      
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: responseText,
+        procedures: procedures,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error: any) {
+      console.error('Erreur chatbot:', error);
+      
+      let errorMessageContent = "⚠️ Désolé, une erreur s'est produite.";
+      
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        errorMessageContent = "⚠️ Erreur de connexion (CORS). Le serveur n8n ne permet pas l'accès direct depuis ce domaine. Veuillez vérifier la configuration CORS du webhook ou utiliser un proxy.";
+      } else if (error.message.includes('Erreur webhook')) {
+        errorMessageContent = `⚠️ Erreur serveur: ${error.message}`;
+      }
+
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: errorMessageContent,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   return (
     <>
-      {/* ... (Sticky Button) ... */}
+      {/* Bouton sticky - toujours visible */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full shadow-2xl shadow-purple-500/30 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 z-50 group"
+          aria-label="Ouvrir l'assistant"
+        >
+          <i className="fa-solid fa-sparkles text-2xl animate-pulse group-hover:animate-none" />
+          
+          {/* Badge notification (optionnel) */}
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
+            IA
+          </span>
+        </button>
+      )}
 
       {/* Panel Chat */}
       {isOpen && (
