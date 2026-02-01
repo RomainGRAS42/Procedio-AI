@@ -116,15 +116,14 @@ const Procedures: React.FC<ProceduresProps> = ({
     };
   }, [currentFolder, isSearching, searchTerm, fetchStructure]);
 
-  const handleSearch = (termOverride?: string) => {
+  const handleSearch = (termOverride?: string, goToFullResults: boolean = false) => {
     const termToSearch = termOverride ?? searchTerm;
     if (!termToSearch.trim()) {
       setIsSearching(false);
       onSearchClear?.();
-      fetchStructure();
+      setSearchResults([]);
       return;
     }
-    setIsSearching(true);
     
     console.log("🔍 Recherche:", termToSearch);
     console.log("📦 Nombre total de procédures:", allProcedures.length);
@@ -138,6 +137,11 @@ const Procedures: React.FC<ProceduresProps> = ({
     
     console.log("✅ Résultats filtrés:", filtered.length, filtered);
     setSearchResults(filtered);
+    
+    // Only go to full results page if explicitly requested
+    if (goToFullResults) {
+      setIsSearching(true);
+    }
   };
 
   return (
@@ -160,11 +164,11 @@ const Procedures: React.FC<ProceduresProps> = ({
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  handleSearch(e.target.value);
+                  handleSearch(e.target.value, false);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && searchTerm.trim()) {
-                    setIsSearching(true);
+                    handleSearch(searchTerm, true);
                   }
                 }}
               />
@@ -202,7 +206,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                   
                   {searchResults.length > 5 && (
                     <button
-                      onClick={() => setIsSearching(true)}
+                      onClick={() => handleSearch(searchTerm, true)}
                       className="w-full px-6 py-4 bg-slate-50 hover:bg-indigo-50 text-indigo-600 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-t border-slate-200"
                     >
                       <span>Voir tous les {searchResults.length} résultats</span>
