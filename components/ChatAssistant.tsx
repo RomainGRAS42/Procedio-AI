@@ -26,9 +26,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Scroll to bottom when opening or new messages
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (isOpen) {
+      setTimeout(scrollToBottom, 100); // Small delay for animation
+    } else {
+      scrollToBottom();
+    }
+  }, [isOpen, messages]);
 
   // Click outside to close
   useEffect(() => {
@@ -208,7 +213,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                     dangerouslySetInnerHTML={{ 
                       __html: msg.content
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline font-bold hover:text-indigo-800">$1</a>')
+                        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all">$1</a>')
                     }} 
                   />
                   
