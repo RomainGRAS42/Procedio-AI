@@ -66,8 +66,8 @@ const Procedures: React.FC<ProceduresProps> = ({
             return cat === currentFolder.toUpperCase();
           })
           .map(f => ({
-            id: f.uuid,
-            file_id: f.uuid,
+            id: f.file_id_rag || f.uuid,
+            file_id: f.file_id_rag || f.uuid,
             title: f.title || "Sans titre",
             category: f.Type || 'NON CLASSÉ',
             fileUrl: f.file_url, // On récupère l'URL liée
@@ -133,8 +133,8 @@ const Procedures: React.FC<ProceduresProps> = ({
         
       if (error) throw error;
       const mappedResults = (data || []).map(f => ({
-        id: f.uuid,
-        file_id: f.uuid,
+        id: f.file_id_rag || f.uuid,
+        file_id: f.file_id_rag || f.uuid,
         title: f.title || "Sans titre",
         category: f.Type || 'NON CLASSÉ',
         fileUrl: f.file_url,
