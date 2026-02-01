@@ -162,7 +162,9 @@ const Procedures: React.FC<ProceduresProps> = ({
               <input 
                 type="text" 
                 placeholder="Rechercher dans la base de connaissance..."
-                className="w-full pl-14 pr-4 py-5 rounded-[2.5rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300"
+                className={`w-full pl-14 py-5 rounded-[2.5rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300 ${
+                  searchTerm.trim() ? 'pr-40' : 'pr-4'
+                }`}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
