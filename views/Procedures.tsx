@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, Procedure } from '../types';
 import { supabase } from '../lib/supabase';
+import ExpertAIModal from './ExpertAIModal';
 
 interface ProceduresProps {
   user: User;
@@ -25,10 +26,12 @@ const Procedures: React.FC<ProceduresProps> = ({
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isSearching, setIsSearching] = useState(initialSearchTerm !== '');
   const [searchResults, setSearchResults] = useState<Procedure[]>([]);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   
   const [currentFolder, setCurrentFolder] = useState<string | null>(initialFolder); 
   const [folders, setFolders] = useState<string[]>([]);
   const [files, setFiles] = useState<Procedure[]>([]);
+  const [allProcedures, setAllProcedures] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
 
@@ -51,6 +54,20 @@ const Procedures: React.FC<ProceduresProps> = ({
 
       const results = (allProcs || []) as any[];
       
+      // Map to Procedure format and store all
+      const mappedProcs = results.map(f => ({
+        id: f.file_id || f.uuid,
+        file_id: f.file_id || f.uuid,
+        title: f.title || "Sans titre",
+        category: f.Type || 'NON CLASSÉ',
+        fileUrl: f.file_url,
+        pinecone_document_id: f.pinecone_document_id,
+        createdAt: f.created_at,
+        views: f.views || 0,
+        status: f.status || 'validated'
+      }));
+      setAllProcedures(mappedProcs);
+      
       const uniqueCategories = Array.from(new Set(
         results.map(p => (p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ'))
       ));
@@ -60,22 +77,7 @@ const Procedures: React.FC<ProceduresProps> = ({
       setFolders(finalFolders);
 
       if (currentFolder) {
-        const filteredFiles = results
-          .filter(p => {
-            const cat = p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ';
-            return cat === currentFolder.toUpperCase();
-          })
-          .map(f => ({
-            id: f.file_id || f.uuid,
-            file_id: f.file_id || f.uuid,
-            title: f.title || "Sans titre",
-            category: f.Type || 'NON CLASSÉ',
-            fileUrl: f.file_url, // On récupère l'URL liée
-            pinecone_document_id: f.pinecone_document_id,
-            createdAt: f.created_at,
-            views: f.views || 0,
-            status: f.status || 'validated'
-          }));
+        const filteredFiles = mappedProcs.filter(p => p.category.toUpperCase() === currentFolder.toUpperCase());
         setFiles(filteredFiles);
       }
     } catch (e) {
@@ -114,7 +116,7 @@ const Procedures: React.FC<ProceduresProps> = ({
     };
   }, [currentFolder, isSearching, searchTerm, fetchStructure]);
 
-  const handleSearch = async (termOverride?: string) => {
+  const handleSearch = (termOverride?: string) => {
     const termToSearch = termOverride ?? searchTerm;
     if (!termToSearch.trim()) {
       setIsSearching(false);
@@ -122,58 +124,50 @@ const Procedures: React.FC<ProceduresProps> = ({
       fetchStructure();
       return;
     }
-    setLoading(true);
     setIsSearching(true);
     
-    try {
-      const { data, error } = await supabase
-        .from('procedures')
-        .select('*')
-        .or(`title.ilike.%${termToSearch}%,Type.ilike.%${termToSearch}%`);
-        
-      if (error) throw error;
-      const mappedResults = (data || []).map(f => ({
-        id: f.file_id || f.uuid,
-        file_id: f.file_id || f.uuid,
-        title: f.title || "Sans titre",
-        category: f.Type || 'NON CLASSÉ',
-        fileUrl: f.file_url,
-        pinecone_document_id: f.pinecone_document_id,
-        createdAt: f.created_at,
-        views: f.views || 0,
-        status: f.status || 'validated'
-      }));
-      setSearchResults(mappedResults);
-
-      // Log opportunité manquée si aucun résultat
-      if (mappedResults.length === 0 && termToSearch.trim().length > 2) {
-        await supabase.from('notes').insert({
-          title: `LOG_SEARCH_FAIL_${termToSearch.trim()}`,
-          content: `Échec de recherche par ${user.email}`,
-          user_id: user.id
-        });
-      }
-    } catch (e) {
-      console.error("Erreur recherche:", e);
-      setSearchResults([]);
-    } finally {
-      setLoading(false);
-    }
+    // Local case-insensitive filtering
+    const filtered = allProcedures.filter(p => 
+      p.title.toLowerCase().includes(termToSearch.toLowerCase()) ||
+      p.category.toLowerCase().includes(termToSearch.toLowerCase())
+    );
+    
+    setSearchResults(filtered);
   };
 
   return (
     <div className="space-y-12 h-full flex flex-col pb-10 animate-fade-in">
+      <ExpertAIModal 
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        onSelectProcedure={onSelectProcedure}
+        user={user}
+      />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-        <div className="flex-1 max-w-2xl relative">
-          <input 
-            type="text" 
-            placeholder="Rechercher dans la base de connaissance..."
-            className="w-full pl-14 pr-4 py-5 rounded-[2.5rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
-          <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-xl"></i>
+        <div className="flex-1 max-w-2xl">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+              <input 
+                type="text" 
+                placeholder="Rechercher dans la base de connaissance..."
+                className="w-full pl-14 pr-4 py-5 rounded-[2.5rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  handleSearch(e.target.value);
+                }}
+              />
+              <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-xl"></i>
+            </div>
+            <button
+              onClick={() => setIsAIModalOpen(true)}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 whitespace-nowrap"
+            >
+              <span className="text-lg">🤖</span>
+              <span>Expert IA</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
