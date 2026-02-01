@@ -20,57 +20,21 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
   useEffect(() => {
-    const performSemanticSearch = async () => {
+    const performLocalSearch = async () => {
       if (!searchTerm.trim()) {
         setLoading(false);
         return;
       }
 
-      console.log("🤖 SearchResults: Démarrage recherche pour:", searchTerm);
+      console.log("🔍 SearchResults: Recherche locale pour:", searchTerm);
       setLoading(true);
       try {
-        console.log("🌐 Appel Webhook:", "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures");
-        
-        const response = await fetch(
-          "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: searchTerm }),
-          }
-        );
-
-        console.log("✅ Réponse Webhook Status:", response.status);
-
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("📦 Données reçues (raw):", JSON.stringify(data).slice(0, 500));
-        
-        // Nouveau format webhook: Array<{ document: { metadata: { titre: string } }, score: number }>
-        if (!Array.isArray(data)) {
-          console.warn("⚠️ Format de réponse inattendu, attendu un tableau");
-          setResults([]);
-          return;
-        }
-
-        // Extraction des titres uniques
-        const uniqueTitles = new Set<string>();
-        data.forEach((item: any) => {
-          if (item.document?.metadata?.titre) {
-            uniqueTitles.add(item.document.metadata.titre);
-          }
-        });
-
-        console.log(`🔍 ${uniqueTitles.size} documents uniques trouvés:`, Array.from(uniqueTitles));
-
-        // Récupération des procédures complètes depuis Supabase
+        // Simple recherche locale dans Supabase sur le champ title (case-insensitive)
         const { data: procedures, error } = await supabase
           .from('procedures')
           .select('*')
-          .in('title', Array.from(uniqueTitles));
+          .ilike('title', `%${searchTerm}%`)
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error("❌ Erreur Supabase:", error);
@@ -78,7 +42,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           return;
         }
 
-        console.log(`✅ ${procedures?.length || 0} procédures trouvées dans Supabase`);
+        console.log(`✅ ${procedures?.length || 0} procédures trouvées`);
 
         const foundProcedures: Procedure[] = (procedures || []).map(f => ({
           id: f.file_id || f.uuid,
@@ -92,15 +56,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           status: f.status || 'validated'
         }));
 
-        console.log("✨ Procédures finales:", foundProcedures);
+        console.log("✨ Résultats:", foundProcedures);
         setResults(foundProcedures);
 
-        // 2. Logging DISABLED temporaire pour éviter confusion avec erreurs 400
-        /*
+        // Log si aucun résultat
         if (foundProcedures.length === 0) {
-          console.log("⚠️ Aucune procédure, skip log note pour debug...");
+          console.log("⚠️ Aucune procédure trouvée pour:", searchTerm);
         }
-        */
+
 
       } catch (err) {
         console.error("❌ Semantic search error:", err);
@@ -109,7 +72,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       }
     };
 
-    performSemanticSearch();
+    performLocalSearch();
   }, [searchTerm, user.id, user.firstName]);
 
   const formatDate = (dateStr: string) => {
