@@ -126,12 +126,17 @@ const Procedures: React.FC<ProceduresProps> = ({
     }
     setIsSearching(true);
     
-    // Local case-insensitive filtering
-    const filtered = allProcedures.filter(p => 
-      p.title.toLowerCase().includes(termToSearch.toLowerCase()) ||
-      p.category.toLowerCase().includes(termToSearch.toLowerCase())
-    );
+    console.log("🔍 Recherche:", termToSearch);
+    console.log("📦 Nombre total de procédures:", allProcedures.length);
     
+    // Local case-insensitive filtering
+    const filtered = allProcedures.filter(p => {
+      const matchTitle = p.title.toLowerCase().includes(termToSearch.toLowerCase());
+      const matchCategory = p.category.toLowerCase().includes(termToSearch.toLowerCase());
+      return matchTitle || matchCategory;
+    });
+    
+    console.log("✅ Résultats filtrés:", filtered.length, filtered);
     setSearchResults(filtered);
   };
 
