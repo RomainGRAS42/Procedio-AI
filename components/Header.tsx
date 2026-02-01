@@ -12,7 +12,6 @@ interface HeaderProps {
   onLogout: () => void;
   onNavigate: (view: ViewType) => void;
   onNotificationClick?: (type: 'suggestion' | 'read', id: string) => void;
-  onOpenAIModal?: () => void;
   searchTerm?: string;
 }
 
@@ -25,7 +24,6 @@ const Header: React.FC<HeaderProps> = ({
   onLogout,
   onNavigate,
   onNotificationClick,
-  onOpenAIModal,
   searchTerm
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -307,16 +305,6 @@ const Header: React.FC<HeaderProps> = ({
             </p>
           )}
         </div>
-        
-        {/* Expert IA button - always visible */}
-        <button
-          type="button"
-          onClick={() => onOpenAIModal?.()}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-purple-500/20 active:scale-95 flex items-center gap-2 whitespace-nowrap"
-        >
-          <i className="fa-solid fa-sparkles text-xs" />
-          <span className="hidden sm:inline">Expert IA</span>
-        </button>
       </div>
 
       <div className="flex items-center gap-3 md:gap-6 min-w-[200px] justify-end">

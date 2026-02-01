@@ -17,7 +17,7 @@ import SearchResults from "./views/SearchResults";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
-import ExpertAIModal from "./views/ExpertAIModal";
+import ChatAssistant from "./components/ChatAssistant";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -43,7 +43,6 @@ const App: React.FC = () => {
   );
   const [initError, setInitError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<{type: 'suggestion' | 'read', id: string} | null>(null);
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
@@ -479,21 +478,17 @@ const App: React.FC = () => {
                 setCurrentView("dashboard");
               }
             }}
-            onOpenAIModal={() => setIsAIModalOpen(true)}
           />
         )}
         
-        {/* Expert IA Modal - Global */}
+        {/* Chat Assistant - Global Sticky */}
         {user && (
-          <ExpertAIModal
-            isOpen={isAIModalOpen}
-            onClose={() => setIsAIModalOpen(false)}
+          <ChatAssistant
+            user={user}
             onSelectProcedure={(p) => {
               setSelectedProcedure(p);
               setCurrentView("procedure-detail");
-              setIsAIModalOpen(false);
             }}
-            user={user}
           />
         )}
         
