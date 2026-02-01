@@ -68,6 +68,8 @@ const Procedures: React.FC<ProceduresProps> = ({
       }));
       setAllProcedures(mappedProcs);
       
+      console.log("📦 fetchStructure: Chargé", mappedProcs.length, "procédures dans allProcedures");
+      
       const uniqueCategories = Array.from(new Set(
         results.map(p => (p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ'))
       ));
@@ -175,8 +177,16 @@ const Procedures: React.FC<ProceduresProps> = ({
               <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-xl"></i>
               
               {/* Dropdown suggestions */}
-              {searchTerm.trim() && searchResults.length > 0 && !isSearching && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-slide-down">
+              {(() => {
+                const shouldShow = searchTerm.trim() && searchResults.length > 0 && !isSearching;
+                console.log("🎯 Dropdown conditions:", { 
+                  searchTerm: searchTerm.trim(), 
+                  resultsCount: searchResults.length, 
+                  isSearching, 
+                  shouldShow 
+                });
+                return shouldShow && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-slide-down">
                   <div className="max-h-[400px] overflow-y-auto">
                     {searchResults.slice(0, 5).map((proc) => (
                       <button
@@ -214,7 +224,8 @@ const Procedures: React.FC<ProceduresProps> = ({
                     </button>
                   )}
                 </div>
-              )}
+              );
+              })()}
             </div>
             <button
               onClick={() => setIsAIModalOpen(true)}
