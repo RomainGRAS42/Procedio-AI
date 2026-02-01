@@ -385,9 +385,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       {/* CHAT IA (SIDEBAR) */}
       <div 
-        className={`lg:w-1/3 flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden transition-all duration-500 ease-in-out absolute lg:relative z-20 h-full
-          ${isChatOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-120%] lg:translate-x-0 lg:w-0 lg:opacity-0 lg:pointer-events-none absolute'}
+        className={`flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden transition-all duration-500 ease-in-out
+          ${isChatOpen 
+            ? 'lg:w-1/3 w-full opacity-100 translate-x-0' 
+            : 'w-0 opacity-0 lg:translate-x-0 hidden lg:block lg:w-0 overflow-hidden border-0 p-0 m-0'
+          }
         `}
+        style={{ flexBasis: isChatOpen ? '33%' : '0px' }} // Force width 0 when closed
       >
         <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -411,7 +415,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </button>
         </div>
 
-        {/* ... (Chat Content - kept same logic but ensuring container fits) ... */}
+        {/* ... (Chat Content) ... */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/10 scrollbar-hide">
           {messages.map((msg) => (
             <div
@@ -446,6 +450,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         </div>
 
         <div className="p-6 bg-white border-t border-slate-50 space-y-4">
+          {/* Quick Actions and Input remain here... */}
           <div className="flex flex-wrap gap-2 mb-2 px-1">
             {quickActions.map((action, idx) => (
               <button
@@ -480,7 +485,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       </div>
 
       {/* VISIONNEUSE PDF */}
-      <div className="flex-1 flex flex-col gap-6 transition-all duration-500">
+      <div className={`flex flex-col gap-6 transition-all duration-500 ease-in-out ${isChatOpen ? 'lg:w-2/3' : 'w-full'}`}>
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 overflow-hidden">
             <button
@@ -490,37 +495,37 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </button>
             <div className="min-w-0">
               <h2 className="font-black text-slate-900 text-xl truncate mb-1">{cleanTitle}</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                  {procedure?.category}
-                </span>
-                
-                {/* BOUTON INTERROGER LE DOCUMENT */}
-                <button
-                  onClick={() => setIsChatOpen(!isChatOpen)}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-widest
-                    ${isChatOpen 
-                      ? 'bg-indigo-50 border-indigo-200 text-indigo-600' 
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
-                    }`}
-                >
-                  <i className="fa-solid fa-magnifying-glass-text"></i>
-                  <span>Interroger le document</span>
-                </button>
-              </div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
+                {procedure?.category}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            {/* Context Button Moved Here */}
+            <button
+               onClick={() => setIsChatOpen(!isChatOpen)}
+               className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm
+                 ${isChatOpen 
+                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-indigo-200' 
+                   : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+                 }`}
+             >
+               <i className={`fa-solid ${isChatOpen ? 'fa-xmark' : 'fa-brain'}`}></i>
+               <span>{isChatOpen ? 'Fermer IA' : 'Interroger IA'}</span>
+             </button>
+
             <button
               onClick={() => setIsSuggestionModalOpen(true)}
               className="px-6 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm flex items-center gap-2">
               <i className="fa-regular fa-lightbulb text-sm"></i>
-              <span className="hidden sm:inline">Suggérer une modif</span>
+              <span className="hidden sm:inline">Suggérer</span>
             </button>
             <button
               onClick={() => window.open(docUrl || "", "_blank")}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100">
-              Plein écran
+              className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-100 transition-all"
+              title="Ouvrir dans un nouvel onglet"
+            >
+              <i className="fa-solid fa-expand"></i>
             </button>
           </div>
         </div>
