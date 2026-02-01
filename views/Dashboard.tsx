@@ -145,7 +145,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       // 2. Santé & Usage (depuis les procédures)
       const { data: procs } = await supabase
         .from('procedures')
-        .select('views, created_at');
+        .select('views,created_at');
 
       if (procs) {
         const totalViews = procs.reduce((acc, p) => acc + (p.views || 0), 0);
