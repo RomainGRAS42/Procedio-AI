@@ -86,13 +86,29 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
 
       const data = await response.json();
       
+      // Handle array response from n8n
+      let responseText = '';
+      let procedures: Procedure[] = [];
+
+      if (Array.isArray(data) && data.length > 0 && data[0].output) {
+        responseText = data[0].output;
+        // Optional: Parse procedures if they are ever sent in a structured way, 
+        // but for now we just display the text response which is conversational
+      } else if (data.procedures) {
+        // Fallback for previous format if needed
+        procedures = data.procedures;
+        responseText = procedures.length > 0 
+          ? `✅ J'ai trouvé **${procedures.length} procédure${procedures.length > 1 ? 's' : ''}** qui peuvent vous aider :`
+          : "❌ Désolé, je n'ai pas trouvé de procédure correspondant à votre demande.";
+      } else {
+        responseText = "Désolé, je n'ai pas compris la réponse du serveur.";
+      }
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.procedures && data.procedures.length > 0
-          ? `✅ J'ai trouvé **${data.procedures.length} procédure${data.procedures.length > 1 ? 's' : ''}** qui peuvent vous aider :`
-          : "❌ Désolé, je n'ai pas trouvé de procédure correspondant à votre demande. Essayez de reformuler ou de préciser davantage.",
-        procedures: data.procedures || [],
+        content: responseText,
+        procedures: procedures,
         timestamp: new Date()
       };
 
