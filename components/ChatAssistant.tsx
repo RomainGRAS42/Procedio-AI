@@ -199,16 +199,19 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
           {/* Header */}
           <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200 ${isExpanded ? 'scale-110' : ''} transition-transform`}>
-              <i className="fa-solid fa-sparkles text-xl"></i>
+            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200 ${isExpanded ? 'scale-110' : ''} transition-transform`}>
+              <i className="fa-solid fa-wand-magic-sparkles text-lg"></i>
             </div>
             <div>
-              <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">
+              <h3 className="font-bold text-slate-800 text-sm">
                 Copilote Procedio
               </h3>
-              <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Assistant Connecté
+              <p className="text-[11px] font-medium text-slate-500 mt-0.5 flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Assistant connecté
               </p>
             </div>
           </div>
