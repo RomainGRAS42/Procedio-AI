@@ -127,13 +127,21 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur chatbot:', error);
       
+      let errorMessageContent = "⚠️ Désolé, une erreur s'est produite.";
+      
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        errorMessageContent = "⚠️ Erreur de connexion (CORS). Le serveur n8n ne permet pas l'accès direct depuis ce domaine. Veuillez vérifier la configuration CORS du webhook ou utiliser un proxy.";
+      } else if (error.message.includes('Erreur webhook')) {
+        errorMessageContent = `⚠️ Erreur serveur: ${error.message}`;
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "⚠️ Désolé, une erreur s'est produite. Veuillez réessayer dans quelques instants.",
+        content: errorMessageContent,
         timestamp: new Date()
       };
 
