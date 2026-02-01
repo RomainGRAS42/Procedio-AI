@@ -20,6 +20,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatPanelRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,6 +29,20 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isOpen && chatPanelRef.current && !chatPanelRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -125,7 +140,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
 
       {/* Panel Chat */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-slide-up md:w-96 max-md:inset-4 max-md:w-auto max-md:h-auto max-md:max-h-[90vh]">
+        <div 
+          ref={chatPanelRef}
+          className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-slide-up md:w-96 max-md:inset-4 max-md:w-auto max-md:h-auto max-md:max-h-[90vh]"
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-3xl">
             <div className="flex items-center gap-3">
