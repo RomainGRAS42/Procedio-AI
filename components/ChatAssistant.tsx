@@ -82,26 +82,40 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
         })
       });
 
-      if (!response.ok) throw new Error('Erreur webhook');
+      if (!response.ok) {
+        console.error('Webhook Error:', response.status, response.statusText);
+        throw new Error(`Erreur webhook: ${response.status}`);
+      }
 
       const data = await response.json();
+      console.log('🤖 Chatbot Response:', data); // DEBUG
       
-      // Handle array response from n8n
+      // Handle response from n8n (Array or Object)
       let responseText = '';
       let procedures: Procedure[] = [];
 
+      // Case 1: Array with output [{ "output": "..." }]
       if (Array.isArray(data) && data.length > 0 && data[0].output) {
         responseText = data[0].output;
-        // Optional: Parse procedures if they are ever sent in a structured way, 
-        // but for now we just display the text response which is conversational
-      } else if (data.procedures) {
-        // Fallback for previous format if needed
+      } 
+      // Case 2: Direct Object { "output": "..." }
+      else if (data.output && typeof data.output === 'string') {
+        responseText = data.output;
+      }
+      // Case 3: Legacy Format { "procedures": [...] }
+      else if (data.procedures) {
         procedures = data.procedures;
         responseText = procedures.length > 0 
           ? `✅ J'ai trouvé **${procedures.length} procédure${procedures.length > 1 ? 's' : ''}** qui peuvent vous aider :`
           : "❌ Désolé, je n'ai pas trouvé de procédure correspondant à votre demande.";
-      } else {
-        responseText = "Désolé, je n'ai pas compris la réponse du serveur.";
+      } 
+      // Case 4: Fallback - Dump content if it's a string
+      else if (typeof data === 'string') {
+        responseText = data;
+      }
+      else {
+        console.warn('⚠️ Unknown response format:', data);
+        responseText = "Désolé, je n'ai pas compris la réponse du serveur (Format inconnu).";
       }
       
       const assistantMessage: Message = {
