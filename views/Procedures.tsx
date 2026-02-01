@@ -1,8 +1,9 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, Procedure } from '../types';
 import { supabase } from '../lib/supabase';
-import ExpertAIModal from './ExpertAIModal';
+// ExpertAIModal moved to App.tsx
 
 interface ProceduresProps {
   user: User;
@@ -26,7 +27,7 @@ const Procedures: React.FC<ProceduresProps> = ({
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isSearching, setIsSearching] = useState(initialSearchTerm !== '');
   const [searchResults, setSearchResults] = useState<Procedure[]>([]);
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  // AI Modal moved to App.tsx
   
   const [currentFolder, setCurrentFolder] = useState<string | null>(initialFolder); 
   const [folders, setFolders] = useState<string[]>([]);
@@ -148,68 +149,12 @@ const Procedures: React.FC<ProceduresProps> = ({
 
   return (
     <div className="space-y-12 h-full flex flex-col pb-10 animate-fade-in">
-      <ExpertAIModal 
-        isOpen={isAIModalOpen}
-        onClose={() => setIsAIModalOpen(false)}
-        onSelectProcedure={onSelectProcedure}
-        user={user}
-      />
+      {/* Expert IA Modal moved to App.tsx */}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-        <div className="flex-1 max-w-2xl">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <input 
-                type="text" 
-                placeholder="Rechercher dans la base de connaissance..."
-                className={`w-full pl-14 py-5 rounded-[2.5rem] border-none bg-white shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-semibold text-slate-700 placeholder:text-slate-300 ${
-                  searchTerm.trim() ? 'pr-40' : 'pr-4'
-                }`}
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  handleSearch(e.target.value, false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchTerm.trim()) {
-                    handleSearch(searchTerm, true);
-                  }
-                }}
-              />
-              <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-xl"></i>
-              
-              {/* Search button - appears when typing */}
-              {(() => {
-                const shouldShowButton = searchTerm.trim();
-                console.log("🔘 Button visible?", shouldShowButton, "searchTerm:", searchTerm);
-                return shouldShowButton && (
-                  <button
-                    onClick={() => handleSearch(searchTerm, true)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20 active:scale-95 animate-scale-in flex items-center gap-2"
-                  >
-                    <span>Rechercher</span>
-                    <i className="fa-solid fa-arrow-right text-[10px]" />
-                  </button>
-                );
-              })()}
-              
-              {/* Hint - appears when typing */}
-              {searchTerm.trim() && (
-                <p className="absolute -bottom-6 left-14 text-[10px] text-slate-400 font-medium animate-fade-in flex items-center gap-1.5">
-                  <i className="fa-solid fa-lightbulb text-amber-400" />
-                  ou appuyez sur <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-bold">Enter ↵</kbd>
-                </p>
-              )}
-            </div>
-            <button
-              onClick={() => setIsAIModalOpen(true)}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 whitespace-nowrap"
-            >
-              <span className="text-lg">🤖</span>
-              <span>Expert IA</span>
-            </button>
-          </div>
-        </div>
+        {/* Search bar removed - now in Header */}
+        
+        <div></div>
 
         <div className="flex items-center gap-3">
           <button 

@@ -12,6 +12,7 @@ interface HeaderProps {
   onLogout: () => void;
   onNavigate: (view: ViewType) => void;
   onNotificationClick?: (type: 'suggestion' | 'read', id: string) => void;
+  onOpenAIModal?: () => void;
   searchTerm?: string;
 }
 
@@ -24,6 +25,7 @@ const Header: React.FC<HeaderProps> = ({
   onLogout,
   onNavigate,
   onNotificationClick,
+  onOpenAIModal,
   searchTerm
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -267,21 +269,54 @@ const Header: React.FC<HeaderProps> = ({
         </h2>
       </div>
 
-      <div className="flex-1 max-w-2xl px-4">
-        <form onSubmit={handleSearchSubmit} className="relative group">
-          <input
-            type="text"
-            placeholder="Rechercher une procédure..."
-            className="w-full pl-12 pr-12 py-2.5 rounded-2xl bg-slate-100 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-bold text-slate-700 text-sm shadow-inner"
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-          />
-          <button 
-            type="submit"
-            className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-500 transition-colors hover:text-indigo-600 cursor-pointer">
-            <i className="fa-solid fa-magnifying-glass"></i>
-          </button>
-        </form>
+      <div className="flex-1 max-w-3xl px-4 flex items-center gap-3">
+        <div className="flex-1 relative">
+          <form onSubmit={handleSearchSubmit} className="relative group">
+            <input
+              type="text"
+              placeholder="Rechercher une procédure..."
+              className={`w-full pl-12 py-2.5 rounded-2xl bg-slate-100 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-bold text-slate-700 text-sm shadow-inner ${
+                localSearch.trim() ? 'pr-36' : 'pr-12'
+              }`}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+            />
+            <button 
+              type="submit"
+              className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-500 transition-colors hover:text-indigo-600 cursor-pointer">
+              <i className="fa-solid fa-magnifying-glass"></i>
+            </button>
+            
+            {/* Search button - appears when typing */}
+            {localSearch.trim() && (
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-md shadow-indigo-500/20 active:scale-95 animate-scale-in flex items-center gap-1.5"
+              >
+                <span>Rechercher</span>
+                <i className="fa-solid fa-arrow-right text-[8px]" />
+              </button>
+            )}
+          </form>
+          
+          {/* Hint - appears when typing */}
+          {localSearch.trim() && (
+            <p className="absolute -bottom-4 left-12 text-[9px] text-slate-400 font-medium animate-fade-in flex items-center gap-1">
+              <i className="fa-solid fa-lightbulb text-amber-400" />
+              ou appuyez sur <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-bold text-[8px]">Enter ↵</kbd>
+            </p>
+          )}
+        </div>
+        
+        {/* Expert IA button - always visible */}
+        <button
+          type="button"
+          onClick={() => onOpenAIModal?.()}
+          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-purple-500/20 active:scale-95 flex items-center gap-2 whitespace-nowrap"
+        >
+          <i className="fa-solid fa-sparkles text-xs" />
+          <span className="hidden sm:inline">Expert IA</span>
+        </button>
       </div>
 
       <div className="flex items-center gap-3 md:gap-6 min-w-[200px] justify-end">
