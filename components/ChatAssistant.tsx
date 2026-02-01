@@ -197,16 +197,21 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
             max-md:inset-4 max-md:w-auto max-md:h-auto max-md:max-h-[90vh]`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-3xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i className="fa-solid fa-sparkles" />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-800 text-sm">Copilote Procedio</h3>
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Assistant IA</p>
-              </div>
+          <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200 ${isExpanded ? 'scale-110' : ''} transition-transform`}>
+              <i className="fa-solid fa-sparkles text-xl"></i>
             </div>
+            <div>
+              <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">
+                Copilote Procedio
+              </h3>
+              <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Assistant Connecté
+              </p>
+            </div>
+          </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
