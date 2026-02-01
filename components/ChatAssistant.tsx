@@ -164,18 +164,28 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     <>
       {/* Bouton sticky - toujours visible */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full shadow-2xl shadow-purple-500/30 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 z-50 group"
-          aria-label="Ouvrir l'assistant"
-        >
-          <i className="fa-solid fa-sparkles text-2xl animate-pulse group-hover:animate-none" />
-          
-          {/* Badge notification (optionnel) */}
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
-            IA
-          </span>
-        </button>
+        <div className="fixed bottom-6 right-6 z-[60] animate-bounce-in">
+          {/* Nouveau Bouton Premium "Holographique" */}
+          <button
+            onClick={() => setIsOpen(true)}
+            className="group relative w-16 h-16 rounded-[2rem] bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 shadow-2xl shadow-indigo-500/40 hover:scale-105 hover:shadow-indigo-500/60 transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/20"
+          >
+            {/* Effet Brillance (Glassmorphism) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            {/* Effet de lueur interne */}
+            <div className="absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,0.3)] opacity-50"></div>
+
+            {/* Icône animée */}
+            <i className="fa-solid fa-sparkles text-2xl text-white drop-shadow-md group-hover:animate-pulse"></i>
+
+            {/* Badge "Connecté" (pulsing dot) */}
+            <span className="absolute top-3 right-3 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border border-white/50"></span>
+            </span>
+          </button>
+        </div>
       )}
 
       {/* Panel Chat */}
