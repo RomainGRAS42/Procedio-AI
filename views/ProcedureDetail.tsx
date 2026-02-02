@@ -350,17 +350,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       setSuggestionContent("");
       setNotification({ msg: "Suggestion envoyée au manager !", type: "success" });
 
-      // 2. Notification temps réel pour le manager (background)
-      await supabase.from("notes").insert([
-        {
-          user_id: user.id,
-          title: `LOG_SUGGESTION_${newSuggestion.id}`,
-          content: `💡 Suggestion de ${user.firstName} ${user.lastName || ""} sur "${cleanTitle}" [Priorité: ${suggestionPriority.toUpperCase()}]`,
-          is_locked: false,
-          viewed: false,
-        },
-      ]);
-
       fetchHistory(); // Rafraîchir l'historique
       setTimeout(() => setNotification(null), 3000);
     } catch (err) {
