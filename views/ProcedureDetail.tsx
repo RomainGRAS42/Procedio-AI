@@ -338,6 +338,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           type: suggestionType,
           priority: suggestionPriority,
           status: "pending",
+          viewed: false,
         })
         .select()
         .single();
@@ -351,6 +352,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           title: `LOG_SUGGESTION_${newSuggestion.id}`,
           content: `💡 Suggestion de ${user.firstName} ${user.lastName || ""} sur "${cleanTitle}" [Priorité: ${suggestionPriority.toUpperCase()}]`,
           is_locked: false,
+          viewed: false,
         },
       ]);
 

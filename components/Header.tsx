@@ -151,7 +151,7 @@ const Header: React.FC<HeaderProps> = ({
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: '*', // Listen to ALL changes (INSERT, UPDATE, DELETE) for suggestions
             schema: 'public',
             table: 'procedure_suggestions',
           },
