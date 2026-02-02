@@ -1,324 +1,290 @@
-import React, { useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
-
-// --- COMPOSANTS UTILITAIRES ---
-
-// Composant pour l'explication au survol (Demande clé du manager)
-const InfoTooltip: React.FC<{ title: string; desc: string }> = ({ title, desc }) => (
-  <div className="group relative inline-block ml-2">
-    <i className="fa-solid fa-circle-info text-slate-300 hover:text-indigo-500 cursor-help transition-colors"></i>
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 bg-slate-900 text-white text-xs rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-      <p className="font-bold mb-1 text-indigo-300">{title}</p>
-      <p className="text-slate-300 leading-relaxed">{desc}</p>
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900"></div>
-    </div>
-  </div>
-);
-
-// --- DONNÉES SIMULÉES (MOCK DATA) ---
-
-// 1. Opportunités Manquées (Search Gaps)
-const searchGaps = [
-  { term: "Reset VPN AnyConnect", count: 18, lastSearch: "Hier" },
-  { term: "Configuration Outlook 2024", count: 12, lastSearch: "Il y a 2h" },
-  { term: "Erreur 504 Gateway", count: 9, lastSearch: "Lun." },
-  { term: "Procédure Départ Collaborateur", count: 7, lastSearch: "Semaine dernière" },
-];
-
-// 2. Santé de la Base (Obsolescence)
-const healthData = [
-  { name: "Fraîches (< 3 mois)", value: 65, color: "#10b981" }, // Emerald-500
-  { name: "À vérifier (3-6 mois)", value: 25, color: "#f59e0b" }, // Amber-500
-  { name: "Obsolètes (> 6 mois)", value: 10, color: "#f43f5e" }, // Rose-500
-];
-
-// 3. Top & Flop
-const topProcedures = [
-  { title: "Onboarding Nouveau Salarié", views: 245, trend: "+12%" },
-  { title: "Réinitialisation Mot de Passe", views: 189, trend: "+5%" },
-  { title: "Accès Wifi Invité", views: 156, trend: "+8%" },
-];
-
-const flopProcedures = [
-  { title: "Politique de Sécurité v1", readTime: "8s", bounceRate: "92%" },
-  { title: "Archivage Ancien Serveur", readTime: "12s", bounceRate: "85%" },
-  { title: "Configuration Imprimante Etage 2", readTime: "15s", bounceRate: "78%" },
-];
-
-// 4. Champions (Engagement)
-const champions = [
-  { name: "Sarah K.", role: "Technicien N2", suggestions: 14, impact: "High" },
-  { name: "Julien V.", role: "Admin Sys", suggestions: 8, impact: "Medium" },
-  { name: "Marc D.", role: "Support N1", suggestions: 5, impact: "Low" },
-];
+import React, { useState, useEffect } from 'react';
+import { Procedure } from '../types';
+import { supabase } from '../lib/supabase';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 interface StatisticsProps {
   onUploadClick: () => void;
 }
 
 const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
+  const [history, setHistory] = useState<Procedure[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // MOCKED DATA FOR "Opportunités Manquées" (Alerts)
+  const missedOpportunities = [
+    { term: "Reset VPN AnyConnect", count: 18, trend: "hier" },
+    { term: "Configuration Outlook 2024", count: 12, trend: "il y a 2h" },
+    { term: "Erreur 504 Gateway", count: 9, trend: "lun." },
+    { term: "Procédure Départ Collaborateur", count: 7, trend: "semaine dernière" }
+  ];
+
+  // MOCKED DATA FOR "Top Contributeurs"
+  const topContributors = [
+    { name: "Sarah K.", role: "Technicien N2", score: 14, initial: "SK", color: "bg-indigo-600" },
+    { name: "Julien V.", role: "Admin Sys", score: 8, initial: "JV", color: "bg-purple-600" },
+    { name: "Marc D.", role: "Support N1", score: 5, initial: "MD", color: "bg-blue-600" }
+  ];
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('procedures')
+        .select('*')
+        .order('views', { ascending: false }); // Get most viewed for performance
+
+      if (error) throw error;
+      if (data) {
+        setHistory(data.map(p => ({
+          id: p.uuid,
+          file_id: p.uuid,
+          title: p.title || "Sans titre",
+          category: p.Type || "GÉNÉRAL",
+          fileUrl: p.file_url,
+          pinecone_document_id: p.pinecone_document_id,
+          createdAt: p.created_at,
+          views: p.views || 0,
+          status: p.status || 'validated'
+        })));
+      }
+    } catch (e) {
+      console.error("Erreur chargement analytics:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CALCULATE HEALTH DATA (Freshness)
+  const calculateHealthData = () => {
+    if (history.length === 0) return [];
+    
+    const now = new Date();
+    let fresh = 0;
+    let warning = 0;
+    let obsolete = 0;
+
+    history.forEach(p => {
+        const date = new Date(p.createdAt);
+        const diffTime = Math.abs(now.getTime() - date.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+        if (diffDays < 90) fresh++;
+        else if (diffDays < 180) warning++;
+        else obsolete++;
+    });
+
+    return [
+        { name: 'Fraîches (< 3 mois)', value: fresh, color: '#10b981' }, // Emerald 500
+        { name: 'À vérifier (3-6 mois)', value: warning, color: '#f59e0b' }, // Amber 500
+        { name: 'Obsolètes (> 6 mois)', value: obsolete, color: '#ef4444' } // Red 500
+    ];
+  };
+
+  const healthData = calculateHealthData();
+  const topConsultations = history.slice(0, 3);
+  const toRewrite = history.slice().sort((a,b) => (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())).slice(0, 3); // Mocking "To Rewrite" as oldest docs for now
+
   return (
-    <div className="space-y-8 animate-fade-in pb-20">
+    <div className="space-y-8 animate-fade-in pb-10">
+      
       {/* HEADER */}
-      <div>
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Cockpit de Pilotage</h2>
-        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">
-          Analyses & Aide à la décision
-        </p>
-      </div>
-
-      {/* --- SECTION 1: OPPORTUNITÉS MANQUÉES (PRIORITÉ HAUTE) --- */}
-      <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50 relative">
-        <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50"></div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-8 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl shadow-lg shadow-rose-100">
-            <i className="fa-solid fa-magnifying-glass-minus"></i>
-          </div>
-          <div>
-            <h3 className="font-black text-slate-900 text-xl flex items-center">
-              Opportunités Manquées
-              <InfoTooltip
-                title="Zone de Demande Non Comblée"
-                desc="Liste des mots-clés recherchés par vos équipes qui n'ont retourné aucun résultat. C'est votre priorité de rédaction immédiate pour combler les manques."
-              />
-            </h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Ce que vos équipes cherchent sans trouver
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
-          {searchGaps.map((item, idx) => (
-            <div
-              key={idx}
-              className="bg-white border-2 border-slate-50 rounded-2xl p-5 hover:border-rose-100 hover:shadow-lg hover:-translate-y-1 transition-all group">
-              <div className="flex justify-between items-start mb-3">
-                <span className="bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-1 rounded-lg">
-                  {item.count} échecs
-                </span>
-                <span className="text-[9px] font-bold text-slate-300 uppercase">
-                  {item.lastSearch}
-                </span>
-              </div>
-              <h4 className="font-bold text-slate-800 text-sm mb-4 leading-tight">"{item.term}"</h4>
-              <button
-                onClick={onUploadClick}
-                className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-100">
-                <i className="fa-solid fa-plus"></i>
-                Créer la procédure
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* --- SECTION 2: SANTÉ DE LA BASE (DOUGHNUT) --- */}
-        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-lg">
-              <i className="fa-solid fa-heart-pulse"></i>
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900 text-lg flex items-center">
-                Santé de la Base
-                <InfoTooltip
-                  title="Indice d'Obsolescence"
-                  desc="Répartition de vos procédures par date de dernière mise à jour. Une base saine doit avoir un maximum de vert. Le rouge indique un risque technique élevé (info périmée)."
-                />
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-center relative min-h-[250px]">
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={healthData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none">
-                  {healthData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <RechartsTooltip
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "none",
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            {/* Légende Custom */}
-            <div className="w-full space-y-3 mt-4">
-              {healthData.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: item.color }}></div>
-                    <span className="font-bold text-slate-600">{item.name}</span>
-                  </div>
-                  <span className="font-black text-slate-900">{item.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* --- SECTION 3: TOP & FLOP (PERFORMANCE) --- */}
-        <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
-              <i className="fa-solid fa-chart-line"></i>
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900 text-lg flex items-center">
-                Performance du Contenu
-                <InfoTooltip
-                  title="Qualité & Pertinence"
-                  desc="Identifiez ce qui marche (Top) et ce qui doit être réécrit (Flop). Un temps de lecture très court sur un Flop indique souvent un titre trompeur ou un contenu inutile."
-                />
-              </h3>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* TOP LIST */}
-            <div className="bg-slate-50 rounded-3xl p-6">
-              <h4 className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-arrow-trend-up"></i> Top Consultations
-              </h4>
-              <div className="space-y-4">
-                {topProcedures.map((proc, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <span className="font-black text-slate-200 text-lg">#{idx + 1}</span>
-                      <p className="text-xs font-bold text-slate-700 truncate">{proc.title}</p>
-                    </div>
-                    <span className="text-[10px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg ml-2">
-                      {proc.views} vues
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* FLOP LIST */}
-            <div className="bg-slate-50 rounded-3xl p-6">
-              <h4 className="text-xs font-black text-rose-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-arrow-trend-down"></i> À Réécrire (Rebond élevé)
-              </h4>
-              <div className="space-y-4">
-                {flopProcedures.map((proc, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-                    <div className="overflow-hidden mr-2">
-                      <p className="text-xs font-bold text-slate-700 truncate">{proc.title}</p>
-                      <p className="text-[9px] text-slate-400 mt-0.5">Lu en {proc.readTime} moy.</p>
-                    </div>
-                    <span className="text-[10px] font-black bg-rose-50 text-rose-500 px-2 py-1 rounded-lg whitespace-nowrap">
-                      {proc.bounceRate} Rebond
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+      <div className="flex justify-between items-end mb-4">
+        <div>
+           <h2 className="text-4xl font-black text-slate-900 tracking-tight">Cockpit de Pilotage</h2>
+           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Analyses & Aide à la décision</p>
         </div>
       </div>
 
-      {/* --- SECTION 4: CHAMPIONS (ENGAGEMENT) --- */}
-      <section className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative">
-        <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        </div>
-
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-indigo-400 text-xl backdrop-blur-sm">
-              <i className="fa-solid fa-trophy"></i>
+      {/* SECTION 1: OPPORTUNITÉS MANQUÉES (Alertes) */}
+      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+         <div className="flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center text-lg animate-pulse-slow">
+                <i className="fa-solid fa-magnifying-glass-location"></i>
             </div>
             <div>
-              <h3 className="font-black text-white text-xl flex items-center">
-                Top Contributeurs
-                <InfoTooltip
-                  title="Engagement Qualitatif"
-                  desc="Ces techniciens ne font pas que lire : ils améliorent l'outil. Le nombre de suggestions est le meilleur indicateur d'implication dans la vie de l'équipe."
-                />
-              </h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Ils construisent la base avec vous
-              </p>
+                <h3 className="font-bold text-slate-900 text-lg">Opportunités Manquées</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ce que vos équipes cherchent sans trouver</p>
             </div>
-          </div>
-        </div>
+            <i className="fa-solid fa-circle-info text-slate-300 ml-2" title="Basé sur les recherches 'Sans Résultat' des 7 derniers jours"></i>
+         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-          {champions.map((champ, idx) => (
-            <div
-              key={idx}
-              className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:bg-white/10 transition-colors group">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white text-xs shadow-lg shadow-indigo-900/50">
-                    {champ.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white text-sm">{champ.name}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">{champ.role}</p>
-                  </div>
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {missedOpportunities.map((item, idx) => (
+                <div key={idx} className="bg-white border border-slate-100 rounded-3xl p-6 hover:shadow-xl hover:shadow-rose-50 transition-all group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-rose-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-150"></div>
+                    
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                        <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">{item.count} échecs</span>
+                        <span className="text-[9px] text-slate-300 font-bold uppercase">{item.trend}</span>
+                    </div>
+                    <h4 className="font-bold text-slate-800 text-sm mb-6 relative z-10 leading-relaxed">"{item.term}"</h4>
+                    <button 
+                        onClick={onUploadClick}
+                        className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all relative z-10 flex items-center justify-center gap-2"
+                    >
+                        <i className="fa-solid fa-plus"></i> Créer
+                    </button>
                 </div>
-                {idx === 0 && (
-                  <i className="fa-solid fa-crown text-amber-400 text-lg animate-bounce"></i>
+            ))}
+         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* SECTION 2: SANTÉ DE LA BASE (Chart) */}
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col">
+             <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center text-sm">
+                    <i className="fa-solid fa-heart-pulse"></i>
+                </div>
+                <h3 className="font-bold text-slate-900">Santé de la Base</h3>
+             </div>
+             
+             <div className="flex-1 flex items-center justify-center min-h-[250px] relative">
+                {loading ? (
+                    <div className="animate-spin w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full"></div>
+                ) : (
+                    <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                            <Pie
+                                data={healthData}
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {healthData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip 
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                itemStyle={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: '#334155' }}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
                 )}
-              </div>
+                {/* Center Text */}
+                {!loading && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-center">
+                            <span className="block text-3xl font-black text-slate-800">{history.length}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Docs</span>
+                        </div>
+                    </div>
+                )}
+             </div>
 
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-black text-white tracking-tighter">
-                  {champ.suggestions}
-                </span>
-                <span className="text-[10px] font-bold text-indigo-300 uppercase mb-1.5">
-                  Suggestions envoyées
-                </span>
-              </div>
+             <div className="space-y-3 mt-6">
+                {healthData.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{item.name}</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-700">{Math.round((item.value / history.length) * 100) || 0}%</span>
+                    </div>
+                ))}
+             </div>
+          </div>
 
-              <div className="mt-4 w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div
-                  className="h-full bg-indigo-500 rounded-full"
-                  style={{ width: `${(champ.suggestions / 15) * 100}%` }}></div>
-              </div>
+          {/* SECTION 3: PERFORMANCE DU CONTENU */}
+          <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+             <div className="flex items-center gap-3 mb-8">
+                <div className="w-8 h-8 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center text-sm">
+                    <i className="fa-solid fa-chart-line"></i>
+                </div>
+                <h3 className="font-bold text-slate-900">Performance du Contenu</h3>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* TOP CONSULTATIONS */}
+                <div className="space-y-6">
+                    <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <i className="fa-solid fa-arrow-trend-up"></i> Top Consultations
+                    </h4>
+                    {topConsultations.map((doc, i) => (
+                        <div key={doc.id} className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group border border-transparent hover:border-indigo-100">
+                            <div className="flex items-center gap-4">
+                                <span className="text-2xl font-black text-slate-200 group-hover:text-indigo-200 transition-colors">#{i+1}</span>
+                                <div>
+                                    <p className="font-bold text-slate-800 text-sm line-clamp-1">{doc.title}</p>
+                                    <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">{doc.category}</p>
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">{doc.views} vues</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* A REECRIRE */}
+                <div className="space-y-6">
+                    <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <i className="fa-solid fa-arrow-trend-down"></i> À Réécrire (Vieux Docs)
+                    </h4>
+                    {toRewrite.map((doc, i) => (
+                        <div key={doc.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:border-rose-200 hover:shadow-lg transition-all group">
+                             <div>
+                                <p className="font-medium text-slate-600 text-sm line-clamp-1 group-hover:text-rose-600 transition-colors">{doc.title}</p>
+                                <p className="text-[9px] text-slate-300 uppercase tracking-wider mt-0.5">Créé le {new Date(doc.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-rose-400">Obsolète</span>
+                        </div>
+                    ))}
+                </div>
+             </div>
+          </div>
+      </div>
+
+      {/* SECTION 4: TOP CONTRIBUTEURS (LIGHT & SOFT) - Updated */}
+      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 overflow-hidden relative">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl border border-indigo-100">
+                <i className="fa-solid fa-trophy"></i>
             </div>
-          ))}
-        </div>
-      </section>
+            <div>
+                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs v2 (Light)</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ils construisent la base avec vous</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {topContributors.map((contrib, i) => (
+                <div key={i} className="bg-slate-50 rounded-3xl p-6 flex flex-col gap-6 hover:bg-white hover:shadow-xl hover:shadow-indigo-50 transition-all group border border-transparent hover:border-indigo-100">
+                    <div className="flex items-center justify-between">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm shadow-sm text-white ${contrib.color}`}>
+                            {contrib.initial}
+                        </div>
+                        {i === 0 && <i className="fa-solid fa-crown text-amber-500 text-xl animate-bounce-subtle"></i>}
+                    </div>
+                    
+                    <div>
+                        <h4 className="font-bold text-slate-800 text-lg">{contrib.name}</h4>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{contrib.role}</p>
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                             <span className="text-[9px] font-bold text-slate-400 uppercase">Impact</span>
+                             <span className="text-2xl font-black text-slate-800">{contrib.score}</span>
+                        </div>
+                        <p className="text-[9px] text-slate-400 font-medium">Suggestions envoyées</p>
+                        <div className="w-full h-1 bg-slate-200 rounded-full mt-3 overflow-hidden">
+                            <div 
+                                className={`h-full ${contrib.color}`} 
+                                style={{ width: `${(contrib.score / 20) * 100}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+          </div>
+      </div>
+
     </div>
   );
 };
