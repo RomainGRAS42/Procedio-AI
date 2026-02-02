@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, Procedure } from '../types';
 import { supabase } from '../lib/supabase';
 // ExpertAIModal moved to App.tsx
+import SharePointImportModal from './SharePointImportModal';
 
 interface ProceduresProps {
   user: User;
@@ -35,6 +36,7 @@ const Procedures: React.FC<ProceduresProps> = ({
   const [allProcedures, setAllProcedures] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
+  const [isSharePointModalOpen, setIsSharePointModalOpen] = useState(false);
 
   const cleanFileName = (name: string) => {
     if (!name) return "Document sans titre";
@@ -173,6 +175,15 @@ const Procedures: React.FC<ProceduresProps> = ({
               <span>Nouvelle Procédure</span>
             </button>
           )}
+          {user.role === UserRole.MANAGER && (
+            <button 
+              onClick={() => setIsSharePointModalOpen(true)}
+              className="w-14 h-14 bg-[#0078d4] text-white rounded-2xl flex items-center justify-center transition-all hover:bg-[#006cbd] hover:shadow-lg hover:shadow-blue-200 active:scale-95"
+              title="Importer depuis SharePoint"
+            >
+              <i className="fa-brands fa-microsoft text-xl"></i>
+            </button>
+          )}
         </div>
       </div>
 
@@ -278,6 +289,16 @@ const Procedures: React.FC<ProceduresProps> = ({
           )}
         </div>
       </div>
+
+      {isSharePointModalOpen && (
+        <SharePointImportModal 
+          onClose={() => setIsSharePointModalOpen(false)}
+          onImport={(url) => {
+            console.log("Import SharePoint requested:", url);
+            // Ici, on pourrait déclencher un vrai appel backend
+          }}
+        />
+      )}
     </div>
   );
 };
