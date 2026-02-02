@@ -139,6 +139,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     }
   };
 
+  // State pour stocker l'ID Pinecone, initialisé avec la prop si présente
+  const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.pinecone_document_id);
+
   // State pour stocker l'ID réel de la procédure (PK)
   const [realProcedureId, setRealProcedureId] = useState<number | null>(null);
 
