@@ -345,7 +345,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       if (error) throw error;
 
-      // 2. Notification temps réel pour le manager
+      // SUCCESS: Close modal early for UI responsiveness
+      setIsSuggestionModalOpen(false);
+      setSuggestionContent("");
+      setNotification({ msg: "Suggestion envoyée au manager !", type: "success" });
+
+      // 2. Notification temps réel pour le manager (background)
       await supabase.from("notes").insert([
         {
           user_id: user.id,
@@ -356,9 +361,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         },
       ]);
 
-      setNotification({ msg: "Suggestion envoyée au manager !", type: "success" });
-      setIsSuggestionModalOpen(false);
-      setSuggestionContent("");
       fetchHistory(); // Rafraîchir l'historique
       setTimeout(() => setNotification(null), 3000);
     } catch (err) {
@@ -637,7 +639,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       {/* MODAL SUGGESTION */}
       {isSuggestionModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsSuggestionModalOpen(false)}
+        >
           <div
             className="bg-white rounded-[2rem] p-8 w-full max-w-lg shadow-2xl animate-scale-up"
             onClick={(e) => e.stopPropagation()}>
