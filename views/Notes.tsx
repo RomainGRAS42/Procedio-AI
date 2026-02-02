@@ -107,7 +107,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
         // FILTRAGE : On ignore les notes qui sont des logs techniques
         const userNotes = data
           .filter(
-            (n) => n.title && !n.title.startsWith("LOG_VIEW_") && !n.title.startsWith("LOG_READ_")
+            (n) => n.title && !n.title.startsWith("LOG_")
           )
           .map((n) => ({
             id: n.id,

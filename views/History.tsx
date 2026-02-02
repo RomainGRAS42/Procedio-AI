@@ -245,7 +245,7 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
           </div>
       </div>
 
-      {/* SECTION 4: TOP CONTRIBUTEURS (LIGHT & SOFT) */}
+      {/* SECTION 4: TOP CONTRIBUTEURS (LIGHT & SOFT) - Updated */}
       <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 overflow-hidden relative">
           <div className="flex items-center gap-4 mb-10">
             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl border border-indigo-100">
