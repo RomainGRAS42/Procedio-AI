@@ -20,43 +20,59 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
   useEffect(() => {
-    const performLocalSearch = async () => {
+    const performSearch = async () => {
       if (!searchTerm.trim()) {
         setLoading(false);
         return;
       }
 
-      console.log("🔍 SearchResults: Recherche locale pour:", searchTerm);
+      console.log("🔍 SearchResults: Recherche via Webhook pour:", searchTerm);
       setLoading(true);
       try {
-        // Simple recherche locale dans Supabase sur le champ title (case-insensitive)
-        const { data: procedures, error } = await supabase
-          .from('procedures')
-          .select('*')
-          .ilike('title', `%${searchTerm}%`)
-          .order('created_at', { ascending: false });
+        // Appel au Webhook n8n
+        const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: searchTerm,
+            user_email: user.email || 'unknown'
+          })
+        });
 
-        if (error) {
-          console.error("❌ Erreur Supabase:", error);
-          setResults([]);
-          return;
+        if (!response.ok) {
+          throw new Error(`Erreur webhook: ${response.status}`);
         }
 
-        console.log(`✅ ${procedures?.length || 0} procédures trouvées`);
+        const data = await response.json();
+        console.log("🤖 Webhook Response:", data);
 
-        const foundProcedures: Procedure[] = (procedures || []).map(f => ({
-          id: f.file_id || f.uuid,
-          file_id: f.file_id || f.uuid,
+        let procedures: any[] = [];
+        
+        // Parse response (Array or Object)
+        // Format attendu: [ { success: true, results: [...] } ] ou { results: [...] }
+        const resultData = Array.isArray(data) ? data[0] : data;
+        
+        if (resultData && resultData.results) {
+            procedures = resultData.results;
+        }
+
+        console.log(`✅ ${procedures.length} procédures trouvées`);
+
+        const foundProcedures: Procedure[] = procedures.map((f: any, index: number) => ({
+          id: f.id || `webhook-${index}`, // Fallback ID if missing
+          file_id: f.id || `webhook-${index}`,
           title: f.title || "Sans titre",
-          category: f.Type || 'NON CLASSÉ',
+          category: f.category || 'NON CLASSÉ',
           fileUrl: f.file_url,
           pinecone_document_id: f.pinecone_document_id,
-          createdAt: f.created_at,
-          views: f.views || 0,
-          status: f.status || 'validated'
+          createdAt: new Date().toISOString(), // Webhook doesn't return date usually
+          views: 0,
+          status: 'validated'
         }));
 
-        console.log("✨ Résultats:", foundProcedures);
+        console.log("✨ Résultats formatés:", foundProcedures);
         setResults(foundProcedures);
 
         // Log si aucun résultat
@@ -64,15 +80,15 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           console.log("⚠️ Aucune procédure trouvée pour:", searchTerm);
         }
 
-
       } catch (err) {
         console.error("❌ Semantic search error:", err);
+        setResults([]);
       } finally {
         setLoading(false);
       }
     };
 
-    performLocalSearch();
+    performSearch();
   }, [searchTerm, user.id, user.firstName]);
 
   const formatDate = (dateStr: string) => {

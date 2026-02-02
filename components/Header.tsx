@@ -252,7 +252,7 @@ const Header: React.FC<HeaderProps> = ({
         .from("notes")
         .select("*")
         .eq("viewed", false) // Only fetch unviewed logs for badge
-        .ilike('title', 'LOG_READ_%')
+        .or('title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%')
         .order("updated_at", { ascending: false })
         .limit(5);
 
