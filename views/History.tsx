@@ -245,46 +245,42 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
           </div>
       </div>
 
-      {/* SECTION 4: TOP CONTRIBUTEURS (PREMIUM DARK) */}
-      <div className="bg-slate-900 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden relative">
-          {/* Background decorations */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
-
-          <div className="flex items-center gap-4 mb-10 relative z-10">
-            <div className="w-12 h-12 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center text-xl border border-indigo-500/30">
+      {/* SECTION 4: TOP CONTRIBUTEURS (LIGHT & SOFT) */}
+      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 overflow-hidden relative">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl border border-indigo-100">
                 <i className="fa-solid fa-trophy"></i>
             </div>
             <div>
-                <h3 className="font-black text-white text-2xl tracking-tight">Top Contributeurs</h3>
+                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs</h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ils construisent la base avec vous</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {topContributors.map((contrib, i) => (
-                <div key={i} className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 flex flex-col gap-6 hover:bg-slate-800 transition-all group">
+                <div key={i} className="bg-slate-50 rounded-3xl p-6 flex flex-col gap-6 hover:bg-white hover:shadow-xl hover:shadow-indigo-50 transition-all group border border-transparent hover:border-indigo-100">
                     <div className="flex items-center justify-between">
-                        <div className={`w-12 h-12 rounded-full ${contrib.color} flex items-center justify-center text-white font-black text-sm shadow-lg`}>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm shadow-sm text-white ${contrib.color}`}>
                             {contrib.initial}
                         </div>
-                        {i === 0 && <i className="fa-solid fa-crown text-amber-400 text-xl animate-bounce-subtle"></i>}
+                        {i === 0 && <i className="fa-solid fa-crown text-amber-500 text-xl animate-bounce-subtle"></i>}
                     </div>
                     
                     <div>
-                        <h4 className="font-bold text-white text-lg">{contrib.name}</h4>
+                        <h4 className="font-bold text-slate-800 text-lg">{contrib.name}</h4>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{contrib.role}</p>
                     </div>
 
-                    <div className="mt-auto pt-4 border-t border-slate-700/50">
+                    <div className="mt-auto pt-4 border-t border-slate-200">
                         <div className="flex items-center justify-between mb-2">
-                             <span className="text-[9px] font-bold text-slate-500 uppercase">Impact</span>
-                             <span className="text-2xl font-black text-white">{contrib.score}</span>
+                             <span className="text-[9px] font-bold text-slate-400 uppercase">Impact</span>
+                             <span className="text-2xl font-black text-slate-800">{contrib.score}</span>
                         </div>
                         <p className="text-[9px] text-slate-400 font-medium">Suggestions envoyées</p>
-                        <div className="w-full h-1 bg-slate-700 rounded-full mt-3 overflow-hidden">
+                        <div className="w-full h-1 bg-slate-200 rounded-full mt-3 overflow-hidden">
                             <div 
-                                className={`h-full ${contrib.color.replace('bg-', 'bg-')}`} 
+                                className={`h-full ${contrib.color}`} 
                                 style={{ width: `${(contrib.score / 20) * 100}%` }}
                             ></div>
                         </div>
