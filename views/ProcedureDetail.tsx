@@ -112,10 +112,18 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       setDocUrl(data.publicUrl);
     }
     fetchHistory();
-  }, [procedure]);
+  }, [procedure, procedure.id, procedure.fileUrl]);
 
-  const fetchHistory = async () => {
-    if (!procedure?.id) return;
+  const fetchHistory = async (procedureIdOverride?: number) => {
+    const targetProcedureId =
+      procedureIdOverride ||
+      realProcedureId ||
+      (typeof procedure.id === "number" || /^\d+$/.test(String(procedure.id))
+        ? Number(procedure.id)
+        : null);
+
+    if (!targetProcedureId) return;
+
     setLoadingHistory(true);
     try {
       const { data, error } = await supabase
@@ -127,7 +135,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           manager:user_profiles!manager_id(first_name)
         `
         )
-        .eq("procedure_id", procedure.id)
+        .eq("procedure_id", targetProcedureId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -144,6 +152,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   // State pour stocker l'ID réel de la procédure (PK)
   const [realProcedureId, setRealProcedureId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [realProcedureId]);
 
   // Sécurité : Récupération de l'ID réel et du pinecone_id
   useEffect(() => {
@@ -225,7 +237,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     };
 
     fetchProcedureDetails();
-  }, [procedure.id, procedure.title, pineconeId]);
+  }, [procedure.id, procedure.title, procedure.fileUrl, pineconeId, realProcedureId]);
 
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input;
