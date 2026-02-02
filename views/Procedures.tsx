@@ -159,21 +159,36 @@ const Procedures: React.FC<ProceduresProps> = ({
         <div></div>
 
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => fetchStructure()}
-            className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all hover:shadow-lg active:scale-95"
-            title="Actualiser la base"
-          >
-            <i className={`fa-solid fa-arrows-rotate ${loading ? 'animate-spin' : ''}`}></i>
-          </button>
-          {user.role === UserRole.MANAGER && (
+
+          <div className="group relative">
             <button 
-              onClick={onUploadClick}
-              className="bg-indigo-600 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-slate-900 transition-all shadow-2xl active:scale-95 shadow-indigo-200"
+              onClick={() => fetchStructure()}
+              className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all hover:shadow-lg active:scale-95"
             >
-              <i className="fa-solid fa-plus text-sm"></i>
-              <span>Nouvelle Procédure</span>
+              <i className={`fa-solid fa-arrows-rotate ${loading ? 'animate-spin' : ''}`}></i>
             </button>
+            {/* Tooltip Refresh */}
+            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-48 p-3 bg-slate-800 text-white text-[10px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+              Actualiser la liste pour voir les dernières procédures ajoutées par l'équipe.
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
+            </div>
+          </div>
+
+          {user.role === UserRole.MANAGER && (
+            <div className="group relative">
+              <button 
+                onClick={onUploadClick}
+                className="bg-indigo-600 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-slate-900 transition-all shadow-2xl active:scale-95 shadow-indigo-200"
+              >
+                <i className="fa-solid fa-plus text-sm"></i>
+                <span>Nouvelle Procédure</span>
+              </button>
+              {/* Tooltip Nouvelle Procédure */}
+              <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 p-3 bg-slate-800 text-white text-[10px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                Ajouter manuellement un PDF ou créer une procédure vierge depuis votre ordinateur.
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
+              </div>
+            </div>
           )}
           {user.role === UserRole.MANAGER && (
             <div className="relative group">
@@ -186,9 +201,9 @@ const Procedures: React.FC<ProceduresProps> = ({
               </button>
               
               {/* Tooltip Premium */}
-              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-80 p-4 bg-slate-800 text-white text-[10px] font-medium rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
-                Connectez votre SharePoint pour synchroniser automatiquement vos bibliothèques de procédures existantes sans effort manuel.
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-2 border-8 border-transparent border-t-slate-800"></div>
+              <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-80 p-4 bg-slate-800 text-white text-[10px] font-medium rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                Connectez votre Cloud pour synchroniser automatiquement vos dossiers SharePoint masifs.
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
               </div>
             </div>
           )}
