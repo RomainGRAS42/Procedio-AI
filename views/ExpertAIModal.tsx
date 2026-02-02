@@ -31,7 +31,7 @@ const ExpertAIModal: React.FC<ExpertAIModalProps> = ({ isOpen, onClose, onSelect
       console.log("🤖 Expert IA: Recherche pour:", query);
       
       const response = await fetch(
-        "https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures",
+        "https://n8n.srv901593.hstgr.cloud/webhook/search-procedures",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

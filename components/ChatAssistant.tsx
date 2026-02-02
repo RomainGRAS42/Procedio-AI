@@ -77,7 +77,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/search-procedures', {
+      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
