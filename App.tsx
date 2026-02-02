@@ -492,7 +492,7 @@ const App: React.FC = () => {
         )}
         
         {/* Chat Assistant - Global Sticky */}
-      {isAuthenticated && user && currentView !== "procedure-detail" && (
+      {isAuthenticated && user && (
         <ChatAssistant 
           user={user} 
           onSelectProcedure={(proc) => {

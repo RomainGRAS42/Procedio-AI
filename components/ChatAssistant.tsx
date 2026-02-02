@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Procedure } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface Message {
   id: string;
@@ -240,21 +241,70 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-800 border border-slate-200'} px-4 py-3 rounded-2xl`}>
                   <div 
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       // Interception des clics sur les liens générés
                       const target = e.target as HTMLElement;
-                      if (target.tagName === 'A') {
-                        const href = target.getAttribute('href');
+                      const link = target.closest('a');
+                      
+                      if (link) {
+                        const href = link.getAttribute('href');
                         if (href) {
                           e.preventDefault();
-                          // Chercher si ce lien correspond à une procédure connue
-                          const procedure = msg.procedures?.find(p => p.fileUrl === href || (p as any).file_url === href);
+                          
+                          // 1. Chercher dans le contexte local (rapide)
+                          const decodedHref = decodeURIComponent(href);
+                          let procedure = msg.procedures?.find(p => {
+                            const pUrl = p.fileUrl || (p as any).file_url;
+                            if (!pUrl) return false;
+                            const decodedPUrl = decodeURIComponent(pUrl);
+                            return pUrl === href || decodedPUrl === decodedHref || decodedPUrl === href || pUrl === decodedHref;
+                          });
+
+                          // 2. Si non trouvé, fallback sur Supabase (robuste)
+                          if (!procedure && href.includes('supabase.co')) {
+                            try {
+                                // A. Recherche par URL Exacte
+                                let { data } = await supabase
+                                  .from('procedures')
+                                  .select('*')
+                                  .or(`file_url.eq.${href},file_url.eq.${decodedHref}`)
+                                  .maybeSingle(); // Use maybeSingle to avoid error if 0 rows
+
+                                // B. Fallback : Recherche par Titre (Link Text)
+                                if (!data && link.innerText) {
+                                  const title = link.innerText.trim();
+                                  const { data: titleData } = await supabase
+                                    .from('procedures')
+                                    .select('*')
+                                    .ilike('title', title)
+                                    .maybeSingle();
+                                  data = titleData;
+                                  console.log("Fallback title search result:", data);
+                                }
+                                
+                                if (data) {
+                                  procedure = {
+                                    id: data.file_id || data.uuid, 
+                                    file_id: data.file_id || data.uuid,
+                                    title: data.title,
+                                    category: data.Type || 'NON CLASSÉ',
+                                    fileUrl: data.file_url,
+                                    pinecone_document_id: data.pinecone_document_id,
+                                    createdAt: data.created_at,
+                                    views: data.views || 0,
+                                    status: data.status
+                                  } as Procedure;
+                                }
+                            } catch (err) {
+                              console.warn("Fallback search failed", err);
+                            }
+                          }
                           
                           if (procedure) {
                             onSelectProcedure(procedure);
                             setIsOpen(false);
                           } else {
-                            // Fallback : Ouvrir dans un nouvel onglet si ce n'est pas une procédure connue
+                            // 3. Dernier recours : Ouvrir dans un nouvel onglet
                             window.open(href, '_blank', 'noopener,noreferrer');
                           }
                         }
