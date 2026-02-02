@@ -252,7 +252,7 @@ const History: React.FC<HistoryProps> = ({ onSelectProcedure, onBack }) => {
                 <i className="fa-solid fa-trophy"></i>
             </div>
             <div>
-                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs</h3>
+                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs v2 (Light)</h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ils construisent la base avec vous</p>
             </div>
           </div>
