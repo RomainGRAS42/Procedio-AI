@@ -176,13 +176,21 @@ const Procedures: React.FC<ProceduresProps> = ({
             </button>
           )}
           {user.role === UserRole.MANAGER && (
-            <button 
-              onClick={() => setIsSharePointModalOpen(true)}
-              className="w-14 h-14 bg-[#0078d4] text-white rounded-2xl flex items-center justify-center transition-all hover:bg-[#006cbd] hover:shadow-lg hover:shadow-blue-200 active:scale-95"
-              title="Importer depuis SharePoint"
-            >
-              <i className="fa-brands fa-microsoft text-xl"></i>
-            </button>
+            <div className="relative group">
+              <button 
+                onClick={() => setIsSharePointModalOpen(true)}
+                className="bg-white px-6 py-5 rounded-[1.5rem] font-bold text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-indigo-100 transition-all active:scale-95 border border-slate-100 text-slate-600 hover:text-[#0078d4]"
+              >
+                <i className="fa-brands fa-microsoft text-lg text-[#0078d4]"></i>
+                <span>Importer SharePoint</span>
+              </button>
+              
+              {/* Tooltip Premium */}
+              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-80 p-4 bg-slate-800 text-white text-[10px] font-medium rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                Connectez votre SharePoint pour synchroniser automatiquement vos bibliothèques de procédures existantes sans effort manuel.
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-2 border-8 border-transparent border-t-slate-800"></div>
+              </div>
+            </div>
           )}
         </div>
       </div>
