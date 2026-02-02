@@ -142,7 +142,7 @@ const Header: React.FC<HeaderProps> = ({
           },
           (payload) => {
             if (payload.new && payload.new.title) {
-              if (payload.new.title.startsWith("LOG_READ_") || payload.new.title.startsWith("LOG_SUGGESTION_")) {
+              if (payload.new.title.startsWith("LOG_READ_")) {
                 setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
               }
             }
@@ -252,7 +252,7 @@ const Header: React.FC<HeaderProps> = ({
         .from("notes")
         .select("*")
         .eq("viewed", false) // Only fetch unviewed logs for badge
-        .or("title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%")
+        .ilike('title', 'LOG_READ_%')
         .order("updated_at", { ascending: false })
         .limit(5);
 
@@ -426,6 +426,7 @@ const Header: React.FC<HeaderProps> = ({
             className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center relative border border-slate-100"
             aria-label={`${totalNotifs} notifications`}>
             <i className={`fa-solid fa-bell ${totalNotifs > 0 ? "animate-bounce" : ""}`}></i>
+            <div id="notif-anchor" className="absolute bottom-0 right-0"></div>
             {totalNotifs > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
                 {totalNotifs}
@@ -433,18 +434,17 @@ const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {showNotifications && (
+          {showNotifications && createPortal(
             <>
-              {/* Overlay pour fermer au clic extérieur */}
+              {/* Overlay Universel (Root Level) */}
               <div 
-                className="fixed inset-0 z-[100] cursor-default" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowNotifications(false);
-                }}
+                className="fixed inset-0 z-[9998] cursor-default bg-black/5 backdrop-blur-[1px]" 
+                onClick={() => setShowNotifications(false)}
               ></div>
               
-              <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-[110] overflow-hidden">
+              <div 
+                className="fixed top-20 right-4 md:right-8 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-slide-up z-[9999] overflow-hidden"
+              >
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
                 {totalNotifs > 0 && (
@@ -613,7 +613,8 @@ const Header: React.FC<HeaderProps> = ({
                 )}
               </div>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
 
