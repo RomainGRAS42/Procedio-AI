@@ -239,14 +239,38 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-800 border border-slate-200'} px-4 py-3 rounded-2xl`}>
-                  <p 
-                    className="text-sm leading-relaxed whitespace-pre-wrap font-medium" 
-                    dangerouslySetInnerHTML={{ 
-                      __html: msg.content
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all">$1</a>')
-                    }} 
-                  />
+                  <div 
+                    onClick={(e) => {
+                      // Interception des clics sur les liens générés
+                      const target = e.target as HTMLElement;
+                      if (target.tagName === 'A') {
+                        const href = target.getAttribute('href');
+                        if (href) {
+                          e.preventDefault();
+                          // Chercher si ce lien correspond à une procédure connue
+                          const procedure = msg.procedures?.find(p => p.fileUrl === href || (p as any).file_url === href);
+                          
+                          if (procedure) {
+                            onSelectProcedure(procedure);
+                            setIsOpen(false);
+                          } else {
+                            // Fallback : Ouvrir dans un nouvel onglet si ce n'est pas une procédure connue
+                            window.open(href, '_blank', 'noopener,noreferrer');
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <p 
+                      className="text-sm leading-relaxed whitespace-pre-wrap font-medium" 
+                      dangerouslySetInnerHTML={{ 
+                        __html: msg.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                          // On retire target="_blank" ici car on gère le clic manuellement
+                          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all cursor-pointer">$1</a>')
+                      }} 
+                    />
+                  </div>
                   
                   {/* Procédures trouvées */}
                   {msg.procedures && msg.procedures.length > 0 && (
