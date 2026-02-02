@@ -158,8 +158,8 @@ const Procedures: React.FC<ProceduresProps> = ({
         
         <div></div>
 
-        <div className="flex items-center gap-3">
-
+        <div className="flex items-center gap-6">
+          {/* ZONE 1 : UTILITAIRE (REFRESH) */}
           <div className="group relative">
             <button 
               onClick={() => fetchStructure()}
@@ -174,36 +174,43 @@ const Procedures: React.FC<ProceduresProps> = ({
             </div>
           </div>
 
+          {/* SÉPARATEUR VISUEL */}
           {user.role === UserRole.MANAGER && (
-            <div className="group relative">
-              <button 
-                onClick={onUploadClick}
-                className="bg-indigo-600 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-slate-900 transition-all shadow-2xl active:scale-95 shadow-indigo-200"
-              >
-                <i className="fa-solid fa-plus text-sm"></i>
-                <span>Nouvelle Procédure</span>
-              </button>
-              {/* Tooltip Nouvelle Procédure */}
-              <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 p-3 bg-slate-800 text-white text-[10px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
-                Ajouter manuellement un PDF ou créer une procédure vierge depuis votre ordinateur.
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
-              </div>
-            </div>
+            <div className="h-8 w-px bg-slate-200"></div>
           )}
+
+          {/* ZONE 2 : ACTIONS DE CRÉATION (GROUPÉES) */}
           {user.role === UserRole.MANAGER && (
-            <div className="relative group">
-              <button 
-                onClick={() => setIsSharePointModalOpen(true)}
-                className="bg-white px-6 py-5 rounded-[1.5rem] font-bold text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-indigo-100 transition-all active:scale-95 border border-slate-100 text-slate-600 hover:text-[#0078d4]"
-              >
-                <i className="fa-brands fa-microsoft text-lg text-[#0078d4]"></i>
-                <span>Importer SharePoint</span>
-              </button>
-              
-              {/* Tooltip Premium */}
-              <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-80 p-4 bg-slate-800 text-white text-[10px] font-medium rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
-                Connectez votre Cloud pour synchroniser automatiquement vos dossiers SharePoint masifs.
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
+            <div className="flex items-center gap-3">
+              <div className="group relative">
+                <button 
+                  onClick={onUploadClick}
+                  className="bg-indigo-600 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-slate-900 transition-all shadow-2xl active:scale-95 shadow-indigo-200"
+                >
+                  <i className="fa-solid fa-plus text-sm"></i>
+                  <span>Nouvelle Procédure</span>
+                </button>
+                {/* Tooltip Nouvelle Procédure */}
+                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 p-3 bg-slate-800 text-white text-[10px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                  Ajouter manuellement un PDF ou créer une procédure vierge depuis votre ordinateur.
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <button 
+                  onClick={() => setIsSharePointModalOpen(true)}
+                  className="bg-white px-6 py-5 rounded-[1.5rem] font-bold text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-indigo-100 transition-all active:scale-95 border border-slate-100 text-slate-600 hover:text-[#0078d4]"
+                >
+                  <i className="fa-brands fa-microsoft text-lg text-[#0078d4]"></i>
+                  <span>Importer SharePoint</span>
+                </button>
+                
+                {/* Tooltip Premium */}
+                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-80 p-4 bg-slate-800 text-white text-[10px] font-medium rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                  Connectez votre Cloud pour synchroniser automatiquement vos dossiers SharePoint masifs.
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
+                </div>
               </div>
             </div>
           )}
