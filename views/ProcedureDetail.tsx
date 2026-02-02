@@ -65,7 +65,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   } | null>(null);
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
   const [suggestionContent, setSuggestionContent] = useState("");
-  const [suggestionType, setSuggestionType] = useState<"correction" | "update" | "add_step">("correction");
+  const [suggestionType, setSuggestionType] = useState<"correction" | "update" | "add_step">(
+    "correction"
+  );
   const [suggestionPriority, setSuggestionPriority] = useState<"low" | "medium" | "high">("medium");
   const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false);
   const [history, setHistory] = useState<SuggestionItem[]>([]);
@@ -118,11 +120,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const { data, error } = await supabase
         .from("procedure_suggestions")
-        .select(`
+        .select(
+          `
           *,
           user:user_profiles!user_id(first_name, last_name),
           manager:user_profiles!manager_id(first_name)
-        `)
+        `
+        )
         .eq("procedure_id", procedure.id)
         .order("created_at", { ascending: false });
 
@@ -135,80 +139,89 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     }
   };
 
-  // State pour stocker l'ID Pinecone, initialisé avec la prop si présente
-  const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.pinecone_document_id);
+  // State pour stocker l'ID réel de la procédure (PK)
+  const [realProcedureId, setRealProcedureId] = useState<number | null>(null);
 
-  // Sécurité : Si l'ID est manquant, on le récupère en base avec stratégie de repli
+  // Sécurité : Récupération de l'ID réel et du pinecone_id
   useEffect(() => {
-    const fetchMissingPineconeId = async () => {
-      if (pineconeId) return;
+    const fetchProcedureDetails = async () => {
+      // Si on a déjà un ID numérique valide dans procedure.id, on l'utilise
+      if (
+        typeof procedure.id === "number" ||
+        (typeof procedure.id === "string" && /^\d+$/.test(procedure.id))
+      ) {
+        setRealProcedureId(Number(procedure.id));
+      }
 
-      console.log("🔍 pinecone_document_id manquant, tentative de récupération...");
-      
+      // Si pineconeId est déjà là et qu'on a l'ID réel, on arrête
+      if (pineconeId && realProcedureId) return;
+
+      console.log("🔍 Récupération détails procédure...");
+
       try {
         let resultData = null;
 
         // Tentative 1 : Par UUID (si valide)
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
-        
-        if (isUUID) {
-            const { data, error } = await supabase
-                .from('procedures')
-                .select('*')
-                .eq('uuid', procedure.id)
-                .limit(1)
-                .maybeSingle();
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          String(procedure.id)
+        );
 
-            if (!error && data) {
-                console.log("✅ UUID FETCH RAW KEYS:", Object.keys(data));
-                resultData = data;
-            } else if (error) {
-                console.warn("⚠️ Echec requête UUID (400 possible), passage au fallback Titre...", error.message);
-            }
+        if (isUUID) {
+          const { data, error } = await supabase
+            .from("procedures")
+            .select("*")
+            .eq("uuid", procedure.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data) {
+            resultData = data;
+          }
         }
 
-        // Tentative 2 : Par Titre (Fallback) si UUID a échoué ou n'était pas valide
+        // Tentative 2 : Par Titre (Fallback)
         if (!resultData) {
-             console.log("🔄 Tentative via Titre:", procedure.title);
-             const { data, error } = await supabase
-                .from('procedures')
-                .select('*')
-                .eq('title', procedure.title)
-                .limit(1)
-                .maybeSingle();
-             
-             if (!error && data) {
-                 resultData = data;
-             }
+          const { data, error } = await supabase
+            .from("procedures")
+            .select("*")
+            .eq("title", procedure.title)
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data) {
+            resultData = data;
+          }
         }
 
         // Tentative 3 : Par URL (Ultimate Fallback)
         if (!resultData && procedure.fileUrl) {
-             console.log("🔄 Tentative via URL:", procedure.fileUrl);
-             const { data, error } = await supabase
-                .from('procedures')
-                .select('*')
-                .eq('file_url', procedure.fileUrl)
-                .limit(1)
-                .maybeSingle();
-             
-             if (!error && data) {
-                 resultData = data;
-             }
+          const { data, error } = await supabase
+            .from("procedures")
+            .select("*")
+            .eq("file_url", procedure.fileUrl)
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data) {
+            resultData = data;
+          }
         }
 
-        if (resultData && resultData.pinecone_document_id) {
-          console.log("✅ pinecone_document_id récupéré avec succès :", resultData.pinecone_document_id);
-          setPineconeId(resultData.pinecone_document_id);
-        } else {
-          console.warn("⚠️ Impossible de récupérer pinecone_document_id (ni part UUID, ni par Titre)");
+        if (resultData) {
+          if (resultData.pinecone_document_id) {
+            setPineconeId(resultData.pinecone_document_id);
+          }
+          if (resultData.id) {
+            console.log("✅ ID réel procédure trouvé :", resultData.id);
+            setRealProcedureId(resultData.id);
+          }
         }
       } catch (err) {
-        console.error("❌ Erreur critique recup pinecone_id:", err);
+        console.error("❌ Erreur récupération détails procédure:", err);
       }
     };
 
-    fetchMissingPineconeId();
+    fetchProcedureDetails();
   }, [procedure.id, procedure.title, pineconeId]);
 
   const handleSendMessage = async (textOverride?: string) => {
@@ -231,45 +244,62 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       // ULTIME SÉCURITÉ : Force Fetch avec Failover (UUID -> Titre -> URL)
       let finalPineconeId = pineconeId;
       if (!finalPineconeId) {
-          console.log("⚠️ FORCE FETCH START...");
-          let resultData = null;
+        console.log("⚠️ FORCE FETCH START...");
+        let resultData = null;
 
-          // Tentative 1 : UUID
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procedure.id);
-          if (isUUID) {
-               const { data } = await supabase.from('procedures').select('*').eq('uuid', procedure.id).limit(1).maybeSingle();
-               if (data) resultData = data;
-          }
+        // Tentative 1 : UUID
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          procedure.id
+        );
+        if (isUUID) {
+          const { data } = await supabase
+            .from("procedures")
+            .select("*")
+            .eq("uuid", procedure.id)
+            .limit(1)
+            .maybeSingle();
+          if (data) resultData = data;
+        }
 
-          // Tentative 2 : Titre (Fallback)
-          if (!resultData) {
-               console.log("⚠️ FORCE FETCH Fallback Titre...");
-               const { data } = await supabase.from('procedures').select('*').eq('title', procedure.title).limit(1).maybeSingle();
-               if (data) resultData = data;
-          }
+        // Tentative 2 : Titre (Fallback)
+        if (!resultData) {
+          console.log("⚠️ FORCE FETCH Fallback Titre...");
+          const { data } = await supabase
+            .from("procedures")
+            .select("*")
+            .eq("title", procedure.title)
+            .limit(1)
+            .maybeSingle();
+          if (data) resultData = data;
+        }
 
-          // Tentative 3 : URL (Ultimate Fallback)
-          if (!resultData && procedure.fileUrl) {
-               console.log("⚠️ FORCE FETCH Fallback URL...");
-               const { data } = await supabase.from('procedures').select('*').eq('file_url', procedure.fileUrl).limit(1).maybeSingle();
-               if (data) resultData = data;
-          }
-            
-          if (resultData?.pinecone_document_id) {
-            finalPineconeId = resultData.pinecone_document_id;
-            setPineconeId(finalPineconeId);
-            console.log("✅ FORCE FETCH SUCCESS :", finalPineconeId);
-          } else {
-             console.warn("❌ FORCE FETCH FAILED (UUID, Titre et URL échoués)");
-          }
+        // Tentative 3 : URL (Ultimate Fallback)
+        if (!resultData && procedure.fileUrl) {
+          console.log("⚠️ FORCE FETCH Fallback URL...");
+          const { data } = await supabase
+            .from("procedures")
+            .select("*")
+            .eq("file_url", procedure.fileUrl)
+            .limit(1)
+            .maybeSingle();
+          if (data) resultData = data;
+        }
+
+        if (resultData?.pinecone_document_id) {
+          finalPineconeId = resultData.pinecone_document_id;
+          setPineconeId(finalPineconeId);
+          console.log("✅ FORCE FETCH SUCCESS :", finalPineconeId);
+        } else {
+          console.warn("❌ FORCE FETCH FAILED (UUID, Titre et URL échoués)");
+        }
       }
 
       // DEBUG: Vérifier ce qui est envoyé
-      console.log('🔍 DEBUG - Données envoyées au webhook:', {
+      console.log("🔍 DEBUG - Données envoyées au webhook:", {
         question: textToSend,
         title: cleanTitle,
         file_id: procedure.file_id || procedure.id,
-        pinecone_document_id: finalPineconeId, 
+        pinecone_document_id: finalPineconeId,
         userName: fullUserName,
         sessionid: chatSessionId,
       });
@@ -327,12 +357,30 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     if (!suggestionContent.trim()) return;
     setIsSubmittingSuggestion(true);
 
+    // Utilisation de l'ID réel s'il a été récupéré, sinon fallback sur procedure.id (si numérique)
+    const targetProcedureId =
+      realProcedureId ||
+      (typeof procedure.id === "number" || /^\d+$/.test(procedure.id)
+        ? Number(procedure.id)
+        : null);
+
+    if (!targetProcedureId) {
+      console.error(
+        "❌ Impossible d'envoyer la suggestion : ID de procédure invalide (ni numérique, ni récupéré).",
+        procedure.id
+      );
+      setNotification({ msg: "Erreur technique : Procédure non identifiée.", type: "error" });
+      setIsSubmittingSuggestion(false);
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+
     try {
       // 1. Insertion de la suggestion avec tous les champs
       const { data: newSuggestion, error } = await supabase
         .from("procedure_suggestions")
         .insert({
-          procedure_id: procedure.id,
+          procedure_id: targetProcedureId,
           user_id: user.id,
           suggestion: suggestionContent,
           type: suggestionType,
@@ -377,14 +425,15 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       )}
 
       {/* CHAT IA (SIDEBAR) */}
-      <div 
+      <div
         className={`flex flex-col bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden transition-all duration-500 ease-in-out
-          ${isChatOpen 
-            ? 'lg:w-1/3 w-full opacity-100 translate-x-0' 
-            : 'w-0 opacity-0 lg:translate-x-0 hidden lg:block lg:w-0 overflow-hidden border-0 p-0 m-0'
+          ${
+            isChatOpen
+              ? "lg:w-1/3 w-full opacity-100 translate-x-0"
+              : "w-0 opacity-0 lg:translate-x-0 hidden lg:block lg:w-0 overflow-hidden border-0 p-0 m-0"
           }
         `}
-        style={{ flexBasis: isChatOpen ? '33%' : '0px' }} // Force width 0 when closed
+        style={{ flexBasis: isChatOpen ? "33%" : "0px" }} // Force width 0 when closed
       >
         <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -400,10 +449,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsChatOpen(false)}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-          >
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -478,7 +526,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       </div>
 
       {/* VISIONNEUSE PDF */}
-      <div className={`flex flex-col gap-6 transition-all duration-500 ease-in-out ${isChatOpen ? 'lg:w-2/3' : 'w-full'}`}>
+      <div
+        className={`flex flex-col gap-6 transition-all duration-500 ease-in-out ${isChatOpen ? "lg:w-2/3" : "w-full"}`}>
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 overflow-hidden">
             <button
@@ -496,16 +545,16 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           <div className="flex items-center gap-3 shrink-0">
             {/* Context Button */}
             <button
-               onClick={() => setIsChatOpen(!isChatOpen)}
-               className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm h-10
-                 ${isChatOpen 
-                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-indigo-200' 
-                   : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
-                 }`}
-             >
-               <i className={`fa-solid ${isChatOpen ? 'fa-xmark' : 'fa-comments'}`}></i>
-               <span>{isChatOpen ? 'Fermer IA' : 'Discuter avec le PDF'}</span>
-             </button>
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm h-10
+                 ${
+                   isChatOpen
+                     ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-200"
+                     : "bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600"
+                 }`}>
+              <i className={`fa-solid ${isChatOpen ? "fa-xmark" : "fa-comments"}`}></i>
+              <span>{isChatOpen ? "Fermer IA" : "Discuter avec le PDF"}</span>
+            </button>
 
             {/* Suggestion Button */}
             <button
@@ -514,13 +563,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               <i className="fa-regular fa-lightbulb text-sm"></i>
               <span className="hidden sm:inline">Suggérer une modif</span>
             </button>
-            
+
             {/* Open in New Tab Button (Full Text) */}
             <button
               onClick={() => window.open(docUrl || "", "_blank")}
               className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-sm flex items-center gap-2"
-              title="Ouvrir le document PDF dans un nouvel onglet"
-            >
+              title="Ouvrir le document PDF dans un nouvel onglet">
               <i className="fa-solid fa-arrow-up-right-from-square"></i>
               <span className="hidden sm:inline">Ouvrir dans un onglet</span>
             </button>
@@ -548,8 +596,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
           <button
             onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-            className="w-full p-8 flex items-center justify-between hover:bg-slate-50/50 transition-all group"
-          >
+            className="w-full p-8 flex items-center justify-between hover:bg-slate-50/50 transition-all group">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <i className="fa-solid fa-clock-rotate-left"></i>
@@ -559,67 +606,83 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   Historique des améliorations
                 </h3>
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  {isHistoryExpanded ? 'Cliquez pour masquer' : 'Cliquez pour afficher'}
+                  {isHistoryExpanded ? "Cliquez pour masquer" : "Cliquez pour afficher"}
                 </p>
               </div>
             </div>
-            <i className={`fa-solid fa-chevron-down text-slate-300 transition-transform ${isHistoryExpanded ? 'rotate-180' : ''}`}></i>
+            <i
+              className={`fa-solid fa-chevron-down text-slate-300 transition-transform ${isHistoryExpanded ? "rotate-180" : ""}`}></i>
           </button>
 
           {isHistoryExpanded && (
             <div className="px-8 pb-8 space-y-6 animate-slide-up">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {loadingHistory ? (
-              <div className="col-span-full py-10 flex justify-center">
-                <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : history.length > 0 ? (
-              history.map((item) => (
-                <div key={item.id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-3 hover:shadow-md transition-all group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                        item.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        item.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-slate-100 text-slate-500 border-slate-200'
-                      }`}>
-                        PRIORITÉ {item.priority === 'high' ? 'HAUTE' : item.priority === 'medium' ? 'MOYENNE' : 'BASSE'}
-                      </span>
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                        {new Date(item.created_at).toLocaleDateString("fr-FR")}
-                      </span>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                      item.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      {item.status === 'approved' ? 'Validé' : 'En attente'}
-                    </span>
+                {loadingHistory ? (
+                  <div className="col-span-full py-10 flex justify-center">
+                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                  <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
-                    "{item.suggestion}"
-                  </p>
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[9px] font-black text-slate-400 uppercase">
-                      Par {item.user?.first_name || "Un technicien"}
-                    </span>
-                  </div>
-                  {item.manager_response && (
-                    <div className="mt-4 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 relative">
-                      <div className="absolute -top-2 left-4 px-2 bg-white text-[7px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100 rounded">
-                        Réponse de {item.manager?.first_name || "Manager"}
+                ) : history.length > 0 ? (
+                  history.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-3 hover:shadow-md transition-all group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                              item.priority === "high"
+                                ? "bg-rose-50 text-rose-600 border-rose-100"
+                                : item.priority === "medium"
+                                  ? "bg-amber-50 text-amber-600 border-amber-100"
+                                  : "bg-slate-100 text-slate-500 border-slate-200"
+                            }`}>
+                            PRIORITÉ{" "}
+                            {item.priority === "high"
+                              ? "HAUTE"
+                              : item.priority === "medium"
+                                ? "MOYENNE"
+                                : "BASSE"}
+                          </span>
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                            {new Date(item.created_at).toLocaleDateString("fr-FR")}
+                          </span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                            item.status === "approved"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-amber-50 text-amber-600"
+                          }`}>
+                          {item.status === "approved" ? "Validé" : "En attente"}
+                        </span>
                       </div>
-                      <p className="text-[11px] font-bold text-slate-600 leading-relaxed mt-1">
-                        {item.manager_response}
+                      <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
+                        "{item.suggestion}"
                       </p>
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[9px] font-black text-slate-400 uppercase">
+                          Par {item.user?.first_name || "Un technicien"}
+                        </span>
+                      </div>
+                      {item.manager_response && (
+                        <div className="mt-4 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 relative">
+                          <div className="absolute -top-2 left-4 px-2 bg-white text-[7px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100 rounded">
+                            Réponse de {item.manager?.first_name || "Manager"}
+                          </div>
+                          <p className="text-[11px] font-bold text-slate-600 leading-relaxed mt-1">
+                            {item.manager_response}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full py-10 text-center text-slate-300">
-                <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour le moment.</p>
-              </div>
-            )}
+                  ))
+                ) : (
+                  <div className="col-span-full py-10 text-center text-slate-300">
+                    <p className="text-[10px] font-black uppercase tracking-widest">
+                      Aucune suggestion pour le moment.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -628,10 +691,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       {/* MODAL SUGGESTION */}
       {isSuggestionModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsSuggestionModalOpen(false)}
-        >
+          onClick={() => setIsSuggestionModalOpen(false)}>
           <div
             className="bg-white rounded-[2rem] p-8 w-full max-w-lg shadow-2xl animate-scale-up"
             onClick={(e) => e.stopPropagation()}>
