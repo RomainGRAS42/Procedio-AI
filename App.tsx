@@ -10,7 +10,7 @@ import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
-import History from "./views/History";
+// import History from "./views/History"; // Retired in favor of Statistics (Cockpit)
 import Team from "./views/Team";
 import ComplianceHistory from "./views/ComplianceHistory";
 import SearchResults from "./views/SearchResults";
@@ -309,7 +309,7 @@ const App: React.FC = () => {
                 setSelectedProcedure(p);
                 setCurrentView("procedure-detail");
               }}
-              onViewHistory={() => setCurrentView("history")}
+              onViewHistory={() => setCurrentView("statistics")}
               onViewComplianceHistory={() => setCurrentView("compliance-history")}
               targetAction={pendingAction}
               onActionHandled={() => setPendingAction(null)}
@@ -353,15 +353,8 @@ const App: React.FC = () => {
       case "team":
         return <Team user={user} />;
       case "history":
-        return (
-          <History
-            onBack={() => setCurrentView("dashboard")}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
-          />
-        );
+        // Fallback or explicit redirect to statistics
+        return <Statistics onUploadClick={() => setCurrentView("upload")} />;
       case "compliance-history":
         return user ? (
           <ComplianceHistory
@@ -402,10 +395,16 @@ const App: React.FC = () => {
         return (
           <Dashboard
             user={user}
-            onQuickNote={() => {}}
-            onSelectProcedure={() => {}}
-            onViewHistory={() => {}}
-            onViewComplianceHistory={() => {}}
+            onQuickNote={() => {
+              setAutoOpenNoteEditor(true);
+              setCurrentView("notes");
+            }}
+            onSelectProcedure={(p) => {
+              setSelectedProcedure(p);
+              setCurrentView("procedure-detail");
+            }}
+            onViewHistory={() => setCurrentView("statistics")}
+            onViewComplianceHistory={() => setCurrentView("compliance-history")}
           />
         );
     }

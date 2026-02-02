@@ -10,50 +10,105 @@ interface StatisticsProps {
 const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
   const [history, setHistory] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // MOCKED DATA FOR "Opportunités Manquées" (Alerts)
-  const missedOpportunities = [
-    { term: "Reset VPN AnyConnect", count: 18, trend: "hier" },
-    { term: "Configuration Outlook 2024", count: 12, trend: "il y a 2h" },
-    { term: "Erreur 504 Gateway", count: 9, trend: "lun." },
-    { term: "Procédure Départ Collaborateur", count: 7, trend: "semaine dernière" }
-  ];
-
-  // MOCKED DATA FOR "Top Contributeurs"
-  const topContributors = [
-    { name: "Sarah K.", role: "Technicien N2", score: 14, initial: "SK", color: "bg-indigo-600" },
-    { name: "Julien V.", role: "Admin Sys", score: 8, initial: "JV", color: "bg-purple-600" },
-    { name: "Marc D.", role: "Support N1", score: 5, initial: "MD", color: "bg-blue-600" }
-  ];
+  const [missedOpportunities, setMissedOpportunities] = useState<{ term: string, count: number, trend: string }[]>([]);
+  const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]);
 
   useEffect(() => {
-    fetchHistory();
+    fetchData();
   }, []);
 
-  const fetchHistory = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1. Fetch History & Performance
+      const { data: procData, error: procError } = await supabase
         .from('procedures')
         .select('*')
-        .order('views', { ascending: false }); // Get most viewed for performance
+        .order('views', { ascending: false });
 
-      if (error) throw error;
-      if (data) {
-        setHistory(data.map(p => ({
-          id: p.uuid,
-          file_id: p.uuid,
-          title: p.title || "Sans titre",
-          category: p.Type || "GÉNÉRAL",
-          fileUrl: p.file_url,
-          pinecone_document_id: p.pinecone_document_id,
-          createdAt: p.created_at,
-          views: p.views || 0,
-          status: p.status || 'validated'
-        })));
+      if (procError) throw procError;
+      
+      const procs = (procData || []).map(p => ({
+        id: p.uuid,
+        file_id: p.uuid,
+        title: p.title || "Sans titre",
+        category: p.Type || "GÉNÉRAL",
+        fileUrl: p.file_url,
+        pinecone_document_id: p.pinecone_document_id,
+        createdAt: p.created_at,
+        views: p.views || 0,
+        status: p.status || 'validated'
+      }));
+      setHistory(procs);
+
+      // 2. Fetch Missed Opportunities (Search Logs)
+      const { data: logData } = await supabase
+        .from('notes')
+        .select('title, created_at')
+        .ilike('title', 'LOG_SEARCH_FAIL_%');
+
+      if (logData) {
+        const counts: Record<string, number> = {};
+        logData.forEach(log => {
+          const term = log.title?.replace('LOG_SEARCH_FAIL_', '').trim() || "Inconnu";
+          counts[term] = (counts[term] || 0) + 1;
+        });
+        
+        const sortedGaps = Object.entries(counts)
+          .map(([term, count]) => ({ 
+            term: term.length > 30 ? term.substring(0, 27) + '...' : term, 
+            count, 
+            trend: "récent" 
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 4);
+        
+        setMissedOpportunities(sortedGaps.length > 0 ? sortedGaps : [
+          { term: "Aucun manque détecté", count: 0, trend: "Stable" }
+        ]);
       }
+
+      // 3. Fetch Top Contributors (Suggestions)
+      const { data: suggData } = await supabase
+        .from('procedure_suggestions')
+        .select(`
+          user_id,
+          user:user_profiles!user_id(first_name, last_name, role)
+        `);
+
+      if (suggData) {
+        const contributors: Record<string, { count: number, name: string, role: string }> = {};
+        suggData.forEach((s: any) => {
+          if (!s.user_id) return;
+          if (!contributors[s.user_id]) {
+            contributors[s.user_id] = {
+              count: 0,
+              name: s.user ? `${s.user.first_name} ${s.user.last_name}` : "Anonyme",
+              role: s.user?.role || "Technicien"
+            };
+          }
+          contributors[s.user_id].count++;
+        });
+
+        const colors = ["bg-indigo-600", "bg-purple-600", "bg-blue-600", "bg-emerald-600", "bg-rose-600"];
+        const sortedContribs = Object.values(contributors)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 3)
+          .map((c, i) => ({
+            name: c.name,
+            role: c.role,
+            score: c.count,
+            initial: c.name.split(' ').map(n => n[0]).join('').toUpperCase() || "?",
+            color: colors[i % colors.length]
+          }));
+        
+        setTopContributors(sortedContribs.length > 0 ? sortedContribs : [
+          { name: "Aucune suggestion", role: "Prêt à aider ?", score: 0, initial: "?", color: "bg-slate-200" }
+        ]);
+      }
+
     } catch (e) {
-      console.error("Erreur chargement analytics:", e);
+      console.error("Erreur chargement Cockpit:", e);
     } finally {
       setLoading(false);
     }
@@ -61,7 +116,9 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
 
   // CALCULATE HEALTH DATA (Freshness)
   const calculateHealthData = () => {
-    if (history.length === 0) return [];
+    if (history.length === 0) return [
+      { name: 'Aucune donnée', value: 1, color: '#f1f5f9' }
+    ];
     
     const now = new Date();
     let fresh = 0;
@@ -79,15 +136,16 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
     });
 
     return [
-        { name: 'Fraîches (< 3 mois)', value: fresh, color: '#10b981' }, // Emerald 500
-        { name: 'À vérifier (3-6 mois)', value: warning, color: '#f59e0b' }, // Amber 500
-        { name: 'Obsolètes (> 6 mois)', value: obsolete, color: '#ef4444' } // Red 500
+        { name: 'Fraîches (< 3 mois)', value: fresh, color: '#10b981' }, 
+        { name: 'À vérifier (3-6 mois)', value: warning, color: '#f59e0b' }, 
+        { name: 'Obsolètes (> 6 mois)', value: obsolete, color: '#ef4444' } 
     ];
   };
 
   const healthData = calculateHealthData();
   const topConsultations = history.slice(0, 3);
-  const toRewrite = history.slice().sort((a,b) => (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())).slice(0, 3); // Mocking "To Rewrite" as oldest docs for now
+  const toRewrite = history.slice().sort((a,b) => (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())).slice(0, 3); 
+
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
@@ -247,7 +305,7 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
                 <i className="fa-solid fa-trophy"></i>
             </div>
             <div>
-                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs v2 (Light)</h3>
+                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs</h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ils construisent la base avec vous</p>
             </div>
           </div>
