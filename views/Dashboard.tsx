@@ -146,7 +146,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             'postgres_changes',
             { event: '*', schema: 'public', table: 'procedure_suggestions' },
             () => {
-              fetchSuggestions(); // Refresh suggestions list
+              fetchSuggestions(); // Refresh suggestions list on any change
             }
           )
           .subscribe();

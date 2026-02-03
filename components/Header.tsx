@@ -153,13 +153,29 @@ const Header: React.FC<HeaderProps> = ({
         .on(
           'postgres_changes',
           {
-            event: '*', // Listen to ALL changes (INSERT, UPDATE, DELETE) for suggestions
+            event: 'INSERT', 
             schema: 'public',
             table: 'procedure_suggestions',
           },
-          () => {
-            // Re-fetch pour mettre à jour le badge immédiatement
+          (payload) => {
+            // Un nouvel INSERT est arrivé. Au lieu de tout re-fetcher (lag), 
+            // on re-fetch uniquement si on n'a pas les infos de jointure
             fetchPendingSuggestions();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE', 
+            schema: 'public',
+            table: 'procedure_suggestions',
+          },
+          (payload) => {
+            if (payload.new.viewed === true || payload.new.status !== 'pending') {
+              setPendingSuggestions(prev => prev.filter(s => s.id !== payload.new.id));
+            } else {
+              fetchPendingSuggestions();
+            }
           }
         )
         .subscribe();
