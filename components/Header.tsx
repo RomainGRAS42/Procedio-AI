@@ -144,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({
           },
           (payload) => {
             if (payload.new && payload.new.title) {
-              if (payload.new.title.startsWith("LOG_READ_")) {
+              if (payload.new.title.startsWith("LOG_READ_") || payload.new.title.startsWith("LOG_SUGGESTION_")) {
                 setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
               }
             }

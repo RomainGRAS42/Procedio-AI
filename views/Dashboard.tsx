@@ -127,9 +127,33 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchLatestAnnouncement();
       fetchRecentProcedures();
       fetchActivities();
+      
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
+
+        // Real-time listener for manager
+        const channel = supabase
+          .channel('dashboard-manager-updates')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notes' },
+            () => {
+              fetchActivities(); // Refresh feed on any new log
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'procedure_suggestions' },
+            () => {
+              fetchSuggestions(); // Refresh suggestions list
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       }
     }
   }, [user?.id, user?.role]);
