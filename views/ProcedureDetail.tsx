@@ -160,8 +160,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   // Sécurité : Récupération de l'ID réel et du pinecone_id
   useEffect(() => {
     const fetchProcedureDetails = async () => {
-      // Si on a déjà un ID numérique valide dans procedure.id, on l'utilise
-      if (
+      // Si on a déjà un ID numérique valide dans procedure.db_id ou procedure.id, on l'utilise
+      if (procedure.db_id) {
+        setRealProcedureId(procedure.db_id);
+      } else if (
         typeof procedure.id === "number" ||
         (typeof procedure.id === "string" && /^\d+$/.test(procedure.id))
       ) {
@@ -384,6 +386,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         "❌ Impossible d'envoyer la suggestion : ID de procédure invalide (ni numérique, ni récupéré).",
         procedure.id
       );
+      // ERROR: Still close modal because staying won't fix a missing ID
+      setIsSuggestionModalOpen(false);
       setNotification({ msg: "Erreur technique : Procédure non identifiée.", type: "error" });
       setIsSubmittingSuggestion(false);
       setTimeout(() => setNotification(null), 3000);

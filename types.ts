@@ -28,6 +28,7 @@ export interface User {
 
 export interface Procedure {
   id: string; // UUID du document
+  db_id?: number; // ID numérique réel en base de données
   file_id: string; // Identifiant pour l'IA
   title: string;
   category: string;

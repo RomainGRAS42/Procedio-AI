@@ -10,14 +10,11 @@ import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
-// import History from "./views/History"; // Retired in favor of Statistics (Cockpit)
+import History from "./views/History";
 import Team from "./views/Team";
-import ComplianceHistory from "./views/ComplianceHistory";
-import SearchResults from "./views/SearchResults";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
-import ChatAssistant from "./components/ChatAssistant";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -46,7 +43,7 @@ const App: React.FC = () => {
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
-      // console.log("DEBUG: syncUserProfile démarré pour", sbUser.email);
+      console.log("DEBUG: syncUserProfile démarré pour", sbUser.email); // LOG DEBUT
 
       // 1. Détection optimiste via les métadonnées (disponible immédiatement)
       const metaRole = sbUser.user_metadata?.role;
@@ -56,7 +53,7 @@ const App: React.FC = () => {
         initialRole = UserRole.MANAGER;
       }
 
-      // console.log("DEBUG: Rôle initial détecté (metadata):", initialRole);
+      console.log("DEBUG: Rôle initial détecté (metadata):", initialRole);
 
       const defaultUser: User = {
         id: sbUser.id,
@@ -74,7 +71,7 @@ const App: React.FC = () => {
       setUser(defaultUser);
 
       // 2. Appel Base de Données avec Timeout (pour éviter le blocage infini)
-      // console.log("DEBUG: Appel DB user_profiles...");
+      console.log("DEBUG: Appel DB user_profiles...");
 
       const fetchProfilePromise = supabase
         .from("user_profiles")
@@ -103,7 +100,7 @@ const App: React.FC = () => {
         }
       }
 
-      // console.log("DEBUG: Réponse DB:", { profile, error });
+      console.log("DEBUG: Réponse DB:", { profile, error });
 
       if (error) {
         console.error("Erreur lors de la récupération du profil:", error);
@@ -114,12 +111,12 @@ const App: React.FC = () => {
       const dbRole = profile?.role;
 
       // DEBUG: Affichage des rôles bruts pour diagnostic
-      // console.log("DEBUG ROLE SYNC:", {
-      //   email: sbUser.email,
-      //   metaRole,
-      //   dbRole,
-      //   profileData: profile,
-      // });
+      console.log("DEBUG ROLE SYNC:", {
+        email: sbUser.email,
+        metaRole,
+        dbRole,
+        profileData: profile,
+      });
 
       // Priorité au profil DB s'il existe, sinon on garde le metaRole
       if (dbRole) {
@@ -309,8 +306,7 @@ const App: React.FC = () => {
                 setSelectedProcedure(p);
                 setCurrentView("procedure-detail");
               }}
-              onViewHistory={() => setCurrentView("statistics")}
-              onViewComplianceHistory={() => setCurrentView("compliance-history")}
+              onViewHistory={() => setCurrentView("history")}
               targetAction={pendingAction}
               onActionHandled={() => setPendingAction(null)}
             />
@@ -353,33 +349,12 @@ const App: React.FC = () => {
       case "team":
         return <Team user={user} />;
       case "history":
-        // Fallback or explicit redirect to statistics
-        return <Statistics onUploadClick={() => setCurrentView("upload")} />;
-      case "compliance-history":
-        return user ? (
-          <ComplianceHistory
-            user={user}
-            onBack={() => setCurrentView("dashboard")}
-          />
-        ) : null;
-      case "search-results":
         return (
-          <SearchResults
-            user={user}
-            searchTerm={globalSearchTerm}
+          <History
+            onBack={() => setCurrentView("dashboard")}
             onSelectProcedure={(p) => {
               setSelectedProcedure(p);
-              // Smart Navigation: Pre-select the folder so "Back" goes to the category
-              if (p.category) {
-                  setLastFolder(p.category);
-              }
-              // CLEANUP: Force clear search term so Header and Procedures view are reset
-              setGlobalSearchTerm("");
               setCurrentView("procedure-detail");
-            }}
-            onBack={() => {
-              setGlobalSearchTerm("");
-              setCurrentView("dashboard");
             }}
           />
         );
@@ -395,16 +370,9 @@ const App: React.FC = () => {
         return (
           <Dashboard
             user={user}
-            onQuickNote={() => {
-              setAutoOpenNoteEditor(true);
-              setCurrentView("notes");
-            }}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
-            onViewHistory={() => setCurrentView("statistics")}
-            onViewComplianceHistory={() => setCurrentView("compliance-history")}
+            onQuickNote={() => {}}
+            onSelectProcedure={() => {}}
+            onViewHistory={() => {}}
           />
         );
     }
@@ -463,21 +431,10 @@ const App: React.FC = () => {
           <Header
             user={user}
             currentView={currentView}
-            searchTerm={globalSearchTerm}
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
-              setCurrentView("search-results");
-            }}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              // Smart Navigation: Pre-select the folder so "Back" goes to the category
-              if (p.category) {
-                  setLastFolder(p.category);
-              }
-              // CLEANUP: Force clear search term so Header and Procedures view are reset
-              setGlobalSearchTerm("");
-              setCurrentView("procedure-detail");
+              setCurrentView("procedures");
             }}
             onLogout={handleLogout}
             onNavigate={(view) => setCurrentView(view)}
@@ -489,18 +446,6 @@ const App: React.FC = () => {
             }}
           />
         )}
-        
-        {/* Chat Assistant - Global Sticky */}
-      {isAuthenticated && user && (
-        <ChatAssistant 
-          user={user} 
-          onSelectProcedure={(proc) => {
-            setSelectedProcedure(proc);
-            setCurrentView("procedure-detail");
-          }} 
-        />
-      )}
-        
         <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">
           <div className="max-w-screen-2xl mx-auto w-full">{renderView()}</div>
         </main>
