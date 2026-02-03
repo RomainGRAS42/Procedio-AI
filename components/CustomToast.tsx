@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface CustomToastProps {
+  title?: string;
   message: string;
   type: "success" | "error" | "info";
   visible: boolean;
   onClose: () => void;
 }
 
-const CustomToast: React.FC<CustomToastProps> = ({ message, type, visible, onClose }) => {
+const CustomToast: React.FC<CustomToastProps> = ({ title, message, type, visible, onClose }) => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -50,9 +51,9 @@ const CustomToast: React.FC<CustomToastProps> = ({ message, type, visible, onClo
         </div>
         <div>
           <h4 className="font-bold text-sm tracking-tight mb-0.5">
-            {type === 'error' ? 'Une erreur est survenue' :
+            {title || (type === 'error' ? 'Une erreur est survenue' :
              type === 'success' ? 'Succès' :
-             'Information'}
+             'Information')}
           </h4>
           <p className="text-xs font-medium opacity-90 pr-4 leading-relaxed">
             {message}

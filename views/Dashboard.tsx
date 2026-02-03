@@ -56,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [loadingActivities, setLoadingActivities] = useState(false);
 
   // Toast Notification State
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{ title?: string; message: string; type: "success" | "error" | "info" } | null>(null);
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState({
@@ -370,6 +370,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       // Afficher le toast de confirmation
       setToast({
+        title: status === 'approved' ? 'Suggestion Validée' : 'Suggestion Refusée',
         message: `Vous avez bien ${status === 'approved' ? 'validé' : 'refusé'} la suggestion de ${selectedSuggestion.userName} sur "${selectedSuggestion.procedureTitle}".`,
         type: status === 'approved' ? 'success' : 'error'
       });
@@ -1058,6 +1059,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         document.body
       )}
       <CustomToast
+        title={toast?.title}
         message={toast?.message || ""}
         type={toast?.type || "info"}
         visible={!!toast}
