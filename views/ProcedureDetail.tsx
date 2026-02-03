@@ -413,12 +413,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       fetchHistory(); // Rafraîchir l'historique
 
-      // 2. Création du log de notification pour le manager
       await supabase.from("notes").insert({
         user_id: user.id,
         procedure_id: targetProcedureId,
-        title: `LOG_SUGGESTION_${procedure.title}`,
-        content: `${user.firstName || "Un technicien"} a proposé une modification.`,
+        title: `LOG_SUGGESTION_${newSuggestion.id}`,
+        content: `${user.firstName || "Un technicien"} a proposé une modification sur : ${procedure.title}`,
         viewed: false,
       });
 
