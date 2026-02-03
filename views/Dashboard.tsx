@@ -194,31 +194,34 @@ const Dashboard: React.FC<DashboardProps> = ({
   const openSuggestionById = async (id: string) => {
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
     if (!sugg) {
-      try {
-        const { data, error } = await supabase
-          .from("procedure_suggestions")
-          .select(`
-            id, suggestion, type, priority, created_at, status, user_id, procedure_id,
-            user:user_profiles!user_id(first_name, last_name, avatar_url),
-            procedure:procedures!procedure_id(title)
-          `)
-          .eq("id", id)
-          .single();
-        if (!error && data) {
-          sugg = {
-            id: data.id,
-            content: data.suggestion,
-            status: data.status,
-            createdAt: data.created_at,
-            type: data.type,
-            priority: data.priority,
-            userName: data.user ? `${(data.user as any).first_name} ${(data.user as any).last_name}` : "Inconnu",
-            procedureTitle: data.procedure ? (data.procedure as any).title : "Procédure inconnue",
-            user_id: data.user_id,
-            procedure_id: data.procedure_id,
-          };
+        // Vérifier si l'ID ressemble à un UUID avant de requêter pour éviter l'erreur 400
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+        
+        if (isUUID) {
+          const { data, error } = await supabase
+            .from("procedure_suggestions")
+            .select(`
+              id, suggestion, type, priority, created_at, status, user_id, procedure_id,
+              user:user_profiles!user_id(first_name, last_name, avatar_url),
+              procedure:procedures!procedure_id(title)
+            `)
+            .eq("id", id)
+            .single();
+          if (!error && data) {
+            sugg = {
+              id: data.id,
+              content: data.suggestion,
+              status: data.status,
+              createdAt: data.created_at,
+              type: data.type,
+              priority: data.priority,
+              userName: data.user ? `${(data.user as any).first_name} ${(data.user as any).last_name}` : "Inconnu",
+              procedureTitle: data.procedure ? (data.procedure as any).title : "Procédure inconnue",
+              user_id: data.user_id,
+              procedure_id: data.procedure_id,
+            };
+          }
         }
-      } catch {}
     }
     if (!sugg) {
       sugg = {
@@ -316,10 +319,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!selectedSuggestion) return;
 
     // Validation : le commentaire du manager est obligatoire
-    // Validation : le commentaire du manager est obligatoire
     if (!managerResponse.trim()) {
       setToast({
+        title: "Commentaire requis",
         message: "Veuillez fournir une réponse au technicien avant de valider ou rejeter la suggestion.",
+        type: "error"
+      });
+      return;
+    }
+
+    // Sécurité : ne pas essayer de mettre à jour si la suggestion n'est pas identifiée
+    if (!selectedSuggestion.id || selectedSuggestion.procedureTitle === "Procédure inconnue") {
+      setToast({
+        title: "Action impossible",
+        message: "Cette suggestion est corrompue (identifiant invalide). Veuillez l'effacer.",
         type: "error"
       });
       return;
@@ -376,7 +389,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
       setTimeout(() => setToast(null), 4000);
     } catch (err) {
-      alert("Erreur lors de la mise à jour du statut");
+      setToast({
+        title: "Erreur Technique",
+        message: "Impossible de mettre à jour le statut. L'ID de suggestion est probablement invalide.",
+        type: "error"
+      });
       console.error(err);
     }
   };
