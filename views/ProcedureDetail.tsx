@@ -597,7 +597,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-[3rem] border border-slate-100 shadow-inner relative overflow-hidden">
+        <div className="flex-1 min-h-[400px] bg-white rounded-[3rem] border border-slate-100 shadow-inner relative overflow-hidden">
           {docUrl ? (
             <iframe
               src={`${docUrl}#toolbar=0`}
@@ -637,7 +637,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </button>
 
           {isHistoryExpanded && (
-            <div className="px-8 pb-8 space-y-6 animate-slide-up">
+            <div className="px-8 pb-8 space-y-6 animate-slide-up max-h-[40vh] overflow-y-auto scrollbar-hide">
               <div className="space-y-4">
                 {loadingHistory ? (
                   <div className="py-20 flex justify-center">
