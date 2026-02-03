@@ -520,7 +520,9 @@ const Header: React.FC<HeaderProps> = ({
                             
                             if (isSuggestion) {
                               const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
-                              setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
+                              await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", suggestionId);
+                              setPendingSuggestions(prev => prev.map(p => p.id === suggestionId ? { ...p, viewed: true } : p));
+                              setViewedNotifIds(prev => new Set(prev).add(log.id));
                               onNotificationClick?.('suggestion', suggestionId);
                             } else {
                               setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
@@ -548,41 +550,7 @@ const Header: React.FC<HeaderProps> = ({
                         </div>
                       );
                     })}
-
-                    {/* Suggestions en attente */}
-                    {pendingSuggestions.map((s) => (
-                      <div 
-                        key={s.id} 
-                        onClick={async () => {
-                          // Marquer comme vu en BDD
-                          await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", s.id);
-                          // Mise à jour locale (ne pas supprimer de la liste)
-                          setPendingSuggestions(prev => prev.map(p => p.id === s.id ? { ...p, viewed: true } : p));
-                          
-                          onNotificationClick?.('suggestion', s.id);
-                          setShowNotifications(false);
-                        }}
-                        className={`p-3 rounded-xl border transition-all group relative cursor-pointer ${
-                          !s.viewed 
-                            ? "bg-indigo-50/50 border-indigo-200 shadow-sm" 
-                            : "bg-white border-slate-100 opacity-60"
-                        } hover:bg-indigo-50 hover:border-indigo-300`}
-                      >
-                        {!s.viewed && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-600 rounded-full border-2 border-white shadow-sm z-10 animate-pulse"></div>
-                        )}
-                        <div className="flex justify-between items-start mb-1 gap-2">
-                          <span className="text-xs font-bold text-slate-800 truncate">
-                            {s.userName}
-                          </span>
-                          <i className="fa-solid fa-chevron-right text-[8px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-4"></i>
-                        </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-1 pr-4">{s.procedureTitle}</p>
-                        <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2 group-hover:bg-indigo-50/30 transition-colors">
-                          "{s.content}"
-                        </p>
-                      </div>
-                    ))}
+                    {/* On ne rend plus les cartes de suggestions détaillées ici car le Manager les voit via les logs */}
                   </>
                 )}
 
