@@ -60,8 +60,8 @@ const Procedures: React.FC<ProceduresProps> = ({
       // Map to Procedure format and store all
       const mappedProcs = results.map(f => ({
         id: f.file_id || f.uuid,
-        db_id: f.id,
-        file_id: f.file_id || f.uuid,
+        db_id: f.uuid,
+        file_id: f.uuid,
         title: f.title || "Sans titre",
         category: f.Type || 'NON CLASSÉ',
         fileUrl: f.file_url,

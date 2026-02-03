@@ -61,8 +61,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         console.log(`✅ ${procedures.length} procédures trouvées`);
 
         const foundProcedures: Procedure[] = procedures.map((f: any, index: number) => ({
-          id: f.id || `webhook-${index}`, // Fallback ID if missing
-          file_id: f.id || `webhook-${index}`,
+          id: f.id || f.uuid || `webhook-${index}`,
+          db_id: f.id || f.uuid,
+          file_id: f.id || f.uuid || `webhook-${index}`,
           title: f.title || "Sans titre",
           category: f.category || 'NON CLASSÉ',
           fileUrl: f.file_url,

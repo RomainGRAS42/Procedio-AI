@@ -71,14 +71,16 @@ const Header: React.FC<HeaderProps> = ({
         // Mapping: ensure keys match Procedure type if necessary (camelCase vs snake_case)
         // Since Supabase returns snake_case, and app seems to handle it or cast it, we pass it raw or lightly mapped
         // The previous ID mapping is still useful for React keys
-        const formattedData = data.map((item: any) => ({
-          ...item,
-          id: item.uuid, // React Key and ID for app logic
-          // Add camelCase mappings if your Procedure type strictly requires them
-          fileUrl: item.file_url,
-          createdAt: item.created_at,
-          // ... other fields if needed, but often mapped elsewhere. 
-          // For now, passing full item + id mapping is safest for direct view.
+        const formattedData: Procedure[] = data.map((f: any, index: number) => ({
+          id: f.uuid || f.id || `webhook-${index}`,
+          db_id: f.uuid || f.id,
+          file_id: f.uuid || f.id || `webhook-${index}`,
+          title: f.title || "Sans titre",
+          category: f.Type || 'NON CLASSÉ',
+          fileUrl: f.file_url,
+          createdAt: f.created_at,
+          views: f.views || 0,
+          status: f.status || 'validated'
         }));
         setAutocompleteSuggestions(formattedData);
         setSelectedIndex(-1); // Reset selection on new search

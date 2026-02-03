@@ -151,7 +151,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.pinecone_document_id);
 
   // State pour stocker l'ID réel de la procédure (PK)
-  const [realProcedureId, setRealProcedureId] = useState<number | null>(null);
+  const [realProcedureId, setRealProcedureId] = useState<number | string | null>(null);
 
   useEffect(() => {
     fetchHistory();
@@ -163,11 +163,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       // Si on a déjà un ID numérique valide dans procedure.db_id ou procedure.id, on l'utilise
       if (procedure.db_id) {
         setRealProcedureId(procedure.db_id);
-      } else if (
-        typeof procedure.id === "number" ||
-        (typeof procedure.id === "string" && /^\d+$/.test(procedure.id))
-      ) {
-        setRealProcedureId(Number(procedure.id));
+      } else if (procedure.id) {
+        // Supporter ID numérique OU UUID
+        setRealProcedureId(procedure.id);
       }
 
       // Si pineconeId est déjà là et qu'on a l'ID réel, on arrête
@@ -375,11 +373,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     setIsSubmittingSuggestion(true);
 
     // Utilisation de l'ID réel s'il a été récupéré, sinon fallback sur procedure.id (si numérique)
-    const targetProcedureId =
-      realProcedureId ||
-      (typeof procedure.id === "number" || /^\d+$/.test(procedure.id)
-        ? Number(procedure.id)
-        : null);
+    const targetProcedureId = realProcedureId || procedure.db_id || procedure.id;
 
     if (!targetProcedureId) {
       console.error(

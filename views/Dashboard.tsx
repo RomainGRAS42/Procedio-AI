@@ -373,6 +373,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         setRecentProcedures(
           data.map((p) => ({
             id: p.uuid,
+            db_id: p.uuid,
             file_id: p.uuid,
             title: p.title || "Sans titre",
             category: p.Type || "GÉNÉRAL",
