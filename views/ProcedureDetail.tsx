@@ -638,71 +638,85 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
           {isHistoryExpanded && (
             <div className="px-8 pb-8 space-y-6 animate-slide-up">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {loadingHistory ? (
-                  <div className="col-span-full py-10 flex justify-center">
-                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="py-20 flex justify-center">
+                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : history.length > 0 ? (
-                  history.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-3 hover:shadow-md transition-all group">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                  history.map((item) => {
+                    const typeLabels = {
+                      correction: { label: "Correction d'erreur", color: "bg-rose-50 text-rose-600 border-rose-100", icon: "fa-bug" },
+                      update: { label: "MAJ contenu", color: "bg-indigo-50 text-indigo-600 border-indigo-100", icon: "fa-pen-to-square" },
+                      add_step: { label: "Ajout d'étape", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: "fa-plus-circle" }
+                    };
+                    const typeInfo = typeLabels[item.type as keyof typeof typeLabels] || typeLabels.update;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-6 rounded-[2rem] bg-white border border-slate-100 hover:shadow-xl hover:translate-x-2 transition-all duration-300 group relative">
+                        {/* Header: Date, Type, Status */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 mb-4 border-b border-slate-50 pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
+                              {new Date(item.created_at).toLocaleDateString("fr-FR")}
+                            </span>
+                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center gap-1.5 ${typeInfo.color}`}>
+                              <i className={`fa-solid ${typeInfo.icon}`}></i>
+                              {typeInfo.label}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
                               item.priority === "high"
                                 ? "bg-rose-50 text-rose-600 border-rose-100"
                                 : item.priority === "medium"
                                   ? "bg-amber-50 text-amber-600 border-amber-100"
-                                  : "bg-slate-100 text-slate-500 border-slate-200"
+                                  : "bg-slate-50 text-slate-400 border-slate-100"
                             }`}>
-                            PRIORITÉ{" "}
-                            {item.priority === "high"
-                              ? "HAUTE"
-                              : item.priority === "medium"
-                                ? "MOYENNE"
-                                : "BASSE"}
-                          </span>
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                            {new Date(item.created_at).toLocaleDateString("fr-FR")}
-                          </span>
-                        </div>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                            item.status === "approved"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-amber-50 text-amber-600"
-                          }`}>
-                          {item.status === "approved" ? "Validé" : "En attente"}
-                        </span>
-                      </div>
-                      <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
-                        "{item.suggestion}"
-                      </p>
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-400 uppercase">
-                          Par {item.user?.first_name || "Un technicien"}
-                        </span>
-                      </div>
-                      {item.manager_response && (
-                        <div className="mt-4 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 relative">
-                          <div className="absolute -top-2 left-4 px-2 bg-white text-[7px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100 rounded">
-                            Réponse de {item.manager?.first_name || "Manager"}
+                              {item.priority === "high" ? "Urgent" : item.priority === "medium" ? "Moyenne" : "Basse"}
+                            </span>
                           </div>
-                          <p className="text-[11px] font-bold text-slate-600 leading-relaxed mt-1">
-                            {item.manager_response}
+
+                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.1em] ${
+                            item.status === "approved"
+                              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                              : "bg-amber-100 text-amber-700"
+                          }`}>
+                            <i className={`fa-solid ${item.status === "approved" ? "fa-circle-check" : "fa-clock animate-pulse"}`}></i>
+                            {item.status === "approved" ? "Validé" : "En attente"}
+                          </div>
+                        </div>
+
+                        {/* Contenu de la suggestion */}
+                        <div className="relative pl-4 border-l-2 border-slate-100 bg-slate-50/30 p-4 rounded-2xl mb-4">
+                          <span className="absolute -left-1 top-4 w-2 h-2 rounded-full bg-slate-300 ring-4 ring-white"></span>
+                          <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Suggestion de {item.user?.first_name || "Un technicien"} :</span>
+                          <p className="text-sm font-bold text-slate-700 leading-relaxed italic">
+                            "{item.suggestion}"
                           </p>
                         </div>
-                      )}
-                    </div>
-                  ))
+
+                        {/* Réponse du manager (si présente) */}
+                        {item.manager_response && (
+                          <div className="ml-8 mt-4 p-5 rounded-3xl bg-indigo-50/50 border border-indigo-100 relative animate-slide-right">
+                             <div className="absolute -top-3 left-6 px-3 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-[0.2em] rounded-full shadow-sm border border-white">
+                               Réponse de {item.manager?.first_name || "Manager"}
+                             </div>
+                             <p className="text-[12px] font-bold text-slate-700 leading-relaxed">
+                               {item.manager_response}
+                             </p>
+                             <div className="flex items-center gap-2 mt-2">
+                               <span className="text-[8px] font-black text-indigo-300 uppercase">Validé le {new Date(item.responded_at || item.created_at).toLocaleDateString("fr-FR")}</span>
+                             </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 ) : (
-                  <div className="col-span-full py-10 text-center text-slate-300">
-                    <p className="text-[10px] font-black uppercase tracking-widest">
-                      Aucune suggestion pour le moment.
-                    </p>
+                  <div className="py-20 text-center text-slate-300 flex flex-col items-center gap-4">
+                     <i className="fa-solid fa-folder-open text-4xl opacity-20"></i>
+                     <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour le moment.</p>
                   </div>
                 )}
               </div>
