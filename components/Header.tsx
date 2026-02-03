@@ -145,7 +145,7 @@ const Header: React.FC<HeaderProps> = ({
           (payload) => {
             if (payload.new && payload.new.title) {
               if (payload.new.title.startsWith("LOG_READ_") || payload.new.title.startsWith("LOG_SUGGESTION_")) {
-                setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
+                setReadLogs(prev => [payload.new, ...prev].slice(0, 10));
               }
             }
           }
@@ -243,8 +243,8 @@ const Header: React.FC<HeaderProps> = ({
         `
         )
         .eq("status", "pending")
-        .eq("viewed", false) // Fetch only unviewed suggestions for the badge count
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(10);
 
       if (data) {
         // Mapping manuel pour adapter la structure si nécessaire
@@ -269,10 +269,9 @@ const Header: React.FC<HeaderProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
-        .eq("viewed", false) // Only fetch unviewed logs for badge
         .or('title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%')
         .order("updated_at", { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (data) setReadLogs(data);
     } catch (err) {
@@ -297,8 +296,8 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const totalNotifs = user.role === UserRole.MANAGER
-    ? (pendingSuggestions.length + readLogs.length) // Simplifié car on filtre déjà à la source (viewed=false)
-    : suggestionResponses.length;
+    ? (pendingSuggestions.filter(s => !s.viewed).length + readLogs.filter(l => !l.viewed).length) 
+    : suggestionResponses.filter(r => !r.read).length;
 
   const handleClearAll = async () => {
     if (user.role === UserRole.TECHNICIAN) {
@@ -324,13 +323,14 @@ const Header: React.FC<HeaderProps> = ({
       const unviewedLogIds = readLogs.map(l => l.id);
       if (unviewedLogIds.length > 0) {
         await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
+        setReadLogs(prev => prev.map(l => ({ ...l, viewed: true })));
       }
 
       // Mark all currently visible suggestions as viewed in DB
       const unviewedSuggIds = pendingSuggestions.map(s => s.id);
       if (unviewedSuggIds.length > 0) {
         await supabase.from("procedure_suggestions").update({ viewed: true }).in("id", unviewedSuggIds);
-        setPendingSuggestions([]);
+        setPendingSuggestions(prev => prev.map(s => ({ ...s, viewed: true })));
       }
     }
     // We don't "clear" pending suggestions as they are tasks to do
@@ -485,7 +485,6 @@ const Header: React.FC<HeaderProps> = ({
                   <>
                     {/* Logs de lecture */}
                     {readLogs
-                      .filter(log => new Date(log.created_at || log.updated_at) > new Date(lastClearedNotifs))
                       .map((log) => {
                       const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
                       const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
@@ -513,8 +512,8 @@ const Header: React.FC<HeaderProps> = ({
                           onClick={async () => {
                             // Marquer comme vu en BDD
                             await supabase.from("notes").update({ viewed: true }).eq("id", log.id);
-                            // Mise à jour locale
-                            setReadLogs(prev => prev.filter(l => l.id !== log.id));
+                            // Mise à jour locale (ne pas supprimer de la liste)
+                            setReadLogs(prev => prev.map(l => l.id === log.id ? { ...l, viewed: true } : l));
                             
                             if (isSuggestion) {
                               const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
@@ -554,14 +553,21 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={async () => {
                           // Marquer comme vu en BDD
                           await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", s.id);
-                          // Mise à jour locale
-                          setPendingSuggestions(prev => prev.filter(p => p.id !== s.id));
+                          // Mise à jour locale (ne pas supprimer de la liste)
+                          setPendingSuggestions(prev => prev.map(p => p.id === s.id ? { ...p, viewed: true } : p));
                           
                           onNotificationClick?.('suggestion', s.id);
                           setShowNotifications(false);
                         }}
-                        className="p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group relative"
+                        className={`p-3 rounded-xl border transition-all group relative cursor-pointer ${
+                          !s.viewed 
+                            ? "bg-indigo-50/50 border-indigo-200 shadow-sm" 
+                            : "bg-white border-slate-100 opacity-60"
+                        } hover:bg-indigo-50 hover:border-indigo-300`}
                       >
+                        {!s.viewed && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-600 rounded-full border-2 border-white shadow-sm z-10 animate-pulse"></div>
+                        )}
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <span className="text-xs font-bold text-slate-800 truncate">
                             {s.userName}
