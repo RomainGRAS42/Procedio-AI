@@ -295,9 +295,13 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const totalNotifs = user.role === UserRole.MANAGER
+  const unreadCount = user.role === UserRole.MANAGER
     ? (pendingSuggestions.filter(s => !s.viewed).length + readLogs.filter(l => !l.viewed).length) 
     : suggestionResponses.filter(r => !r.read).length;
+
+  const hasAnyNotifs = user.role === UserRole.MANAGER
+    ? (pendingSuggestions.length > 0 || readLogs.length > 0)
+    : suggestionResponses.length > 0;
 
   const handleClearAll = async () => {
     if (user.role === UserRole.TECHNICIAN) {
@@ -319,19 +323,19 @@ const Header: React.FC<HeaderProps> = ({
       localStorage.setItem("last_cleared_notifs_at", now);
       setReadLogs([]);
       
-      // Mark all currently visible logs as viewed in DB
+      // Mark all currently visible logs as viewed in DB and CLEAR locally
       const unviewedLogIds = readLogs.map(l => l.id);
       if (unviewedLogIds.length > 0) {
         await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
-        setReadLogs(prev => prev.map(l => ({ ...l, viewed: true })));
       }
+      setReadLogs([]);
 
-      // Mark all currently visible suggestions as viewed in DB
+      // Mark all currently visible suggestions as viewed in DB and CLEAR locally
       const unviewedSuggIds = pendingSuggestions.map(s => s.id);
       if (unviewedSuggIds.length > 0) {
         await supabase.from("procedure_suggestions").update({ viewed: true }).in("id", unviewedSuggIds);
-        setPendingSuggestions(prev => prev.map(s => ({ ...s, viewed: true })));
       }
+      setPendingSuggestions([]);
     }
     // We don't "clear" pending suggestions as they are tasks to do
   };
@@ -446,13 +450,12 @@ const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center relative border border-slate-100"
-            aria-label={`${totalNotifs} notifications`}>
-            <i className={`fa-solid fa-bell ${totalNotifs > 0 ? "animate-bounce" : ""}`}></i>
-            <div id="notif-anchor" className="absolute bottom-0 right-0"></div>
-            {totalNotifs > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
-                {totalNotifs}
+            className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-xl relative transition-all active:scale-95"
+            aria-label="Afficher les notifications">
+            <i className="fa-solid fa-bell text-lg"></i>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center shadow-sm animate-bounce">
+                {unreadCount}
               </span>
             )}
           </button>
@@ -470,7 +473,7 @@ const Header: React.FC<HeaderProps> = ({
               >
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
-                {totalNotifs > 0 && (
+                {hasAnyNotifs && (
                   <button 
                     onClick={handleClearAll}
                     className="text-[10px] font-black text-indigo-500 hover:text-slate-900 uppercase tracking-widest flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-50 transition-all">
@@ -629,7 +632,7 @@ const Header: React.FC<HeaderProps> = ({
                   </div>
                 ))}
 
-                {totalNotifs === 0 && (
+                {!hasAnyNotifs && (
                   <div className="text-center py-12 px-6 flex flex-col items-center gap-4 animate-fade-in">
                     <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-200">
                       <i className="fa-solid fa-bell-slash text-xl"></i>
