@@ -227,7 +227,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
-        .or("title.ilike.LOG_READ_%")
+        .or("title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%")
         .order("created_at", { ascending: false })
         .limit(5);
       if (data) setActivities(data);
@@ -826,8 +826,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div 
                       key={act.id}
                       className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] shrink-0">
-                        <i className="fa-solid fa-circle-check"></i>
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] shrink-0 ${
+                        act.title.startsWith('LOG_SUGGESTION_') 
+                          ? 'bg-amber-50 text-amber-600' 
+                          : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        <i className={`fa-solid ${
+                          act.title.startsWith('LOG_SUGGESTION_') 
+                            ? 'fa-lightbulb' 
+                            : 'fa-circle-check'
+                        }`}></i>
                       </div>
                       
                       <div className="flex-1 min-w-0">

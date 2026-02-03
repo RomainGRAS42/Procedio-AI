@@ -412,6 +412,16 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       setNotification({ msg: "Suggestion envoyée au manager !", type: "success" });
 
       fetchHistory(); // Rafraîchir l'historique
+
+      // 2. Création du log de notification pour le manager
+      await supabase.from("notes").insert({
+        user_id: user.id,
+        procedure_id: targetProcedureId,
+        title: `LOG_SUGGESTION_${procedure.title}`,
+        content: `${user.firstName || "Un technicien"} a proposé une modification.`,
+        viewed: false,
+      });
+
       setTimeout(() => setNotification(null), 3000);
     } catch (err) {
       console.error("Erreur suggestion:", err);
