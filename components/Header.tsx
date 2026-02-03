@@ -301,15 +301,20 @@ const Header: React.FC<HeaderProps> = ({
       
       // Update local state immediately
       setLastClearedNotifs(now);
+      localStorage.setItem("last_cleared_notifs_at", now);
       setReadLogs([]);
-      // We don't clear pending suggestions from the list, only from the count (they are still pending tasks)
-      // But user asked for "Clear All" to remove them from view? 
-      // User said: "si je clique sur supprimertoutes les notification [...] elle réapparaisse"
       
-      // Let's mark all currently visible logs as viewed
+      // Mark all currently visible logs as viewed in DB
       const unviewedLogIds = readLogs.map(l => l.id);
       if (unviewedLogIds.length > 0) {
         await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
+      }
+
+      // Mark all currently visible suggestions as viewed in DB
+      const unviewedSuggIds = pendingSuggestions.map(s => s.id);
+      if (unviewedSuggIds.length > 0) {
+        await supabase.from("procedure_suggestions").update({ viewed: true }).in("id", unviewedSuggIds);
+        setPendingSuggestions([]);
       }
     }
     // We don't "clear" pending suggestions as they are tasks to do
