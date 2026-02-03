@@ -410,14 +410,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (error) throw error;
       if (data) {
         setRecentProcedures(
-          data.map((p) => ({
-            id: p.uuid,
+          data.map((p: any) => ({
+            id: p.file_id || p.uuid,
             db_id: p.uuid,
-            file_id: p.uuid,
+            file_id: p.file_id || p.uuid,
             title: p.title || "Sans titre",
             category: p.Type || "GÉNÉRAL",
             fileUrl: p.file_url,
-            pinecone_document_id: p.pinecone_document_id,
+            pinecone_document_id: p.file_id || p.uuid,
             createdAt: p.created_at,
             views: p.views || 0,
             status: p.status || "validated",

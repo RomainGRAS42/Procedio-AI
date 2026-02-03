@@ -61,11 +61,11 @@ const Procedures: React.FC<ProceduresProps> = ({
       const mappedProcs = results.map(f => ({
         id: f.file_id || f.uuid,
         db_id: f.uuid,
-        file_id: f.uuid,
+        file_id: f.file_id || f.uuid,
         title: f.title || "Sans titre",
         category: f.Type || 'NON CLASSÉ',
         fileUrl: f.file_url,
-        pinecone_document_id: f.pinecone_document_id,
+        pinecone_document_id: f.file_id || f.uuid,
         createdAt: f.created_at,
         views: f.views || 0,
         status: f.status || 'validated'

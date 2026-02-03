@@ -148,7 +148,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   };
 
   // State pour stocker l'ID Pinecone, initialisé avec la prop si présente
-  const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.pinecone_document_id);
+  const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.file_id || procedure.pinecone_document_id);
 
   // State pour stocker l'ID réel de la procédure (PK)
   const [realProcedureId, setRealProcedureId] = useState<number | string | null>(null);
@@ -269,7 +269,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         if (isUUID) {
           const { data } = await supabase
             .from("procedures")
-            .select("*")
+            .select("file_id, uuid, title, file_url")
             .eq("uuid", procedure.id)
             .limit(1)
             .maybeSingle();
@@ -300,8 +300,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           if (data) resultData = data;
         }
 
-        if (resultData?.pinecone_document_id) {
-          finalPineconeId = resultData.pinecone_document_id;
+        const validFileId = resultData?.file_id || resultData?.uuid;
+        if (validFileId) {
+          finalPineconeId = validFileId;
           setPineconeId(finalPineconeId);
           console.log("✅ FORCE FETCH SUCCESS :", finalPineconeId);
         } else {
@@ -314,7 +315,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         question: textToSend,
         title: cleanTitle,
         file_id: procedure.file_id || procedure.id,
-        pinecone_document_id: finalPineconeId,
+        pinecone_document_id: finalPineconeId || procedure.file_id || procedure.id,
         userName: fullUserName,
         sessionid: chatSessionId,
       });
@@ -327,7 +328,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           title: cleanTitle,
           documentTitle: cleanTitle,
           file_id: procedure.file_id || procedure.id,
-          pinecone_document_id: finalPineconeId,
+          pinecone_document_id: finalPineconeId || procedure.file_id || procedure.id,
           userName: fullUserName,
           sessionid: chatSessionId,
         }),
