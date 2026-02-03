@@ -10,7 +10,7 @@ import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
-import History from "./views/History";
+import ComplianceHistory from "./views/ComplianceHistory";
 import Team from "./views/Team";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
@@ -306,7 +306,8 @@ const App: React.FC = () => {
                 setSelectedProcedure(p);
                 setCurrentView("procedure-detail");
               }}
-              onViewHistory={() => setCurrentView("history")}
+              onViewHistory={() => setCurrentView("procedures")}
+              onViewComplianceHistory={() => setCurrentView("compliance-history")}
               targetAction={pendingAction}
               onActionHandled={() => setPendingAction(null)}
             />
@@ -348,14 +349,11 @@ const App: React.FC = () => {
         return <Statistics onUploadClick={() => setCurrentView("upload")} />;
       case "team":
         return <Team user={user} />;
-      case "history":
+      case "compliance-history":
         return (
-          <History
+          <ComplianceHistory
+            user={user}
             onBack={() => setCurrentView("dashboard")}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
           />
         );
       case "upload":
@@ -373,6 +371,7 @@ const App: React.FC = () => {
             onQuickNote={() => {}}
             onSelectProcedure={() => {}}
             onViewHistory={() => {}}
+            onViewComplianceHistory={() => {}}
           />
         );
     }
@@ -431,6 +430,7 @@ const App: React.FC = () => {
           <Header
             user={user}
             currentView={currentView}
+            searchTerm={globalSearchTerm}
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
