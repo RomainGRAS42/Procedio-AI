@@ -367,16 +367,13 @@ const Dashboard: React.FC<DashboardProps> = ({
       setSelectedSuggestion(null);
       setManagerResponse("");
 
-      // Add notification log (for manager tracking)
-      await supabase.from("notes").insert([
-        {
-          title: `SUGGESTION_${status.toUpperCase()}`,
-          content: `Suggestion de ${selectedSuggestion.userName} sur "${selectedSuggestion.procedureTitle}" ${status === "approved" ? "validée" : "refusée"} par ${user.firstName}.`,
-          is_protected: false,
-          user_id: user.id,
-          tags: ["SUGGESTION", status.toUpperCase()],
-        },
-      ]);
+
+      // Afficher le toast de confirmation
+      setToast({
+        message: `Vous avez bien ${status === 'approved' ? 'validé' : 'refusé'} la suggestion de ${selectedSuggestion.userName} sur "${selectedSuggestion.procedureTitle}".`,
+        type: status === 'approved' ? 'success' : 'error'
+      });
+      setTimeout(() => setToast(null), 4000);
     } catch (err) {
       alert("Erreur lors de la mise à jour du statut");
       console.error(err);
