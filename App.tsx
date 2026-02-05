@@ -478,11 +478,17 @@ const ProcedureDetailWrapper: React.FC<{ user: User }> = ({ user }) => {
       
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       
-      const { data, error } = await supabase
-        .from("procedures")
-        .select("*")
-        .eq(isUUID ? "uuid" : "id", id)
-        .maybeSingle();
+      let query = supabase.from("procedures").select("*");
+      
+      if (isUUID) {
+        // On cherche dans les deux colonnes UUID possibles
+        query = query.or(`uuid.eq.${id},file_id.eq.${id}`);
+      } else {
+        // Fallback pour les IDs numériques (au cas où, même si plus présents)
+        query = query.eq("id", id);
+      }
+      
+      const { data, error } = await query.maybeSingle();
       
       if (data) setProcedure(data);
       setLoading(false);

@@ -238,7 +238,21 @@ const Dashboard: React.FC<DashboardProps> = ({
         .eq('is_trend', true)
         .limit(1)
         .single();
-      if (data) setTrendProcedure(data as any);
+      if (data) {
+        setTrendProcedure({
+          id: data.uuid,
+          uuid: data.uuid,
+          file_id: data.file_id || data.uuid,
+          title: data.title || "Sans titre",
+          category: data.Type || "GÉNÉRAL",
+          fileUrl: data.file_url,
+          pinecone_document_id: data.pinecone_document_id,
+          createdAt: data.created_at,
+          views: data.views || 0,
+          status: data.status || "validated",
+          is_trend: true
+        });
+      }
     } catch (err) {
       // Pas de grave erreur si pas de trend
     }
