@@ -475,10 +475,13 @@ const ProcedureDetailWrapper: React.FC<{ user: User }> = ({ user }) => {
     const fetchProcedure = async () => {
       if (!id) return;
       setLoading(true);
+      
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      
       const { data, error } = await supabase
         .from("procedures")
         .select("*")
-        .eq("id", id)
+        .eq(isUUID ? "uuid" : "id", id)
         .maybeSingle();
       
       if (data) setProcedure(data);
