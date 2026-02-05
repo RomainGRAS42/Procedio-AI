@@ -619,7 +619,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       {/* VISIONNEUSE PDF */}
       <div
-        className={`flex flex-col gap-6 transition-all duration-500 ease-in-out ${isChatOpen ? "lg:w-2/3" : "w-full"}`}>
+        className={`flex flex-col gap-6 transition-all duration-500 ease-in-out overflow-y-auto scrollbar-hide ${isChatOpen ? "lg:w-2/3" : "w-full"}`}>
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 overflow-hidden">
             <button
@@ -761,7 +761,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                         <div className="relative pl-4 border-l-2 border-slate-100 bg-slate-50/30 p-4 rounded-2xl mb-4">
                           <span className="absolute -left-1 top-4 w-2 h-2 rounded-full bg-slate-300 ring-4 ring-white"></span>
                           <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Suggestion de {item.user?.first_name || "Un technicien"} :</span>
-                          <p className="text-sm font-bold text-slate-700 leading-relaxed italic">
+                          <p className="text-sm font-bold text-slate-700 leading-relaxed italic break-words">
                             "{item.suggestion}"
                           </p>
                         </div>

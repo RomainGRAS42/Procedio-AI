@@ -410,6 +410,7 @@ const AppContent: React.FC<any> = ({
                     setAutoOpenNoteEditor(true);
                     navigate("/notes");
                   }}
+                  onUploadClick={() => navigate("/upload")}
                   onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
                   onViewHistory={() => navigate("/history")}
                   onViewComplianceHistory={() => navigate("/history")}

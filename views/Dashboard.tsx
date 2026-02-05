@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { User, Procedure, Suggestion, UserRole } from "../types";
 import CustomToast from "../components/CustomToast";
 import { supabase } from "../lib/supabase";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
 
 interface DashboardProps {
   user: User;
@@ -13,6 +13,7 @@ interface DashboardProps {
   onViewComplianceHistory: () => void;
   targetAction?: { type: 'suggestion' | 'read', id: string } | null;
   onActionHandled?: () => void;
+  onUploadClick: () => void;
 }
 
 interface Announcement {
@@ -33,6 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onViewComplianceHistory,
   targetAction,
   onActionHandled,
+  onUploadClick,
 }) => {
   const [isRead, setIsRead] = useState(false);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -84,6 +86,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     health: 0,
     usage: 0
   });
+  
+  // Cockpit Widgets State (Manager)
+  const [missedOpportunities, setMissedOpportunities] = useState<{ term: string, count: number, trend: string }[]>([]);
+  const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]);
+  const [healthData, setHealthData] = useState<{ name: string, id: string, value: number, color: string }[]>([]);
+  const [allProcedures, setAllProcedures] = useState<Procedure[]>([]);
 
   const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
     {
@@ -261,31 +269,120 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchManagerKPIs = async () => {
     try {
       // 1. Opportunités Manquées (Logs de recherches échouées)
-      const { count: searchCount } = await supabase
+      const { data: logData } = await supabase
         .from('notes')
-        .select('*', { count: 'exact', head: true })
+        .select('title, created_at')
         .ilike('title', 'LOG_SEARCH_FAIL_%');
+
+      let searchCount = 0;
+      if (logData) {
+        searchCount = logData.length;
+        // Process Missed Opportunities for Widget
+        const counts: Record<string, number> = {};
+        logData.forEach(log => {
+          const term = log.title?.replace('LOG_SEARCH_FAIL_', '').trim() || "Inconnu";
+          counts[term] = (counts[term] || 0) + 1;
+        });
+        
+        const sortedGaps = Object.entries(counts)
+          .map(([term, count]) => ({ 
+            term: term.length > 20 ? term.substring(0, 17) + '...' : term, 
+            count, 
+            trend: "récent" 
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 4);
+        
+        setMissedOpportunities(sortedGaps.length > 0 ? sortedGaps : [
+          { term: "Aucun manque détecté", count: 0, trend: "Stable" }
+        ]);
+      }
 
       // 2. Santé & Usage (depuis les procédures)
       const { data: procs } = await supabase
         .from('procedures')
-        .select('views,created_at');
+        .select('*'); // Fetch all for accurate health calculation
+
+      let totalViews = 0;
+      let healthPct = 0;
 
       if (procs) {
-        const totalViews = procs.reduce((acc, p) => acc + (p.views || 0), 0);
+        setAllProcedures(procs.map(p => ({ ...p, id: p.uuid }))); // Simple mapping
+        totalViews = procs.reduce((acc, p) => acc + (p.views || 0), 0);
         
+        const now = new Date();
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         
-        const freshCount = procs.filter(p => new Date(p.created_at) > sixMonthsAgo).length;
-        const healthPct = procs.length > 0 ? Math.round((freshCount / procs.length) * 100) : 0;
+        const freshCount = procs.filter(p => new Date(p.updated_at || p.created_at) > sixMonthsAgo).length;
+        healthPct = procs.length > 0 ? Math.round((freshCount / procs.length) * 100) : 0;
 
-        setManagerKPIs({
-          searchGaps: searchCount || 0,
-          health: healthPct,
-          usage: totalViews
+        // Calculate Health Chart Data
+        let fresh = 0;
+        let warning = 0;
+        let obsolete = 0;
+
+        procs.forEach(p => {
+            const dateStr = p.updated_at || p.created_at;
+            const date = new Date(dateStr);
+            const diffTime = Math.abs(now.getTime() - date.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+            if (diffDays < 90) fresh++;
+            else if (diffDays < 180) warning++;
+            else obsolete++;
         });
+
+        setHealthData([
+            { name: 'Fraîches', id: 'fresh', value: fresh, color: '#10b981' }, 
+            { name: 'À vérifier', id: 'warning', value: warning, color: '#f59e0b' }, 
+            { name: 'Obsolètes', id: 'obsolete', value: obsolete, color: '#ef4444' } 
+        ]);
       }
+
+      setManagerKPIs({
+        searchGaps: searchCount || 0,
+        health: healthPct,
+        usage: totalViews
+      });
+
+      // 3. Top Contributors
+      const { data: suggData } = await supabase
+        .from('procedure_suggestions')
+        .select(`
+          user_id,
+          user:user_profiles!user_id(first_name, last_name, role)
+        `);
+
+      if (suggData) {
+        const contributors: Record<string, { count: number, name: string, role: string }> = {};
+        suggData.forEach((s: any) => {
+          if (!s.user_id) return;
+          if (!contributors[s.user_id]) {
+            contributors[s.user_id] = {
+              count: 0,
+              name: s.user ? `${s.user.first_name} ${s.user.last_name}` : "Anonyme",
+              role: s.user?.role || "Technicien"
+            };
+          }
+          contributors[s.user_id].count++;
+        });
+
+        const colors = ["bg-indigo-600", "bg-purple-600", "bg-blue-600"];
+        const sortedContribs = Object.values(contributors)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 3)
+          .map((c, i) => ({
+            name: c.name,
+            role: c.role,
+            score: c.count,
+            initial: c.name.split(' ').map(n => n[0]).join('').toUpperCase() || "?",
+            color: colors[i % colors.length]
+          }));
+        
+        setTopContributors(sortedContribs.length > 0 ? sortedContribs : []);
+      }
+
     } catch (err) {
       console.error("Erreur KPIs Manager:", err);
     }
@@ -838,28 +935,71 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </section>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-              <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl">
-                  <i className="fa-solid fa-users"></i>
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-lg">Activité Équipe</h4>
-                  <p className="text-slate-400 text-sm">Vision globale de l'engagement de tous les techniciens.</p>
-                </div>
-                <div className="text-4xl font-black text-indigo-600">{managerKPIs.usage}</div>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Lectures cumulées</span>
+            <div className="space-y-6 w-full">
+              {/* Widget 1: Health Chart */}
+              <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-6">
+                 <div className="flex-1 min-h-[200px] w-full relative">
+                    <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                            <Pie
+                                data={healthData}
+                                innerRadius={50}
+                                outerRadius={70}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {healthData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip 
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                itemStyle={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: '#334155' }}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
+                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-center">
+                            <span className="block text-2xl font-black text-slate-800">{allProcedures.length}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Docs</span>
+                        </div>
+                    </div>
+                 </div>
+                 <div className="flex-1 space-y-3 w-full">
+                    <h4 className="font-bold text-slate-900 text-sm mb-2">Santé du Patrimoine</h4>
+                    {healthData.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{item.name}</span>
+                            </div>
+                            <span className="text-xs font-black text-slate-700">{Math.round((item.value / (allProcedures.length || 1)) * 100)}%</span>
+                        </div>
+                    ))}
+                 </div>
               </div>
-              <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl">
-                  <i className="fa-solid fa-heart-pulse"></i>
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-lg">Santé Doc</h4>
-                  <p className="text-slate-400 text-sm">Fraîcheur des procédures sur les 6 derniers mois.</p>
-                </div>
-                <div className="text-4xl font-black text-emerald-500">{managerKPIs.health}%</div>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Base à jour</span>
+
+              {/* Widget 2: Missed Opportunities Mini-Grid */}
+              <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm">
+                 <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-slate-900 text-sm">Manques Identifiés</h4>
+                    <span className="bg-rose-50 text-rose-600 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">{missedOpportunities.length} sujets</span>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                    {missedOpportunities.slice(0, 2).map((item, idx) => (
+                        <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100 hover:border-rose-200 transition-colors group cursor-pointer" onClick={onUploadClick}>
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded uppercase">{item.count} Ech.</span>
+                            </div>
+                            <p className="font-bold text-slate-700 text-xs line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors">"{item.term}"</p>
+                        </div>
+                    ))}
+                 </div>
+                 {missedOpportunities.length > 0 && (
+                     <button onClick={onUploadClick} className="w-full mt-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
+                        <i className="fa-solid fa-plus mr-2"></i> Combler un manque
+                     </button>
+                 )}
               </div>
             </div>
           )}
@@ -1143,8 +1283,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Right Column: Activity Journal (30%) */}
-          <div className="lg:w-[30%]">
-            <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
+          <div className="lg:w-[30%] space-y-6">
+            <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
               <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
@@ -1192,6 +1332,32 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </button>
               </div>
             </section>
+
+             {/* Top Contributors Mini Widget */}
+             <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center text-xs">
+                        <i className="fa-solid fa-trophy"></i>
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-sm">Top Contributeurs</h3>
+                 </div>
+                 <div className="space-y-4">
+                    {topContributors.length > 0 ? topContributors.slice(0, 3).map((contrib, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[10px] text-white ${contrib.color} shadow-sm`}>
+                                {contrib.initial}
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-bold text-slate-800 text-xs">{contrib.name}</p>
+                                <p className="text-[9px] text-slate-400 uppercase font-bold">{contrib.score} suggestions</p>
+                            </div>
+                            {i === 0 && <i className="fa-solid fa-crown text-amber-500 text-xs"></i>}
+                        </div>
+                    )) : (
+                        <p className="text-[10px] text-slate-400 italic">Aucune donnée.</p>
+                    )}
+                 </div>
+             </div>
           </div>
         </div>
       )}
