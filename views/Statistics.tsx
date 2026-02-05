@@ -27,6 +27,20 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
         .order('views', { ascending: false });
 
       if (procError) throw procError;
+
+      // 1.1 Récupérer les nombres de suggestions par procédure
+      const { data: suggCounts } = await supabase
+        .from('procedure_suggestions')
+        .select('procedure_id');
+      
+      const countsMap: Record<string, number> = {};
+      if (suggCounts) {
+        suggCounts.forEach((s: any) => {
+          if (s.procedure_id) {
+            countsMap[s.procedure_id] = (countsMap[s.procedure_id] || 0) + 1;
+          }
+        });
+      }
       
       const procs = (procData || []).map(p => ({
         id: p.uuid,
@@ -36,8 +50,10 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
         fileUrl: p.file_url,
         pinecone_document_id: p.pinecone_document_id,
         createdAt: p.created_at,
+        updated_at: p.updated_at,
         views: p.views || 0,
-        status: p.status || 'validated'
+        status: p.status || 'validated',
+        suggestion_count: countsMap[p.uuid] || countsMap[p.id] || 0
       }));
       setHistory(procs);
 
@@ -126,7 +142,9 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
     let obsolete = 0;
 
     history.forEach(p => {
-        const date = new Date(p.createdAt);
+        // On utilise updated_at si disponible, sinon createdAt
+        const dateStr = p.updated_at || p.createdAt;
+        const date = new Date(dateStr);
         const diffTime = Math.abs(now.getTime() - date.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
@@ -144,7 +162,23 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
 
   const healthData = calculateHealthData();
   const topConsultations = history.slice(0, 3);
-  const toRewrite = history.slice().sort((a,b) => (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())).slice(0, 3); 
+  
+  // 🚀 INTELLIGENCE : Calcul de la priorité de réécriture
+  const toRewrite = history
+    .map(p => {
+      // Calcul du score : (Age en mois / 2) + (Nombre de suggestions * 5) + (Vues / 10)
+      const monthsOld = Math.ceil(Math.abs(new Date().getTime() - new Date(p.updated_at || p.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+      const suggestionCount = p.suggestion_count || 0;
+      const rewriteScore = (monthsOld / 2) + (suggestionCount * 5) + (p.views / 20);
+      
+      let reason = "Ancienneté";
+      if (suggestionCount > 0) reason = `${suggestionCount} suggestion${suggestionCount > 1 ? 's' : ''} en attente`;
+      else if (p.views > 50) reason = "Très consulté mais ancien";
+      
+      return { ...p, rewriteScore, reason };
+    })
+    .sort((a, b) => b.rewriteScore - a.rewriteScore)
+    .slice(0, 3);
 
 
   return (
@@ -284,13 +318,19 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
                     <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                         <i className="fa-solid fa-arrow-trend-down"></i> À Réécrire (Vieux Docs)
                     </h4>
-                    {toRewrite.map((doc, i) => (
-                        <div key={doc.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:border-rose-200 hover:shadow-lg transition-all group">
+                    {toRewrite.map((doc: any, i) => (
+                        <div 
+                          key={doc.id} 
+                          className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:border-rose-200 hover:shadow-lg transition-all group relative cursor-help"
+                          title={`Priorité : ${Math.round(doc.rewriteScore)} - Raison : ${doc.reason}`}
+                        >
                              <div>
                                 <p className="font-medium text-slate-600 text-sm line-clamp-1 group-hover:text-rose-600 transition-colors">{doc.title}</p>
-                                <p className="text-[9px] text-slate-300 uppercase tracking-wider mt-0.5">Créé le {new Date(doc.createdAt).toLocaleDateString()}</p>
+                                <p className="text-[9px] text-slate-300 uppercase tracking-wider mt-0.5">
+                                  {doc.reason} • {new Date(doc.updated_at || doc.createdAt).toLocaleDateString()}
+                                </p>
                             </div>
-                            <span className="text-[10px] font-bold text-rose-400">Obsolète</span>
+                            <span className="text-[10px] font-bold text-rose-400">Prio {Math.round(doc.rewriteScore)}</span>
                         </div>
                     ))}
                 </div>

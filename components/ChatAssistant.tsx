@@ -130,6 +130,16 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // 🚀 AUTOMATISATION : Traçage des Opportunités Manquées (Recherche infructueuse)
+      if (!procedures.length && responseText.toLowerCase().includes("désolé") || (!procedures.length && responseText.length < 200)) {
+        // On log seulement si aucune procédure n'est suggérée et que le texte semble indiquer un échec
+        await supabase.from("notes").insert([{
+          user_id: user.id,
+          title: `LOG_SEARCH_FAIL_${input.substring(0, 50)}`,
+          content: `Recherche infructueuse de ${user.firstName} : "${input}"`,
+        }]);
+      }
     } catch (error: any) {
       console.error('Erreur chatbot:', error);
       

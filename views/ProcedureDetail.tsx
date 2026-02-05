@@ -226,6 +226,31 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           if (resultData.id) {
             console.log("✅ ID réel procédure trouvé :", resultData.id);
             setRealProcedureId(resultData.id);
+
+            // 🚀 AUTOMATISATION : Incrémentation des vues
+            const incrementViews = async () => {
+               // A. UPDATE procedures
+               const { error: viewError } = await supabase.rpc('increment_procedure_views', { 
+                 row_id: resultData.id 
+               });
+
+               // B. Fallback si RPC n'existe pas encore (incrément manuel)
+               if (viewError) {
+                 await supabase
+                   .from("procedures")
+                   .update({ views: (resultData.views || 0) + 1 })
+                   .eq("id", resultData.id);
+               }
+
+               // C. Log de consultation dans 'notes' pour l'activité
+               await supabase.from("notes").insert([{
+                 user_id: user.id,
+                 title: `CONSULTATION_${resultData.title.substring(0, 50)}`,
+                 content: `${user.firstName} a consulté la procédure "${resultData.title}"`,
+                 procedure_id: resultData.uuid || (typeof resultData.id === 'string' ? resultData.id : null)
+               }]);
+            };
+            incrementViews();
           }
         }
       } catch (err) {
