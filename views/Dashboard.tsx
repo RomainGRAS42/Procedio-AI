@@ -58,6 +58,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
 
+  // Modal Obsolètes
+  const [showObsoleteModal, setShowObsoleteModal] = useState(false);
+  const [obsoleteProcedures, setObsoleteProcedures] = useState<Procedure[]>([]);
+
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
@@ -660,6 +664,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleShowObsolete = (type: "obsolete" | "verify") => {
+     const sixMonthsAgo = new Date();
+     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+     
+     const threeMonthsAgo = new Date();
+     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+     let filtered = [];
+     if (type === "obsolete") {
+        filtered = allProcedures.filter(p => new Date(p.updated_at) < sixMonthsAgo);
+     } else {
+        filtered = allProcedures.filter(p => {
+           const date = new Date(p.updated_at);
+           return date >= sixMonthsAgo && date < threeMonthsAgo;
+        });
+     }
+     
+     // Si c'est vide, on montre quand même les plus vieilles pour que le manager puisse voir qqc
+     if (filtered.length === 0) {
+        filtered = [...allProcedures].sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()).slice(0, 50);
+     } else {
+        filtered.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+     }
+
+     setObsoleteProcedures(filtered);
+     setShowObsoleteModal(true);
+  };
+
   const [managerMessage, setManagerMessage] = useState<string | null>(null);
 
   const fetchLatestAnnouncement = async () => {
@@ -999,7 +1031,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                     
                     <div className="space-y-3">
                       {healthData.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                          <div 
+                            key={idx} 
+                            onClick={() => {
+                                if (item.id === "obsolete" || item.id === "verify") {
+                                    handleShowObsolete(item.id as "obsolete" | "verify");
+                                }
+                            }}
+                            className={`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer ${item.id !== "fresh" ? "hover:bg-slate-50 hover:shadow-sm" : ""}`}
+                          >
                               <div className="flex items-center gap-3">
                                   <div className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white" style={{ backgroundColor: item.color }}></div>
                                   <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{item.name}</span>
@@ -1596,6 +1636,78 @@ const Dashboard: React.FC<DashboardProps> = ({
         visible={!!toast}
         onClose={() => setToast(null)}
       />
+      {/* Modal Obsolètes / À Vérifier */}
+      {showObsoleteModal && (
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-2xl shadow-2xl animate-scale-up border border-slate-100 max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between mb-6 shrink-0">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl border border-amber-100 shadow-sm">
+                      <i className="fa-solid fa-clock-rotate-left"></i>
+                   </div>
+                   <div>
+                      <h3 className="font-black text-slate-900 text-xl tracking-tight">Procédures Anciennes</h3>
+                      <p className="text-slate-400 font-medium text-xs">Ces documents nécessitent peut-être une mise à jour.</p>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => setShowObsoleteModal(false)}
+                  className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-all"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto pr-2 space-y-3 custom-scrollbar flex-1">
+                 {obsoleteProcedures.length > 0 ? (
+                    obsoleteProcedures.map((proc) => (
+                       <div key={proc.id} 
+                            onClick={() => {
+                                onSelectProcedure(proc);
+                                setShowObsoleteModal(false);
+                            }}
+                            className="group p-4 rounded-2xl border border-slate-100 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-50 transition-all cursor-pointer flex items-center justify-between bg-white"
+                       >
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                {proc.title.substring(0, 2).toUpperCase()}
+                             </div>
+                             <div>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proc.title}</h4>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                    Mise à jour : {new Date(proc.updated_at).toLocaleDateString("fr-FR")}
+                                </p>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <span className="text-[10px] bg-slate-50 text-slate-500 px-3 py-1 rounded-lg font-bold border border-slate-100 group-hover:border-indigo-100">
+                                v1.0
+                             </span>
+                             <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-500 transition-colors"></i>
+                          </div>
+                       </div>
+                    ))
+                 ) : (
+                    <div className="text-center py-12">
+                       <p className="text-slate-400 font-medium">Toutes vos procédures sont à jour ! 🎉</p>
+                    </div>
+                 )}
+              </div>
+              
+              <div className="pt-6 mt-6 border-t border-slate-100 shrink-0">
+                 <button 
+                    onClick={() => setShowObsoleteModal(false)}
+                    className="w-full py-4 rounded-2xl bg-slate-50 text-slate-500 font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                 >
+                    Fermer
+                 </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      )}
     </div>
   );
 };
