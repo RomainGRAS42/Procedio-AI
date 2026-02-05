@@ -186,6 +186,33 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
             procedure_id: isUUID ? realProcedureId : (procedure.db_id || procedure.uuid || null)
           }]);
+
+          // 🎮 GAMIFICATION : Gain d'XP (+5) et Stats par catégorie
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('xp_points, stats_by_category')
+            .eq('id', user.id)
+            .single();
+
+          if (profile) {
+            const currentXP = profile.xp_points || 0;
+            const currentStats = profile.stats_by_category || {};
+            const category = procedure.category || "GÉNÉRAL";
+            
+            const newStats = {
+              ...currentStats,
+              [category]: (currentStats[category] || 0) + 1
+            };
+
+            await supabase
+              .from('user_profiles')
+              .update({ 
+                xp_points: currentXP + 5,
+                stats_by_category: newStats,
+                level: Math.floor((currentXP + 5) / 100) + 1 // Niveau = 1 + XP/100
+              })
+              .eq('id', user.id);
+          }
         } catch (err) {
           console.error("❌ Error in incrementViews:", err);
         }

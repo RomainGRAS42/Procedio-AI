@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { User, Procedure, Suggestion, UserRole } from "../types";
 import CustomToast from "../components/CustomToast";
 import { supabase } from "../lib/supabase";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   user: User;
@@ -65,8 +66,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [personalStats, setPersonalStats] = useState({
     consultations: 0,
     suggestions: 0,
-    notes: 0
+    notes: 0,
+    xp: 0,
+    level: 1,
+    mastery: [] as { subject: string; A: number; fullMark: number }[]
   });
+
+  // Sprint Hebdo (XP gagnée cette semaine)
+  const [weeklyXP, setWeeklyXP] = useState(0);
+
+  // Trend du moment
+  const [trendProcedure, setTrendProcedure] = useState<Procedure | null>(null);
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState({
@@ -108,28 +118,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   ] : [
     {
-      label: viewMode === "personal" ? "Mes Consultations" : "Consultations Équipe",
-      value: viewMode === "personal" ? personalStats.consultations.toString() : managerKPIs.usage.toString(),
-      icon: "fa-book-open",
+      label: "Niveau d'Expertise",
+      value: `Niv. ${personalStats.level}`,
+      icon: "fa-award",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
-      desc: viewMode === "personal" ? "Tes lectures" : "Lectures totales",
+      desc: `${personalStats.xp} XP total`,
+      tooltipTitle: "Progression & Savoir",
+      tooltipDesc: `Tu as accumulé ${personalStats.xp} XP à travers tes lectures (${personalStats.consultations} consultations) et tes contributions.`
     },
     {
-      label: viewMode === "personal" ? "Mon Impact" : "Suggestions",
-      value: viewMode === "personal" ? personalStats.suggestions.toString() : pendingSuggestions.length.toString(),
-      icon: "fa-check-circle",
+      label: "Impact Équipe",
+      value: `${personalStats.suggestions * 50} pts`,
+      icon: "fa-handshake-angle",
       color: "text-emerald-600",
       bg: "bg-emerald-50",
-      desc: viewMode === "personal" ? "Suggs validées" : "Total à traiter",
+      desc: `${personalStats.suggestions} suggs validées`,
+      tooltipTitle: "Ton apport à l'équipe",
+      tooltipDesc: `Chaque suggestion validée aide tes collègues et prouve ton expertise métier.`
     },
     {
-      label: "Mes Notes",
-      value: personalStats.notes.toString(),
-      icon: "fa-note-sticky",
-      color: "text-cyan-600",
-      bg: "bg-cyan-50",
-      desc: "Notes perso",
+      label: "Sprint Actuel",
+      value: `+${weeklyXP} XP`,
+      icon: "fa-bolt-lightning",
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      desc: "Cette semaine",
+      tooltipTitle: "Dynamique hebdomadaire",
+      tooltipDesc: "XP gagnée au cours des 7 derniers jours. Garde le rythme !"
     },
   ];
 
@@ -137,10 +153,10 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   useEffect(() => {
     if (user?.id) {
-      fetchLatestAnnouncement();
       fetchRecentProcedures();
       fetchActivities();
       fetchPersonalStats();
+      fetchTrendProcedure();
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
@@ -150,21 +166,28 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const fetchPersonalStats = async () => {
     try {
-      // 1. Consultations Perso
+      // 1. Profil (XP, Niveau, Maîtrise)
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('xp_points, level, stats_by_category')
+        .eq('id', user.id)
+        .single();
+
+      // 2. Consultations Perso
       const { count: consultCount } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .ilike('title', 'CONSULTATION_%');
 
-      // 2. Suggestions Impact (Validées par le technicien / ou proposées)
+      // 3. Suggestions Impact
       const { count: suggCount } = await supabase
         .from('procedure_suggestions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('status', 'approved');
 
-      // 3. Vraies Notes
+      // 4. Vraies Notes
       const { data: allNotes } = await supabase
         .from('notes')
         .select('title')
@@ -176,13 +199,48 @@ const Dashboard: React.FC<DashboardProps> = ({
         !n.title.startsWith('SUGGESTION_')
       ).length || 0;
 
+      // 5. XP Hebdo (Simplifié: on prend les notes/logs des 7 derniers jours)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const { count: weeklyConsults } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .ilike('title', 'CONSULTATION_%')
+        .gte('created_at', sevenDaysAgo.toISOString());
+
+      // 6. Transformer les stats par catégorie pour le RadarChart
+      const masteryData = profile?.stats_by_category ? Object.keys(profile.stats_by_category).map(cat => ({
+        subject: cat,
+        A: profile.stats_by_category[cat],
+        fullMark: Math.max(...Object.values(profile.stats_by_category as object) as number[]) + 5
+      })).slice(0, 6) : [];
+
       setPersonalStats({
         consultations: consultCount || 0,
         suggestions: suggCount || 0,
-        notes: realNotesCount
+        notes: realNotesCount,
+        xp: profile?.xp_points || 0,
+        level: profile?.level || 1,
+        mastery: masteryData
       });
+      setWeeklyXP((weeklyConsults || 0) * 5); // +5 XP par lecture
     } catch (err) {
       console.error("Erreur stats personnelles:", err);
+    }
+  };
+
+  const fetchTrendProcedure = async () => {
+    try {
+      const { data } = await supabase
+        .from('procedures')
+        .select('*')
+        .eq('is_trend', true)
+        .limit(1)
+        .single();
+      if (data) setTrendProcedure(data as any);
+    } catch (err) {
+      // Pas de grave erreur si pas de trend
     }
   };
 
@@ -384,6 +442,26 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (updateError) throw updateError;
 
+      // 🎮 GAMIFICATION : Gain d'XP pour le technicien si approuvé (+50 XP)
+      if (status === 'approved') {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('xp_points')
+          .eq('id', selectedSuggestion.user_id)
+          .single();
+        
+        if (profile) {
+          const newXP = (profile.xp_points || 0) + 50;
+          await supabase
+            .from('user_profiles')
+            .update({ 
+              xp_points: newXP, 
+              level: Math.floor(newXP / 100) + 1 
+            })
+            .eq('id', selectedSuggestion.user_id);
+        }
+      }
+
       // 2. Create a notification response for the technician (UI sync)
       await supabase
         .from("suggestion_responses")
@@ -584,6 +662,36 @@ const Dashboard: React.FC<DashboardProps> = ({
     });
   };
 
+  const toggleTrend = async (e: React.MouseEvent, proc: Procedure) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const newTrendStatus = !proc.is_trend;
+    
+    // Si on active un trend, on peut vouloir désactiver les autres (optionnel)
+    // Ici on fait simple: on change juste l'état du document
+    try {
+      const { error } = await supabase
+        .from('procedures')
+        .update({ is_trend: newTrendStatus })
+        .eq('uuid', proc.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setRecentProcedures(prev => 
+        prev.map(p => p.id === proc.id ? { ...p, is_trend: newTrendStatus } : p)
+      );
+      
+      setToast({ 
+        message: newTrendStatus ? "Procédure mise en Trend !" : "Trend retiré.", 
+        type: "success" 
+      });
+    } catch (err) {
+      console.error("Error toggling trend:", err);
+    }
+  };
+
   return (
     <div className="space-y-10 animate-slide-up pb-12">
       <section className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -630,14 +738,125 @@ const Dashboard: React.FC<DashboardProps> = ({
             </button>
           </div>
         </div>
+
+        {/* L'éclair du Trend - Uniquement si activé */}
+        {trendProcedure && (
+          <div className="mt-8 bg-gradient-to-r from-amber-500/10 via-amber-200/5 to-transparent p-6 rounded-[2.5rem] border border-amber-200/50 flex items-center justify-between gap-6 group hover:border-amber-400 transition-all cursor-pointer shadow-sm shadow-amber-100/20"
+               onClick={() => onSelectProcedure(trendProcedure)}>
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-amber-200 animate-pulse">
+                <i className="fa-solid fa-bolt"></i>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 flex items-center gap-2 mb-2 w-fit">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                  Trend du moment
+                </span>
+                <h3 className="font-bold text-slate-900 text-xl tracking-tight leading-none">
+                  {trendProcedure.title}
+                </h3>
+                <p className="text-slate-400 text-sm mt-1 font-medium">
+                  Le manager a mis cette procédure en priorité. Consulte-la maintenant !
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="text-right hidden sm:block">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adoption</p>
+                 <p className="text-lg font-bold text-slate-700">{trendProcedure.views} lectures</p>
+               </div>
+               <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-300 group-hover:text-amber-500 group-hover:border-amber-300 transition-all">
+                 <i className="fa-solid fa-arrow-right"></i>
+               </div>
+            </div>
+          </div>
+        )}
       </section>
 
-      <div className="grid grid-cols-1 gap-8">
-        <section
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
+        <div className="flex-1 space-y-8">
+          {viewMode === "personal" ? (
+            <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                    <i className="fa-solid fa-circle-nodes"></i>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-xl tracking-tight">Cercle de Maîtrise</h3>
+                </div>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  Visualise l'évolution de ton expertise. Plus tu consultes de procédures dans une catégorie, plus ta zone de maîtrise s'étend.
+                </p>
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
+                    <span className="text-lg font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Niveau Suivant</span>
+                    <span className="text-lg font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full md:w-[300px] h-[300px] flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-4">
+                {personalStats.mastery.length > 2 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
+                      <Radar
+                        name="Maîtrise"
+                        dataKey="A"
+                        stroke="#4f46e5"
+                        fill="#4f46e5"
+                        fillOpacity={0.6}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center p-8 space-y-3">
+                    <i className="fa-solid fa-chart-pie text-3xl text-slate-200"></i>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Continue tes consultations pour générer ton radar de compétences !</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+              <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl">
+                  <i className="fa-solid fa-users"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-lg">Activité Équipe</h4>
+                  <p className="text-slate-400 text-sm">Vision globale de l'engagement de tous les techniciens.</p>
+                </div>
+                <div className="text-4xl font-black text-indigo-600">{managerKPIs.usage}</div>
+                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Lectures cumulées</span>
+              </div>
+              <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl">
+                  <i className="fa-solid fa-heart-pulse"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-lg">Santé Doc</h4>
+                  <p className="text-slate-400 text-sm">Fraîcheur des procédures sur les 6 derniers mois.</p>
+                </div>
+                <div className="text-4xl font-black text-emerald-500">{managerKPIs.health}%</div>
+                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Base à jour</span>
+              </div>
+            </div>
+          )}
+      </div>
+    </section>
+
+    <div className="grid grid-cols-1 gap-8">
+      <section
           className={`relative border border-slate-100 rounded-[3rem] p-10 flex flex-col justify-between items-start gap-10 transition-all duration-500 ${
             isRead ? "bg-slate-50 opacity-60" : "bg-white shadow-xl shadow-indigo-500/5"
           }`}>
-          {loadingAnnouncement ? (
             <div className="w-full py-10 flex items-center justify-center gap-4">
               <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">

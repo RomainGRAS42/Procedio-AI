@@ -41,6 +41,7 @@ export interface Procedure {
   status: "pending" | "validated";
   lastViewedAt?: string;
   suggestion_count?: number;
+  is_trend?: boolean;
 }
 
 export interface Note {
