@@ -722,34 +722,48 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!editContent.trim()) return;
     setSaving(true);
     try {
-      // 1. Déclencher le webhook n8n pour mise à jour généralisée ou ciblée
+      // 1. Sauvegarder en BDD (Priorité)
+      const announcementData = {
+        content: editContent,
+        author_name: user.firstName,
+        author_initials: user.firstName.substring(0, 2).toUpperCase(),
+        author_id: user.id,
+        requires_confirmation: requiresConfirmation,
+      };
+
+      const { data: savedData, error } = await supabase
+        .from("team_announcements")
+        .insert([announcementData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // 2. Déclencher le webhook n8n pour mise à jour généralisée ou ciblée (avec l'ID réel)
       const webhookUrl = "https://n8n.srv901593.hstgr.cloud/webhook-test/6eebc351-9385-403a-9dde-b8f0cad831b2";
       
-      const response = await fetch(webhookUrl, {
+      // On lance le webhook sans bloquer l'UI (fire and forget ou await rapide)
+      fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: editContent,
-          user_id: user.id, // ID du manager qui modifie
-          // On peut ajouter l'ID de l'annonce si nécessaire pour le webhook
-          announcement_id: announcement?.id
+          user_id: user.id,
+          announcement_id: savedData?.id
         }),
-      });
+      }).catch(err => console.error("Webhook Error:", err));
 
-      if (!response.ok) {
-         throw new Error("Erreur Webhook n8n");
-      }
-
-      setToast({ message: "Annonce mise à jour avec succès !", type: "success" });
+      setToast({ message: "Annonce publiée avec succès !", type: "success" });
       setIsEditing(false);
-      // On recharge pour voir les changements (si le webhook a été rapide, sinon optimiste)
-      setManagerMessage(editContent); 
-      // await fetchLatestAnnouncement(); // Optionnel si on veut la vraie confirmation DB
+      // Recharger pour avoir les IDs corrects
+      await fetchLatestAnnouncement();
+      // Reset le flag de lecture locale pour voir le changement "non lu" si applicable
+      // setIsRead(false); 
     } catch (err) {
       console.error("Erreur save announcement:", err);
-      setToast({ message: "Erreur lors de la mise à jour de l'annonce.", type: "error" });
+      setToast({ message: "Erreur lors de la publication.", type: "error" });
     } finally {
       setSaving(false);
     }
