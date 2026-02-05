@@ -681,10 +681,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
      }
      
-     // Si c'est vide, on montre quand même les plus vieilles pour que le manager puisse voir qqc
-     if (filtered.length === 0) {
-        filtered = [...allProcedures].sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()).slice(0, 50);
-     } else {
+     if (filtered.length > 0) {
         filtered.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
      }
 
@@ -1187,7 +1184,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStats.map((stat, idx) => (
           <article
             key={idx}
@@ -1469,7 +1466,7 @@ section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           )}
         </div>
       </section>
-      </div>
+
 
       {/* MODAL REVIEW SUGGESTION */}
       {showSuggestionModal && selectedSuggestion && createPortal(
@@ -1638,8 +1635,14 @@ section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                        </div>
                     ))
                  ) : (
-                    <div className="text-center py-12">
-                       <p className="text-slate-400 font-medium">Toutes vos procédures sont à jour ! 🎉</p>
+                    <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
+                       <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-100">
+                          <i className="fa-solid fa-check-double text-3xl text-emerald-500"></i>
+                       </div>
+                       <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">Félicitations !</h3>
+                       <p className="text-slate-400 font-medium text-sm max-w-xs leading-relaxed">
+                          Votre base de connaissance est parfaitement à jour. Aucune procédure ne nécessite d'attention.
+                       </p>
                     </div>
                  )}
               </div>
