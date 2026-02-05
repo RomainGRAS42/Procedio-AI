@@ -1645,27 +1645,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </p>
                              </div>
                           </div>
-                  {obsoleteProcedures.length > 0 ? (
-                    obsoleteProcedures.map((proc) => (
-                       <div key={proc.id} 
-                            onClick={() => {
-                                onSelectProcedure(proc);
-                                setShowObsoleteModal(false);
-                            }}
-                            className="group p-4 rounded-2xl border border-slate-100 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-50 transition-all cursor-pointer flex items-center justify-between bg-white"
-                       >
-                          <div className="flex items-center gap-4">
-                             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                {proc.title.substring(0, 2).toUpperCase()}
-                             </div>
-                             <div>
-                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proc.title}</h4>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                                    Mise à jour : {new Date(proc.updated_at).toLocaleDateString("fr-FR")}
-                                </p>
-                             </div>
-                          </div>
-                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
                              <span className="text-[10px] bg-slate-50 text-slate-500 px-3 py-1 rounded-lg font-bold border border-slate-100 group-hover:border-indigo-100">
                                 v1.0
                              </span>
