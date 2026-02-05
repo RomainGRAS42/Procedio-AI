@@ -10,7 +10,7 @@ import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
-import History from "./views/History";
+import History from "./views/ComplianceHistory";
 import Team from "./views/Team";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
@@ -308,6 +308,7 @@ const App: React.FC = () => {
                 setCurrentView("procedure-detail");
               }}
               onViewHistory={() => setCurrentView("history")}
+              onViewComplianceHistory={() => setCurrentView("history")}
               targetAction={pendingAction}
               onActionHandled={() => setPendingAction(null)}
             />
@@ -352,11 +353,8 @@ const App: React.FC = () => {
       case "history":
         return (
           <History
+            user={user}
             onBack={() => setCurrentView("dashboard")}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
           />
         );
       case "upload":
@@ -374,6 +372,7 @@ const App: React.FC = () => {
             onQuickNote={() => {}}
             onSelectProcedure={() => {}}
             onViewHistory={() => {}}
+            onViewComplianceHistory={() => {}}
           />
         );
     }
@@ -432,6 +431,7 @@ const App: React.FC = () => {
           <Header
             user={user}
             currentView={currentView}
+            searchTerm={globalSearchTerm}
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
