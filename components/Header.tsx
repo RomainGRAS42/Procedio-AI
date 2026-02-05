@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { User, ViewType, UserRole, Suggestion } from "../types";
+import { User, ViewType, UserRole, Suggestion, Procedure } from "../types";
 import { supabase } from "../lib/supabase";
 
 interface HeaderProps {
