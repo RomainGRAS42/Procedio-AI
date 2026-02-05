@@ -664,7 +664,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleShowObsolete = (type: "obsolete" | "verify") => {
+  const [modalType, setModalType] = useState<"fresh" | "verify" | "obsolete">("obsolete");
+
+  const handleShowHealthCategory = (type: "fresh" | "verify" | "obsolete") => {
      const sixMonthsAgo = new Date();
      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
      
@@ -674,11 +676,14 @@ const Dashboard: React.FC<DashboardProps> = ({
      let filtered = [];
      if (type === "obsolete") {
         filtered = allProcedures.filter(p => new Date(p.updated_at) < sixMonthsAgo);
-     } else {
+     } else if (type === "verify") {
         filtered = allProcedures.filter(p => {
            const date = new Date(p.updated_at);
            return date >= sixMonthsAgo && date < threeMonthsAgo;
         });
+     } else {
+        // Fresh
+        filtered = allProcedures.filter(p => new Date(p.updated_at) >= threeMonthsAgo);
      }
      
      if (filtered.length > 0) {
@@ -686,6 +691,7 @@ const Dashboard: React.FC<DashboardProps> = ({
      }
 
      setObsoleteProcedures(filtered);
+     setModalType(type);
      setShowObsoleteModal(true);
   };
 
@@ -1117,11 +1123,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <div 
                             key={idx} 
                             onClick={() => {
-                                if (item.id === "obsolete" || item.id === "verify") {
-                                    handleShowObsolete(item.id as "obsolete" | "verify");
-                                }
+                                handleShowHealthCategory(item.id as "fresh" | "verify" | "obsolete");
                             }}
-                            className={`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer ${item.id !== "fresh" ? "hover:bg-slate-50 hover:shadow-sm" : ""}`}
+                            className={`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer hover:bg-slate-50 hover:shadow-sm`}
                           >
                               <div className="flex items-center gap-3">
                                   <div className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white" style={{ backgroundColor: item.color }}></div>
@@ -1589,12 +1593,27 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-2xl shadow-2xl animate-scale-up border border-slate-100 max-h-[80vh] flex flex-col">
               <div className="flex items-center justify-between mb-6 shrink-0">
                 <div className="flex items-center gap-4">
-                   <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl border border-amber-100 shadow-sm">
-                      <i className="fa-solid fa-clock-rotate-left"></i>
+                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl border shadow-sm ${
+                      modalType === 'fresh' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
+                      modalType === 'verify' ? 'bg-amber-50 text-amber-500 border-amber-100' :
+                      'bg-rose-50 text-rose-500 border-rose-100'
+                   }`}>
+                      <i className={`fa-solid ${
+                        modalType === 'fresh' ? 'fa-leaf' :
+                        modalType === 'verify' ? 'fa-triangle-exclamation' : 
+                        'fa-clock-rotate-left'
+                      }`}></i>
                    </div>
                    <div>
-                      <h3 className="font-black text-slate-900 text-xl tracking-tight">Procédures Anciennes</h3>
-                      <p className="text-slate-400 font-medium text-xs">Ces documents nécessitent peut-être une mise à jour.</p>
+                      <h3 className="font-black text-slate-900 text-xl tracking-tight">
+                        {modalType === 'fresh' ? 'Procédures Fraîches' :
+                         modalType === 'verify' ? 'À Vérifier' : 'Procédures Anciennes'}
+                      </h3>
+                      <p className="text-slate-400 font-medium text-xs">
+                        {modalType === 'fresh' ? 'Ces documents sont à jour et pertinents.' :
+                         modalType === 'verify' ? 'Il serait prudent de relire ces procédures.' :
+                         'Ces documents nécessitent peut-être une mise à jour.'}
+                      </p>
                    </div>
                 </div>
                 <button 
@@ -1626,6 +1645,26 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </p>
                              </div>
                           </div>
+                  {obsoleteProcedures.length > 0 ? (
+                    obsoleteProcedures.map((proc) => (
+                       <div key={proc.id} 
+                            onClick={() => {
+                                onSelectProcedure(proc);
+                                setShowObsoleteModal(false);
+                            }}
+                            className="group p-4 rounded-2xl border border-slate-100 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-50 transition-all cursor-pointer flex items-center justify-between bg-white"
+                       >
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                {proc.title.substring(0, 2).toUpperCase()}
+                             </div>
+                             <div>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proc.title}</h4>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                    Mise à jour : {new Date(proc.updated_at).toLocaleDateString("fr-FR")}
+                                </p>
+                             </div>
+                          </div>
                           <div className="flex items-center gap-3">
                              <span className="text-[10px] bg-slate-50 text-slate-500 px-3 py-1 rounded-lg font-bold border border-slate-100 group-hover:border-indigo-100">
                                 v1.0
@@ -1636,12 +1675,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                     ))
                  ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
-                       <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-100">
-                          <i className="fa-solid fa-check-double text-3xl text-emerald-500"></i>
+                       <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-lg ${
+                          modalType === 'fresh' ? 'bg-slate-50 shadow-slate-100' : 'bg-emerald-50 shadow-emerald-100'
+                       }`}>
+                          <i className={`fa-solid text-3xl ${
+                             modalType === 'fresh' ? 'fa-wind text-slate-300' : 'fa-check-double text-emerald-500'
+                          }`}></i>
                        </div>
-                       <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">Félicitations !</h3>
+                       <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                          {modalType === 'fresh' ? 'Aucune procédure récente' : 'Félicitations !'}
+                       </h3>
                        <p className="text-slate-400 font-medium text-sm max-w-xs leading-relaxed">
-                          Votre base de connaissance est parfaitement à jour. Aucune procédure ne nécessite d'attention.
+                          {modalType === 'fresh' 
+                             ? "Il n'y a pas de procédure mise à jour récemment."
+                             : "Votre base de connaissance est parfaitement à jour. Aucune procédure ne nécessite d'attention."
+                          }
                        </p>
                     </div>
                  )}
