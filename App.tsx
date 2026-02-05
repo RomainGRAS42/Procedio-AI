@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from "react-router-dom";
 import { User, UserRole, ViewType, Procedure } from "./types";
 import { supabase, checkSupabaseConnection } from "./lib/supabase";
 import Sidebar from "./components/Sidebar";
@@ -282,110 +283,6 @@ const App: React.FC = () => {
     }
   };
 
-  const renderView = () => {
-    if (isRecoveryMode)
-      return (
-        <ResetPassword
-          userEmail={user?.email || "..."}
-          onBack={() => {
-            setIsRecoveryMode(false);
-            setCurrentView("dashboard");
-          }}
-        />
-      );
-    if (!user) return null;
-    switch (currentView) {
-      case "dashboard":
-        return (
-          <Dashboard
-            user={user}
-            onQuickNote={() => {
-              setAutoOpenNoteEditor(true);
-              setCurrentView("notes");
-            }}
-              onSelectProcedure={(p) => {
-                setSelectedProcedure(p);
-                setCurrentView("procedure-detail");
-              }}
-              onViewHistory={() => setCurrentView("history")}
-              onViewComplianceHistory={() => setCurrentView("history")}
-              targetAction={pendingAction}
-              onActionHandled={() => setPendingAction(null)}
-            />
-        );
-      case "procedures":
-        return (
-          <Procedures
-            user={user}
-            onUploadClick={() => setCurrentView("upload")}
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
-            initialSearchTerm={globalSearchTerm}
-            onSearchClear={() => setGlobalSearchTerm("")}
-            initialFolder={lastFolder}
-            onFolderChange={setLastFolder}
-          />
-        );
-      case "procedure-detail":
-        return selectedProcedure ? (
-          <ProcedureDetail
-            key={selectedProcedure.id}
-            procedure={selectedProcedure}
-            user={user}
-            onBack={() => setCurrentView("procedures")}
-          />
-        ) : null;
-      case "notes":
-        return (
-          <Notes
-            initialIsAdding={autoOpenNoteEditor}
-            onEditorClose={() => setAutoOpenNoteEditor(false)}
-          />
-        );
-      case "account":
-        return <Account user={user} onGoToReset={() => {}} />;
-      case "statistics":
-        return (
-          <Statistics 
-            onUploadClick={() => setCurrentView("upload")} 
-            onSelectProcedure={(p) => {
-              setSelectedProcedure(p);
-              setCurrentView("procedure-detail");
-            }}
-          />
-        );
-      case "team":
-        return <Team user={user} />;
-      case "history":
-        return (
-          <History
-            user={user}
-            onBack={() => setCurrentView("dashboard")}
-          />
-        );
-      case "upload":
-        return (
-          <UploadProcedure
-            onBack={() => setCurrentView("procedures")}
-            activeTransfer={activeTransfer}
-            setActiveTransfer={setActiveTransfer}
-          />
-        );
-      default:
-        return (
-          <Dashboard
-            user={user}
-            onQuickNote={() => {}}
-            onSelectProcedure={() => {}}
-            onViewHistory={() => {}}
-            onViewComplianceHistory={() => {}}
-          />
-        );
-    }
-  };
-
   if (loading)
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
@@ -416,15 +313,48 @@ const App: React.FC = () => {
     return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (
+    <BrowserRouter>
+      <AppContent 
+        user={user} 
+        handleLogout={handleLogout}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        activeTransfer={activeTransfer}
+        setActiveTransfer={setActiveTransfer}
+        connectionStatus={connectionStatus}
+        globalSearchTerm={globalSearchTerm}
+        setGlobalSearchTerm={setGlobalSearchTerm}
+        pendingAction={pendingAction}
+        setPendingAction={setPendingAction}
+        autoOpenNoteEditor={autoOpenNoteEditor}
+        setAutoOpenNoteEditor={setAutoOpenNoteEditor}
+        lastFolder={lastFolder}
+        setLastFolder={setLastFolder}
+      />
+    </BrowserRouter>
+  );
+};
+
+
+// Composant interne pour utiliser les hooks de Router
+const AppContent: React.FC<any> = ({ 
+  user, handleLogout, isSidebarOpen, setIsSidebarOpen, activeTransfer, setActiveTransfer,
+  connectionStatus, globalSearchTerm, setGlobalSearchTerm, pendingAction, setPendingAction,
+  autoOpenNoteEditor, setAutoOpenNoteEditor, lastFolder, setLastFolder
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
       <MouseTrailEffect />
 
       {user && (
         <Sidebar
-          currentView={currentView}
+          currentView={location.pathname.split('/')[1] as any || "dashboard"}
           setView={(v) => {
             setLastFolder(null);
-            setCurrentView(v);
+            navigate(`/${v}`);
           }}
           userRole={user.role}
           onLogout={handleLogout}
@@ -438,25 +368,78 @@ const App: React.FC = () => {
         {user && (
           <Header
             user={user}
-            currentView={currentView}
+            currentView={location.pathname.split('/')[1] as any || "dashboard"}
             searchTerm={globalSearchTerm}
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
-              setCurrentView("procedures");
+              navigate("/procedures");
             }}
             onLogout={handleLogout}
-            onNavigate={(view) => setCurrentView(view)}
+            onNavigate={(view) => navigate(`/${view}`)}
             onNotificationClick={(type, id) => {
               setPendingAction({ type, id });
-              if (currentView !== "dashboard") {
-                setCurrentView("dashboard");
-              }
+              navigate("/dashboard");
             }}
           />
         )}
         <main className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">
-          <div className="max-w-screen-2xl mx-auto w-full">{renderView()}</div>
+          <div className="max-w-screen-2xl mx-auto w-full">
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={
+                <Dashboard
+                  user={user}
+                  onQuickNote={() => {
+                    setAutoOpenNoteEditor(true);
+                    navigate("/notes");
+                  }}
+                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                  onViewHistory={() => navigate("/history")}
+                  onViewComplianceHistory={() => navigate("/history")}
+                  targetAction={pendingAction}
+                  onActionHandled={() => setPendingAction(null)}
+                />
+              } />
+              <Route path="/procedures" element={
+                <Procedures
+                  user={user}
+                  onUploadClick={() => navigate("/upload")}
+                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                  initialSearchTerm={globalSearchTerm}
+                  onSearchClear={() => setGlobalSearchTerm("")}
+                  initialFolder={lastFolder}
+                  onFolderChange={setLastFolder}
+                />
+              } />
+              <Route path="/procedure/:id" element={<ProcedureDetailWrapper user={user} />} />
+              <Route path="/notes" element={
+                <Notes
+                  initialIsAdding={autoOpenNoteEditor}
+                  onEditorClose={() => setAutoOpenNoteEditor(false)}
+                />
+              } />
+              <Route path="/statistics" element={
+                <Statistics 
+                  onUploadClick={() => navigate("/upload")} 
+                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                />
+              } />
+              <Route path="/team" element={<Team user={user} />} />
+              <Route path="/account" element={<Account user={user} onGoToReset={() => {}} />} />
+              <Route path="/history" element={
+                <History user={user} onBack={() => navigate("/dashboard")} />
+              } />
+              <Route path="/upload" element={
+                <UploadProcedure
+                  onBack={() => navigate("/procedures")}
+                  activeTransfer={activeTransfer}
+                  setActiveTransfer={setActiveTransfer}
+                />
+              } />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </div>
         </main>
       </div>
 
@@ -474,13 +457,45 @@ const App: React.FC = () => {
       {user && (
         <ChatAssistant 
           user={user} 
-          onSelectProcedure={(p) => {
-            setSelectedProcedure(p);
-            setCurrentView("procedure-detail");
-          }} 
+          onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)} 
         />
       )}
     </div>
+  );
+};
+
+// Wrapper pour charger la procédure par ID si nécessaire (ouverture directe via URL)
+const ProcedureDetailWrapper: React.FC<{ user: User }> = ({ user }) => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [procedure, setProcedure] = useState<Procedure | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProcedure = async () => {
+      if (!id) return;
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("procedures")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      
+      if (data) setProcedure(data);
+      setLoading(false);
+    };
+    fetchProcedure();
+  }, [id]);
+
+  if (loading) return <div className="flex justify-center p-20"><div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div></div>;
+  if (!procedure) return <div className="text-center p-20 text-slate-500 font-bold">Procédure introuvable.</div>;
+
+  return (
+    <ProcedureDetail
+      procedure={procedure}
+      user={user}
+      onBack={() => navigate("/procedures")}
+    />
   );
 };
 

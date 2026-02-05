@@ -86,8 +86,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto mt-4 scrollbar-hide">
         {filteredItems.map((item) => (
           <div key={item.id} className="space-y-2">
-            <button
-              onClick={() => setView(item.id as ViewType)}
+            <a
+              href={`/${item.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setView(item.id as ViewType);
+              }}
               className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-200 group relative ${
                 currentView === item.id
                   ? "bg-indigo-50 text-indigo-600 shadow-sm border border-indigo-100"
@@ -106,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {item.id === "procedures" && activeTransfer && (
                 <div className="ml-auto w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-lg shadow-indigo-500/50"></div>
               )}
-            </button>
+            </a>
 
             {/* Barre de transfert dynamique sous Procédures */}
             {item.id === "procedures" && activeTransfer && (

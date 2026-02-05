@@ -899,9 +899,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           ) : recentProcedures.length > 0 ? (
             recentProcedures.map((proc) => (
-              <div
+              <a
                 key={proc.id}
-                onClick={() => onSelectProcedure(proc)}
+                href={`/procedure/${proc.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectProcedure(proc);
+                }}
                 className="p-10 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
                 <div className="flex items-center gap-8">
                   <div className="w-16 h-16 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
@@ -927,7 +931,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
                 <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-2 transition-all"></i>
-              </div>
+              </a>
             ))
           ) : (
             <div className="p-20 text-center text-slate-300 flex flex-col items-center gap-4">
