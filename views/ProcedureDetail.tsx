@@ -751,12 +751,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                                 </span>
                              </div>
                              
-                             <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${
-                                item.status === "approved" ? "text-emerald-500" : "text-amber-500"
-                             }`}>
-                               <i className={`fa-solid ${item.status === "approved" ? "fa-circle-check" : "fa-clock"}`}></i>
-                               {item.status === "approved" ? "Validé" : "En attente"}
-                             </div>
+                             {(() => {
+                               const statusConfig = {
+                                 approved: { label: "Validé", color: "text-emerald-500", icon: "fa-circle-check" },
+                                 rejected: { label: "Refusé", color: "text-rose-500", icon: "fa-circle-xmark" },
+                                 pending: { label: "En attente", color: "text-amber-500", icon: "fa-clock animate-pulse" }
+                               };
+                               const config = statusConfig[item.status as keyof typeof statusConfig] || statusConfig.pending;
+                               
+                               return (
+                                 <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${config.color}`}>
+                                   <i className={`fa-solid ${config.icon}`}></i>
+                                   {config.label}
+                                 </div>
+                               );
+                             })()}
                           </div>
 
                           {/* Description */}
