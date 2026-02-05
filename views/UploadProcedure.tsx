@@ -49,13 +49,13 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
       formData.append('category', selectedFolder);
 
       console.log('📤 Envoi vers n8n (MODE PRODUCTION):', {
-        url: 'https://n8n.srv901593.hstgr.cloud/webhook-test/f2d12a7e-05d9-474f-bb17-336eeb2650d5',
+        url: 'https://n8n.srv901593.hstgr.cloud/webhook/f2d12a7e-05d9-474f-bb17-336eeb2650d5',
         file_id: fileId,
         title: title.trim(),
         category: selectedFolder
       });
 
-      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook-test/f2d12a7e-05d9-474f-bb17-336eeb2650d5', {
+      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/f2d12a7e-05d9-474f-bb17-336eeb2650d5', {
         method: 'POST',
         body: formData,
         signal: controller.signal

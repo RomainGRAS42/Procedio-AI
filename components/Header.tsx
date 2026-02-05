@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { User, ViewType, UserRole, Suggestion, Procedure } from "../types";
+import { User, ViewType, UserRole, Suggestion } from "../types";
 import { supabase } from "../lib/supabase";
 
 interface HeaderProps {
@@ -144,8 +144,8 @@ const Header: React.FC<HeaderProps> = ({
           },
           (payload) => {
             if (payload.new && payload.new.title) {
-              if (payload.new.title.startsWith("LOG_READ_") || payload.new.title.startsWith("LOG_SUGGESTION_")) {
-                setReadLogs(prev => [payload.new, ...prev].slice(0, 10));
+              if (payload.new.title.startsWith("LOG_READ_")) {
+                setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
               }
             }
           }
@@ -153,29 +153,13 @@ const Header: React.FC<HeaderProps> = ({
         .on(
           'postgres_changes',
           {
-            event: 'INSERT', 
+            event: '*', // Listen to ALL changes (INSERT, UPDATE, DELETE) for suggestions
             schema: 'public',
             table: 'procedure_suggestions',
           },
-          (payload) => {
-            // Un nouvel INSERT est arrivé. Au lieu de tout re-fetcher (lag), 
-            // on re-fetch uniquement si on n'a pas les infos de jointure
+          () => {
+            // Re-fetch pour mettre à jour le badge immédiatement
             fetchPendingSuggestions();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE', 
-            schema: 'public',
-            table: 'procedure_suggestions',
-          },
-          (payload) => {
-            if (payload.new.viewed === true || payload.new.status !== 'pending') {
-              setPendingSuggestions(prev => prev.filter(s => s.id !== payload.new.id));
-            } else {
-              fetchPendingSuggestions();
-            }
           }
         )
         .subscribe();
@@ -243,8 +227,8 @@ const Header: React.FC<HeaderProps> = ({
         `
         )
         .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(10);
+        .eq("viewed", false) // Fetch only unviewed suggestions for the badge count
+        .order("created_at", { ascending: false });
 
       if (data) {
         // Mapping manuel pour adapter la structure si nécessaire
@@ -269,9 +253,10 @@ const Header: React.FC<HeaderProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
+        .eq("viewed", false) // Only fetch unviewed logs for badge
         .or('title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%')
         .order("updated_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       if (data) setReadLogs(data);
     } catch (err) {
@@ -295,13 +280,9 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const unreadCount = user.role === UserRole.MANAGER
-    ? (pendingSuggestions.filter(s => !s.viewed).length + readLogs.filter(l => !l.viewed).length) 
-    : suggestionResponses.filter(r => !r.read).length;
-
-  const hasAnyNotifs = user.role === UserRole.MANAGER
-    ? (pendingSuggestions.length > 0 || readLogs.length > 0)
-    : suggestionResponses.length > 0;
+  const totalNotifs = user.role === UserRole.MANAGER
+    ? (pendingSuggestions.length + readLogs.length) // Simplifié car on filtre déjà à la source (viewed=false)
+    : suggestionResponses.length;
 
   const handleClearAll = async () => {
     if (user.role === UserRole.TECHNICIAN) {
@@ -320,22 +301,16 @@ const Header: React.FC<HeaderProps> = ({
       
       // Update local state immediately
       setLastClearedNotifs(now);
-      localStorage.setItem("last_cleared_notifs_at", now);
       setReadLogs([]);
+      // We don't clear pending suggestions from the list, only from the count (they are still pending tasks)
+      // But user asked for "Clear All" to remove them from view? 
+      // User said: "si je clique sur supprimertoutes les notification [...] elle réapparaisse"
       
-      // Mark all currently visible logs as viewed in DB and CLEAR locally
+      // Let's mark all currently visible logs as viewed
       const unviewedLogIds = readLogs.map(l => l.id);
       if (unviewedLogIds.length > 0) {
         await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
       }
-      setReadLogs([]);
-
-      // Mark all currently visible suggestions as viewed in DB and CLEAR locally
-      const unviewedSuggIds = pendingSuggestions.map(s => s.id);
-      if (unviewedSuggIds.length > 0) {
-        await supabase.from("procedure_suggestions").update({ viewed: true }).in("id", unviewedSuggIds);
-      }
-      setPendingSuggestions([]);
     }
     // We don't "clear" pending suggestions as they are tasks to do
   };
@@ -450,12 +425,13 @@ const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-xl relative transition-all active:scale-95"
-            aria-label="Afficher les notifications">
-            <i className="fa-solid fa-bell text-lg"></i>
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center shadow-sm animate-bounce">
-                {unreadCount}
+            className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center relative border border-slate-100"
+            aria-label={`${totalNotifs} notifications`}>
+            <i className={`fa-solid fa-bell ${totalNotifs > 0 ? "animate-bounce" : ""}`}></i>
+            <div id="notif-anchor" className="absolute bottom-0 right-0"></div>
+            {totalNotifs > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
+                {totalNotifs}
               </span>
             )}
           </button>
@@ -473,7 +449,7 @@ const Header: React.FC<HeaderProps> = ({
               >
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
-                {hasAnyNotifs && (
+                {totalNotifs > 0 && (
                   <button 
                     onClick={handleClearAll}
                     className="text-[10px] font-black text-indigo-500 hover:text-slate-900 uppercase tracking-widest flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-50 transition-all">
@@ -488,6 +464,7 @@ const Header: React.FC<HeaderProps> = ({
                   <>
                     {/* Logs de lecture */}
                     {readLogs
+                      .filter(log => new Date(log.created_at || log.updated_at) > new Date(lastClearedNotifs))
                       .map((log) => {
                       const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
                       const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
@@ -515,14 +492,12 @@ const Header: React.FC<HeaderProps> = ({
                           onClick={async () => {
                             // Marquer comme vu en BDD
                             await supabase.from("notes").update({ viewed: true }).eq("id", log.id);
-                            // Mise à jour locale (ne pas supprimer de la liste)
-                            setReadLogs(prev => prev.map(l => l.id === log.id ? { ...l, viewed: true } : l));
+                            // Mise à jour locale
+                            setReadLogs(prev => prev.filter(l => l.id !== log.id));
                             
                             if (isSuggestion) {
                               const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
-                              await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", suggestionId);
-                              setPendingSuggestions(prev => prev.map(p => p.id === suggestionId ? { ...p, viewed: true } : p));
-                              setViewedNotifIds(prev => new Set(prev).add(log.id));
+                              setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
                               onNotificationClick?.('suggestion', suggestionId);
                             } else {
                               setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
@@ -550,7 +525,34 @@ const Header: React.FC<HeaderProps> = ({
                         </div>
                       );
                     })}
-                    {/* On ne rend plus les cartes de suggestions détaillées ici car le Manager les voit via les logs */}
+
+                    {/* Suggestions en attente */}
+                    {pendingSuggestions.map((s) => (
+                      <div 
+                        key={s.id} 
+                        onClick={async () => {
+                          // Marquer comme vu en BDD
+                          await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", s.id);
+                          // Mise à jour locale
+                          setPendingSuggestions(prev => prev.filter(p => p.id !== s.id));
+                          
+                          onNotificationClick?.('suggestion', s.id);
+                          setShowNotifications(false);
+                        }}
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group relative"
+                      >
+                        <div className="flex justify-between items-start mb-1 gap-2">
+                          <span className="text-xs font-bold text-slate-800 truncate">
+                            {s.userName}
+                          </span>
+                          <i className="fa-solid fa-chevron-right text-[8px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-4"></i>
+                        </div>
+                        <p className="text-[11px] text-slate-500 line-clamp-1 pr-4">{s.procedureTitle}</p>
+                        <p className="text-xs text-slate-600 italic bg-white p-2 rounded-lg mt-2 group-hover:bg-indigo-50/30 transition-colors">
+                          "{s.content}"
+                        </p>
+                      </div>
+                    ))}
                   </>
                 )}
 
@@ -600,7 +602,7 @@ const Header: React.FC<HeaderProps> = ({
                   </div>
                 ))}
 
-                {!hasAnyNotifs && (
+                {totalNotifs === 0 && (
                   <div className="text-center py-12 px-6 flex flex-col items-center gap-4 animate-fade-in">
                     <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-200">
                       <i className="fa-solid fa-bell-slash text-xl"></i>
