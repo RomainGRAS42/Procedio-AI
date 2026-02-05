@@ -345,6 +345,19 @@ const AppContent: React.FC<any> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Sécurité d'initialisation : si on est authentifié mais que l'objet user n'est pas encore là, 
+  // on attend pour éviter que les composants enfants (qui dépendent de user) ne crash.
+  if (!user) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
+          Chargement du profil...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
       <MouseTrailEffect />

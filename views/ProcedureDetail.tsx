@@ -44,15 +44,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       .replace(/^[0-9a-f.-]+-/i, "")
       .replace(/_/g, " ")
       .trim();
-  }, [procedure.title]);
+  }, [procedure?.title]);
 
-  const chatSessionId = useMemo(() => crypto.randomUUID(), [procedure.id, user.id]);
+  const chatSessionId = useMemo(() => {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      return Math.random().toString(36).substring(7);
+    }
+  }, [procedure?.id, user?.id]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       sender: "ai",
-      text: `Expert Procedio prêt. Je connais parfaitement le document **${cleanTitle}**. En quoi puis-je vous aider, ${user.firstName} ?`,
+      text: `Expert Procedio prêt. Je connais parfaitement le document **${cleanTitle}**. En quoi puis-je vous aider${user?.firstName ? `, ${user.firstName}` : ""} ?`,
       timestamp: new Date(),
     },
   ]);
@@ -107,12 +113,16 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     if (!procedure) return;
     if (procedure.fileUrl) {
       setDocUrl(procedure.fileUrl);
-    } else {
-      const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
-      setDocUrl(data.publicUrl);
+    } else if (procedure.id) {
+      try {
+        const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
+        setDocUrl(data?.publicUrl || null);
+      } catch (err) {
+        console.error("Error getting public URL:", err);
+      }
     }
     fetchHistory();
-  }, [procedure, procedure.id, procedure.fileUrl]);
+  }, [procedure?.id, procedure?.fileUrl]);
 
   const fetchHistory = async () => {
     // We prioritize UUID for consistency in joins
