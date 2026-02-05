@@ -707,11 +707,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </button>
 
           {isHistoryExpanded && (
-            <div className="px-8 pb-8 space-y-0 animate-slide-up max-h-[60vh] overflow-y-auto scrollbar-hide relative">
-              {/* Timeline Vertical Line */}
-              <div className="absolute left-[3.25rem] top-8 bottom-8 w-0.5 bg-slate-100"></div>
-
+            <div className="px-8 pb-8 animate-slide-up max-h-[60vh] overflow-y-auto scrollbar-hide relative">
               <div className="space-y-8 relative">
+                {/* Continuous Timeline Line connecting all items */}
+                {history.length > 0 && (
+                  <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-slate-100 z-0"></div>
+                )}
                 {loadingHistory ? (
                   <div className="py-20 flex justify-center">
                     <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
