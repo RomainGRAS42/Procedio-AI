@@ -659,6 +659,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const [managerMessage, setManagerMessage] = useState<string | null>(null);
+
   const fetchLatestAnnouncement = async () => {
     setLoadingAnnouncement(true);
     try {
@@ -671,21 +673,30 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (data) {
         setAnnouncement(data);
-        setEditContent(data.content);
         setRequiresConfirmation(data.requires_confirmation || false);
         
-        // Vérifier si l'utilisateur a déjà lu cette annonce de manière persistante
+        // Vérifier si l'utilisateur a déjà lu cette annonce de manière persistante ET récupérer le message manager
         const { data: readRecord } = await supabase
           .from("announcement_reads")
-          .select("*")
+          .select("message_manager, read_at")
           .eq("user_id", user.id)
           .eq("announcement_id", data.id)
           .maybeSingle();
 
         if (readRecord) {
-          setIsRead(true);
+          setManagerMessage(readRecord.message_manager);
+          // Si le message manager est défini, on le met dans l'éditeur par défaut, sinon le contenu global
+          setEditContent(readRecord.message_manager || data.content);
+          
+          if (readRecord.read_at) {
+             setIsRead(true);
+          } else {
+             setIsRead(false);
+          }
         } else {
           setIsRead(false);
+          setManagerMessage(null);
+          setEditContent(data.content);
         }
       } else {
         const defaultAnn = {
@@ -696,6 +707,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           created_at: new Date().toISOString(),
         };
         setAnnouncement(defaultAnn);
+        setManagerMessage(null);
         setEditContent(defaultAnn.content);
       }
     } catch (err) {
@@ -709,23 +721,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!editContent.trim()) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from("team_announcements").insert([
-        {
-          content: editContent,
-          author_name: user.firstName,
-          author_initials: user.firstName.substring(0, 2).toUpperCase(),
-          author_id: user.id,
-          requires_confirmation: requiresConfirmation,
+      // 1. Déclencher le webhook n8n pour mise à jour généralisée ou ciblée
+      const webhookUrl = "https://n8n.srv901593.hstgr.cloud/webhook-test/6eebc351-9385-403a-9dde-b8f0cad831b2";
+      
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ]);
+        body: JSON.stringify({
+          message: editContent,
+          user_id: user.id, // ID du manager qui modifie
+          // On peut ajouter l'ID de l'annonce si nécessaire pour le webhook
+          announcement_id: announcement?.id
+        }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+         throw new Error("Erreur Webhook n8n");
+      }
 
+      setToast({ message: "Annonce mise à jour avec succès !", type: "success" });
       setIsEditing(false);
-      await fetchLatestAnnouncement();
-      setIsRead(false);
+      // On recharge pour voir les changements (si le webhook a été rapide, sinon optimiste)
+      setManagerMessage(editContent); 
+      // await fetchLatestAnnouncement(); // Optionnel si on veut la vraie confirmation DB
     } catch (err) {
-      alert("Erreur lors de l'enregistrement de l'annonce");
+      console.error("Erreur save announcement:", err);
+      setToast({ message: "Erreur lors de la mise à jour de l'annonce.", type: "error" });
     } finally {
       setSaving(false);
     }
