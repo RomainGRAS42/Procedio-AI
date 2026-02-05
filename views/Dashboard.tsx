@@ -849,14 +849,15 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
           )}
+        </div>
       </div>
-    </section>
 
-    <div className="grid grid-cols-1 gap-8">
-      <section
+      <div className="grid grid-cols-1 gap-8">
+        <section
           className={`relative border border-slate-100 rounded-[3rem] p-10 flex flex-col justify-between items-start gap-10 transition-all duration-500 ${
             isRead ? "bg-slate-50 opacity-60" : "bg-white shadow-xl shadow-indigo-500/5"
           }`}>
+          {loadingAnnouncement ? (
             <div className="w-full py-10 flex items-center justify-center gap-4">
               <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
