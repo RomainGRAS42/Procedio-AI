@@ -5,13 +5,17 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } 
 
 interface StatisticsProps {
   onUploadClick: () => void;
+  onSelectProcedure?: (p: Procedure) => void;
 }
 
-const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
+const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedure }) => {
   const [history, setHistory] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(true);
   const [missedOpportunities, setMissedOpportunities] = useState<{ term: string, count: number, trend: string }[]>([]);
   const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]);
+  
+  // 🚀 NOUVEL ÉTAT : Filtre de santé sélectionné (pour le popup)
+  const [selectedHealthFilter, setSelectedHealthFilter] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -130,10 +134,11 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
     }
   };
 
-  // CALCULATE HEALTH DATA (Freshness)
   const calculateHealthData = () => {
     if (history.length === 0) return [
-      { name: 'Aucune donnée', value: 1, color: '#f1f5f9' }
+      { name: 'Fraîches', id: 'fresh', value: 0, color: '#10b981' },
+      { name: 'À vérifier', id: 'warning', value: 0, color: '#f59e0b' },
+      { name: 'Obsolètes', id: 'obsolete', value: 0, color: '#ef4444' }
     ];
     
     const now = new Date();
@@ -142,7 +147,6 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
     let obsolete = 0;
 
     history.forEach(p => {
-        // On utilise updated_at si disponible, sinon createdAt
         const dateStr = p.updated_at || p.createdAt;
         const date = new Date(dateStr);
         const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -154,10 +158,26 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
     });
 
     return [
-        { name: 'Fraîches (< 3 mois)', value: fresh, color: '#10b981' }, 
-        { name: 'À vérifier (3-6 mois)', value: warning, color: '#f59e0b' }, 
-        { name: 'Obsolètes (> 6 mois)', value: obsolete, color: '#ef4444' } 
+        { name: 'Fraîches (< 3 mois)', id: 'fresh', value: fresh, color: '#10b981' }, 
+        { name: 'À vérifier (3-6 mois)', id: 'warning', value: warning, color: '#f59e0b' }, 
+        { name: 'Obsolètes (> 6 mois)', id: 'obsolete', value: obsolete, color: '#ef4444' } 
     ];
+  };
+
+  const getFilteredProcedures = () => {
+    if (!selectedHealthFilter) return [];
+    
+    const now = new Date();
+    return history.filter(p => {
+        const dateStr = p.updated_at || p.createdAt;
+        const date = new Date(dateStr);
+        const diffDays = Math.ceil(Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (selectedHealthFilter === 'fresh') return diffDays < 90;
+        if (selectedHealthFilter === 'warning') return diffDays >= 90 && diffDays < 180;
+        if (selectedHealthFilter === 'obsolete') return diffDays >= 180;
+        return false;
+    });
   };
 
   const healthData = calculateHealthData();
@@ -248,9 +268,16 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
                                 outerRadius={80}
                                 paddingAngle={5}
                                 dataKey="value"
+                                className="cursor-pointer"
+                                onClick={(data) => setSelectedHealthFilter(data.id)}
                             >
                                 {healthData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                    <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={entry.color} 
+                                        stroke="none"
+                                        className="hover:opacity-80 transition-opacity"
+                                    />
                                 ))}
                             </Pie>
                             <RechartsTooltip 
@@ -273,12 +300,16 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
 
              <div className="space-y-3 mt-6">
                 {healthData.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
+                    <div 
+                        key={idx} 
+                        className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors group"
+                        onClick={() => setSelectedHealthFilter(item.id)}
+                    >
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{item.name}</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-slate-900 transition-colors">{item.name}</span>
                         </div>
-                        <span className="text-xs font-black text-slate-700">{Math.round((item.value / history.length) * 100) || 0}%</span>
+                        <span className="text-xs font-black text-slate-700">{Math.round((item.value / (history.length || 1)) * 100)}%</span>
                     </div>
                 ))}
              </div>
@@ -383,6 +414,91 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick }) => {
           </div>
       </div>
 
+      {/* POPUP DE DÉTAIL "SANTÉ DE LA BASE" */}
+      {selectedHealthFilter && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl flex flex-col animate-scale-up">
+            
+            {/* Header Modal */}
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${
+                   selectedHealthFilter === 'fresh' ? 'bg-emerald-50 text-emerald-500' :
+                   selectedHealthFilter === 'warning' ? 'bg-amber-50 text-amber-500' :
+                   'bg-rose-50 text-rose-500'
+                }`}>
+                  <i className={`fa-solid ${
+                    selectedHealthFilter === 'fresh' ? 'fa-check-circle' :
+                    selectedHealthFilter === 'warning' ? 'fa-clock' :
+                    'fa-triangle-exclamation'
+                  }`}></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">
+                    Procédures {
+                      selectedHealthFilter === 'fresh' ? 'Fraîches' :
+                      selectedHealthFilter === 'warning' ? 'À Vérifier' :
+                      'Obsolètes'
+                    }
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {getFilteredProcedures().length} document(s) trouvé(s)
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedHealthFilter(null)}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
+              >
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+
+            {/* List Modal */}
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <div className="space-y-3">
+                {getFilteredProcedures().length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-slate-400 text-sm italic">Aucune procédure dans cette catégorie.</p>
+                  </div>
+                ) : (
+                  getFilteredProcedures().map(proc => (
+                    <div key={proc.id} className="group bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded-2xl p-4 flex items-center justify-between transition-all">
+                      <div className="flex items-center gap-4">
+                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm group-hover:text-indigo-500 transition-colors">
+                            <i className="fa-solid fa-file-pdf"></i>
+                         </div>
+                         <div>
+                            <p className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proc.title}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
+                              {proc.category} • Mis à jour le {new Date(proc.updated_at || proc.createdAt).toLocaleDateString()}
+                            </p>
+                         </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setSelectedHealthFilter(null);
+                          onSelectProcedure?.(proc);
+                        }}
+                        className="px-4 py-2 bg-white text-slate-600 hover:bg-indigo-600 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border border-slate-100 transition-all"
+                      >
+                         Voir
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                 Procedio Intelligence Automatisée
+               </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

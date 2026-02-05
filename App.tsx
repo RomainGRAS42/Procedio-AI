@@ -347,7 +347,15 @@ const App: React.FC = () => {
       case "account":
         return <Account user={user} onGoToReset={() => {}} />;
       case "statistics":
-        return <Statistics onUploadClick={() => setCurrentView("upload")} />;
+        return (
+          <Statistics 
+            onUploadClick={() => setCurrentView("upload")} 
+            onSelectProcedure={(p) => {
+              setSelectedProcedure(p);
+              setCurrentView("procedure-detail");
+            }}
+          />
+        );
       case "team":
         return <Team user={user} />;
       case "history":
