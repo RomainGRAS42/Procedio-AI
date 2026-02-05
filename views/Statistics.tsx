@@ -331,15 +331,21 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
                         <i className="fa-solid fa-arrow-trend-up"></i> Top Consultations
                     </h4>
                     {topConsultations.map((doc, i) => (
-                        <div key={doc.id} className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group border border-transparent hover:border-indigo-100">
+                        <div 
+                            key={doc.id} 
+                            onClick={() => onSelectProcedure?.(doc)}
+                            className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group border border-transparent hover:border-indigo-100 cursor-pointer"
+                        >
                             <div className="flex items-center gap-4">
                                 <span className="text-2xl font-black text-slate-200 group-hover:text-indigo-200 transition-colors">#{i+1}</span>
                                 <div>
-                                    <p className="font-bold text-slate-800 text-sm line-clamp-1">{doc.title}</p>
+                                    <p className="font-bold text-slate-800 text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">{doc.title}</p>
                                     <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">{doc.category}</p>
                                 </div>
                             </div>
-                            <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">{doc.views} vues</span>
+                            <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">
+                                {doc.views} vues
+                            </span>
                         </div>
                     ))}
                 </div>
@@ -352,7 +358,8 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
                     {toRewrite.map((doc: any, i) => (
                         <div 
                           key={doc.id} 
-                          className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:border-rose-200 hover:shadow-lg transition-all group relative cursor-help"
+                          onClick={() => onSelectProcedure?.(doc)}
+                          className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:border-rose-200 hover:shadow-lg transition-all group relative cursor-pointer"
                           title={`Priorité : ${Math.round(doc.rewriteScore)} - Raison : ${doc.reason}`}
                         >
                              <div>
@@ -361,7 +368,10 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
                                   {doc.reason} • {new Date(doc.updated_at || doc.createdAt).toLocaleDateString()}
                                 </p>
                             </div>
-                            <span className="text-[10px] font-bold text-rose-400">Prio {Math.round(doc.rewriteScore)}</span>
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-bold text-rose-400">Prio {Math.round(doc.rewriteScore)}</span>
+                                <i className="fa-solid fa-chevron-right text-[8px] text-slate-300 group-hover:text-rose-400 transition-colors"></i>
+                            </div>
                         </div>
                     ))}
                 </div>
