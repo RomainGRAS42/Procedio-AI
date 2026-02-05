@@ -937,6 +937,92 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
 
+      {/* Annonce Équipe Compacte */}
+      <section className={`bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col gap-4 animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100 shadow-indigo-50"}`}>
+        {loadingAnnouncement ? (
+          <div className="flex items-center justify-center gap-4 py-2">
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement de l'annonce...</span>
+          </div>
+        ) : isEditing ? (
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                  Édition de l'annonce équipe
+                </h4>
+                <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-rose-500">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div className="flex gap-4">
+                <textarea
+                    className="flex-1 h-20 p-4 bg-slate-50 border border-indigo-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="Message..."
+                />
+                <div className="flex flex-col gap-2 justify-between">
+                     <button
+                        onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${requiresConfirmation ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-white border-slate-100 text-slate-300"}`}
+                        title="Demander confirmation de lecture"
+                     >
+                        <i className={`fa-solid ${requiresConfirmation ? "fa-bell" : "fa-bell-slash"}`}></i>
+                     </button>
+                     <button
+                        onClick={handleSaveAnnouncement}
+                        disabled={saving || !editContent.trim()}
+                        className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-slate-900 transition-all disabled:opacity-50"
+                     >
+                        <i className="fa-solid fa-paper-plane"></i>
+                     </button>
+                </div>
+              </div>
+            </div>
+        ) : (
+          <div className="flex items-center justify-between gap-6">
+             <div className="flex items-center gap-4 flex-1">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-sm border border-indigo-100">
+                  {announcement?.author_initials || "??"}
+                </div>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-0.5">
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Annonce • {announcement?.author_name}</span>
+                       <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                       <span className="text-[9px] font-bold text-slate-300 uppercase">
+                         {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
+                       </span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-700 leading-snug">"{announcement?.content}"</p>
+                </div>
+             </div>
+             
+             <div className="flex items-center gap-3 shrink-0">
+                {user.role === UserRole.MANAGER && (
+                    <button onClick={() => setIsEditing(true)} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center">
+                        <i className="fa-solid fa-pen text-xs"></i>
+                    </button>
+                )}
+                
+                {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
+                    <button
+                      onClick={handleMarkAsRead}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-indigo-100 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="hidden sm:inline">Lu et compris</span>
+                      <i className="fa-solid fa-check"></i>
+                    </button>
+                )}
+                {isRead && (
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center" title={`Lu le ${formatDate(new Date().toISOString())}`}>
+                        <i className="fa-solid fa-check-double text-xs"></i>
+                    </div>
+                )}
+             </div>
+          </div>
+        )}
+      </section>
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
         <div className="flex-1 space-y-8">
@@ -1101,144 +1187,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        <section
-          className={`relative border border-slate-100 rounded-[3rem] p-10 flex flex-col justify-between items-start gap-10 transition-all duration-500 ${
-            isRead ? "bg-slate-50 opacity-60" : "bg-white shadow-xl shadow-indigo-500/5"
-          }`}>
-          {loadingAnnouncement ? (
-            <div className="w-full py-10 flex items-center justify-center gap-4">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Récupération de l'annonce...
-              </span>
-            </div>
-          ) : isEditing ? (
-            <div className="w-full space-y-6">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
-                  Édition de l'annonce équipe
-                </h4>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="text-slate-400 hover:text-rose-500 transition-colors">
-                  <i className="fa-solid fa-xmark"></i>
-                </button>
-              </div>
-              <textarea
-                className="w-full h-32 p-6 bg-slate-50 border-2 border-indigo-100 rounded-3xl focus:bg-white focus:border-indigo-500 outline-none resize-none font-bold text-slate-700 text-lg transition-all"
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                placeholder="Écrivez votre message à l'équipe ici..."
-              />
-              <div className="flex items-center justify-between gap-4 bg-slate-50/80 p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-5">
-                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
-                    <i className={`fa-solid ${requiresConfirmation ? "fa-bell text-indigo-500" : "fa-bell-slash text-slate-300"}`}></i>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest leading-none">
-                      Demander une confirmation de lecture
-                    </span>
-                    <span className="text-[9px] font-bold text-slate-400 mt-1.5">
-                      {requiresConfirmation ? "Exige un clic 'Lu et compris' du technicien" : "Message informatif simple sans validation"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setRequiresConfirmation(!requiresConfirmation)}
-                    className={`relative w-11 h-6 rounded-full transition-all duration-300 outline-none ml-2 ${
-                      requiresConfirmation ? "bg-indigo-600 shadow-md shadow-indigo-100" : "bg-slate-200"
-                    }`}>
-                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 transform ${
-                      requiresConfirmation ? "translate-x-5" : "translate-x-0 shadow-sm"
-                    }`} />
-                  </button>
-                </div>
-                
-                <button
-                  onClick={handleSaveAnnouncement}
-                  disabled={saving || !editContent.trim()}
-                  className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-indigo-200 disabled:opacity-50 transition-all active:scale-95 group flex items-center gap-3">
-                  {saving ? "Publication..." : "Publier l'annonce"}
-                  <i className="fa-solid fa-paper-plane text-[8px] group-hover:translate-x-1 transition-transform"></i>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-6 w-full">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-xl border border-indigo-100">
-                  {announcement?.author_initials || "??"}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                      Annonce Équipe • Par {announcement?.author_name}
-                    </h4>
-                    {user.role === UserRole.MANAGER && (
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="text-[10px] font-black text-indigo-500 hover:text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                        <i className="fa-solid fa-pen-to-square"></i> Modifier
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xl font-semibold leading-relaxed tracking-tight text-slate-700 mt-2">
-                    "{announcement?.content}"
-                  </p>
-                </div>
-              </div>
-              <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest whitespace-nowrap">
-                    Posté le{" "}
-                    {announcement
-                      ? new Date(announcement.created_at).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "long",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "..."}
-                  </span>
-                  {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50/50 rounded-lg border border-indigo-100/50 animate-fade-in">
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest leading-none">
-                        Le manager attend une confirmation de lecture
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-4 self-end sm:self-auto">
-                  {!announcement?.requires_confirmation && !isRead && (
-                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl">
-                      <i className="fa-solid fa-info-circle"></i> Information
-                    </span>
-                  )}
-                  {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
-                    <button
-                      onClick={handleMarkAsRead}
-                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-100 transition-all active:scale-95 group flex items-center gap-2">
-                      <span>Lu et compris</span>
-                      <i className="fa-solid fa-check text-[8px] transform group-hover:scale-125 transition-transform"></i>
-                    </button>
-                  )}
-                  {isRead && (
-                    <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-                      <i className="fa-solid fa-circle-check"></i> Lu et notifié
-                    </span>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-
-
-
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStats.map((stat, idx) => (
           <article
             key={idx}
