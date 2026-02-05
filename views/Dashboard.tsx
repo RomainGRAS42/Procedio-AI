@@ -170,6 +170,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchActivities();
       fetchPersonalStats();
       fetchTrendProcedure();
+      fetchLatestAnnouncement();
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
