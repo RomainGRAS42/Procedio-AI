@@ -918,16 +918,20 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </section>
           ) : (
-            <div className="space-y-6 w-full">
-              {/* Widget 1: Health Chart */}
-              <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-6">
-                 <div className="flex-1 min-h-[200px] w-full relative">
-                    <ResponsiveContainer width="100%" height={200}>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full animate-fade-in">
+              {/* Widget 1: Health Chart (2/3 width) */}
+              <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i className="fa-solid fa-heart-pulse text-9xl text-slate-200 transform rotate-12"></i>
+                 </div>
+                 
+                 <div className="flex-1 min-h-[220px] w-full relative z-10">
+                    <ResponsiveContainer width="100%" height={220}>
                         <PieChart>
                             <Pie
                                 data={healthData}
-                                innerRadius={50}
-                                outerRadius={70}
+                                innerRadius={60}
+                                outerRadius={80}
                                 paddingAngle={5}
                                 dataKey="value"
                             >
@@ -936,53 +940,86 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 ))}
                             </Pie>
                             <RechartsTooltip 
-                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                itemStyle={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: '#334155' }}
+                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                itemStyle={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: '#1e293b' }}
                             />
                         </PieChart>
                     </ResponsiveContainer>
                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="text-center">
-                            <span className="block text-2xl font-black text-slate-800">{allProcedures.length}</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Docs</span>
+                            <span className="block text-3xl font-black text-slate-800 tracking-tighter">{allProcedures.length}</span>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Docs</span>
                         </div>
                     </div>
                  </div>
-                 <div className="flex-1 space-y-3 w-full">
-                    <h4 className="font-bold text-slate-900 text-sm mb-2">Santé du Patrimoine</h4>
-                    {healthData.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{item.name}</span>
-                            </div>
-                            <span className="text-xs font-black text-slate-700">{Math.round((item.value / (allProcedures.length || 1)) * 100)}%</span>
-                        </div>
-                    ))}
+                 
+                 <div className="flex-1 space-y-6 w-full z-10">
+                    <div>
+                      <h4 className="font-black text-slate-900 text-lg tracking-tight mb-1">Santé de la Base</h4>
+                      <p className="text-xs font-medium text-slate-400">Répartition par fraîcheur des contenus.</p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {healthData.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white" style={{ backgroundColor: item.color }}></div>
+                                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{item.name}</span>
+                              </div>
+                              <span className="text-sm font-black text-slate-800">{Math.round((item.value / (allProcedures.length || 1)) * 100)}%</span>
+                          </div>
+                      ))}
+                    </div>
                  </div>
               </div>
 
-              {/* Widget 2: Missed Opportunities Mini-Grid */}
-              <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm">
-                 <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-bold text-slate-900 text-sm">Manques Identifiés</h4>
-                    <span className="bg-rose-50 text-rose-600 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">{missedOpportunities.length} sujets</span>
+              {/* Widget 2: Missed Opportunities Mini-Grid (1/3 width) */}
+              <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl shadow-slate-900/10 flex flex-col justify-between relative overflow-hidden">
+                 {/* Decorative BG */}
+                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div>
+                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
+
+                 <div className="relative z-20 mb-6">
+                    <div className="flex items-center justify-between mb-6">
+                       <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-rose-400 border border-slate-700 shadow-lg">
+                          <i className="fa-solid fa-magnifying-glass-chart"></i>
+                       </div>
+                       <span className="bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-rose-500/20">
+                         {missedOpportunities.length} Alertes
+                       </span>
+                    </div>
+                    <h4 className="font-black text-white text-lg tracking-tight mb-2">Opportunités</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Ces termes sont recherchés par votre équipe mais ne donnent aucun résultat.
+                    </p>
                  </div>
-                 <div className="grid grid-cols-2 gap-3">
-                    {missedOpportunities.slice(0, 2).map((item, idx) => (
-                        <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100 hover:border-rose-200 transition-colors group cursor-pointer" onClick={onUploadClick}>
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded uppercase">{item.count} Ech.</span>
+
+                 <div className="relative z-20 space-y-3 mb-6">
+                    {missedOpportunities.slice(0, 3).map((item, idx) => (
+                        <div key={idx} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 flex items-center justify-between group hover:bg-slate-800 transition-all cursor-pointer" onClick={onUploadClick}>
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <i className="fa-solid fa-triangle-exclamation text-rose-500 text-[10px]"></i>
+                                <span className="font-bold text-slate-300 text-xs truncate group-hover:text-white transition-colors">"{item.term}"</span>
                             </div>
-                            <p className="font-bold text-slate-700 text-xs line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors">"{item.term}"</p>
+                            <span className="text-[9px] font-black text-slate-500">{item.count}</span>
                         </div>
                     ))}
+                    {missedOpportunities.length === 0 && (
+                      <div className="p-4 rounded-xl border border-dashed border-slate-700 text-center">
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">RAS • Tout est couvert</p>
+                      </div>
+                    )}
                  </div>
-                 {missedOpportunities.length > 0 && (
-                     <button onClick={onUploadClick} className="w-full mt-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
-                        <i className="fa-solid fa-plus mr-2"></i> Combler un manque
-                     </button>
-                 )}
+
+                 <button 
+                    onClick={onUploadClick} 
+                    className="relative z-20 w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 transition-all group flex items-center justify-center gap-2"
+                 >
+                    <span>Créer maintenant</span>
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-plus text-[8px]"></i>
+                    </div>
+                 </button>
               </div>
             </div>
           )}
