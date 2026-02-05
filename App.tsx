@@ -170,17 +170,20 @@ const App: React.FC = () => {
           .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
     };
-    window.addEventListener("beforeunload", handleUnload);
-
-    // Nettoyage drastique au chargement de la page (demande utilisateur)
-    // Cela garantit qu'on repart de zéro à chaque visite/rafraîchissement
-    localStorage.clear();
-    sessionStorage.clear();
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c
-        .replace(/^ +/, "")
-        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-    });
+    // Nettoyage drastique au chargement de la page (UNIQUEMENT si on n'a pas de session active)
+    const checkAndClear = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+      }
+    };
+    checkAndClear();
 
     const initApp = async () => {
       // Timeout de sécurité pour éviter le blocage infini (restauré à 10s pour prod)
@@ -503,7 +506,13 @@ const ProcedureDetailWrapper: React.FC<{ user: User }> = ({ user }) => {
       
       const { data, error } = await query.maybeSingle();
       
-      if (data) setProcedure(data);
+      if (data) {
+        // IMPORTANT : Mapper explicitement l'UUID vers l'ID attendu par le composant
+        setProcedure({
+          ...data,
+          id: data.uuid
+        });
+      }
       setLoading(false);
     };
     fetchProcedure();
