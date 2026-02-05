@@ -58,6 +58,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  // État de la vue (Personnel vs Équipe)
+  const [viewMode, setViewMode] = useState<"personal" | "team">("personal");
+
+  // Stats personnelles
+  const [personalStats, setPersonalStats] = useState({
+    consultations: 0,
+    suggestions: 0,
+    notes: 0
+  });
+
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState({
     searchGaps: 0,
@@ -65,7 +75,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     usage: 0
   });
 
-  const stats = user.role === UserRole.MANAGER ? [
+  const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
     {
       label: "Opportunités Manquées",
       value: managerKPIs.searchGaps.toString(),
@@ -98,25 +108,28 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   ] : [
     {
-      label: "Consultations",
-      value: "42",
+      label: viewMode === "personal" ? "Mes Consultations" : "Consultations Équipe",
+      value: viewMode === "personal" ? personalStats.consultations.toString() : managerKPIs.usage.toString(),
       icon: "fa-book-open",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
+      desc: viewMode === "personal" ? "Tes lectures" : "Lectures totales",
     },
     {
-      label: "Suggestions",
-      value: pendingSuggestions.length.toString(),
+      label: viewMode === "personal" ? "Mon Impact" : "Suggestions",
+      value: viewMode === "personal" ? personalStats.suggestions.toString() : pendingSuggestions.length.toString(),
       icon: "fa-check-circle",
       color: "text-emerald-600",
       bg: "bg-emerald-50",
+      desc: viewMode === "personal" ? "Suggs validées" : "Total à traiter",
     },
     {
       label: "Mes Notes",
-      value: "12",
+      value: personalStats.notes.toString(),
       icon: "fa-note-sticky",
       color: "text-cyan-600",
       bg: "bg-cyan-50",
+      desc: "Notes perso",
     },
   ];
 
@@ -127,12 +140,51 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchLatestAnnouncement();
       fetchRecentProcedures();
       fetchActivities();
+      fetchPersonalStats();
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
       }
     }
   }, [user?.id, user?.role]);
+
+  const fetchPersonalStats = async () => {
+    try {
+      // 1. Consultations Perso
+      const { count: consultCount } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .ilike('title', 'CONSULTATION_%');
+
+      // 2. Suggestions Impact (Validées par le technicien / ou proposées)
+      const { count: suggCount } = await supabase
+        .from('procedure_suggestions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'approved');
+
+      // 3. Vraies Notes
+      const { data: allNotes } = await supabase
+        .from('notes')
+        .select('title')
+        .eq('user_id', user.id);
+      
+      const realNotesCount = allNotes?.filter(n => 
+        !n.title.startsWith('LOG_') && 
+        !n.title.startsWith('CONSULTATION_') && 
+        !n.title.startsWith('SUGGESTION_')
+      ).length || 0;
+
+      setPersonalStats({
+        consultations: consultCount || 0,
+        suggestions: suggCount || 0,
+        notes: realNotesCount
+      });
+    } catch (err) {
+      console.error("Erreur stats personnelles:", err);
+    }
+  };
 
   const fetchManagerKPIs = async () => {
     try {
@@ -535,18 +587,48 @@ const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="space-y-10 animate-slide-up pb-12">
       <section className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="space-y-2 text-center md:text-left">
-          <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-3">
-            {new Date()
-              .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
-              .toUpperCase()}
-          </p>
-          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
-            Bonjour, <span className="text-indigo-600">{user.firstName}</span>
-          </h2>
-          <p className="text-slate-400 font-medium text-lg">
-            Prêt à simplifier le support IT aujourd'hui ?
-          </p>
+        {/* Titre & Toggle de vue */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2 text-center md:text-left">
+            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-3">
+              {new Date()
+                .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
+                .toUpperCase()}
+            </p>
+            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">
+              Bonjour, <span className="text-indigo-600">{user.firstName}</span>
+            </h1>
+            <p className="text-slate-400 font-medium text-lg ml-1">
+              {viewMode === "personal" 
+                ? "Prêt à piloter tes propres missions aujourd'hui ?" 
+                : "Prêt à simplifier le support IT de l'équipe aujourd'hui ?"
+              }
+            </p>
+          </div>
+
+          {/* Toggle Perso / Équipe */}
+          <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center shadow-inner self-center md:self-end">
+            <button
+              onClick={() => setViewMode("personal")}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                viewMode === "personal" 
+                ? "bg-white text-indigo-600 shadow-md scale-100" 
+                : "text-slate-400 hover:text-slate-600 scale-95"
+              }`}
+            >
+              <i className="fa-solid fa-user mr-2"></i> Personnel
+            </button>
+            <button
+              onClick={() => setViewMode("team")}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                viewMode === "team" 
+                ? "bg-white text-indigo-600 shadow-md scale-100" 
+                : "text-slate-400 hover:text-slate-600 scale-95"
+              }`}
+            >
+              <i className="fa-solid fa-users mr-2"></i> Équipe
+            </button>
+          </div>
         </div>
       </section>
 
