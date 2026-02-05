@@ -345,7 +345,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         setHealthData([
             { name: 'Fraîches', id: 'fresh', value: fresh, color: '#10b981' }, 
-            { name: 'À vérifier', id: 'warning', value: warning, color: '#f59e0b' }, 
+            { name: 'À vérifier', id: 'verify', value: warning, color: '#f59e0b' }, 
             { name: 'Obsolètes', id: 'obsolete', value: obsolete, color: '#ef4444' } 
         ]);
       }
