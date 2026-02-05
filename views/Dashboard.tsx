@@ -973,52 +973,49 @@ const Dashboard: React.FC<DashboardProps> = ({
                  </div>
               </div>
 
-              {/* Widget 2: Missed Opportunities Mini-Grid (1/3 width) */}
-              <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl shadow-slate-900/10 flex flex-col justify-between relative overflow-hidden">
+              {/* Widget 2: Missed Opportunities Mini-Grid (1/3 width) - Light Theme */}
+              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
                  {/* Decorative BG */}
-                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div>
-                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
+                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-rose-50 rounded-full blur-[80px] opacity-60"></div>
 
                  <div className="relative z-20 mb-6">
                     <div className="flex items-center justify-between mb-6">
-                       <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-rose-400 border border-slate-700 shadow-lg">
+                       <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 border border-rose-100 shadow-sm">
                           <i className="fa-solid fa-magnifying-glass-chart"></i>
                        </div>
-                       <span className="bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-rose-500/20">
+                       <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-rose-100">
                          {missedOpportunities.length} Alertes
                        </span>
                     </div>
-                    <h4 className="font-black text-white text-lg tracking-tight mb-2">Opportunités</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h4 className="font-black text-slate-900 text-lg tracking-tight mb-2">Opportunités</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed font-medium">
                       Ces termes sont recherchés par votre équipe mais ne donnent aucun résultat.
                     </p>
                  </div>
 
                  <div className="relative z-20 space-y-3 mb-6">
                     {missedOpportunities.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 flex items-center justify-between group hover:bg-slate-800 transition-all cursor-pointer" onClick={onUploadClick}>
+                        <div key={idx} className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between group/item hover:border-rose-200 hover:shadow-md transition-all cursor-pointer" onClick={onUploadClick}>
                             <div className="flex items-center gap-3 overflow-hidden">
-                                <i className="fa-solid fa-triangle-exclamation text-rose-500 text-[10px]"></i>
-                                <span className="font-bold text-slate-300 text-xs truncate group-hover:text-white transition-colors">"{item.term}"</span>
+                                <i className="fa-solid fa-triangle-exclamation text-rose-400 text-[10px] group-hover/item:text-rose-600 transition-colors"></i>
+                                <span className="font-bold text-slate-600 text-xs truncate group-hover/item:text-slate-900 transition-colors">"{item.term}"</span>
                             </div>
-                            <span className="text-[9px] font-black text-slate-500">{item.count}</span>
+                            <span className="text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg group-hover/item:bg-rose-50 group-hover/item:text-rose-600 transition-colors">{item.count}</span>
                         </div>
                     ))}
                     {missedOpportunities.length === 0 && (
-                      <div className="p-4 rounded-xl border border-dashed border-slate-700 text-center">
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">RAS • Tout est couvert</p>
+                      <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center bg-slate-50/50">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">RAS • Tout est couvert</p>
                       </div>
                     )}
                  </div>
 
                  <button 
                     onClick={onUploadClick} 
-                    className="relative z-20 w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 transition-all group flex items-center justify-center gap-2"
+                    className="relative z-20 w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-600 hover:shadow-lg hover:shadow-indigo-50 transition-all group flex items-center justify-center gap-2"
                  >
                     <span>Créer maintenant</span>
-                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <i className="fa-solid fa-plus text-[8px]"></i>
-                    </div>
+                    <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform"></i>
                  </button>
               </div>
             </div>
