@@ -114,28 +114,25 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     fetchHistory();
   }, [procedure, procedure.id, procedure.fileUrl]);
 
-  const fetchHistory = async (procedureIdOverride?: number) => {
-    const targetProcedureId =
-      procedureIdOverride ||
-      realProcedureId ||
-      (typeof procedure.id === "number" || /^\d+$/.test(String(procedure.id))
-        ? Number(procedure.id)
-        : null);
-
-    if (!targetProcedureId) return;
+  const fetchHistory = async () => {
+    // We prioritize UUID for consistency in joins
+    const targetUuid = procedure.db_id || (typeof procedure.id === "string" && procedure.id.includes('-') ? procedure.id : null);
+    
+    if (!targetUuid) {
+      console.warn("⚠️ fetchHistory: No UUID found for procedure", procedure.id);
+      return;
+    }
 
     setLoadingHistory(true);
     try {
       const { data, error } = await supabase
         .from("procedure_suggestions")
-        .select(
-          `
+        .select(`
           *,
           user:user_profiles!user_id(first_name, last_name),
           manager:user_profiles!manager_id(first_name)
-        `
-        )
-        .eq("procedure_id", targetProcedureId)
+        `)
+        .eq("procedure_id", targetUuid)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -373,28 +370,23 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     if (!suggestionContent.trim()) return;
     setIsSubmittingSuggestion(true);
 
-    // Utilisation de l'ID réel s'il a été récupéré, sinon fallback sur procedure.id (si numérique)
-    const targetProcedureId = realProcedureId || procedure.db_id || procedure.id;
+    // CRITICAL: We MUST use the UUID for the procedure_id foreign key
+    const targetUuid = procedure.db_id || (typeof procedure.id === "string" && procedure.id.includes('-') ? procedure.id : null);
 
-    if (!targetProcedureId) {
-      console.error(
-        "❌ Impossible d'envoyer la suggestion : ID de procédure invalide (ni numérique, ni récupéré).",
-        procedure.id
-      );
-      // ERROR: Still close modal because staying won't fix a missing ID
-      setIsSuggestionModalOpen(false);
-      setNotification({ msg: "Erreur technique : Procédure non identifiée.", type: "error" });
+    if (!targetUuid) {
+      console.error("❌ handleSubmitSuggestion: Missing procedure UUID", procedure.id);
+      setNotification({ msg: "Erreur technique : ID procédure manquant.", type: "error" });
       setIsSubmittingSuggestion(false);
       setTimeout(() => setNotification(null), 3000);
       return;
     }
 
     try {
-      // 1. Insertion de la suggestion avec tous les champs
+      // 1. Insertion de la suggestion
       const { data: newSuggestion, error } = await supabase
         .from("procedure_suggestions")
         .insert({
-          procedure_id: targetProcedureId,
+          procedure_id: targetUuid,
           user_id: user.id,
           suggestion: suggestionContent,
           type: suggestionType,
@@ -407,24 +399,24 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       if (error) throw error;
 
-      // SUCCESS: Close modal early for UI responsiveness
       setIsSuggestionModalOpen(false);
       setSuggestionContent("");
-      setNotification({ msg: "Suggestion envoyée au manager !", type: "success" });
+      setNotification({ msg: "Suggestion envoyée !", type: "success" });
 
-      fetchHistory(); // Rafraîchir l'historique
+      fetchHistory(); // Refresh history immediately
 
+      // Log for Manager notification
       await supabase.from("notes").insert({
         user_id: user.id,
-        procedure_id: targetProcedureId,
+        procedure_id: targetUuid,
         title: `LOG_SUGGESTION_${newSuggestion.id}`,
-        content: `${user.firstName || "Un technicien"} a proposé une modification sur : ${procedure.title}`,
+        content: `${user.firstName} a proposé une modification sur : ${procedure.title}`,
         viewed: false,
       });
 
       setTimeout(() => setNotification(null), 3000);
     } catch (err) {
-      console.error("Erreur suggestion:", err);
+      console.error("Erreur submission suggestion:", err);
       setNotification({ msg: "Erreur lors de l'envoi.", type: "error" });
       setTimeout(() => setNotification(null), 3000);
     } finally {

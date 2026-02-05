@@ -56,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [loadingActivities, setLoadingActivities] = useState(false);
 
   // Toast Notification State
-  const [toast, setToast] = useState<{ title?: string; message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState({
@@ -127,33 +127,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchLatestAnnouncement();
       fetchRecentProcedures();
       fetchActivities();
-      
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
-
-        // Real-time listener for manager
-        const channel = supabase
-          .channel('dashboard-manager-updates')
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'notes' },
-            () => {
-              fetchActivities(); // Refresh feed on any new log
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'procedure_suggestions' },
-            () => {
-              fetchSuggestions(); // Refresh suggestions list on any change
-            }
-          )
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
       }
     }
   }, [user?.id, user?.role]);
@@ -192,47 +168,60 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const openSuggestionById = async (id: string) => {
+    console.log("🔍 Dashboard: Opening suggestion detail for ID:", id);
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
+    
     if (!sugg) {
-        // Vérifier si l'ID ressemble à un UUID avant de requêter pour éviter l'erreur 400
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-        
-        if (isUUID) {
-          const { data, error } = await supabase
-            .from("procedure_suggestions")
-            .select(`
-              id, suggestion, type, priority, created_at, status, user_id, procedure_id,
-              user:user_profiles!user_id(first_name, last_name, avatar_url),
-              procedure:procedures!procedure_id(title)
-            `)
-            .eq("id", id)
-            .single();
-          if (!error && data) {
-            sugg = {
-              id: data.id,
-              content: data.suggestion,
-              status: data.status,
-              createdAt: data.created_at,
-              type: data.type,
-              priority: data.priority,
-              userName: data.user ? `${(data.user as any).first_name} ${(data.user as any).last_name}` : "Inconnu",
-              procedureTitle: data.procedure ? (data.procedure as any).title : "Procédure inconnue",
-              user_id: data.user_id,
-              procedure_id: data.procedure_id,
-            };
-          }
+      console.log("🔍 Dashboard: Suggestion not found in local state, fetching from DB...");
+      try {
+        const { data, error } = await supabase
+          .from("procedure_suggestions")
+          .select(`
+            *,
+            user:user_profiles!user_id(first_name, last_name, avatar_url),
+            procedure:procedures!procedure_id(title)
+          `)
+          .eq("id", id)
+          .single();
+
+        if (error) {
+          console.error("❌ Dashboard: Error fetching suggestion detail:", error);
+          throw error;
         }
+
+        if (data) {
+          sugg = {
+            id: data.id,
+            content: data.suggestion,
+            status: data.status,
+            createdAt: data.created_at,
+            type: data.type,
+            priority: data.priority,
+            userName: data.user ? `${data.user.first_name} ${data.user.last_name}` : "Inconnu",
+            procedureTitle: data.procedure ? data.procedure.title : "Procédure inconnue",
+            user_id: data.user_id,
+            procedure_id: data.procedure_id,
+            managerResponse: data.manager_response,
+            respondedAt: data.responded_at
+          };
+        }
+      } catch (err) {
+        console.error("❌ Dashboard: Catch error in openSuggestionById:", err);
+      }
     }
+
     if (!sugg) {
+      console.warn("⚠️ Dashboard: Suggestion truly not found or fetch failed.");
       sugg = {
         id,
-        content: "Impossible de charger le détail de la suggestion pour le moment.",
+        content: "Impossible de charger le détail de la suggestion pour le moment. L'ID est peut-être invalide ou l'enregistrement a été supprimé.",
         status: "pending",
         createdAt: new Date().toISOString(),
         userName: "Inconnu",
         procedureTitle: "Procédure inconnue",
       };
     }
+
     setSelectedSuggestion(sugg);
     setShowSuggestionModal(true);
     onActionHandled?.();
@@ -254,7 +243,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
-        .or("title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%")
+        .or("title.ilike.LOG_READ_%")
         .order("created_at", { ascending: false })
         .limit(5);
       if (data) setActivities(data);
@@ -318,83 +307,76 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleUpdateStatus = async (status: "approved" | "rejected") => {
     if (!selectedSuggestion) return;
 
-    // Validation : le commentaire du manager est obligatoire
     if (!managerResponse.trim()) {
       setToast({
-        title: "Commentaire requis",
-        message: "Veuillez fournir une réponse au technicien avant de valider ou rejeter la suggestion.",
-        type: "error"
-      });
-      return;
-    }
-
-    // Sécurité : ne pas essayer de mettre à jour si la suggestion n'est pas identifiée
-    if (!selectedSuggestion.id || selectedSuggestion.procedureTitle === "Procédure inconnue") {
-      setToast({
-        title: "Action impossible",
-        message: "Cette suggestion est corrompue (identifiant invalide). Veuillez l'effacer.",
+        message: "Veuillez fournir une réponse au technicien.",
         type: "error"
       });
       return;
     }
 
     try {
-      // Mise à jour du statut de la suggestion
+      const now = new Date().toISOString();
+      const managerId = user.id;
+
+      // 1. Update the suggestion record
       const { error: updateError } = await supabase
         .from("procedure_suggestions")
         .update({ 
           status, 
           manager_response: managerResponse,
-          responded_at: new Date().toISOString(),
-          manager_id: user.id
+          responded_at: now,
+          manager_id: managerId
         })
         .eq("id", selectedSuggestion.id);
 
       if (updateError) throw updateError;
 
-      // Créer une notification pour le technicien
-      const { error: notifError } = await supabase
+      // 2. Create a notification response for the technician (UI sync)
+      await supabase
         .from("suggestion_responses")
         .insert({
           suggestion_id: selectedSuggestion.id,
           user_id: selectedSuggestion.user_id,
-          manager_id: user.id,
+          manager_id: managerId,
           status,
-         manager_response: managerResponse,
+          manager_response: managerResponse,
           procedure_title: selectedSuggestion.procedureTitle,
           suggestion_content: selectedSuggestion.content,
           read: false
         });
 
-      if (notifError) throw notifError;
-
-      // Update local state - mettre à jour le statut au lieu de supprimer
+      // 3. Update local state
       setPendingSuggestions((prev) => 
         prev.map((s) => 
           s.id === selectedSuggestion.id 
-            ? { ...s, status, managerResponse, respondedAt: new Date().toISOString() }
+            ? { ...s, status, managerResponse: managerResponse, respondedAt: now }
             : s
         )
       );
+
+      setToast({
+        message: status === 'approved' ? "Suggestion validée avec succès !" : "Suggestion refusée.",
+        type: "info"
+      });
+
       setShowSuggestionModal(false);
       setSelectedSuggestion(null);
       setManagerResponse("");
 
-
-      // Afficher le toast de confirmation
-      setToast({
-        title: status === 'approved' ? 'Suggestion Validée' : 'Suggestion Refusée',
-        message: `Vous avez bien ${status === 'approved' ? 'validé' : 'refusé'} la suggestion de ${selectedSuggestion.userName} sur "${selectedSuggestion.procedureTitle}".`,
-        type: status === 'approved' ? 'success' : 'error'
-      });
-      setTimeout(() => setToast(null), 4000);
+      // 4. Log the action (Activity Feed)
+      await supabase.from("notes").insert([
+        {
+          title: `SUGGESTION_${status.toUpperCase()}`,
+          content: `Suggestion sur "${selectedSuggestion.procedureTitle}" ${status === "approved" ? "validée" : "refusée"} par ${user.firstName}.`,
+          is_protected: false,
+          user_id: managerId,
+          tags: ["SUGGESTION", status.toUpperCase()],
+        },
+      ]);
     } catch (err) {
-      setToast({
-        title: "Erreur Technique",
-        message: "Impossible de mettre à jour le statut. L'ID de suggestion est probablement invalide.",
-        type: "error"
-      });
-      console.error(err);
+      console.error("❌ Dashboard: Error updating suggestion status:", err);
+      setToast({ message: "Erreur lors de la mise à jour.", type: "error" });
     }
   };
 
@@ -410,14 +392,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (error) throw error;
       if (data) {
         setRecentProcedures(
-          data.map((p: any) => ({
-            id: p.file_id || p.uuid,
+          data.map((p) => ({
+            id: p.uuid,
             db_id: p.uuid,
-            file_id: p.file_id || p.uuid,
+            file_id: p.uuid,
             title: p.title || "Sans titre",
             category: p.Type || "GÉNÉRAL",
             fileUrl: p.file_url,
-            pinecone_document_id: p.file_id || p.uuid,
+            pinecone_document_id: p.pinecone_document_id,
             createdAt: p.created_at,
             views: p.views || 0,
             status: p.status || "validated",
@@ -865,16 +847,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div 
                       key={act.id}
                       className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] shrink-0 ${
-                        act.title.startsWith('LOG_SUGGESTION_') 
-                          ? 'bg-amber-50 text-amber-600' 
-                          : 'bg-emerald-50 text-emerald-600'
-                      }`}>
-                        <i className={`fa-solid ${
-                          act.title.startsWith('LOG_SUGGESTION_') 
-                            ? 'fa-lightbulb' 
-                            : 'fa-circle-check'
-                        }`}></i>
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] shrink-0">
+                        <i className="fa-solid fa-circle-check"></i>
                       </div>
                       
                       <div className="flex-1 min-w-0">
@@ -1076,7 +1050,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         document.body
       )}
       <CustomToast
-        title={toast?.title}
         message={toast?.message || ""}
         type={toast?.type || "info"}
         visible={!!toast}
