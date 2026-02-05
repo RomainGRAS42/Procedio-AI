@@ -507,10 +507,18 @@ const ProcedureDetailWrapper: React.FC<{ user: User }> = ({ user }) => {
       const { data, error } = await query.maybeSingle();
       
       if (data) {
-        // IMPORTANT : Mapper explicitement l'UUID vers l'ID attendu par le composant
+        // IMPORTANT : Mapper explicitement pour supporter le camelCase attendu par le composant
         setProcedure({
-          ...data,
-          id: data.uuid
+          id: data.uuid,
+          uuid: data.uuid,
+          file_id: data.file_id || data.uuid,
+          title: data.title || "Sans titre",
+          category: data.Type || "GÉNÉRAL",
+          fileUrl: data.file_url,
+          pinecone_document_id: data.pinecone_document_id,
+          createdAt: data.created_at,
+          views: data.views || 0,
+          status: data.status || "validated",
         });
       }
       setLoading(false);

@@ -237,7 +237,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select('*')
         .eq('is_trend', true)
         .limit(1)
-        .single();
+        .maybeSingle();
       if (data) {
         setTrendProcedure({
           id: data.uuid,
@@ -539,7 +539,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           data.map((p) => ({
             id: p.uuid,
             db_id: p.uuid,
-            file_id: p.uuid,
+            file_id: p.file_id || p.uuid,
             title: p.title || "Sans titre",
             category: p.Type || "GÉNÉRAL",
             fileUrl: p.file_url,
