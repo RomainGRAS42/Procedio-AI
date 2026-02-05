@@ -10,11 +10,12 @@ import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
-import ComplianceHistory from "./views/ComplianceHistory";
+import History from "./views/History";
 import Team from "./views/Team";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
+import ChatAssistant from "./components/ChatAssistant";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -306,8 +307,7 @@ const App: React.FC = () => {
                 setSelectedProcedure(p);
                 setCurrentView("procedure-detail");
               }}
-              onViewHistory={() => setCurrentView("procedures")}
-              onViewComplianceHistory={() => setCurrentView("compliance-history")}
+              onViewHistory={() => setCurrentView("history")}
               targetAction={pendingAction}
               onActionHandled={() => setPendingAction(null)}
             />
@@ -349,11 +349,14 @@ const App: React.FC = () => {
         return <Statistics onUploadClick={() => setCurrentView("upload")} />;
       case "team":
         return <Team user={user} />;
-      case "compliance-history":
+      case "history":
         return (
-          <ComplianceHistory
-            user={user}
+          <History
             onBack={() => setCurrentView("dashboard")}
+            onSelectProcedure={(p) => {
+              setSelectedProcedure(p);
+              setCurrentView("procedure-detail");
+            }}
           />
         );
       case "upload":
@@ -371,7 +374,6 @@ const App: React.FC = () => {
             onQuickNote={() => {}}
             onSelectProcedure={() => {}}
             onViewHistory={() => {}}
-            onViewComplianceHistory={() => {}}
           />
         );
     }
@@ -430,7 +432,6 @@ const App: React.FC = () => {
           <Header
             user={user}
             currentView={currentView}
-            searchTerm={globalSearchTerm}
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
@@ -461,6 +462,16 @@ const App: React.FC = () => {
         <div
           className={`w-2 h-2 rounded-full ${connectionStatus === "ok" ? "bg-emerald-500" : "bg-rose-500"} opacity-50 shadow-sm transition-opacity group-hover:opacity-100`}></div>
       </div>
+
+      {user && (
+        <ChatAssistant 
+          user={user} 
+          onSelectProcedure={(p) => {
+            setSelectedProcedure(p);
+            setCurrentView("procedure-detail");
+          }} 
+        />
+      )}
     </div>
   );
 };
