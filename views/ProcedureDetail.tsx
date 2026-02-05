@@ -707,8 +707,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </button>
 
           {isHistoryExpanded && (
-            <div className="px-8 pb-8 space-y-6 animate-slide-up max-h-[40vh] overflow-y-auto scrollbar-hide">
-              <div className="space-y-4">
+            <div className="px-8 pb-8 space-y-0 animate-slide-up max-h-[60vh] overflow-y-auto scrollbar-hide relative">
+              {/* Timeline Vertical Line */}
+              <div className="absolute left-[3.25rem] top-8 bottom-8 w-0.5 bg-slate-100"></div>
+
+              <div className="space-y-8 relative">
                 {loadingHistory ? (
                   <div className="py-20 flex justify-center">
                     <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
@@ -716,77 +719,76 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 ) : history.length > 0 ? (
                   history.map((item) => {
                     const typeLabels = {
-                      correction: { label: "Correction d'erreur", color: "bg-rose-50 text-rose-600 border-rose-100", icon: "fa-bug" },
-                      update: { label: "MAJ contenu", color: "bg-indigo-50 text-indigo-600 border-indigo-100", icon: "fa-pen-to-square" },
-                      add_step: { label: "Ajout d'étape", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: "fa-plus-circle" }
+                      correction: { label: "Correction", color: "text-rose-600 bg-rose-50 border-rose-100", icon: "fa-bug" },
+                      update: { label: "Mise à jour", color: "text-indigo-600 bg-indigo-50 border-indigo-100", icon: "fa-pen-to-square" },
+                      add_step: { label: "Ajout", color: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: "fa-plus-circle" }
                     };
                     const typeInfo = typeLabels[item.type as keyof typeof typeLabels] || typeLabels.update;
 
                     return (
-                      <div
-                        key={item.id}
-                        className="p-6 rounded-[2rem] bg-white border border-slate-100 hover:shadow-xl hover:translate-x-2 transition-all duration-300 group relative">
-                        {/* Header: Date, Type, Status */}
-                        <div className="flex flex-wrap items-center justify-between gap-4 mb-4 border-b border-slate-50 pb-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-                              {new Date(item.created_at).toLocaleDateString("fr-FR")}
-                            </span>
-                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center gap-1.5 ${typeInfo.color}`}>
-                              <i className={`fa-solid ${typeInfo.icon}`}></i>
-                              {typeInfo.label}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                              item.priority === "high"
-                                ? "bg-rose-50 text-rose-600 border-rose-100"
-                                : item.priority === "medium"
-                                  ? "bg-amber-50 text-amber-600 border-amber-100"
-                                  : "bg-slate-50 text-slate-400 border-slate-100"
-                            }`}>
-                              {item.priority === "high" ? "Urgent" : item.priority === "medium" ? "Moyenne" : "Basse"}
-                            </span>
-                          </div>
-
-                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.1em] ${
-                            item.status === "approved"
-                              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                              : "bg-amber-100 text-amber-700"
-                          }`}>
-                            <i className={`fa-solid ${item.status === "approved" ? "fa-circle-check" : "fa-clock animate-pulse"}`}></i>
-                            {item.status === "approved" ? "Validé" : "En attente"}
-                          </div>
+                      <div key={item.id} className="relative z-10 pl-24 group">
+                        {/* Timeline Node */}
+                        <div className="absolute left-0 top-0 w-12 h-12 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center z-10 group-hover:scale-110 transition-transform hover:border-indigo-200 hover:shadow-md cursor-default">
+                          <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 transition-colors">
+                            {item.user?.first_name ? item.user.first_name.substring(0,2).toUpperCase() : "??"}
+                          </span>
                         </div>
+                        
+                        {/* Connector to Card */}
+                        <div className="absolute left-12 top-6 w-12 h-0.5 bg-slate-100 group-hover:bg-indigo-50 transition-colors"></div>
 
-                        {/* Contenu de la suggestion */}
-                        <div className="relative pl-4 border-l-2 border-slate-100 bg-slate-50/30 p-4 rounded-2xl mb-4">
-                          <span className="absolute -left-1 top-4 w-2 h-2 rounded-full bg-slate-300 ring-4 ring-white"></span>
-                          <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Suggestion de {item.user?.first_name || "Un technicien"} :</span>
-                          <p className="text-sm font-bold text-slate-700 leading-relaxed italic break-words">
-                            "{item.suggestion}"
+                        {/* Content Card */}
+                        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 group-hover:border-indigo-50/50">
+                          {/* Card Header */}
+                          <div className="flex flex-wrap items-center justify-between gap-4 mb-4 border-b border-slate-50 pb-4">
+                             <div className="flex items-center gap-3">
+                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center gap-2 ${typeInfo.color}`}>
+                                  <i className={`fa-solid ${typeInfo.icon}`}></i>
+                                  {typeInfo.label}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400">
+                                   • {new Date(item.created_at).toLocaleDateString("fr-FR", { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                             </div>
+                             
+                             <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${
+                                item.status === "approved" ? "text-emerald-500" : "text-amber-500"
+                             }`}>
+                               <i className={`fa-solid ${item.status === "approved" ? "fa-circle-check" : "fa-clock"}`}></i>
+                               {item.status === "approved" ? "Validé" : "En attente"}
+                             </div>
+                          </div>
+
+                          {/* Description */}
+                          <p className="text-sm font-bold text-slate-700 leading-relaxed italic break-words relative pl-6">
+                            <i className="fa-solid fa-quote-left absolute left-0 top-0 text-slate-200 text-xs"></i>
+                            {item.suggestion}
                           </p>
-                        </div>
 
-                        {/* Réponse du manager (si présente) */}
-                        {item.manager_response && (
-                          <div className="ml-8 mt-4 p-5 rounded-3xl bg-indigo-50/50 border border-indigo-100 relative animate-slide-right">
-                             <div className="absolute -top-3 left-6 px-3 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-[0.2em] rounded-full shadow-sm border border-white">
-                               Réponse de {item.manager?.first_name || "Manager"}
+                          {/* Manager Response */}
+                          {item.manager_response && (
+                             <div className="mt-6 pt-6 border-t border-slate-50 relative animate-fade-in">
+                                <div className="absolute left-6 -top-3 bg-white px-2">
+                                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-lg shadow-indigo-200">
+                                    <i className="fa-solid fa-user-shield"></i>
+                                  </div>
+                                </div>
+                                <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50 ml-2">
+                                  <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                                    <span className="font-black text-indigo-600 uppercase text-[9px] tracking-widest mr-2">Réponse :</span>
+                                    {item.manager_response}
+                                  </p>
+                                </div>
                              </div>
-                             <p className="text-[12px] font-bold text-slate-700 leading-relaxed">
-                               {item.manager_response}
-                             </p>
-                             <div className="flex items-center gap-2 mt-2">
-                               <span className="text-[8px] font-black text-indigo-300 uppercase">Validé le {new Date(item.responded_at || item.created_at).toLocaleDateString("fr-FR")}</span>
-                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })
                 ) : (
                   <div className="py-20 text-center text-slate-300 flex flex-col items-center gap-4">
-                     <i className="fa-solid fa-folder-open text-4xl opacity-20"></i>
-                     <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour le moment.</p>
+                     <i className="fa-solid fa-clipboard-question text-4xl opacity-20"></i>
+                     <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour l'instant</p>
                   </div>
                 )}
               </div>

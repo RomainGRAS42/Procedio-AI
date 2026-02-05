@@ -61,8 +61,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-  // État de la vue (Personnel vs Équipe)
-  const [viewMode, setViewMode] = useState<"personal" | "team">("personal");
+  // État de la vue (Personnel vs Équipe) - Initialisé selon le rôle
+  const [viewMode, setViewMode] = useState<"personal" | "team">(user.role === UserRole.MANAGER ? "team" : "personal");
+
+  // Force update if role changes (though unlikely in session)
+  useEffect(() => {
+    setViewMode(user.role === UserRole.MANAGER ? "team" : "personal");
+  }, [user.role]);
 
   // Stats personnelles
   const [personalStats, setPersonalStats] = useState({
@@ -825,29 +830,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
 
-          {/* Toggle Perso / Équipe */}
-          <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center shadow-inner self-center md:self-end">
-            <button
-              onClick={() => setViewMode("personal")}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                viewMode === "personal" 
-                ? "bg-white text-indigo-600 shadow-md scale-100" 
-                : "text-slate-400 hover:text-slate-600 scale-95"
-              }`}
-            >
-              <i className="fa-solid fa-user mr-2"></i> Personnel
-            </button>
-            <button
-              onClick={() => setViewMode("team")}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                viewMode === "team" 
-                ? "bg-white text-indigo-600 shadow-md scale-100" 
-                : "text-slate-400 hover:text-slate-600 scale-95"
-              }`}
-            >
-              <i className="fa-solid fa-users mr-2"></i> Équipe
-            </button>
-          </div>
+
         </div>
 
         {/* L'éclair du Trend - Uniquement si activé */}
