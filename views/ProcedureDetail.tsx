@@ -149,9 +149,49 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   // State pour stocker l'ID réel de la procédure (PK)
   const [realProcedureId, setRealProcedureId] = useState<number | string | null>(null);
+  const hasIncrementedView = useRef(false);
 
   useEffect(() => {
     fetchHistory();
+    
+    // 🚀 AUTOMATISATION : Incrémentation des vues dès qu'on a l'ID réel
+    if (realProcedureId && !hasIncrementedView.current) {
+      const incrementViews = async () => {
+        hasIncrementedView.current = true;
+        console.log("📈 Tentative d'incrémentation des vues pour:", realProcedureId);
+        
+        try {
+          const isUUID = typeof realProcedureId === 'string' && realProcedureId.includes('-');
+          const rpcName = isUUID ? 'increment_procedure_views_uuid' : 'increment_procedure_views';
+          const paramName = isUUID ? 'row_uuid' : 'row_id';
+
+          const { error: viewError } = await supabase.rpc(rpcName, { 
+            [paramName]: realProcedureId 
+          });
+
+          if (viewError) {
+             console.warn("⚠️ RPC increment failed, trying manual update", viewError);
+             const { error: updateError } = await supabase
+               .from("procedures")
+               .update({ views: (procedure.views || 0) + 1 })
+               .eq(isUUID ? "uuid" : "id", realProcedureId);
+             
+             if (updateError) console.error("❌ Manual view update failed:", updateError);
+          }
+
+          // Log de consultation
+          await supabase.from("notes").insert([{
+            user_id: user.id,
+            title: `CONSULTATION_${procedure.title.substring(0, 50)}`,
+            content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
+            procedure_id: isUUID ? realProcedureId : (procedure.db_id || procedure.uuid || null)
+          }]);
+        } catch (err) {
+          console.error("❌ Error in incrementViews:", err);
+        }
+      };
+      incrementViews();
+    }
   }, [realProcedureId]);
 
   // Sécurité : Récupération de l'ID réel et du pinecone_id
@@ -226,31 +266,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           if (resultData.id) {
             console.log("✅ ID réel procédure trouvé :", resultData.id);
             setRealProcedureId(resultData.id);
-
-            // 🚀 AUTOMATISATION : Incrémentation des vues
-            const incrementViews = async () => {
-               // A. UPDATE procedures
-               const { error: viewError } = await supabase.rpc('increment_procedure_views', { 
-                 row_id: resultData.id 
-               });
-
-               // B. Fallback si RPC n'existe pas encore (incrément manuel)
-               if (viewError) {
-                 await supabase
-                   .from("procedures")
-                   .update({ views: (resultData.views || 0) + 1 })
-                   .eq("id", resultData.id);
-               }
-
-               // C. Log de consultation dans 'notes' pour l'activité
-               await supabase.from("notes").insert([{
-                 user_id: user.id,
-                 title: `CONSULTATION_${resultData.title.substring(0, 50)}`,
-                 content: `${user.firstName} a consulté la procédure "${resultData.title}"`,
-                 procedure_id: resultData.uuid || (typeof resultData.id === 'string' ? resultData.id : null)
-               }]);
-            };
-            incrementViews();
           }
         }
       } catch (err) {
