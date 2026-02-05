@@ -261,25 +261,34 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                           });
 
                           // 2. Si non trouvé, fallback sur Supabase (robuste)
-                          if (!procedure && href.includes('supabase.co')) {
+                          if (!procedure && (href.includes('supabase.co') || href.endsWith('.pdf'))) {
                             try {
                                 // A. Recherche par URL Exacte
                                 let { data } = await supabase
                                   .from('procedures')
                                   .select('*')
                                   .or(`file_url.eq.${href},file_url.eq.${decodedHref}`)
-                                  .maybeSingle(); // Use maybeSingle to avoid error if 0 rows
+                                  .maybeSingle(); 
 
                                 // B. Fallback : Recherche par Titre (Link Text)
                                 if (!data && link.innerText) {
-                                  const title = link.innerText.trim();
+                                  let title = link.innerText.trim();
+                                  // Nettoyer le titre si c'est une URL brute
+                                  if (title.startsWith('http')) {
+                                    // Extraire le nom du fichier de l'URL pour une recherche plus précise
+                                    const parts = title.split('/');
+                                    const fileName = parts[parts.length - 1].replace('.pdf', '').replace(/%20/g, ' ');
+                                    title = fileName;
+                                  }
+
                                   const { data: titleData } = await supabase
                                     .from('procedures')
                                     .select('*')
-                                    .ilike('title', title)
+                                    .ilike('title', `%${title}%`)
+                                    .limit(1)
                                     .maybeSingle();
                                   data = titleData;
-                                  console.log("Fallback title search result:", data);
+                                  console.log("Fallback title search result for:", title, data);
                                 }
                                 
                                 if (data) {
@@ -314,10 +323,27 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                     <p 
                       className="text-sm leading-relaxed whitespace-pre-wrap font-medium" 
                       dangerouslySetInnerHTML={{ 
-                        __html: msg.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                          // On retire target="_blank" ici car on gère le clic manuellement
-                          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all cursor-pointer">$1</a>')
+                        __html: (() => {
+                          let html = msg.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                          
+                          const linkPlaceholders: string[] = [];
+                          // 1. Markdown Links [label](url)
+                          html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+                            linkPlaceholders.push(`<a href="${url}" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all cursor-pointer">${label}</a>`);
+                            return `__LINK_TOKEN_${linkPlaceholders.length - 1}__`;
+                          });
+
+                          // 2. Raw URLs (not inside a markdown link placeholder)
+                          html = html.replace(/(https?:\/\/[^\s<)]+)/g, (url) => {
+                            return `<a href="${url}" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all cursor-pointer">${url}</a>`;
+                          });
+
+                          // 3. Restore Markdown Links
+                          html = html.replace(/__LINK_TOKEN_(\d+)__/g, (_, index) => linkPlaceholders[parseInt(index)]);
+                          
+                          return html;
+                        })()
                       }} 
                     />
                   </div>
