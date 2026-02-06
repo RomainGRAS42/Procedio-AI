@@ -7,8 +7,10 @@ import remarkGfm from "remark-gfm";
 // 🚀 PDF.js Integration
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import { searchPlugin } from '@react-pdf-viewer/search';
+import { zoomPlugin } from '@react-pdf-viewer/zoom';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/search/lib/styles/index.css';
+import '@react-pdf-viewer/zoom/lib/styles/index.css';
 
 interface ProcedureDetailProps {
   procedure: Procedure;
@@ -507,7 +509,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   // 🔍 PDF Search Plugin
   const searchPluginInstance = searchPlugin();
-  const { highlight } = searchPluginInstance;
+  const { highlight, ShowSearchPopover } = searchPluginInstance;
+
+  // 🔎 PDF Zoom Plugin
+  const zoomPluginInstance = zoomPlugin();
+  const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
 
   useEffect(() => {
     // Watch for hash changes (e.g., #search="text")
@@ -698,14 +704,51 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative overflow-hidden flex flex-col group/viewer">
+          {/* FLOATING TOOLBAR */}
+          <div className="absolute top-6 right-6 z-10 flex items-center gap-2 p-2 bg-slate-800/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl opacity-0 group-hover/viewer:opacity-100 transition-all duration-300 translate-y-2 group-hover/viewer:translate-y-0">
+            <div className="flex items-center gap-1 pr-2 border-r border-white/10">
+              <ZoomOut>
+                {(props) => (
+                  <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                    <i className="fa-solid fa-magnifying-glass-minus"></i>
+                  </button>
+                )}
+              </ZoomOut>
+              <div className="min-w-[45px] text-center">
+                <Zoom>
+                  {(props) => (
+                    <span className="text-[10px] font-black text-indigo-400">
+                      {Math.round(props.scale * 100)}%
+                    </span>
+                  )}
+                </Zoom>
+              </div>
+              <ZoomIn>
+                {(props) => (
+                  <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                    <i className="fa-solid fa-magnifying-glass-plus"></i>
+                  </button>
+                )}
+              </ZoomIn>
+            </div>
+            
+            <ShowSearchPopover>
+              {(props) => (
+                <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all" title="Rechercher dans le document">
+                  <i className="fa-solid fa-search"></i>
+                </button>
+              )}
+            </ShowSearchPopover>
+          </div>
+
           {docUrl ? (
             <div className="flex-1 overflow-hidden" style={{ filter: 'brightness(0.95) contrast(1.05)' }}>
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
                 <div className="h-full w-full">
                   <Viewer 
                     fileUrl={docUrl} 
-                    plugins={[searchPluginInstance]}
+                    plugins={[searchPluginInstance, zoomPluginInstance]}
                     theme="dark"
                   />
                 </div>
