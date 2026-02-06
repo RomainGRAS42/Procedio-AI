@@ -40,14 +40,14 @@ interface SuggestionItem {
 }
 
 // 🛡️ ERROR BOUNDARY COMPONENT
-class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }, { hasError: boolean }> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback?: React.ReactNode }, { hasError: boolean; error?: any }> {
   constructor(props: any) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: any) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: any, errorInfo: any) {
@@ -56,7 +56,21 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallbac
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback;
+      return (
+        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-red-400 p-4 rounded-xl border border-red-900/50">
+           <i className="fa-solid fa-triangle-exclamation text-3xl mb-3"></i>
+           <h3 className="font-bold text-lg mb-2">Erreur du Lecteur PDF</h3>
+           <pre className="text-[10px] bg-black/50 p-3 rounded-lg max-w-full overflow-auto text-left font-mono">
+             {this.state.error?.toString() || "Erreur inconnue"}
+           </pre>
+           <button 
+             onClick={() => this.setState({ hasError: false })}
+             className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs transition-colors"
+           >
+             Réessayer
+           </button>
+        </div>
+      );
     }
     return this.props.children;
   }
@@ -64,7 +78,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallbac
 
 // 🛡️ ISOLATED PDF VIEWER COMPONENT
 // This prevents high-level re-renders from breaking the PDF.js plugin state
-const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
+const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
   // 🔍 PDF Search Plugin
   const searchPluginInstance = searchPlugin();
   const { highlight, ShowSearchPopover } = searchPluginInstance;
@@ -178,7 +192,7 @@ const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
       </div>
     </div>
   );
-};
+});
 
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   procedure,
