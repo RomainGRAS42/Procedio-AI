@@ -507,12 +507,12 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // 🔍 PDF Search Plugin
-  const searchPluginInstance = searchPlugin();
+  // 🔍 PDF Search Plugin - Stabilized with useMemo
+  const searchPluginInstance = useMemo(() => searchPlugin(), []);
   const { highlight, ShowSearchPopover } = searchPluginInstance;
 
-  // 🔎 PDF Zoom Plugin
-  const zoomPluginInstance = zoomPlugin();
+  // 🔎 PDF Zoom Plugin - Stabilized with useMemo
+  const zoomPluginInstance = useMemo(() => zoomPlugin(), []);
   const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
 
   // 🇫🇷 French Localization
@@ -538,17 +538,24 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   useEffect(() => {
     // Watch for hash changes (e.g., #search="text")
     const handleHashSearch = () => {
-      const hash = window.location.hash;
-      if (hash.startsWith('#search=')) {
-        try {
-          const searchTerm = decodeURIComponent(hash.split('=')[1].replace(/"/g, ''));
-          if (searchTerm) {
-            console.log("🔦 Auto-highlighting:", searchTerm);
-            highlight(searchTerm);
+      try {
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#search=')) {
+          const parts = hash.split('=');
+          if (parts.length > 1) {
+            const rawTerm = parts[1];
+            if (rawTerm) {
+              const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
+              if (searchTerm && searchTerm.length > 2) {
+                console.log("🔦 Auto-highlighting:", searchTerm);
+                // Delay highlight to ensure PDF content is indexed
+                setTimeout(() => highlight(searchTerm), 500);
+              }
+            }
           }
-        } catch (e) {
-          console.error("Error parsing search hash:", e);
         }
+      } catch (e) {
+        console.error("Error parsing search hash:", e);
       }
     };
 
