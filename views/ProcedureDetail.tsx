@@ -515,6 +515,26 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const zoomPluginInstance = zoomPlugin();
   const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
 
+  // 🇫🇷 French Localization
+  const localization = {
+    search: {
+      clearAll: 'Tout effacer',
+      enterToSearch: 'Rechercher...',
+      matchCase: 'Respecter la casse',
+      nextMatch: 'Suivant',
+      previousMatch: 'Précédent',
+      wholeWords: 'Mots entiers',
+      close: 'Fermer',
+    },
+    zoom: {
+      zoomIn: 'Zoom avant',
+      zoomOut: 'Zoom arrière',
+    },
+    core: {
+      noFiles: 'Aucun fichier',
+    }
+  };
+
   useEffect(() => {
     // Watch for hash changes (e.g., #search="text")
     const handleHashSearch = () => {
@@ -750,6 +770,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                     fileUrl={docUrl} 
                     plugins={[searchPluginInstance, zoomPluginInstance]}
                     theme="dark"
+                    localization={localization as any}
                   />
                 </div>
               </Worker>
