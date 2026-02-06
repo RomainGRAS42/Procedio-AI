@@ -52,6 +52,8 @@ const Header: React.FC<HeaderProps> = ({
   const [viewedNotifIds, setViewedNotifIds] = useState<Set<string>>(new Set());
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]); 
   const [selectedIndex, setSelectedIndex] = useState(-1); // Keyboard navigation state
+  const [flashNoteNotifications, setFlashNoteNotifications] = useState<any[]>([]);
+
 
   // Autocomplete Logic
   useEffect(() => {
@@ -280,9 +282,42 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const totalNotifs = user.role === UserRole.MANAGER
+  const fetchFlashNoteNotifications = async () => {
+    try {
+      let query = supabase.from("notes").select("*");
+      
+      const isManager = user.role === UserRole.MANAGER;
+
+      if (isManager) {
+        // Managers see NEW suggestions
+        query = query.eq("title", "FLASH_NOTE_SUGGESTION");
+      } else {
+        // Technicians see THEIR validation/rejection responses
+        query = query.in("title", ["FLASH_NOTE_VALIDATED", "FLASH_NOTE_REJECTED"]).eq('user_id', user.id);
+      }
+
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      if (data) setFlashNoteNotifications(data);
+    } catch (err) {
+      console.error("Error fetching flash note notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFlashNoteNotifications();
+    const interval = setInterval(fetchFlashNoteNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [user.id, user.role]);
+
+
+  const totalNotifs = (user.role === UserRole.MANAGER
     ? (pendingSuggestions.length + readLogs.length) // Simplifié car on filtre déjà à la source (viewed=false)
-    : suggestionResponses.length;
+    : suggestionResponses.length) + flashNoteNotifications.length;
+
 
   const handleClearAll = async () => {
     if (user.role === UserRole.TECHNICIAN) {
@@ -556,7 +591,47 @@ const Header: React.FC<HeaderProps> = ({
                   </>
                 )}
 
+                {/* Flash Note Notifications */}
+                {flashNoteNotifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    onClick={async () => {
+                      // Navigate to Flash Notes
+                      onNavigate("flash-notes");
+                      
+                      // Delete notification from notes table
+                      await supabase.from('notes').delete().eq('id', notif.id);
+                      setFlashNoteNotifications(prev => prev.filter(n => n.id !== notif.id));
+                      setShowNotifications(false);
+                    }}
+                    className="p-3 bg-white rounded-xl border border-slate-100 cursor-pointer hover:bg-amber-50 hover:border-amber-200 transition-all group"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <i className={`fa-solid ${
+                        notif.title?.includes('VALIDATED') ? 'fa-circle-check text-emerald-500' :
+                        notif.title?.includes('REJECTED') ? 'fa-circle-xmark text-rose-500' :
+                        'fa-bolt text-amber-500'
+                      } text-[10px]`}></i>
+                      <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest">
+                        Flash Note {notif.title?.includes('SUGGESTION') ? 'Suggérée' : 'Réponse'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 font-bold leading-relaxed line-clamp-2">
+                       {notif.title?.includes('VALIDATED') ? `Validée : ${notif.content}` :
+                        notif.title?.includes('REJECTED') ? `Refusée : ${notif.content}` :
+                        notif.content}
+                    </p>
+                    <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                      {new Date(notif.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                ))}
+
                 {/* Pour les TECHNICIENS */}
+
                 {user.role === UserRole.TECHNICIAN && suggestionResponses.map((response) => (
                   <div
                     key={response.id}
