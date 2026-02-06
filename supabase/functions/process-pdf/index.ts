@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       uuid: file_id, 
       title: title,
       Type: category,
-      file_url: storagePath,
+      file_url: `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${storagePath}`,
       file_id: file_id,
       created_at: uploadDate || new Date().toLocaleString('fr-FR'),
       updated_at: new Date().toISOString()

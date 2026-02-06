@@ -394,17 +394,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         sessionid: chatSessionId,
       });
 
-      const response = await fetch("https://n8n.srv901593.hstgr.cloud/webhook/chat", {
+      const response = await fetch("https://pczlikyvfmrdauufgxai.supabase.co/functions/v1/chat-with-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: textToSend,
-          title: cleanTitle,
-          documentTitle: cleanTitle,
           file_id: procedure.file_id || procedure.id,
-          pinecone_document_id: finalPineconeId || procedure.file_id || procedure.id,
           userName: fullUserName,
-          sessionid: chatSessionId,
         }),
       });
 
