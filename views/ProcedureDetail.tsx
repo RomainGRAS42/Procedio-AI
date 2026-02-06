@@ -4,6 +4,12 @@ import { supabase } from "../lib/supabase";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+// 🚀 PDF.js Integration
+import { Viewer, Worker } from '@react-pdf-viewer/core';
+import { searchPlugin } from '@react-pdf-viewer/search';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/search/lib/styles/index.css';
+
 interface ProcedureDetailProps {
   procedure: Procedure;
   user: User;
@@ -499,7 +505,36 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // ... (previous states)
+  // 🔍 PDF Search Plugin
+  const searchPluginInstance = searchPlugin();
+  const { highlight } = searchPluginInstance;
+
+  useEffect(() => {
+    // Watch for hash changes (e.g., #search="text")
+    const handleHashSearch = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#search=')) {
+        try {
+          const searchTerm = decodeURIComponent(hash.split('=')[1].replace(/"/g, ''));
+          if (searchTerm) {
+            console.log("🔦 Auto-highlighting:", searchTerm);
+            highlight(searchTerm);
+          }
+        } catch (e) {
+          console.error("Error parsing search hash:", e);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashSearch);
+    // Trigger on initial load if hash is present
+    if (docUrl) {
+      const timer = setTimeout(handleHashSearch, 2000); // 💡 Slightly more delay for smooth load
+      return () => clearTimeout(timer);
+    }
+    
+    return () => window.removeEventListener('hashchange', handleHashSearch);
+  }, [docUrl, highlight]);
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
@@ -663,13 +698,19 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 min-h-[400px] bg-white rounded-[3rem] border border-slate-100 shadow-inner relative overflow-hidden">
+        <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative overflow-hidden flex flex-col">
           {docUrl ? (
-            <iframe
-              src={`${docUrl}#toolbar=0`}
-              className="w-full h-full"
-              title="PDF Viewer"
-              allowFullScreen></iframe>
+            <div className="flex-1 overflow-hidden" style={{ filter: 'brightness(0.95) contrast(1.05)' }}>
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                <div className="h-full w-full">
+                  <Viewer 
+                    fileUrl={docUrl} 
+                    plugins={[searchPluginInstance]}
+                    theme="dark"
+                  />
+                </div>
+              </Worker>
+            </div>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-6">
               <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
