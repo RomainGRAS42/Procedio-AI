@@ -7,12 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey, x-supabase-client-platform, x-supabase-client-version",
 };
 
-// Fonction pour nettoyer le nom de fichier (enlever accents et caractères spéciaux)
+// Nettoyage pour les chemins de fichiers (Supabase Storage)
 function sanitizePath(path: string) {
   return path
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Enlever les accents
-    .replace(/[^a-zA-Z0-9.\-_/]/g, "_"); // Remplacer le reste par _
+    .replace(/[\u0300-\u036f]/g, "") // Enlever accents
+    .replace(/[^a-zA-Z0-9.\-_/]/g, "_"); // Remplacer spéciaux par _
 }
 
 Deno.serve(async (req) => {
@@ -21,72 +21,67 @@ Deno.serve(async (req) => {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
-    const title = formData.get("title") || "Document";
-    const file_id = formData.get("file_id");
-    const category = formData.get("category") || "AUTRE";
+    const title = (formData.get("title") as string) || "Sans titre";
+    const file_id = (formData.get("file_id") as string); // UUID du frontend
+    const category = (formData.get("category") as string) || "AUTRE";
+    const uploadDate = formData.get("upload_date");
 
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
-    if (!MISTRAL_API_KEY) throw new Error("MISTRAL_API_KEY manquante");
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Initialisation Supabase
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // 1. Archivage dans Supabase Storage (Avec SANITIZATION)
-    const cleanFileName = sanitizePath(file.name);
-    const storagePath = `${category}/${cleanFileName}`;
+    // 1. Archivage dans Storage (Nommé d'après le TITRE utilisateur)
+    const cleanTitle = sanitizePath(title);
+    const storagePath = `${category}/${cleanTitle}.pdf`;
     
     console.log(`📂 Archivage: procedures/${storagePath}...`);
-    
     const { error: storageError } = await supabase.storage
       .from('procedures')
-      .upload(storagePath, file, {
-        contentType: file.type,
-        upsert: true
-      });
+      .upload(storagePath, file, { contentType: 'application/pdf', upsert: true });
 
-    if (storageError) {
-      console.error("⚠️ Storage Error Details:", storageError);
-      // On continue quand même l'indexation même si le storage échoue
-    } else {
-      console.log("✅ Fichier archivé avec succès.");
+    if (storageError) console.error("⚠️ Storage Error:", storageError);
+
+    // 2. Insertion dans la table 'procedures' (Pour affichage UI)
+    console.log("💾 Insertion dans la table procedures...");
+    const { error: procError } = await supabase.from('procedures').insert({
+      uuid: file_id, // On utilise le file_id du front comme UUID primaire
+      title: title,
+      Type: category,
+      file_url: storagePath,
+      file_id: file_id,
+      created_at: uploadDate || new Date().toLocaleString('fr-FR'),
+      updated_at: new Date().toISOString()
+    });
+
+    if (procError) {
+      console.error("❌ Erreur Table Procedures:", procError);
+      // On continue quand même car le RAG est p-e le plus important
     }
 
-    // 2. Upload vers Mistral
+    // 3. Traitement Mistral OCR
     const uploadFormData = new FormData();
     uploadFormData.append("file", file);
     uploadFormData.append("purpose", "ocr");
 
-    const uploadResponse = await fetch("https://api.mistral.ai/v1/files", {
+    const uploadRes = await fetch("https://api.mistral.ai/v1/files", {
       method: "POST",
       headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` },
       body: uploadFormData,
     });
-    const uploadData = await uploadResponse.json();
-    if (!uploadResponse.ok) throw new Error(`Upload Mistral échoué: ${JSON.stringify(uploadData)}`);
-    
+    const uploadData = await uploadRes.json();
     const mistralFileId = uploadData.id;
 
-    // 3. OCR (type: "file")
-    const ocrResponse = await fetch("https://api.mistral.ai/v1/ocr", {
+    const ocrRes = await fetch("https://api.mistral.ai/v1/ocr", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${MISTRAL_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
       body: JSON.stringify({
         model: "mistral-ocr-latest",
         document: { type: "file", file_id: mistralFileId },
       }),
     });
-    const ocrData = await ocrResponse.json();
-    if (!ocrResponse.ok) throw new Error(`OCR échoué: ${JSON.stringify(ocrData)}`);
-    
-    const fullMarkdown = ocrData.pages?.map((p: any) => p.markdown).join("\n\n") || "Vide";
+    const ocrData = await ocrRes.json();
+    const fullMarkdown = ocrData.pages?.map((p: any) => p.markdown).join("\n\n") || "";
 
-    // 4. Chunking & Embeddings
+    // 4. Chunking & Embeddings (RAG)
     const chunks = fullMarkdown.match(/[\s\S]{1,2000}/g) || [fullMarkdown];
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
@@ -100,17 +95,11 @@ Deno.serve(async (req) => {
             content: chunk,
             embedding: embedData.data[0].embedding,
             file_id: file_id,
-            metadata: { 
-              title, 
-              category, 
-              source: file.name, 
-              storage_path: storagePath,
-              chunk_index: i 
-            },
+            metadata: { title, category, source: file.name, storage_path: storagePath, chunk_index: i },
         });
     }
 
-    // Nettoyage temporaire chez Mistral
+    // Nettoyage Mistral
     fetch(`https://api.mistral.ai/v1/files/${mistralFileId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` }
