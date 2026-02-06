@@ -432,6 +432,7 @@ const AppContent: React.FC<any> = ({
               <Route path="/procedure/:id" element={<ProcedureDetailWrapper user={user} />} />
               <Route path="/notes" element={
                 <Notes
+                  user={user}
                   initialIsAdding={autoOpenNoteEditor}
                   onEditorClose={() => setAutoOpenNoteEditor(false)}
                 />
@@ -440,6 +441,7 @@ const AppContent: React.FC<any> = ({
                 // ⚡️ Flash Notes view: pass 'flash' mode to Notes component
                 <Notes 
                   mode="flash" 
+                  user={user}
                   initialIsAdding={autoOpenNoteEditor} 
                   onEditorClose={() => setAutoOpenNoteEditor(false)} 
                 />

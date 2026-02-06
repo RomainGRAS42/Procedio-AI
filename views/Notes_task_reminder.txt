@@ -1,0 +1,9 @@
+[Previous content not available, writing implementation_plan reminder to myself]
+Task: Update `Notes.tsx`
+1. Update `NotesProps` interface to include `mode?: 'personal' | 'flash'`.
+2. Update `fetchNotes` to filter by status/category based on mode.
+   - If mode='flash': fetch `status='public'` or `user_id=me` (if suggestion).
+3. Update UI:
+   - If mode='flash', show "Flash Cards" layout (grid of colored cards).
+   - Implement "Suggest" logic for technicians.
+   - Implement "Publish" logic for managers.

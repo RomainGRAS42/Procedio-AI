@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Note } from "../types";
+import { Note, User, UserRole } from "../types";
 import { supabase } from "../lib/supabase";
 
 interface ProtectedNote extends Note {
   is_protected: boolean;
   user_id?: string;
+  author_role?: UserRole; // To track if author was technician/manager
+  author_name?: string;
 }
 
 interface NotesProps {
   initialIsAdding?: boolean;
   onEditorClose?: () => void;
   mode?: "personal" | "flash";
+  user?: User | null; // Passed from App.tsx
 }
 
-const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, mode = "personal" }) => {
+const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, mode = "personal", user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState<ProtectedNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,9 +89,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     }, 5000);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Use the passed user object if available, otherwise fetch minimal auth user
+      // But for role-based logic, we REALLY need the passed User object.
+      // Fallback to fetching auth user if not passed (though App.tsx should pass it)
+      let currentUserId = user?.id;
+      if (!currentUserId) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        currentUserId = authUser?.id;
+      }
 
       let query = supabase
         .from("notes")
@@ -96,15 +104,22 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         .order("updated_at", { ascending: false });
 
       // Si un utilisateur est connecté, on filtre explicitement par son ID
-      if (user) {
+      if (currentUserId) {
         if (mode === "flash") {
-          // FLASH MODE: fetch PUBLIC notes OR my suggestions
-          // Note: RLS must allow this.
-          // Fallback: client-side filtering if API allows SELECT *
-          query = query.or(`status.eq.public,user_id.eq.${user.id}`);
+          // FLASH MODE: fetch PUBLIC notes OR suggestions
+          // Managers see ALL suggestions. Technicians see public + their own suggestions.
+          // Note: "status.eq.public" is for approved flash notes.
+          // "status.eq.suggestion" is for pending ones.
+          
+          if (user?.role === UserRole.MANAGER) {
+             query = query.or(`status.eq.public,status.eq.suggestion`);
+          } else {
+             // Technicians: See Public + My Suggestions
+             query = query.or(`status.eq.public,and(status.eq.suggestion,user_id.eq.${currentUserId})`);
+          }
         } else {
           // PERSONAL MODE: fetch ONLY my notes (default)
-          query = query.eq("user_id", user.id);
+          query = query.eq("user_id", currentUserId);
         }
       }
 
@@ -133,18 +148,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
             category: n.category || "general",
           }));
 
-        // Client-side filtering as double security
-        if (mode === "flash") {
-             // Keep only Public OR My Suggestions
-             setNotes(userNotes.filter(n => n.status === "public" || (n.status === "suggestion" && n.user_id === user?.id)));
-        } else {
-             // Keep only My Personal Notes (private or whatever, but mine)
-             // Actually 'personal' mode excludes 'public' flash notes to avoid clutter?
-             // User Request: "Pour ne pas polluer ta liste... crée un affichage distinct."
-             // So Personal mode should probably exclude 'public' notes unless I created them?
-             // Let's keep existing logic: everything I created.
-             setNotes(userNotes);
-        }
+        // Client-side filtering as double security & Organization
+        setNotes(userNotes);
       }
     } catch (err: any) {
       console.error("Erreur de récupération des notes:", err);
@@ -512,24 +517,41 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
         </div>
         
-        {/* FLASH MODE HEADER EXTRA */}
-        {mode === "flash" && (
-           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 animate-pulse">
-              <i className="fa-solid fa-bolt"></i>
-              <span className="font-bold text-xs uppercase tracking-wider">Mode Flash</span>
-           </div>
-        )}
+         {/* FLASH MODE HEADER EXTRA */}
+         {mode === "flash" && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 animate-pulse">
+               <i className="fa-solid fa-bolt"></i>
+               <span className="font-bold text-xs uppercase tracking-wider">Mode Flash</span>
+            </div>
+         )}
 
-        <button
-          onClick={handleAddNew}
-          className={`w-full lg:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 ${
-            mode === "flash" 
-            ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200"
-            : "bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-100"
-          }`}>
-          <i className="fa-solid fa-plus-circle text-lg"></i> {mode === "flash" ? "Suggérer une Note" : "Créer une note"}
-        </button>
+        {/* CREATE BUTTON: Hidden for Technicians in Flash Mode */}
+        {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
+          <button
+            onClick={handleAddNew}
+            className={`w-full lg:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 ${
+              mode === "flash" 
+              ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200"
+              : "bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-100"
+            }`}>
+            <i className="fa-solid fa-plus-circle text-lg"></i> {mode === "flash" ? "Créer une flash note" : "Créer une note"}
+          </button>
+        )}
       </div>
+
+      {mode === "flash" && user?.role === UserRole.MANAGER && (
+         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <i className="fa-solid fa-lightbulb"></i>
+               </div>
+               <div>
+                  <h4 className="font-bold text-amber-800 text-sm uppercase tracking-wide">Suggestions en attente</h4>
+                  <p className="text-xs text-amber-600">Validez les propositions de votre équipe.</p>
+               </div>
+            </div>
+         </div>
+      )}
 
       {/* LISTE DES NOTES - MODE FLASH (GRID) vs NORMAL (LIST) */}
       <div className={mode === "flash" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
@@ -651,6 +673,48 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     className={`fa-solid ${activeNote.is_protected ? "fa-lock" : "fa-lock-open"}`}></i>
                   {activeNote.is_protected ? "Protégée" : "Publique"}
                 </button>
+
+                {/* PROPOSE AS FLASH NOTE BUTTON (Technician + Personal Mode) */}
+                {mode === "personal" && user?.role === UserRole.TECHNICIAN && (
+                   <button
+                     onClick={async () => {
+                        // Logic similar to save but setting status='suggestion'
+                        if (!activeNote.title.trim()) return;
+                        setSaving(true);
+                        try {
+                           const payload = {
+                              title: activeNote.title.trim(),
+                              content: activeNote.content,
+                              is_protected: activeNote.is_protected,
+                              user_id: user.id,
+                              updated_at: new Date().toISOString(),
+                              status: 'suggestion',
+                              category: 'general'
+                           };
+                           let result;
+                           if (activeNote.id) {
+                              result = await supabase.from("notes").update(payload).eq("id", activeNote.id);
+                           } else {
+                              result = await supabase.from("notes").insert([payload]);
+                           }
+                           if (result.error) throw result.error;
+                           
+                           alert("Votre note a été proposée au manager !");
+                           setIsEditing(false);
+                           setSearchTerm("");
+                           onEditorClose?.();
+                           await fetchNotes();
+                        } catch (err) {
+                           alert("Erreur lors de la proposition.");
+                        } finally {
+                           setSaving(false);
+                        }
+                     }}
+                     className="bg-amber-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all flex items-center gap-2 shadow-xl shadow-amber-100">
+                     <i className="fa-solid fa-lightbulb"></i> Proposer
+                   </button>
+                )}
+
                 <button
                   onClick={saveNote}
                   disabled={saving || !activeNote.title.trim()}
@@ -658,9 +722,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   {saving ? (
                     <i className="fa-solid fa-circle-notch animate-spin"></i>
                   ) : (
-                    <i className="fa-solid fa-cloud-arrow-up"></i>
+                    <i className="fa-solid fa-floppy-disk"></i> // Changed icon for clarity
                   )}
-                  Synchroniser
+                  Enregistrer
                 </button>
               </div>
             </header>
@@ -783,10 +847,51 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                         <i className="fa-solid fa-lock mr-1"></i>Privé
                       </span>
                     )}
+                    {viewingNote.status === "suggestion" && (
+                       <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md animate-pulse">
+                        Suggestion
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {/* MANAGER VALIDATION BUTTONS */}
+                {viewingNote.status === "suggestion" && user?.role === UserRole.MANAGER && (
+                   <div className="flex items-center gap-2 mr-4 border-r border-slate-100 pr-4">
+                      <button
+                         onClick={async (e) => {
+                            e.stopPropagation();
+                            if(!confirm("Valider cette Flash Note pour toute l'équipe ?")) return;
+                            const { error } = await supabase.from('notes').update({ status: 'public' }).eq('id', viewingNote.id);
+                            if(!error) {
+                               alert("Flash Note validée !");
+                               handleCloseNote();
+                               fetchNotes();
+                            }
+                         }}
+                         className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
+                      >
+                         <i className="fa-solid fa-check"></i> Valider
+                      </button>
+                      <button
+                         onClick={async (e) => {
+                            e.stopPropagation();
+                            if(!confirm("Refuser cette suggestion ? Elle redeviendra privée pour l'auteur.")) return;
+                            const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
+                             if(!error) {
+                               alert("Suggestion refusée.");
+                               handleCloseNote();
+                               fetchNotes();
+                            }
+                         }}
+                         className="px-4 py-2 bg-white text-rose-500 border border-rose-100 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
+                      >
+                         Refuser
+                      </button>
+                   </div>
+                )}
+
                 <button
                   onClick={toggleLockStatus}
                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
@@ -938,117 +1043,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           document.body
         )}
 
-      {/* Grille des notes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-        {loading ? (
-          <div className="col-span-full py-40 flex flex-col items-center justify-center gap-4">
-            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest animate-pulse">
-              Accès au coffre-fort...
-            </p>
-          </div>
-        ) : (
-          notes
-            .filter(
-              (n) =>
-                n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                n.content.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .map((note) => {
-              const isLocked = note.is_protected && !unlockedNotes.has(note.id);
-              const isProtectedAndUnlocked = note.is_protected && unlockedNotes.has(note.id);
 
-              return (
-                <div
-                  key={note.id}
-                  className={`group glass-card p-8 flex flex-col min-h-[350px] transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl relative overflow-hidden border-none cursor-pointer`}
-                  onClick={() => {
-                    if (isLocked) {
-                      setPasswordVerify({ id: note.id, value: "", action: "UNLOCK" });
-                    } else {
-                      setViewingNote(note);
-                    }
-                  }}>
-                  <div className="flex justify-between items-start mb-8 relative z-10">
-                    <div className="bg-white/50 backdrop-blur-md rounded-xl px-4 py-2 border border-white shadow-sm flex items-center gap-3">
-                      <i className="fa-solid fa-calendar-day text-blue-500 text-[11px]"></i>
-                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                        {note.updatedAt}
-                      </span>
-                    </div>
-                    {!isLocked && (
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {isProtectedAndUnlocked && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLock(e, note.id);
-                            }}
-                            className="w-10 h-10 bg-amber-50 rounded-xl shadow-lg border border-amber-100 text-amber-500 hover:text-amber-700 hover:border-amber-300 transition-all flex items-center justify-center"
-                            title="Re-verrouiller la note">
-                            <i className="fa-solid fa-lock text-sm"></i>
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => handleDelete(e, note.id)}
-                          className="w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-50 text-rose-400 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center"
-                          title="Supprimer la note">
-                          <i className="fa-solid fa-trash-can text-sm"></i>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(note);
-                          }}
-                          className="w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-50 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center justify-center"
-                          title="Modifier la note">
-                          <i className="fa-solid fa-pencil text-sm"></i>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <h4 className="font-black text-slate-900 text-2xl group-hover:text-blue-600 transition-colors line-clamp-2 mb-6 leading-tight tracking-tight relative z-10">
-                    {isLocked ? "Note Verrouillée" : note.title}
-                  </h4>
-
-                  <div className="relative flex-1 z-10">
-                    <div
-                      className={`text-slate-500 text-base leading-relaxed line-clamp-5 font-medium ${
-                        isLocked ? "blur-sm select-none opacity-50" : ""
-                      }`}
-                      {...(isLocked
-                        ? { children: "Cette note est protégée. Veuillez la déverrouiller pour accéder au contenu." }
-                        : { dangerouslySetInnerHTML: { __html: note.content || "Aucune description." } }
-                      )}
-                    />
-
-                    {isLocked && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-                        <div className="w-20 h-20 bg-white shadow-2xl rounded-3xl flex items-center justify-center text-amber-500 border-4 border-white hover:scale-110 transition-transform active:scale-95 group/lock">
-                          <i className="fa-solid fa-lock text-3xl group-hover/lock:fa-unlock-keyhole"></i>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {!isLocked && (
-                    <div className="mt-8 pt-6 border-t border-slate-100/50 flex items-center justify-between opacity-60 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                        Lire en plein écran <i className="fa-solid fa-arrow-right ml-1"></i>
-                      </span>
-                      {note.is_protected && (
-                        <div className="flex items-center gap-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                          <i className="fa-solid fa-shield-check"></i> SÉCURISÉ
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-        )}
-      </div>
     </div>
   );
 };
