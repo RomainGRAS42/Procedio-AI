@@ -9,6 +9,7 @@ interface ProtectedNote extends Note {
   author_role?: UserRole; // To track if author was technician/manager
   author_name?: string;
   createdAt?: string;
+  is_flash_note?: boolean; // To identify Flash Notes (read-only once proposed/validated)
 }
 
 interface NotesProps {
@@ -1195,12 +1196,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={startInlineEdit}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                    title="Modifier">
-                    <i className="fa-solid fa-pen-to-square"></i> Modifier
-                  </button>
+                  // Hide edit button for Flash Notes (they are read-only once proposed/validated)
+                  !viewingNote.is_flash_note && (
+                    <button
+                      onClick={startInlineEdit}
+                      className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      title="Modifier">
+                      <i className="fa-solid fa-pen-to-square"></i> Modifier
+                    </button>
+                  )
                 )}
               </div>
             </header>
