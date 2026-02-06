@@ -180,18 +180,19 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchPersonalStats();
       fetchTrendProcedure();
       fetchLatestAnnouncement();
+      fetchFlashNoteNotifications();
+      
+      // Poll for new Flash Note notifications every 10 seconds
+      const notificationInterval = setInterval(() => {
+        fetchFlashNoteNotifications();
+      }, 10000);
+
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
-        fetchFlashNoteNotifications();
-        
-        // Poll for new Flash Note notifications every 10 seconds
-        const notificationInterval = setInterval(() => {
-          fetchFlashNoteNotifications();
-        }, 10000);
-        
-        return () => clearInterval(notificationInterval);
       }
+
+      return () => clearInterval(notificationInterval);
     }
   }, [user?.id, user?.role]);
 
@@ -499,13 +500,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const fetchFlashNoteNotifications = async () => {
-    if (user.role !== UserRole.MANAGER) return;
     setLoadingFlashNotes(true);
     try {
-      const { data, error } = await supabase
-        .from("notes")
-        .select("*")
-        .ilike("title", "FLASH_NOTE_SUGGESTION")
+      let query = supabase.from("notes").select("*");
+      
+      if (user.role === UserRole.MANAGER) {
+        // Managers see NEW suggestions
+        query = query.ilike("title", "FLASH_NOTE_SUGGESTION");
+      } else {
+        // Technicians see THEIR validation/rejection responses
+        query = query.or(`title.ilike.FLASH_NOTE_VALIDATED,title.ilike.FLASH_NOTE_REJECTED`).eq('user_id', user.id);
+      }
+
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .limit(10);
       
@@ -939,8 +946,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         </div>
 
-        {/* NOTIFICATION BELL (Manager Only) */}
-        {user.role === UserRole.MANAGER && flashNoteNotifications.length > 0 && (
+        {/* NOTIFICATION BELL */}
+        {flashNoteNotifications.length > 0 && (
           <div className="relative">
             <button
               onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
@@ -954,11 +961,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* DROPDOWN MENU */}
             {showNotificationDropdown && (
-              <div className="absolute right-0 top-16 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
+              <div className="absolute right-0 top-16 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[9999] overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-500 to-violet-500 p-4">
                   <h3 className="text-white font-black text-sm uppercase tracking-wider">
                     <i className="fa-solid fa-lightbulb mr-2"></i>
-                    Nouvelles Suggestions
+                    {user.role === UserRole.MANAGER ? "Nouvelles Suggestions" : "Notifications Flash"}
                   </h3>
                 </div>
                 
@@ -979,12 +986,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                       className="p-4 border-b border-slate-100 hover:bg-indigo-50 cursor-pointer transition-colors group"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                          <i className="fa-solid fa-note-sticky"></i>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform ${
+                          notif.title?.includes('VALIDATED') ? 'bg-emerald-100 text-emerald-600' :
+                          notif.title?.includes('REJECTED') ? 'bg-rose-100 text-rose-600' :
+                          'bg-indigo-100 text-indigo-600'
+                        }`}>
+                          <i className={`fa-solid ${
+                            notif.title?.includes('VALIDATED') ? 'fa-circle-check' :
+                            notif.title?.includes('REJECTED') ? 'fa-circle-xmark' :
+                            'fa-note-sticky'
+                          }`}></i>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-900 line-clamp-2">
-                            {notif.content}
+                             {notif.title?.includes('VALIDATED') ? `Validée : ${notif.content}` :
+                              notif.title?.includes('REJECTED') ? `Refusée : ${notif.content}` :
+                              notif.content}
                           </p>
                           <span className="text-xs text-slate-400 mt-1 block">
                             {new Date(notif.created_at).toLocaleDateString('fr-FR', {

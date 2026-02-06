@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Note, User, UserRole } from "../types";
 import { supabase } from "../lib/supabase";
+import CustomToast from "../components/CustomToast";
 
 interface ProtectedNote extends Note {
   is_protected: boolean;
@@ -67,6 +68,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const backBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
     fetchNotes();
@@ -234,7 +236,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         });
       }
     } catch (err) {
-      alert("Erreur lors de la mise à jour de la protection.");
+      setToast({ message: "Erreur lors de la mise à jour de la protection.", type: "error" });
       // Rollback
       setViewingNote({ ...viewingNote, is_protected: !newStatus });
       fetchNotes();
@@ -263,18 +265,42 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
   const handleDelete = async (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
-    if (
-      !window.confirm("Voulez-vous vraiment supprimer cette note ? Cette action est irréversible.")
-    )
-      return;
+    
+    // Recovery of the note to check its type
+    const noteToDelete = notes.find(n => n.id === noteId);
+    if (!noteToDelete) return;
 
-    try {
-      const { error } = await supabase.from("notes").delete().eq("id", noteId);
-      if (error) throw error;
-      await fetchNotes();
-    } catch (err) {
-      alert("Erreur lors de la suppression.");
+    // Security: Technicians cannot delete Flash Notes
+    if (noteToDelete.is_flash_note && user?.role === UserRole.TECHNICIAN) {
+      setToast({
+        message: "Action non autorisée : Les Flash Notes sont en lecture seule pour les techniciens.",
+        type: "error"
+      });
+      return;
     }
+
+    setConfirmModal({
+      title: "Supprimer cette note ?",
+      message: mode === "flash" 
+        ? "Cette Flash Note sera définitivement supprimée de la base de connaissances." 
+        : "Votre note personnelle sera définitivement supprimée.",
+      confirmText: "Supprimer",
+      cancelText: "Conserver",
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from("notes").delete().eq("id", noteId);
+          if (error) throw error;
+          await fetchNotes();
+          if (viewingNote?.id === noteId) handleCloseNote();
+          setToast({ message: "Note supprimée avec succès.", type: "success" });
+        } catch (err) {
+          setToast({ message: "Erreur lors de la suppression.", type: "error" });
+        } finally {
+          setConfirmModal(null);
+        }
+      }
+    });
   };
 
   const handleLock = (e: React.MouseEvent, noteId: string) => {
@@ -319,7 +345,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       onEditorClose?.();
       await fetchNotes();
     } catch (err) {
-      alert("Erreur lors de la synchronisation avec Supabase.");
+      setToast({ message: "Erreur lors de la synchronisation avec Supabase.", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -473,7 +499,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       setViewDraft(null);
       await fetchNotes();
     } catch {
-      alert("Erreur lors de la synchronisation avec Supabase.");
+      setToast({ message: "Erreur lors de la synchronisation avec Supabase.", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -709,7 +735,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                             onClick={(e) => {
                               e.stopPropagation();
                               navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, ''));
-                              alert("Copié !"); 
+                              setToast({ message: "Note copiée dans le presse-papier !", type: "success" }); 
                             }}
                             className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
                             title="Copier le texte">
@@ -1173,12 +1199,16 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       viewingNote.is_protected ? "fa-lock" : "fa-lock-open"
                     }`}></i>
                 </button>
-                <button
-                  onClick={(e) => handleDelete(e as any, viewingNote.id)}
-                  className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-                  title="Supprimer">
-                  <i className="fa-solid fa-trash-can"></i>
-                </button>
+                
+                {/* Hide delete button for Technicians in Flash mode */}
+                {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
+                  <button
+                    onClick={(e) => handleDelete(e as any, viewingNote.id)}
+                    className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                    title="Supprimer">
+                    <i className="fa-solid fa-trash-can"></i>
+                  </button>
+                )}
                 {viewingEdit ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -1345,6 +1375,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           </div>
         </div>,
         document.body
+      )}
+
+      {toast && (
+        <CustomToast
+          message={toast.message}
+          type={toast.type}
+          visible={!!toast}
+          onClose={() => setToast(null)}
+        />
       )}
 
     </div>
