@@ -152,6 +152,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
             title: n.title,
             content: n.content,
             is_protected: n.is_protected || false,
+            is_flash_note: n.is_flash_note || false,  // CRITICAL: needed for read-only protection
             tags: n.tags || [],
             updatedAt: new Date(n.updated_at).toLocaleDateString("fr-FR", {
               day: "2-digit",
