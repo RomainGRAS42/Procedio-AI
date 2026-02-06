@@ -65,6 +65,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  // Flash Note Notifications (Manager Only)
+  const [flashNoteNotifications, setFlashNoteNotifications] = useState<any[]>([]);
+  const [loadingFlashNotes, setLoadingFlashNotes] = useState(false);
+
   // État de la vue (Personnel vs Équipe) - Initialisé selon le rôle
   const [viewMode, setViewMode] = useState<"personal" | "team">(user.role === UserRole.MANAGER ? "team" : "personal");
 
@@ -178,6 +182,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
+        fetchFlashNoteNotifications();
       }
     }
   }, [user?.id, user?.role]);
@@ -482,6 +487,26 @@ const Dashboard: React.FC<DashboardProps> = ({
       console.error(err);
     } finally {
       setLoadingActivities(false);
+    }
+  };
+
+  const fetchFlashNoteNotifications = async () => {
+    if (user.role !== UserRole.MANAGER) return;
+    setLoadingFlashNotes(true);
+    try {
+      const { data, error } = await supabase
+        .from("notes")
+        .select("*")
+        .ilike("title", "FLASH_NOTE_SUGGESTION")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      if (data) setFlashNoteNotifications(data);
+    } catch (err) {
+      console.error("Error fetching flash note notifications:", err);
+    } finally {
+      setLoadingFlashNotes(false);
     }
   };
 
