@@ -184,6 +184,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         fetchSuggestions();
         fetchManagerKPIs();
         fetchFlashNoteNotifications();
+        
+        // Poll for new Flash Note notifications every 10 seconds
+        const notificationInterval = setInterval(() => {
+          fetchFlashNoteNotifications();
+        }, 10000);
+        
+        return () => clearInterval(notificationInterval);
       }
     }
   }, [user?.id, user?.role]);
