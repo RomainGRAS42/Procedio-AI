@@ -162,7 +162,7 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
             <div className="h-full w-full">
               <Viewer 
                 fileUrl={fileUrl} 
-                plugins={plugins}
+                plugins={[]} // DISABLING PLUGINS TEMPORARILY TO DEBUG CRASH
                 theme="dark"
                 localization={localization as any}
                 onDocumentLoad={(e) => {
