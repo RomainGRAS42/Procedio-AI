@@ -51,6 +51,9 @@ export interface Note {
   tags: string[];
   updatedAt: string;
   viewed?: boolean;
+  // Flash Notes
+  status?: "private" | "suggestion" | "public"; // private = perso, suggestion = submitted, public = flash note
+  category?: string; // used for filtering, default 'general'
 }
 
 export interface Suggestion {
@@ -83,4 +86,6 @@ export type ViewType =
   | "reset-password"
   | "administration"
   | "team"
-  | "search-results";
+  | "team"
+  | "search-results"
+  | "flash-notes";

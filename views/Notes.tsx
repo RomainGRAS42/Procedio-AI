@@ -11,9 +11,10 @@ interface ProtectedNote extends Note {
 interface NotesProps {
   initialIsAdding?: boolean;
   onEditorClose?: () => void;
+  mode?: "personal" | "flash";
 }
 
-const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose }) => {
+const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, mode = "personal" }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState<ProtectedNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +97,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
 
       // Si un utilisateur est connecté, on filtre explicitement par son ID
       if (user) {
-        query = query.eq("user_id", user.id);
+        if (mode === "flash") {
+          // FLASH MODE: fetch PUBLIC notes OR my suggestions
+          // Note: RLS must allow this.
+          // Fallback: client-side filtering if API allows SELECT *
+          query = query.or(`status.eq.public,user_id.eq.${user.id}`);
+        } else {
+          // PERSONAL MODE: fetch ONLY my notes (default)
+          query = query.eq("user_id", user.id);
+        }
       }
 
       const { data, error } = await query;
@@ -120,9 +129,22 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
               year: "numeric",
             }),
             user_id: n.user_id,
+            status: n.status || "private",
+            category: n.category || "general",
           }));
 
-        setNotes(userNotes);
+        // Client-side filtering as double security
+        if (mode === "flash") {
+             // Keep only Public OR My Suggestions
+             setNotes(userNotes.filter(n => n.status === "public" || (n.status === "suggestion" && n.user_id === user?.id)));
+        } else {
+             // Keep only My Personal Notes (private or whatever, but mine)
+             // Actually 'personal' mode excludes 'public' flash notes to avoid clutter?
+             // User Request: "Pour ne pas polluer ta liste... crée un affichage distinct."
+             // So Personal mode should probably exclude 'public' notes unless I created them?
+             // Let's keep existing logic: everything I created.
+             setNotes(userNotes);
+        }
       }
     } catch (err: any) {
       console.error("Erreur de récupération des notes:", err);
@@ -252,6 +274,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
         is_protected: activeNote.is_protected,
         user_id: user.id,
         updated_at: new Date().toISOString(),
+        status: mode === "flash" ? "suggestion" : "private", // Default status logic
+        category: "general"
       };
 
       let result;
@@ -478,7 +502,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
         <div className="relative flex-1 w-full max-w-2xl">
           <input
             type="text"
-            placeholder="Rechercher une note ou un mémo..."
+            placeholder={mode === "flash" ? "Rechercher une Flash Note..." : "Rechercher une note..."}
             className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-none shadow-inner focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -487,11 +511,115 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose })
           />
           <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
         </div>
+        
+        {/* FLASH MODE HEADER EXTRA */}
+        {mode === "flash" && (
+           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 animate-pulse">
+              <i className="fa-solid fa-bolt"></i>
+              <span className="font-bold text-xs uppercase tracking-wider">Mode Flash</span>
+           </div>
+        )}
+
         <button
           onClick={handleAddNew}
-          className="w-full lg:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100 active:scale-95">
-          <i className="fa-solid fa-plus-circle text-lg"></i> Créer une note
+          className={`w-full lg:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 ${
+            mode === "flash" 
+            ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200"
+            : "bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-100"
+          }`}>
+          <i className="fa-solid fa-plus-circle text-lg"></i> {mode === "flash" ? "Suggérer une Note" : "Créer une note"}
         </button>
+      </div>
+
+      {/* LISTE DES NOTES - MODE FLASH (GRID) vs NORMAL (LIST) */}
+      <div className={mode === "flash" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
+        {notes
+          .filter(
+            (note) =>
+              note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              note.content.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+          .map((note) => {
+             // Generate dynamic pastel color for Flash Cards based on index/id
+             const colors = ["bg-sky-100", "bg-emerald-100", "bg-violet-100", "bg-amber-100", "bg-rose-100"];
+             const colorIndex = note.id.charCodeAt(0) % colors.length;
+             const cardColor = mode === "flash" ? colors[colorIndex] : "bg-white";
+             const borderClass = mode === "flash" ? "border-transparent" : "border-slate-200";
+
+             return (
+            <div
+              key={note.id}
+              onClick={() => {
+                if (note.is_protected && !unlockedNotes.has(note.id)) {
+                  setPasswordVerify({ id: note.id, value: "", action: "UNLOCK" });
+                } else {
+                  setViewingNote(note);
+                }
+              }}
+              className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`}>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className={`font-black text-xl line-clamp-2 ${mode === "flash" ? "text-slate-800" : "text-slate-700"}`} style={{ wordBreak: 'break-word' }}>
+                  {note.title}
+                </h3>
+                {note.is_protected ? (
+                  unlockedNotes.has(note.id) ? (
+                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                      <i className="fa-solid fa-lock-open text-xs"></i>
+                    </span>
+                  ) : (
+                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+                      <i className="fa-solid fa-lock text-xs"></i>
+                    </span>
+                  )
+                ) : (
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${mode === "flash" ? "bg-white/50 text-slate-500" : "bg-slate-50 text-slate-300"}`}>
+                    <i className="fa-solid fa-eye text-xs"></i>
+                  </span>
+                )}
+              </div>
+
+              <div
+                className={`flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative ${mode === "flash" ? "text-slate-600 font-medium" : "text-slate-400"}`}
+                >
+                  <div dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
+                  {/* Fade out effect */}
+                  <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${mode === "flash" ? "from-" + cardColor.replace("bg-", "") : "from-white"} to-transparent pointer-events-none`}></div>
+              </div>
+
+              <div className="mt-auto flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  {note.updatedAt}
+                </span>
+                
+                {/* ACTION BUTTONS */}
+                <div className="flex gap-2">
+                   {/* COPY BUTTON FOR FLASH NOTES */}
+                   {mode === "flash" && !note.is_protected && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, '')); // Strip HTML roughly
+                          alert("Copié !"); 
+                        }}
+                        className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
+                        title="Copier le texte"
+                      >
+                         <i className="fa-regular fa-copy"></i>
+                      </button>
+                   )}
+
+                   {/* DELETE ONLY IF OWNER or MANAGER */}
+                   <button
+                    onClick={(e) => handleDelete(e, note.id)}
+                    className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+                    title="Supprimer">
+                    <i className="fa-solid fa-trash-can text-xs"></i>
+                   </button>
+                </div>
+              </div>
+            </div>
+            );
+          })}
       </div>
 
       {/* MODALE ÉDITEUR PLEIN ÉCRAN */}

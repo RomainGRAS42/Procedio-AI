@@ -436,6 +436,14 @@ const AppContent: React.FC<any> = ({
                   onEditorClose={() => setAutoOpenNoteEditor(false)}
                 />
               } />
+              <Route path="/flash-notes" element={
+                // ⚡️ Flash Notes view: pass 'flash' mode to Notes component
+                <Notes 
+                  mode="flash" 
+                  initialIsAdding={autoOpenNoteEditor} 
+                  onEditorClose={() => setAutoOpenNoteEditor(false)} 
+                />
+              } />
               <Route path="/statistics" element={
                 <Statistics 
                   onUploadClick={() => navigate("/upload")} 
