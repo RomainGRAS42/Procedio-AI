@@ -9,16 +9,23 @@ interface UploadProcedureProps {
 }
 
 const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfer, setActiveTransfer }) => {
-  const [title, setTitle] = useState('');
+  const [useCustomTitle, setUseCustomTitle] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
   const [folders] = useState(['LOGICIEL', 'UTILISATEUR', 'MATERIEL', 'INFRASTRUCTURE']);
   const [selectedFolder, setSelectedFolder] = useState('LOGICIEL');
   const [file, setFile] = useState<File | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
+  const cleanFileName = (name: string) => {
+    return name.replace(/\.[^/.]+$/, "").replace(/_/g, ' ').trim();
+  };
+
+  const currentTitle = useCustomTitle ? customTitle : (file ? cleanFileName(file.name) : '');
+
   const handlePublish = async () => {
-    if (!title.trim() || !file) {
-      setErrorMsg("Veuillez saisir un titre et sélectionner un fichier PDF.");
+    if (!currentTitle.trim() || !file) {
+      setErrorMsg("Veuillez sélectionner un fichier PDF.");
       return;
     }
 
@@ -43,14 +50,14 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
       
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('title', title.trim());
+      formData.append('title', currentTitle.trim());
       formData.append('file_id', fileId);
       formData.append('upload_date', uploadDate);
       formData.append('category', selectedFolder);
 
       console.log('📤 Envoi vers Supabase Edge Function (process-pdf):', {
         file_id: fileId,
-        title: title.trim(),
+        title: currentTitle.trim(),
         category: selectedFolder
       });
 
@@ -128,28 +135,6 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
             </div>
           )}
 
-            <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Titre de la procédure</label>
-            <input 
-              type="text" 
-              placeholder="Ex: Guide de configuration réseau..."
-              className={`w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 outline-none transition-all font-bold text-slate-700 shadow-inner ${
-                title && !/^[a-zA-Z0-9\s\-_.]*$/.test(title) 
-                ? "border-rose-300 focus:border-rose-500 focus:bg-rose-50/10" 
-                : "border-transparent focus:bg-white focus:border-indigo-500"
-              }`}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={!!activeTransfer}
-            />
-             {title && !/^[a-zA-Z0-9\s\-_.]*$/.test(title) && (
-              <p className="ml-2 text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2 animate-pulse">
-                <i className="fa-solid fa-triangle-exclamation"></i>
-                Format invalide : Utilisez uniquement lettres non accentuées, chiffres, espaces, tirets et points.
-              </p>
-            )}
-          </div>
-
           <div className={`relative border-2 border-dashed rounded-[2.5rem] p-16 transition-all text-center group ${file ? 'bg-indigo-50 border-indigo-400' : 'border-slate-100 hover:border-indigo-400'}`}>
             {!activeTransfer && (
               <input type="file" accept=".pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => setFile(e.target.files?.[0] || null)} />
@@ -162,6 +147,45 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
                 {file ? file.name : 'Sélectionnez le fichier PDF'}
               </p>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 ml-2">
+              <input 
+                type="checkbox" 
+                id="useCustomTitle"
+                className="w-5 h-5 rounded border-2 border-slate-200 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                checked={useCustomTitle}
+                onChange={(e) => setUseCustomTitle(e.target.checked)}
+                disabled={!!activeTransfer}
+              />
+              <label htmlFor="useCustomTitle" className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer select-none">
+                Personnaliser le titre de la procédure
+              </label>
+            </div>
+
+            {useCustomTitle && (
+              <div className="space-y-3 animate-slide-up">
+                <input 
+                  type="text" 
+                  placeholder="Saisissez un titre personnalisé..."
+                  className={`w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 outline-none transition-all font-bold text-slate-700 shadow-inner ${
+                    customTitle && !/^[a-zA-Z0-9\s\-_.]*$/.test(customTitle) 
+                    ? "border-rose-300 focus:border-rose-500 focus:bg-rose-50/10" 
+                    : "border-transparent focus:bg-white focus:border-indigo-500"
+                  }`}
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  disabled={!!activeTransfer}
+                />
+                {customTitle && !/^[a-zA-Z0-9\s\-_.]*$/.test(customTitle) && (
+                  <p className="ml-2 text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2 animate-pulse">
+                    <i className="fa-solid fa-triangle-exclamation"></i>
+                    Format invalide : Utilisez uniquement lettres non accentuées, chiffres, espaces, tirets et points.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col md:flex-row items-end gap-8 pt-4">
@@ -178,7 +202,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
             </div>
             <button 
               onClick={handlePublish}
-              disabled={!title.trim() || !file || !!activeTransfer || (!!title && !/^[a-zA-Z0-9\s\-_.]*$/.test(title))}
+              disabled={!currentTitle.trim() || !file || !!activeTransfer || (useCustomTitle && !!customTitle && !/^[a-zA-Z0-9\s\-_.]*$/.test(customTitle))}
               className="w-full md:w-auto bg-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 disabled:opacity-30 min-w-[240px]"
             >
               {activeTransfer ? 'TRAITEMENT IA...' : 'METTRE EN LIGNE LA PROCÉDURE'}
@@ -191,7 +215,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
            <div>
              <p className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">Indexation Intelligente</p>
              <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest leading-relaxed mt-1">
-               Notre IA Procedio va extraire automatiquement les points clés et les étapes de votre document pour les rendre accessibles via le chat.
+                Notre IA Procedio va extraire automatiquement les points clés et les étapes de votre document pour les rendre accessibles via le chat.
              </p>
            </div>
         </div>

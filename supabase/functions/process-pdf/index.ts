@@ -8,11 +8,13 @@ const corsHeaders = {
 };
 
 // Nettoyage pour les chemins de fichiers (Supabase Storage)
+// On autorise maintenant les espaces car ils seront gérés par l'API Storage
+// Mais on enlève quand même les accents pour plus de sûreté
 function sanitizePath(path: string) {
   return path
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Enlever accents
-    .replace(/[^a-zA-Z0-9.\-_/]/g, "_"); // Remplacer spéciaux par _
+    .replace(/[\u0300-\u036f]/g, "") // Enleve les accents
+    .replace(/[^a-zA-Z0-9.\-_/ ]/g, "_"); // Remplace spéciaux (sauf espace) par _
 }
 
 Deno.serve(async (req) => {
@@ -22,14 +24,14 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const title = (formData.get("title") as string) || "Sans titre";
-    const file_id = (formData.get("file_id") as string); // UUID du frontend
+    const file_id = (formData.get("file_id") as string);
     const category = (formData.get("category") as string) || "AUTRE";
     const uploadDate = formData.get("upload_date");
 
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // 1. Archivage dans Storage (Nommé d'après le TITRE utilisateur)
+    // 1. Archivage dans Storage
     const cleanTitle = sanitizePath(title);
     const storagePath = `${category}/${cleanTitle}.pdf`;
     
@@ -40,10 +42,10 @@ Deno.serve(async (req) => {
 
     if (storageError) console.error("⚠️ Storage Error:", storageError);
 
-    // 2. Insertion dans la table 'procedures' (Pour affichage UI)
-    console.log("💾 Insertion dans la table procedures...");
-    const { error: procError } = await supabase.from('procedures').insert({
-      uuid: file_id, // On utilise le file_id du front comme UUID primaire
+    // 2. Synchronisation UI
+    console.log("💾 Création de l'entrée Procédure...");
+    const { error: procError } = await supabase.from('procedures').upsert({
+      uuid: file_id, 
       title: title,
       Type: category,
       file_url: storagePath,
@@ -52,10 +54,7 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString()
     });
 
-    if (procError) {
-      console.error("❌ Erreur Table Procedures:", procError);
-      // On continue quand même car le RAG est p-e le plus important
-    }
+    if (procError) console.error("❌ Erreur Base de données:", procError);
 
     // 3. Traitement Mistral OCR
     const uploadFormData = new FormData();
@@ -81,7 +80,7 @@ Deno.serve(async (req) => {
     const ocrData = await ocrRes.json();
     const fullMarkdown = ocrData.pages?.map((p: any) => p.markdown).join("\n\n") || "";
 
-    // 4. Chunking & Embeddings (RAG)
+    // 4. Chunking & Embeddings
     const chunks = fullMarkdown.match(/[\s\S]{1,2000}/g) || [fullMarkdown];
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
@@ -99,13 +98,13 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Nettoyage Mistral
+    // Nettoyage
     fetch(`https://api.mistral.ai/v1/files/${mistralFileId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` }
     }).catch(() => {});
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, title }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
