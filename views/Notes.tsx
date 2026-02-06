@@ -142,7 +142,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       if (data) {
         const userNotes = data
           .filter(
-            (n) => n.title && !n.title.startsWith("LOG_") && !n.title.startsWith("CONSULTATION_") && !n.title.startsWith("SUGGESTION_")
+            (n) => n.title && !n.title.startsWith("LOG_") && !n.title.startsWith("CONSULTATION_") && !n.title.startsWith("SUGGESTION_") && !n.title.startsWith("FLASH_NOTE_")
           )
           .map((n) => ({
             id: n.id,
@@ -576,9 +576,66 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
          </div>
       )}
 
-      {/* LISTE DES NOTES - GRID FOR BOTH MODES */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* SUGGESTIONS EN ATTENTE (Manager only) */}
+      {mode === "flash" && user?.role === UserRole.MANAGER && notes.filter(n => n.status === 'suggestion').length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-lg font-black text-slate-700 mb-4 flex items-center gap-2">
+            <i className="fa-solid fa-hourglass-half text-amber-500"></i>
+            Suggestions en attente
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {notes.filter(n => n.status === 'suggestion').map((note) => {
+              const colors = ["bg-amber-100", "bg-orange-100", "bg-yellow-100"];
+              const colorIndex = note.id.charCodeAt(0) % colors.length;
+              const cardColor = colors[colorIndex];
+              
+              return (
+                <div
+                  key={note.id}
+                  onClick={() => setViewingNote(note)}
+                  className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border border-amber-200`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-black text-xl line-clamp-2 text-slate-800" style={{ wordBreak: 'break-word' }}>
+                      {note.title}
+                    </h3>
+                    <span className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-sm animate-pulse">
+                      <i className="fa-solid fa-clock text-xs"></i>
+                    </span>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative text-slate-600 font-medium">
+                    <div dangerouslySetInnerHTML={{ __html: note.content }} />
+                    <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-${cardColor.replace("bg-", "")} to-transparent pointer-events-none`}></div>
+                  </div>
+
+                  <div className="mt-auto">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                        <i className="fa-solid fa-user text-[8px]"></i>
+                        <span>{note.author_name}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                        <span>{note.createdAt}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* FLASH NOTES VALIDÉES */}
+      {mode === "flash" && notes.filter(n => n.status === 'public').length > 0 && (
+        <div>
+          <h3 className="text-lg font-black text-slate-700 mb-4 flex items-center gap-2">
+            <i className="fa-solid fa-check-circle text-emerald-500"></i>
+            Flash Notes validées
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {notes
+          .filter((note) => note.status === 'public')
           .filter(
             (note) =>
               note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -681,6 +738,56 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
             );
           })}
       </div>
+        </div>
+      )}
+
+      {/* PERSONAL NOTES (mode === "personal") */}
+      {mode === "personal" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {notes
+            .filter(
+              (note) =>
+                note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                note.content.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .map((note) => {
+              const cardColor = "bg-white";
+              const borderClass = "border-slate-200";
+
+              return (
+                <div
+                  key={note.id}
+                  onClick={() => setViewingNote(note)}
+                  className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-black text-xl line-clamp-2 text-slate-800" style={{ wordBreak: 'break-word' }}>
+                      {note.title}
+                    </h3>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative text-slate-600 font-medium">
+                    <div dangerouslySetInnerHTML={{ __html: note.content }} />
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {note.updatedAt}
+                    </span>
+                    
+                    <button
+                      onClick={(e) => handleDelete(e, note.id)}
+                      className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+                      title="Supprimer">
+                      <i className="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
 
       {/* MODALE ÉDITEUR PLEIN ÉCRAN */}
       {isEditing &&
