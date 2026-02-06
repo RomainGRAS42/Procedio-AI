@@ -54,6 +54,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     action: "UNLOCK" | "TOGGLE_LOCK";
   } | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<{ title: string; message: string; icon: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const backBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -699,13 +700,21 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                            }
                            if (result.error) throw result.error;
                            
-                           alert("Votre note a été proposée au manager !");
+                           setSuccessModal({
+                              title: "Flash Note Proposée !",
+                              message: "Votre suggestion a été envoyée au manager. Vous serez notifié de sa décision.",
+                              icon: "fa-lightbulb"
+                           });
                            setIsEditing(false);
                            setSearchTerm("");
                            onEditorClose?.();
                            await fetchNotes();
                         } catch (err) {
-                           alert("Erreur lors de la proposition.");
+                           setSuccessModal({
+                              title: "Erreur",
+                              message: "Impossible de proposer la note. Veuillez réessayer.",
+                              icon: "fa-triangle-exclamation"
+                           });
                         } finally {
                            setSaving(false);
                         }
@@ -812,6 +821,41 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   </button>
                 </div>
               </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* SUCCESS/ERROR MODAL */}
+      {successModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[3000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setSuccessModal(null)}>
+            <div
+              className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl space-y-6 transform scale-100 animate-slide-up"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="text-center space-y-4">
+                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-2xl ${
+                  successModal.icon === "fa-lightbulb" 
+                    ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" 
+                    : "bg-gradient-to-br from-rose-400 to-rose-600 text-white"
+                }`}>
+                  <i className={`fa-solid ${successModal.icon}`}></i>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                  {successModal.title}
+                </h3>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  {successModal.message}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSuccessModal(null)}
+                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-2xl hover:scale-105 transition-all shadow-lg shadow-indigo-200">
+                Compris !
+              </button>
             </div>
           </div>,
           document.body
