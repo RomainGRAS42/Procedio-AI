@@ -107,20 +107,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       // Si un utilisateur est connecté, on filtre explicitement par son ID
       if (currentUserId) {
         if (mode === "flash") {
-          // FLASH MODE: fetch PUBLIC notes OR suggestions
-          // Managers see ALL suggestions. Technicians see public + their own suggestions.
-          // Note: "status.eq.public" is for approved flash notes.
-          // "status.eq.suggestion" is for pending ones.
+          // FLASH MODE: Only show notes where is_flash_note = true
+          // Managers see ALL flash notes (public + suggestions)
+          // Technicians see public flash notes + their own suggestions
           
           if (user?.role === UserRole.MANAGER) {
-             query = query.or(`status.eq.public,status.eq.suggestion`);
+             query = query.eq('is_flash_note', true).or(`status.eq.public,status.eq.suggestion`);
           } else {
-             // Technicians: See Public + My Suggestions
-             query = query.or(`status.eq.public,and(status.eq.suggestion,user_id.eq.${currentUserId})`);
+             // Technicians: See Public Flash Notes + My Suggestions
+             query = query.eq('is_flash_note', true).or(`status.eq.public,and(status.eq.suggestion,user_id.eq.${currentUserId})`);
           }
         } else {
-          // PERSONAL MODE: fetch ONLY my notes (default)
-          query = query.eq("user_id", currentUserId);
+          // PERSONAL MODE: Only show MY notes where is_flash_note = false
+          query = query.eq("user_id", currentUserId).eq('is_flash_note', false);
         }
       }
 
@@ -721,7 +720,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                               user_id: user.id,
                               updated_at: new Date().toISOString(),
                               status: 'suggestion',
-                              category: 'general'
+                              category: 'general',
+                              is_flash_note: true  // Mark as Flash Note
                            };
                            let result;
                            if (activeNote.id) {
