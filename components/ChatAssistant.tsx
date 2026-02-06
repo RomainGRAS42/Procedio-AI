@@ -9,6 +9,15 @@ interface Message {
   type?: 'expert' | 'explorer' | 'uncertain';
   procedures?: Procedure[];
   suggestions?: any[];
+  groupedSuggestions?: Array<{
+    title: string;
+    path?: string;
+    chunks: Array<{
+      label: string;
+      content: string;
+      score: number;
+    }>;
+  }>;
   timestamp: Date;
   source?: string;
   sourcePath?: string;
@@ -92,12 +101,16 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
 
       if (supabaseError) throw supabaseError;
       
+      console.log("🤖 Copilote Response Type:", data.type);
+      if (data.groupedSuggestions) console.table(data.groupedSuggestions);
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: data.output || "Désolé, je ne parviens pas à répondre.",
         type: data.type,
         suggestions: data.suggestions,
+        groupedSuggestions: data.groupedSuggestions || [],
         source: data.source,
         sourcePath: data.sourcePath,
         timestamp: new Date()
@@ -303,8 +316,66 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                     />
                   </div>
 
-                  {/* UI EXPLORER (RÉSULTATS MULTIPLES) */}
-                  {msg.type === 'explorer' && msg.suggestions && (
+                  {/* UI EXPLORER (RÉSULTATS GROUPÉS) */}
+                  {msg.type === 'explorer' && (
+                    <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+                      {msg.groupedSuggestions && msg.groupedSuggestions.length > 0 ? (
+                        msg.groupedSuggestions.map((group, gIdx) => (
+                        <div key={gIdx} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                          <button
+                            onClick={async () => {
+                              const { data } = await supabase.from('procedures').select('*').ilike('title', `%${group.title}%`).maybeSingle();
+                              if (data) {
+                                onSelectProcedure({
+                                  id: data.file_id || data.uuid,
+                                  title: data.title,
+                                  category: data.Type,
+                                  fileUrl: data.file_url
+                                } as any);
+                                setIsOpen(false);
+                              } else if (group.path) {
+                                const fullUrl = `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${group.path}`;
+                                window.open(fullUrl, '_blank');
+                              }
+                            }}
+                            className="w-full text-left p-3 bg-slate-50 border-b border-slate-100 hover:bg-slate-100 transition-colors flex items-center justify-between group"
+                          >
+                            <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                              <i className="fa-solid fa-file-lines text-indigo-500"></i>
+                              {group.title}
+                            </span>
+                            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-1 transition-transform"></i>
+                          </button>
+                          
+                          <div className="p-2 space-y-2">
+                            {group.chunks.map((c, cIdx) => (
+                              <div key={cIdx} className="p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100 group/chunk">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded uppercase tracking-wider">
+                                    {c.label}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 font-medium">Matches {Math.round(c.score * 100)}%</span>
+                                </div>
+                                <p className="text-[10px] text-slate-600 line-clamp-3 leading-relaxed italic">
+                                  "...{c.content.substring(0, 150)}..."
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          Recherche approfondie en cours...
+                        </p>
+                      </div>
+                    )}
+                    </div>
+                  )}
+
+                  {/* UI EXPLORER LEGACY (BACKWARD COMPATIBILITY) */}
+                  {msg.type === 'explorer' && !msg.groupedSuggestions && msg.suggestions && (
                     <div className="mt-4 space-y-2">
                        {msg.suggestions.map((s, idx) => (
                          <button

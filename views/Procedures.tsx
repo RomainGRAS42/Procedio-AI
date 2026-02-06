@@ -31,7 +31,7 @@ const Procedures: React.FC<ProceduresProps> = ({
   // AI Modal moved to App.tsx
   
   const [currentFolder, setCurrentFolder] = useState<string | null>(initialFolder); 
-  const [folders, setFolders] = useState<string[]>([]);
+  const [folders, setFolders] = useState<Array<{ name: string; count: number }>>([]);
   const [files, setFiles] = useState<Procedure[]>([]);
   const [allProcedures, setAllProcedures] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,13 +74,26 @@ const Procedures: React.FC<ProceduresProps> = ({
       
       console.log("📦 fetchStructure: Chargé", mappedProcs.length, "procédures dans allProcedures");
       
+      const countsMap: Record<string, number> = {};
+      mappedProcs.forEach(p => {
+        const cat = p.category.toUpperCase();
+        countsMap[cat] = (countsMap[cat] || 0) + 1;
+      });
+
       const uniqueCategories = Array.from(new Set(
         results.map(p => (p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ'))
       ));
       
       const defaultCats = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEUR'];
       const finalFolders = Array.from(new Set([...defaultCats, ...uniqueCategories])).sort() as string[];
-      setFolders(finalFolders);
+      
+      // We can wrap finalFolders with count metadata
+      const foldersWithCounts = finalFolders.map(folder => ({
+        name: folder,
+        count: countsMap[folder] || 0
+      }));
+      
+      setFolders(foldersWithCounts as any); // Type assertion to avoid breaking existing state if needed, but better to update state type
 
       if (currentFolder) {
         const filteredFiles = mappedProcs.filter(p => p.category.toUpperCase() === currentFolder.toUpperCase());
@@ -246,7 +259,7 @@ const Procedures: React.FC<ProceduresProps> = ({
         )}
 
         <div className="min-h-[400px]">
-          {loading && (files.length === 0 && folders.length === 0) ? (
+          {loading && (files.length === 0 && (folders as any[]).length === 0) ? (
             <div className="h-64 flex flex-col items-center justify-center gap-4">
               <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
@@ -269,23 +282,35 @@ const Procedures: React.FC<ProceduresProps> = ({
           ) : (
             <div className="space-y-12">
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-                {currentFolder === null && folders.map((folder) => (
-                  <div 
-                    key={folder}
-                    onClick={() => setCurrentFolder(folder)}
-                    className="group relative flex flex-col items-center justify-center aspect-square rounded-[3.5rem] p-10 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
-                  >
-                    <div className="text-7xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
-                      <i className="fa-solid fa-folder"></i>
+                {currentFolder === null && (folders as any[]).map((folder: any) => {
+                  const folderName = typeof folder === 'string' ? folder : folder.name;
+                  const folderCount = typeof folder === 'string' ? 0 : folder.count;
+                  
+                  return (
+                    <div 
+                      key={folderName}
+                      onClick={() => setCurrentFolder(folderName)}
+                      className="group relative flex flex-col items-center justify-center aspect-square rounded-[3.5rem] p-10 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
+                    >
+                      <div className="text-7xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
+                        <i className="fa-solid fa-folder"></i>
+                      </div>
+                      <div className="flex flex-col items-center gap-2 mt-2">
+                        <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
+                          {folderName}
+                        </span>
+                        <div className="px-3 py-1 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200">
+                          <span className="text-[10px] font-black text-white whitespace-nowrap">
+                            {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                        <i className="fa-solid fa-arrow-right"></i>
+                      </div>
                     </div>
-                    <span className="font-black text-slate-900 text-[11px] uppercase tracking-widest text-center leading-tight">
-                      {folder}
-                    </span>
-                    <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                      <i className="fa-solid fa-arrow-right"></i>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {currentFolder !== null && files.map((file) => (
                   <div 
