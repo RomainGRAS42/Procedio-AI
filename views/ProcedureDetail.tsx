@@ -187,12 +187,17 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   onSuggest,
 }) => {
   const cleanTitle = useMemo(() => {
-    if (!procedure?.title || typeof procedure.title !== 'string') return "Procédure sans titre";
-    return procedure.title
-      .replace(/\.[^/.]+$/, "")
-      .replace(/^[0-9a-f.-]+-/i, "")
-      .replace(/_/g, " ")
-      .trim();
+    try {
+      if (!procedure?.title || typeof procedure.title !== 'string') return "Procédure sans titre";
+      return procedure.title
+        .replace(/\.[^/.]+$/, "")
+        .replace(/^[0-9a-f.-]+-/i, "")
+        .replace(/_/g, " ")
+        .trim();
+    } catch (e) {
+      console.error("Error cleaning title:", e);
+      return "Procédure sans titre";
+    }
   }, [procedure?.title]);
 
   const chatSessionId = useMemo(() => {
@@ -303,8 +308,14 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     }
   };
 
-  // State pour stocker l'ID Pinecone, initialisé avec la prop si présente
-  const [pineconeId, setPineconeId] = useState<string | undefined>(procedure.file_id || procedure.pinecone_document_id);
+  // State pour stocker l'ID Pinecone, initialisé avec la prop si présente (Defensive Coding)
+  const [pineconeId, setPineconeId] = useState<string | undefined>(() => {
+    try {
+      return procedure?.file_id || procedure?.pinecone_document_id;
+    } catch {
+      return undefined;
+    }
+  });
 
   // State pour stocker l'ID réel de la procédure (PK)
   const [realProcedureId, setRealProcedureId] = useState<number | string | null>(null);
