@@ -1197,8 +1197,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       </button>
                    </div>
                 )}
-
-                {!viewingNote.is_flash_note && (
+                {/* Lock protection is only for Personal Notes (mode === "personal" AND not a Flash Note) */}
+                {mode === "personal" && !viewingNote.is_flash_note && viewingNote.status !== "suggestion" && (
                   <button
                     onClick={toggleLockStatus}
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${

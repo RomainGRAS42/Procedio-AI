@@ -36,6 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onActionHandled,
   onUploadClick,
 }) => {
+  console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -500,11 +501,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const fetchFlashNoteNotifications = async () => {
+    console.log("DEBUG: Calling fetchFlashNoteNotifications...");
     setLoadingFlashNotes(true);
     try {
       let query = supabase.from("notes").select("*");
       
-      if (user.role === UserRole.MANAGER) {
+      const isManager = user.role.toUpperCase() === UserRole.MANAGER.toUpperCase();
+      console.log("DEBUG: fetchFlashNoteNotifications - isManager:", isManager);
+
+      if (isManager) {
         // Managers see NEW suggestions
         query = query.ilike("title", "FLASH_NOTE_SUGGESTION");
       } else {
@@ -516,8 +521,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         .order("created_at", { ascending: false })
         .limit(10);
       
+      console.log("DEBUG: fetchFlashNoteNotifications - Response:", { data, error });
+
       if (error) throw error;
-      if (data) setFlashNoteNotifications(data);
+      if (data) {
+        setFlashNoteNotifications(data);
+        console.log("DEBUG: setFlashNoteNotifications updated with count:", data.length);
+      }
     } catch (err) {
       console.error("Error fetching flash note notifications:", err);
     } finally {
