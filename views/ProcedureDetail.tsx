@@ -705,8 +705,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         </div>
 
         <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
-          {/* FLOATING TOOLBAR - Moved further left to avoid popover clipping */}
-          <div className="absolute top-10 right-24 z-30 flex items-center gap-2 p-2 bg-slate-800/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl opacity-0 group-hover/viewer:opacity-100 transition-all duration-300 translate-y-2 group-hover/viewer:translate-y-0 overflow-visible">
+          {/* FLOATING TOOLBAR - Centered for maximum visibility */}
+          <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-2 bg-slate-800/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl opacity-0 group-hover/viewer:opacity-100 transition-all duration-300 translate-y-2 group-hover/viewer:translate-y-0">
             <div className="flex items-center gap-1 pr-2 border-r border-white/10">
               <ZoomOut>
                 {(props) => (
