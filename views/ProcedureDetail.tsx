@@ -166,6 +166,7 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
                 theme="dark"
                 localization={localization as any}
                 onDocumentLoad={(e) => {
+                  /*
                   try {
                     const hash = window.location.hash;
                     if (hash && hash.startsWith('#search=')) {
@@ -184,6 +185,7 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
                   } catch (err) {
                     console.error("Error highlighting on load:", err);
                   }
+                  */
                 }}
               />
             </div>
