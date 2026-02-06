@@ -78,23 +78,17 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error: supabaseError } = await supabase.functions.invoke('query-rag', {
+        body: {
           query: input,
           user_email: user.email
-        })
+        }
       });
 
-      if (!response.ok) {
-        console.error('Webhook Error:', response.status, response.statusText);
-        throw new Error(`Erreur webhook: ${response.status}`);
+      if (supabaseError) {
+        console.error('Supabase Error:', supabaseError);
+        throw new Error(`Erreur Supabase: ${supabaseError.message}`);
       }
-
-      const data = await response.json();
       console.log('🤖 Chatbot Response:', data); // DEBUG
       
       // Handle response from n8n (Array or Object)

@@ -30,20 +30,13 @@ const ExpertAIModal: React.FC<ExpertAIModalProps> = ({ isOpen, onClose, onSelect
     try {
       console.log("🤖 Expert IA: Recherche pour:", query);
       
-      const response = await fetch(
-        "https://n8n.srv901593.hstgr.cloud/webhook/search-procedures",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: query }),
-        }
-      );
+      const { data, error: supabaseError } = await supabase.functions.invoke('query-rag', {
+        body: { question: query }
+      });
 
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+      if (supabaseError) {
+        throw new Error(`Erreur Supabase: ${supabaseError.message}`);
       }
-
-      const data = await response.json();
       console.log("📦 Réponse webhook:", data);
 
       // Parse new format

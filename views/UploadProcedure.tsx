@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { ActiveTransfer } from '../App';
 
 interface UploadProcedureProps {
@@ -48,29 +48,24 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
       formData.append('upload_date', uploadDate);
       formData.append('category', selectedFolder);
 
-      console.log('📤 Envoi vers n8n (MODE PRODUCTION):', {
-        url: 'https://n8n.srv901593.hstgr.cloud/webhook/f2d12a7e-05d9-474f-bb17-336eeb2650d5',
+      console.log('📤 Envoi vers Supabase Edge Function (process-pdf):', {
         file_id: fileId,
         title: title.trim(),
         category: selectedFolder
       });
 
-      const n8nResponse = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/f2d12a7e-05d9-474f-bb17-336eeb2650d5', {
-        method: 'POST',
+      const { data: supabaseData, error: supabaseError } = await supabase.functions.invoke('process-pdf', {
         body: formData,
-        signal: controller.signal
       });
       
-      console.log('✅ Réponse n8n:', {
-        status: n8nResponse.status,
-        statusText: n8nResponse.statusText,
-        ok: n8nResponse.ok
+      console.log('✅ Réponse Supabase:', {
+        data: supabaseData,
+        error: supabaseError
       });
 
-      if (!n8nResponse.ok) {
-        const errorText = await n8nResponse.text();
-        console.error('❌ Erreur n8n:', errorText);
-        throw new Error(`Le service de publication est momentanément indisponible. (${n8nResponse.status})`);
+      if (supabaseError) {
+        console.error('❌ Erreur Supabase Function:', supabaseError);
+        throw new Error(`Le service d'indexation est momentanément indisponible. (${supabaseError.message})`);
       }
 
       setActiveTransfer({ ...initialTransfer, step: "Fichier envoyé avec succès !", progress: 100, abortController: null });
