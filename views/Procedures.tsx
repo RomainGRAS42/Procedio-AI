@@ -37,6 +37,7 @@ const Procedures: React.FC<ProceduresProps> = ({
   const [loading, setLoading] = useState(false);
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
   const [isSharePointModalOpen, setIsSharePointModalOpen] = useState(false);
+  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
 
   const cleanFileName = (name: string) => {
     if (!name) return "Document sans titre";
@@ -193,6 +194,24 @@ const Procedures: React.FC<ProceduresProps> = ({
             <div className="h-8 w-px bg-slate-200"></div>
           )}
 
+          {/* ZONE 1.5 : VIEW TOGGLE (GRID/LIST) */}
+          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+            <button 
+              onClick={() => setViewType('grid')}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${viewType === 'grid' ? 'bg-white text-indigo-600 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Vue Grille"
+            >
+              <i className="fa-solid fa-table-cells-large"></i>
+            </button>
+            <button 
+              onClick={() => setViewType('list')}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${viewType === 'list' ? 'bg-white text-indigo-600 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Vue Liste"
+            >
+              <i className="fa-solid fa-list"></i>
+            </button>
+          </div>
+
           {/* ZONE 2 : ACTIONS DE CRÉATION (GROUPÉES) */}
           {user.role === UserRole.MANAGER && (
             <div className="flex items-center gap-3">
@@ -299,8 +318,9 @@ const Procedures: React.FC<ProceduresProps> = ({
                         <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
                           {folderName}
                         </span>
-                        <div className="px-3 py-1 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200">
-                          <span className="text-[10px] font-black text-white whitespace-nowrap">
+                        {/* REFINED BADGE (WCAG & SUBTLE) */}
+                        <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
+                          <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
                             {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
                           </span>
                         </div>
@@ -312,24 +332,63 @@ const Procedures: React.FC<ProceduresProps> = ({
                   );
                 })}
 
-                {currentFolder !== null && files.map((file) => (
-                  <div 
-                    key={file.id}
-                    onClick={() => onSelectProcedure(file)}
-                    className="group relative flex flex-col items-center justify-center aspect-square rounded-[3.5rem] p-10 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-emerald-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
-                  >
-                    <div className="text-7xl mb-6 text-slate-50 transition-all group-hover:scale-110 group-hover:text-emerald-500">
-                      <i className="fa-solid fa-file-pdf"></i>
-                    </div>
-                    <span className="font-black text-slate-900 text-[11px] uppercase tracking-widest text-center leading-tight line-clamp-2 px-2">
-                      {cleanFileName(file.title)}
-                    </span>
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                      <span className="w-2 h-2 bg-emerald-200 rounded-full"></span>
-                    </div>
+              {/* FICHIERS (GRID OR LIST) */}
+              {currentFolder !== null && (
+                viewType === 'grid' ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                    {files.map((file) => (
+                      <div 
+                        key={file.id}
+                        onClick={() => onSelectProcedure(file)}
+                        className="group relative flex flex-col items-center justify-center aspect-square rounded-[3.5rem] p-10 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-emerald-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
+                      >
+                        <div className="text-7xl mb-6 text-slate-50 transition-all group-hover:scale-110 group-hover:text-emerald-500">
+                          <i className="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <span className="font-black text-slate-900 text-[11px] uppercase tracking-widest text-center leading-tight line-clamp-2 px-2">
+                          {cleanFileName(file.title)}
+                        </span>
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-emerald-200 rounded-full"></span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-3 px-4">
+                    {files.map((file) => (
+                      <div 
+                        key={file.id}
+                        onClick={() => onSelectProcedure(file)}
+                        className="group bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-indigo-400 flex items-center justify-between cursor-pointer transition-all hover:shadow-xl hover:-translate-x-1 animate-slide-up"
+                      >
+                        <div className="flex items-center gap-6">
+                          <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                            <i className="fa-solid fa-file-pdf"></i>
+                          </div>
+                          <div>
+                            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-1 group-hover:text-indigo-600 transition-colors">
+                              {cleanFileName(file.title)}
+                            </h4>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded">
+                                {file.category}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-300">
+                                Ajouté le {file.createdAt ? new Date(file.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                          <i className="fa-solid fa-arrow-right"></i>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
 
                 {currentFolder !== null && files.length === 0 && !loading && (
                   <div className="col-span-full py-20 text-center text-slate-300 flex flex-col items-center gap-6">

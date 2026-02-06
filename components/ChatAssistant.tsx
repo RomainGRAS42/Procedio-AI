@@ -317,10 +317,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                   </div>
 
                   {/* UI EXPLORER (RÉSULTATS GROUPÉS) */}
-                  {msg.type === 'explorer' && (
+                  {(msg.type === 'explorer' || (msg.groupedSuggestions && msg.groupedSuggestions.length > 0)) && (
                     <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
                       {msg.groupedSuggestions && msg.groupedSuggestions.length > 0 ? (
-                        msg.groupedSuggestions.map((group, gIdx) => (
+                        msg.groupedSuggestions.map((group: any, gIdx: number) => (
                         <div key={gIdx} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                           <button
                             onClick={async () => {
@@ -348,8 +348,31 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                           </button>
                           
                           <div className="p-2 space-y-2">
-                            {group.chunks.map((c, cIdx) => (
-                              <div key={cIdx} className="p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100 group/chunk">
+                            {group.chunks.map((c: any, cIdx: number) => (
+                              <div 
+                                key={cIdx} 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const { data } = await supabase.from('procedures').select('*').ilike('title', `%${group.title}%`).maybeSingle();
+                                  
+                                  // 💡 DEEP LINKING: Use #search hash for PDF high-lighting
+                                  const searchStr = encodeURIComponent(c.content.substring(0, 40).replace(/[^\w\s]/g, ''));
+                                  
+                                  if (data) {
+                                    onSelectProcedure({
+                                      id: data.file_id || data.uuid,
+                                      title: data.title,
+                                      category: data.Type,
+                                      fileUrl: `${data.file_url}#search="${searchStr}"`
+                                    } as any);
+                                    setIsOpen(false);
+                                  } else if (group.path) {
+                                    const fullUrl = `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${group.path}#search="${searchStr}"`;
+                                    window.open(fullUrl, '_blank');
+                                  }
+                                }}
+                                className="p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100 group/chunk cursor-pointer active:scale-[0.98]"
+                              >
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded uppercase tracking-wider">
                                     {c.label}
