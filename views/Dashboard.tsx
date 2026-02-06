@@ -506,15 +506,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     try {
       let query = supabase.from("notes").select("*");
       
-      const isManager = user.role.toUpperCase() === UserRole.MANAGER.toUpperCase();
-      console.log("DEBUG: fetchFlashNoteNotifications - isManager:", isManager);
+      const isManager = String(user?.role || "").toUpperCase() === "MANAGER";
+      console.log("DEBUG: fetchFlashNoteNotifications - isManager:", isManager, "Raw Role:", user?.role);
 
       if (isManager) {
         // Managers see NEW suggestions
-        query = query.ilike("title", "FLASH_NOTE_SUGGESTION");
+        query = query.eq("title", "FLASH_NOTE_SUGGESTION");
       } else {
         // Technicians see THEIR validation/rejection responses
-        query = query.or(`title.ilike.FLASH_NOTE_VALIDATED,title.ilike.FLASH_NOTE_REJECTED`).eq('user_id', user.id);
+        query = query.in("title", ["FLASH_NOTE_VALIDATED", "FLASH_NOTE_REJECTED"]).eq('user_id', user.id);
       }
 
       const { data, error } = await query
