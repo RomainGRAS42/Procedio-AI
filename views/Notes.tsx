@@ -1074,15 +1074,12 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                                   if(error) throw error;
                                   
                                   // Create notification for Technician
-                                  await supabase.from("flash_note_responses").insert([{
-                                    note_id: viewingNote.id,
+                                  await supabase.from("notes").insert([{
+                                    title: `FLASH_NOTE_VALIDATED`,
+                                    content: `Votre Flash Note "${viewingNote.title}" a été validée par ${user.firstName} ${user.lastName || ""} et est maintenant visible par toute l'équipe !`,
+                                    is_protected: false,
                                     user_id: viewingNote.user_id,
-                                    manager_id: user?.id,
-                                    status: 'approved',
-                                    manager_response: "Votre Flash Note a été validée et est maintenant visible par toute l'équipe !",
-                                    note_title: viewingNote.title,
-                                    note_content: viewingNote.content,
-                                    read: false
+                                    is_flash_note: false
                                   }]);
 
                                   setSuccessModal({
@@ -1123,15 +1120,12 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                                   if(error) throw error;
                                   
                                   // Create notification for Technician
-                                  await supabase.from("flash_note_responses").insert([{
-                                    note_id: viewingNote.id,
+                                  await supabase.from("notes").insert([{
+                                    title: `FLASH_NOTE_REJECTED`,
+                                    content: `Votre suggestion de Flash Note "${viewingNote.title}" a été refusée par ${user.firstName} ${user.lastName || ""}. Elle reste privée.`,
+                                    is_protected: false,
                                     user_id: viewingNote.user_id,
-                                    manager_id: user?.id,
-                                    status: 'rejected',
-                                    manager_response: "Votre suggestion de Flash Note a été refusée. Elle reste privée.",
-                                    note_title: viewingNote.title,
-                                    note_content: viewingNote.content,
-                                    read: false
+                                    is_flash_note: false
                                   }]);
 
                                   setSuccessModal({
