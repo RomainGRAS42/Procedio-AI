@@ -125,10 +125,12 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           // Technicians see public flash notes + their own suggestions
           
           if (user?.role === UserRole.MANAGER) {
-             query = query.eq('is_flash_note', true).or(`status.eq.public,status.eq.suggestion`);
+             // Managers see ALL flash notes (public + suggestions)
+             query = query.eq('is_flash_note', true);
           } else {
              // Technicians: See Public Flash Notes + My Suggestions
-             query = query.eq('is_flash_note', true).or(`status.eq.public,and(status.eq.suggestion,user_id.eq.${currentUserId})`);
+             // Use .or() at the top level to combine conditions
+             query = query.or(`and(is_flash_note.eq.true,status.eq.public),and(is_flash_note.eq.true,status.eq.suggestion,user_id.eq.${currentUserId})`);
           }
         } else {
           // PERSONAL MODE: Only show MY notes where is_flash_note = false
