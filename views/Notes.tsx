@@ -744,7 +744,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                               content: `${user.firstName} ${user.lastName || ""} a proposé une Flash Note: "${activeNote.title.trim()}"`,
                               is_protected: false,
                               user_id: user.id,
-                              tags: ["FLASH_NOTE", "SUGGESTION"],
+                              is_flash_note: false  // This is a notification, not a flash note
                            }]);
 
                            setSuccessModal({
