@@ -26,9 +26,10 @@ interface Message {
 interface ChatAssistantProps {
   user: User;
   onSelectProcedure: (procedure: Procedure) => void;
+  initialContext?: string | null;
 }
 
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }) => {
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure, initialContext }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,6 +37,15 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
+  
+  // 🧠 Context Awareness: Auto-fill chat when navigation provides context
+  useEffect(() => {
+    if (initialContext && initialContext.length > 0) {
+      console.log("🧠 Chat Context received:", initialContext);
+      setIsOpen(true);
+      setInput(initialContext);
+    }
+  }, [initialContext]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

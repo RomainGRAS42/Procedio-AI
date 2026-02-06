@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
 import { Procedure, User } from "../types";
 import { supabase } from "../lib/supabase";
 import ReactMarkdown from "react-markdown";
@@ -87,8 +86,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallbac
 // 🛡️ ISOLATED PDF VIEWER COMPONENT
 // This prevents high-level re-renders from breaking the PDF.js plugin state
 const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
-  const location = useLocation(); // Hook to listen to URL changes
-
   // 🔍 PDF Search Plugin
   const searchPluginInstance = searchPlugin();
   const { highlight, ShowSearchPopover } = searchPluginInstance;
@@ -96,45 +93,6 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
   // 🔎 PDF Zoom Plugin
   const zoomPluginInstance = zoomPlugin();
   const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
-
-  // ⚡️ EFFECT: Trigger highlight when URL Hash or FileUrl changes
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const performHighlight = () => {
-      try {
-        let searchTerm = "";
-
-        // STRATEGY 1: Check Browser URL Hash (Primary for navigation)
-        // Expected format: /procedure/123#search="term"
-        if (location.hash && location.hash.includes('search=')) {
-          const raw = location.hash.split('search=')[1];
-          if (raw) searchTerm = decodeURIComponent(raw.replace(/["']/g, '').split('&')[0]);
-        }
-        
-        // STRATEGY 2: Check Prop fileUrl Hash (Fallback for internal state)
-        if (!searchTerm && fileUrl && fileUrl.includes('#search=')) {
-          const raw = fileUrl.split('search=')[1];
-          if (raw) searchTerm = decodeURIComponent(raw.replace(/["']/g, '').split('&')[0]);
-        }
-
-        if (searchTerm && searchTerm.length >= 2) {
-           console.log("🔦 Auto-highlighting target:", searchTerm);
-           highlight(searchTerm);
-        }
-      } catch (e) {
-        console.error("Error in highlight effect:", e);
-      }
-    };
-
-    // Attempt highlight immediately and retry after a delay (for PDF rendering)
-    performHighlight();
-    timeoutId = setTimeout(performHighlight, 1000); 
-
-    return () => clearTimeout(timeoutId);
-  }, [location.hash, fileUrl, highlight]);
-
-
   const plugins = useMemo(() => [searchPluginInstance, zoomPluginInstance], [searchPluginInstance, zoomPluginInstance]);
 
 

@@ -474,6 +474,16 @@ const AppContent: React.FC<any> = ({
       {user && (
         <ChatAssistant 
           user={user} 
+          // 🧠 Context injection from URL hash
+          initialContext={(() => {
+            if (location.hash && location.hash.includes('search=')) {
+              try {
+                const raw = location.hash.split('search=')[1];
+                return decodeURIComponent(raw.replace(/["']/g, '').split('&')[0]);
+              } catch (e) { return null; }
+            }
+            return null;
+          })()}
           onSelectProcedure={(p) => {
             // 🧠 Deep Linking Logic: Extract hash from fileUrl if present (e.g. #search="term")
             // This allows the Chat to link to specific PDF sections
