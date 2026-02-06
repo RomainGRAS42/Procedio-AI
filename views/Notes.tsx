@@ -8,6 +8,7 @@ interface ProtectedNote extends Note {
   user_id?: string;
   author_role?: UserRole; // To track if author was technician/manager
   author_name?: string;
+  createdAt?: string;
 }
 
 interface NotesProps {
@@ -101,7 +102,10 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
       let query = supabase
         .from("notes")
-        .select("*") // Utilisation de * pour éviter les erreurs de noms de colonnes
+        .select(`
+          *,
+          author:user_profiles!user_id(first_name, last_name)
+        `)
         .order("updated_at", { ascending: false });
 
       // Si un utilisateur est connecté, on filtre explicitement par son ID
@@ -143,7 +147,13 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               month: "2-digit",
               year: "numeric",
             }),
+            createdAt: new Date(n.created_at).toLocaleDateString("fr-FR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }),
             user_id: n.user_id,
+            author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : "Inconnu",
             status: n.status || "private",
             category: n.category || "general",
           }));
@@ -553,8 +563,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
          </div>
       )}
 
-      {/* LISTE DES NOTES - MODE FLASH (GRID) vs PERSONAL (LIST) */}
-      <div className={mode === "flash" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4"}>
+      {/* LISTE DES NOTES - GRID FOR BOTH MODES */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {notes
           .filter(
             (note) =>
@@ -578,43 +588,47 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   setViewingNote(note);
                 }
               }}
-              className={mode === "flash" 
-                ? `group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`
-                : `group hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 rounded-2xl p-5 relative cursor-pointer flex flex-row items-center gap-6 shadow-sm hover:shadow-lg ${cardColor} border ${borderClass}`
-              }>
+              className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`}>
               
+              <div className="flex justify-between items-start mb-4">
+                <h3 className={`font-black text-xl line-clamp-2 ${mode === "flash" ? "text-slate-800" : "text-slate-700"}`} style={{ wordBreak: 'break-word' }}>
+                  {note.title}
+                </h3>
+                {note.is_protected ? (
+                  unlockedNotes.has(note.id) ? (
+                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                      <i className="fa-solid fa-lock-open text-xs"></i>
+                    </span>
+                  ) : (
+                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+                      <i className="fa-solid fa-lock text-xs"></i>
+                    </span>
+                  )
+                ) : (
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${mode === "flash" ? "bg-white/50 text-slate-500" : "bg-slate-50 text-slate-300"}`}>
+                    <i className="fa-solid fa-eye text-xs"></i>
+                  </span>
+                )}
+              </div>
+
+              <div className={`flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative ${mode === "flash" ? "text-slate-600 font-medium" : "text-slate-400"}`}>
+                <div dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
+                <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${mode === "flash" ? "from-" + cardColor.replace("bg-", "") : "from-white"} to-transparent pointer-events-none`}></div>
+              </div>
+
               {mode === "flash" ? (
-                // FLASH MODE: Vertical Card
-                <>
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-black text-xl line-clamp-2 text-slate-800" style={{ wordBreak: 'break-word' }}>
-                      {note.title}
-                    </h3>
-                    {note.is_protected ? (
-                      unlockedNotes.has(note.id) ? (
-                        <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
-                          <i className="fa-solid fa-lock-open text-xs"></i>
-                        </span>
-                      ) : (
-                        <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
-                          <i className="fa-solid fa-lock text-xs"></i>
-                        </span>
-                      )
-                    ) : (
-                      <span className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 text-slate-500">
-                        <i className="fa-solid fa-eye text-xs"></i>
-                      </span>
-                    )}
+                <div className="mt-auto space-y-3">
+                  {/* Author & Date Info */}
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                    <i className="fa-solid fa-user text-[8px]"></i>
+                    <span>{note.author_name}</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                    <span>{note.createdAt}</span>
                   </div>
-
-                  <div className="flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative text-slate-600 font-medium">
-                    <div dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
-                    <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-${cardColor.replace("bg-", "")} to-transparent pointer-events-none`}></div>
-                  </div>
-
-                  <div className="mt-auto flex items-center justify-between">
+                  
+                  <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      {note.updatedAt}
+                      Mis à jour: {note.updatedAt}
                     </span>
                     
                     <div className="flex gap-2">
@@ -639,36 +653,20 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       </button>
                     </div>
                   </div>
-                </>
+                </div>
               ) : (
-                // PERSONAL MODE: Horizontal List Item
-                <>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <h3 className="font-bold text-lg text-slate-900 line-clamp-1" style={{ wordBreak: 'break-word' }}>
-                        {note.title}
-                      </h3>
-                      {note.is_protected && (
-                        <span className="shrink-0 w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-                          <i className="fa-solid fa-lock text-[10px]"></i>
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-slate-500 line-clamp-2 mb-3" dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      {note.updatedAt}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={(e) => handleDelete(e, note.id)}
-                      className="w-9 h-9 rounded-xl hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center"
-                      title="Supprimer">
-                      <i className="fa-solid fa-trash-can text-sm"></i>
-                    </button>
-                  </div>
-                </>
+                <div className="mt-auto flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    {note.updatedAt}
+                  </span>
+                  
+                  <button
+                    onClick={(e) => handleDelete(e, note.id)}
+                    className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+                    title="Supprimer">
+                    <i className="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
               )}
             </div>
             );
