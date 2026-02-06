@@ -556,7 +556,12 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   <i className="fa-solid fa-lightbulb"></i>
                </div>
                <div>
-                  <h4 className="font-bold text-amber-800 text-sm uppercase tracking-wide">Suggestions en attente</h4>
+                  <h4 className="font-bold text-amber-800 text-sm uppercase tracking-wide">
+                    Suggestions en attente
+                    <span className="ml-2 px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full text-xs font-black">
+                      {notes.filter(n => n.status === 'suggestion').length}
+                    </span>
+                  </h4>
                   <p className="text-xs text-amber-600">Validez les propositions de votre équipe.</p>
                </div>
             </div>
@@ -617,19 +622,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               </div>
 
               {mode === "flash" ? (
-                <div className="mt-auto space-y-3">
+                <div className="mt-auto">
                   {/* Author & Date Info */}
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
-                    <i className="fa-solid fa-user text-[8px]"></i>
-                    <span>{note.author_name}</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                    <span>{note.createdAt}</span>
-                  </div>
-                  
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Mis à jour: {note.updatedAt}
-                    </span>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                      <i className="fa-solid fa-user text-[8px]"></i>
+                      <span>{note.author_name}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                      <span>{note.createdAt}</span>
+                    </div>
                     
                     <div className="flex gap-2">
                       {!note.is_protected && (
