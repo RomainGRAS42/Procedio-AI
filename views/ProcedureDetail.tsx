@@ -39,6 +39,29 @@ interface SuggestionItem {
   manager?: { first_name: string };
 }
 
+// 🛡️ ERROR BOUNDARY COMPONENT
+class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("🛑 ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 // 🛡️ ISOLATED PDF VIEWER COMPONENT
 // This prevents high-level re-renders from breaking the PDF.js plugin state
 const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
@@ -143,16 +166,25 @@ const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
       </div>
 
       <div className="flex-1 overflow-hidden" style={{ filter: 'brightness(0.95) contrast(1.05)' }}>
-        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-          <div className="h-full w-full">
-            <Viewer 
-              fileUrl={fileUrl} 
-              plugins={plugins}
-              theme="dark"
-              localization={localization as any}
-            />
+        <ErrorBoundary fallback={
+          <div className="flex items-center justify-center h-full text-slate-400">
+            <div className="text-center">
+              <i className="fa-solid fa-bug text-2xl mb-2"></i>
+              <p>Erreur du lecteur PDF</p>
+            </div>
           </div>
-        </Worker>
+        }>
+          <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+            <div className="h-full w-full">
+              <Viewer 
+                fileUrl={fileUrl} 
+                plugins={plugins}
+                theme="dark"
+                localization={localization as any}
+              />
+            </div>
+          </Worker>
+        </ErrorBoundary>
       </div>
     </div>
   );
@@ -683,7 +715,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 }`}>
                 {msg.sender === "ai" ? (
                   <div className="procedio-markdown">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                    <ErrorBoundary fallback={<p className="text-red-400 text-xs">Erreur d'affichage du message.</p>}>
+                      {typeof msg.text === 'string' ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                      ) : (
+                        <span>{String(msg.text)}</span>
+                      )}
+                    </ErrorBoundary>
                   </div>
                 ) : (
                   msg.text
