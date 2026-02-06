@@ -12,6 +12,13 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/search/lib/styles/index.css';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 
+// 🎨 Custom Styles to hide unwanted "Whole words" option
+const hideWholeWordsStyles = `
+  .rpv-search__popover-footer-item:nth-child(3) {
+    display: none !important;
+  }
+`;
+
 interface ProcedureDetailProps {
   procedure: Procedure;
   user: User;
@@ -94,6 +101,7 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
 
   return (
     <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
+      <style>{hideWholeWordsStyles}</style>
       {/* FLOATING TOOLBAR */}
       <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-2 bg-slate-800/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl opacity-0 group-hover/viewer:opacity-100 transition-all duration-300 translate-y-2 group-hover/viewer:translate-y-0">
         <div className="flex items-center gap-1 pr-2 border-r border-white/10">
@@ -154,7 +162,10 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
                       if (parts.length > 1) {
                         const rawTerm = parts[1];
                         if (rawTerm && typeof rawTerm === 'string') {
-                          const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
+                          // Defensive coding: Ensure we are working with a string
+                          const safeTerm = String(rawTerm).replace(/"/g, '');
+                          const searchTerm = decodeURIComponent(safeTerm);
+                          
                           if (searchTerm && searchTerm.length > 2) {
                             console.log("🔦 Auto-highlighting (onLoad):", searchTerm);
                             highlight(searchTerm);

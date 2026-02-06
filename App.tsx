@@ -474,7 +474,18 @@ const AppContent: React.FC<any> = ({
       {user && (
         <ChatAssistant 
           user={user} 
-          onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)} 
+          onSelectProcedure={(p) => {
+            // 🧠 Deep Linking Logic: Extract hash from fileUrl if present (e.g. #search="term")
+            // This allows the Chat to link to specific PDF sections
+            let hash = "";
+            if (p.fileUrl && p.fileUrl.includes('#')) {
+              const parts = p.fileUrl.split('#');
+              if (parts.length > 1) {
+                hash = `#${parts[1]}`;
+              }
+            }
+            navigate(`/procedure/${p.id}${hash}`);
+          }} 
         />
       )}
     </div>
