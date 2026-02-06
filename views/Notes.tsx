@@ -701,27 +701,30 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       <span>{note.createdAt}</span>
                     </div>
                     
-                    <div className="flex gap-2">
-                      {!note.is_protected && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, ''));
-                            alert("Copié !"); 
-                          }}
-                          className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
-                          title="Copier le texte">
-                          <i className="fa-regular fa-copy"></i>
-                        </button>
-                      )}
+                    {/* Action buttons: Only Managers can modify/delete Flash Notes */}
+                    {user?.role === UserRole.MANAGER && (
+                      <div className="flex gap-2">
+                        {!note.is_protected && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, ''));
+                              alert("Copié !"); 
+                            }}
+                            className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
+                            title="Copier le texte">
+                            <i className="fa-regular fa-copy"></i>
+                          </button>
+                        )}
 
-                      <button
-                        onClick={(e) => handleDelete(e, note.id)}
-                        className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
-                        title="Supprimer">
-                        <i className="fa-solid fa-trash-can text-xs"></i>
-                      </button>
-                    </div>
+                        <button
+                          onClick={(e) => handleDelete(e, note.id)}
+                          className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+                          title="Supprimer">
+                          <i className="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
