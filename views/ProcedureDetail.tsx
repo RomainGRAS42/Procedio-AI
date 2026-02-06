@@ -87,25 +87,7 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
   const zoomPluginInstance = zoomPlugin();
   const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
 
-  // 🇫🇷 French Localization
-  const localization = useMemo(() => ({
-    search: {
-      clearAll: 'Tout effacer',
-      enterToSearch: 'Rechercher...',
-      matchCase: 'Respecter la casse',
-      nextMatch: 'Suivant',
-      previousMatch: 'Précédent',
-      wholeWords: 'Mots entiers',
-      close: 'Fermer',
-    },
-    zoom: {
-      zoomIn: 'Zoom avant',
-      zoomOut: 'Zoom arrière',
-    },
-    core: {
-      noFiles: 'Aucun fichier',
-    }
-  }), []);
+
 
   const plugins = useMemo(() => [searchPluginInstance, zoomPluginInstance], [searchPluginInstance, zoomPluginInstance]);
 
@@ -164,7 +146,6 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
                 fileUrl={fileUrl} 
                 plugins={plugins}
                 theme="dark"
-                // localization={localization as any} // DISABLING LOCALIZATION causing crash
                 onDocumentLoad={(e) => {
                   try {
                     const hash = window.location.hash;
