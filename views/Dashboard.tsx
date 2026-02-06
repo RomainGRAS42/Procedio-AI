@@ -861,7 +861,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           title: `SUGGESTION_${status.toUpperCase()}`,
           content: `Suggestion sur "${selectedSuggestion.procedureTitle}" ${status === "approved" ? "validée" : "refusée"} par ${user.firstName}.`,
           is_protected: false,
-          user_id: managerId,
+          user_id: user.id,
           tags: ["SUGGESTION", status.toUpperCase()],
         },
       ]);
