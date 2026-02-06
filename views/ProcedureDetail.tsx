@@ -95,36 +95,6 @@ const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
 
   const plugins = useMemo(() => [searchPluginInstance, zoomPluginInstance], [searchPluginInstance, zoomPluginInstance]);
 
-  useEffect(() => {
-    const handleHashSearch = () => {
-      try {
-        const hash = window.location.hash;
-        if (hash && hash.startsWith('#search=')) {
-          const parts = hash.split('=');
-          if (parts.length > 1) {
-            const rawTerm = parts[1];
-            if (rawTerm) {
-              const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
-              if (searchTerm && searchTerm.length > 2) {
-                console.log("🔦 Auto-highlighting:", searchTerm);
-                setTimeout(() => highlight(searchTerm), 500);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing search hash:", e);
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashSearch);
-    let timer = setTimeout(handleHashSearch, 2000);
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashSearch);
-      clearTimeout(timer);
-    };
-  }, [fileUrl, highlight]);
 
   return (
     <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
@@ -181,6 +151,26 @@ const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
                 plugins={plugins}
                 theme="dark"
                 localization={localization as any}
+                onDocumentLoad={(e) => {
+                  try {
+                    const hash = window.location.hash;
+                    if (hash && hash.startsWith('#search=')) {
+                      const parts = hash.split('=');
+                      if (parts.length > 1) {
+                        const rawTerm = parts[1];
+                        if (rawTerm) {
+                          const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
+                          if (searchTerm && searchTerm.length > 2) {
+                            console.log("🔦 Auto-highlighting (onLoad):", searchTerm);
+                            highlight(searchTerm);
+                          }
+                        }
+                      }
+                    }
+                  } catch (err) {
+                    console.error("Error highlighting on load:", err);
+                  }
+                }}
               />
             </div>
           </Worker>
@@ -197,7 +187,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   onSuggest,
 }) => {
   const cleanTitle = useMemo(() => {
-    if (!procedure?.title) return "Procédure sans titre";
+    if (!procedure?.title || typeof procedure.title !== 'string') return "Procédure sans titre";
     return procedure.title
       .replace(/\.[^/.]+$/, "")
       .replace(/^[0-9a-f.-]+-/i, "")
