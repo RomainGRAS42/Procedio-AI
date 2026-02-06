@@ -56,6 +56,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   } | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [successModal, setSuccessModal] = useState<{ title: string; message: string; icon: string } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    cancelText?: string;
+    type?: 'success' | 'danger';
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const backBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -943,64 +951,97 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                 {viewingNote.status === "suggestion" && user?.role === UserRole.MANAGER && (
                    <div className="flex items-center gap-2 mr-4 border-r border-slate-100 pr-4">
                       <button
-                         onClick={async (e) => {
+                         onClick={(e) => {
                             e.stopPropagation();
-                            if(!confirm("Valider cette Flash Note pour toute l'équipe ?")) return;
-                            try {
-                               const { error } = await supabase.from('notes').update({ status: 'public' }).eq('id', viewingNote.id);
-                               if(error) throw error;
-                               
-                               // Create notification for Technician
-                               await supabase.from("flash_note_responses").insert([{
-                                  note_id: viewingNote.id,
-                                  user_id: viewingNote.user_id,
-                                  manager_id: user?.id,
-                                  status: 'approved',
-                                  manager_response: "Votre Flash Note a été validée et est maintenant visible par toute l'équipe !",
-                                  note_title: viewingNote.title,
-                                  note_content: viewingNote.content,
-                                  read: false
-                               }]);
+                            setConfirmModal({
+                              title: "Valider cette Flash Note ?",
+                              message: "Cette note sera publiée et visible par toute l'équipe.",
+                              confirmText: "Valider",
+                              type: 'success',
+                              onConfirm: async () => {
+                                try {
+                                  const { error } = await supabase.from('notes').update({ status: 'public' }).eq('id', viewingNote.id);
+                                  if(error) throw error;
+                                  
+                                  // Create notification for Technician
+                                  await supabase.from("flash_note_responses").insert([{
+                                    note_id: viewingNote.id,
+                                    user_id: viewingNote.user_id,
+                                    manager_id: user?.id,
+                                    status: 'approved',
+                                    manager_response: "Votre Flash Note a été validée et est maintenant visible par toute l'équipe !",
+                                    note_title: viewingNote.title,
+                                    note_content: viewingNote.content,
+                                    read: false
+                                  }]);
 
-                               alert("Flash Note validée !");
-                               handleCloseNote();
-                               fetchNotes();
-                            } catch (err) {
-                               console.error("Error validating flash note:", err);
-                               alert("Erreur lors de la validation.");
-                            }
+                                  setSuccessModal({
+                                    title: "Flash Note Validée !",
+                                    message: "La note est maintenant visible par toute l'équipe.",
+                                    icon: "fa-check-circle"
+                                  });
+                                  handleCloseNote();
+                                  fetchNotes();
+                                } catch (err) {
+                                  console.error("Error validating flash note:", err);
+                                  setSuccessModal({
+                                    title: "Erreur",
+                                    message: "Impossible de valider la note. Veuillez réessayer.",
+                                    icon: "fa-triangle-exclamation"
+                                  });
+                                }
+                                setConfirmModal(null);
+                              }
+                            });
                          }}
                          className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
                       >
                          <i className="fa-solid fa-check"></i> Valider
                       </button>
                       <button
-                         onClick={async (e) => {
+                         onClick={(e) => {
                             e.stopPropagation();
-                            if(!confirm("Refuser cette suggestion ? Elle redeviendra privée pour l'auteur.")) return;
-                            try {
-                               const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
-                               if(error) throw error;
-                               
-                               // Create notification for Technician
-                               await supabase.from("flash_note_responses").insert([{
-                                  note_id: viewingNote.id,
-                                  user_id: viewingNote.user_id,
-                                  manager_id: user?.id,
-                                  status: 'rejected',
-                                  manager_response: "Votre suggestion de Flash Note a été refusée. Elle reste privée.",
-                                  note_title: viewingNote.title,
-                                  note_content: viewingNote.content,
-                                  read: false
-                               }]);
+                            setConfirmModal({
+                              title: "Refuser cette suggestion ?",
+                              message: "La note redeviendra privée pour l'auteur.",
+                              confirmText: "Refuser",
+                              cancelText: "Annuler",
+                              type: 'danger',
+                              onConfirm: async () => {
+                                try {
+                                  const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
+                                  if(error) throw error;
+                                  
+                                  // Create notification for Technician
+                                  await supabase.from("flash_note_responses").insert([{
+                                    note_id: viewingNote.id,
+                                    user_id: viewingNote.user_id,
+                                    manager_id: user?.id,
+                                    status: 'rejected',
+                                    manager_response: "Votre suggestion de Flash Note a été refusée. Elle reste privée.",
+                                    note_title: viewingNote.title,
+                                    note_content: viewingNote.content,
+                                    read: false
+                                  }]);
 
-                               alert("Suggestion refusée.");
-                               handleCloseNote();
-                               fetchNotes();
-                            } catch (err) {
-                               console.error("Error refusing flash note:", err);
-                               alert("Erreur lors du refus.");
-                            }
+                                  setSuccessModal({
+                                    title: "Suggestion Refusée",
+                                    message: "La note est redevenue privée.",
+                                    icon: "fa-times-circle"
+                                  });
+                                  handleCloseNote();
+                                  fetchNotes();
+                                } catch (err) {
+                                  console.error("Error refusing flash note:", err);
+                                  setSuccessModal({
+                                    title: "Erreur",
+                                    message: "Impossible de refuser la note. Veuillez réessayer.",
+                                    icon: "fa-triangle-exclamation"
+                                  });
+                                }
+                                setConfirmModal(null);
+                              }
+                            });
                          }}
                          className="px-4 py-2 bg-white text-rose-500 border border-rose-100 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
                       >
@@ -1160,6 +1201,40 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           document.body
         )}
 
+
+      {/* CONFIRMATION MODAL (PREMIUM) */}
+      {confirmModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl shadow-2xl max-w-md w-full p-8 animate-scaleIn border border-slate-700">
+            <h2 className="text-2xl font-black text-white mb-3">
+              {confirmModal.title}
+            </h2>
+            <p className="text-slate-300 text-sm leading-relaxed mb-8">
+              {confirmModal.message}
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-lg"
+              >
+                {confirmModal.cancelText || "Annuler"}
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className={`flex-1 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-lg ${
+                  confirmModal.type === 'danger'
+                    ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30'
+                    : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'
+                }`}
+              >
+                {confirmModal.confirmText || "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
