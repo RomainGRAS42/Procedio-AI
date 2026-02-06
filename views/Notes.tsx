@@ -209,6 +209,13 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
   const executeToggleLock = async () => {
     if (!viewingNote) return;
+    
+    // Security: Flash Notes cannot be locked/unlocked
+    if (viewingNote.is_flash_note) {
+      setToast({ message: "Action non autorisée sur une Flash Note.", type: "error" });
+      return;
+    }
+
     const newStatus = !viewingNote.is_protected;
 
     // Optimistic UI update
@@ -245,6 +252,13 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
   const toggleLockStatus = async () => {
     if (!viewingNote) return;
+    
+    // Security: Flash Notes cannot be locked/unlocked
+    if (viewingNote.is_flash_note) {
+      setToast({ message: "Action non autorisée sur une Flash Note.", type: "error" });
+      return;
+    }
+
     setPasswordVerify({ id: viewingNote.id, value: "", action: "TOGGLE_LOCK" });
   };
 
@@ -1184,21 +1198,23 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                    </div>
                 )}
 
-                <button
-                  onClick={toggleLockStatus}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
-                    viewingNote.is_protected
-                      ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
-                      : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                  }`}
-                  title={
-                    viewingNote.is_protected ? "Retirer la protection" : "Protéger cette note"
-                  }>
-                  <i
-                    className={`fa-solid ${
-                      viewingNote.is_protected ? "fa-lock" : "fa-lock-open"
-                    }`}></i>
-                </button>
+                {!viewingNote.is_flash_note && (
+                  <button
+                    onClick={toggleLockStatus}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                      viewingNote.is_protected
+                        ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                        : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    }`}
+                    title={
+                      viewingNote.is_protected ? "Retirer la protection" : "Protéger cette note"
+                    }>
+                    <i
+                      className={`fa-solid ${
+                        viewingNote.is_protected ? "fa-lock" : "fa-lock-open"
+                      }`}></i>
+                  </button>
+                )}
                 
                 {/* Hide delete button for Technicians in Flash mode */}
                 {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
