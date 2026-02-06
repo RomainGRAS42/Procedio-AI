@@ -66,11 +66,11 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallbac
 // This prevents high-level re-renders from breaking the PDF.js plugin state
 const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
   // 🔍 PDF Search Plugin
-  const searchPluginInstance = useMemo(() => searchPlugin(), []);
+  const searchPluginInstance = searchPlugin();
   const { highlight, ShowSearchPopover } = searchPluginInstance;
 
   // 🔎 PDF Zoom Plugin
-  const zoomPluginInstance = useMemo(() => zoomPlugin(), []);
+  const zoomPluginInstance = zoomPlugin();
   const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
 
   // 🇫🇷 French Localization
