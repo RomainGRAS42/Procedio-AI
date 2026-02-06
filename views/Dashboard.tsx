@@ -66,6 +66,25 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  // Expertise System (Manager Only)
+  const [badges, setBadges] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [showCertifyModal, setShowCertifyModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [loadingExpertise, setLoadingExpertise] = useState(false);
+  
+  // Referent System
+  const [isReferent, setIsReferent] = useState(false);
+  const [pendingReviews, setPendingReviews] = useState<Procedure[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  // Mastery Claims (Manager Only)
+  const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
+  const [loadingClaims, setLoadingClaims] = useState(false);
+
+
+
+
 
 
   // État de la vue (Personnel vs Équipe) - Initialisé selon le rôle
@@ -83,8 +102,10 @@ const Dashboard: React.FC<DashboardProps> = ({
     notes: 0,
     xp: 0,
     level: 1,
-    mastery: [] as { subject: string; A: number; fullMark: number }[]
+    mastery: [] as { subject: string; A: number; fullMark: number }[],
+    badges: [] as any[]
   });
+
 
   // Sprint Hebdo (XP gagnée cette semaine)
   const [weeklyXP, setWeeklyXP] = useState(0);
@@ -182,7 +203,10 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
         fetchManagerKPIs();
+        fetchExpertiseData();
+        fetchMasteryClaims();
       }
+
     }
   }, [user?.id, user?.role]);
 
@@ -245,9 +269,45 @@ const Dashboard: React.FC<DashboardProps> = ({
         notes: realNotesCount,
         xp: profile?.xp_points || 0,
         level: profile?.level || 1,
-        mastery: masteryData
+        mastery: masteryData,
+        badges: [] // Initialize badges here, will be updated by the next fetch
       });
       setWeeklyXP((weeklyConsults || 0) * 5); // +5 XP par lecture
+
+      // Fetch badges for personal view
+      try {
+        const { data: profileWithBadges } = await supabase
+          .from('user_profiles')
+          .select(`
+            xp_points,
+            level,
+            user_badges:user_badges(
+              badge:badge_id(*)
+            )
+          `)
+          .eq('id', user.id)
+          .single();
+        
+        if (profileWithBadges) {
+          const userBadges = (profileWithBadges as any).user_badges?.map((ub: any) => ub.badge) || [];
+          setPersonalStats(prev => ({
+            ...prev,
+            xp: profileWithBadges.xp_points || 0,
+            level: profileWithBadges.level || 1,
+            badges: userBadges
+          }));
+
+          // Check if Referent (has at least one manual badge)
+          const hasExpertise = userBadges.some((b: any) => b.type === 'manual');
+          setIsReferent(hasExpertise);
+          if (hasExpertise) {
+            fetchReferentWorkload();
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching personal stats (badges):", err);
+      }
+
     } catch (err) {
       console.error("Erreur stats personnelles:", err);
     }
@@ -403,6 +463,151 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const fetchExpertiseData = async () => {
+    setLoadingExpertise(true);
+    try {
+      // 1. Fetch all badges
+      const { data: badgesData } = await supabase.from('badges').select('*');
+      if (badgesData) setBadges(badgesData);
+
+      // 2. Fetch all technicians and their badges
+      const { data: membersData } = await supabase
+        .from('user_profiles')
+        .select(`
+          *,
+          user_badges:user_badges(badge_id, expires_at)
+        `)
+        .eq('role', 'technicien');
+      
+      if (membersData) setTeamMembers(membersData);
+    } catch (err) {
+      console.error("Error fetching expertise data:", err);
+    } finally {
+      setLoadingExpertise(false);
+    }
+  };
+
+  const fetchReferentWorkload = async () => {
+    setLoadingReviews(true);
+    try {
+      // Fetch procedures waiting for validation (status 'ready' or 'draft')
+      // and where the user is a referent for that procedure (or category)
+      const { data: referentSpecs } = await supabase
+        .from('procedure_referents')
+        .select('procedure_id')
+        .eq('user_id', user.id);
+      
+      const procedureIds = referentSpecs?.map(r => r.procedure_id) || [];
+
+      if (procedureIds.length > 0) {
+        const { data: procs } = await supabase
+          .from('procedures')
+          .select('*')
+          .in('uuid', procedureIds)
+          .eq('status', 'draft') // Only show draft ones that need review
+          .order('created_at', { ascending: false });
+        
+        if (procs) {
+          setPendingReviews(procs.map(p => ({
+            ...p,
+            id: p.uuid,
+            file_id: p.file_id || p.uuid,
+            title: p.title || "Sans titre",
+            category: p.Type || "GÉNÉRAL",
+            fileUrl: p.file_url,
+            createdAt: p.created_at,
+            status: p.status
+          })));
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching referent workload:", err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const fetchMasteryClaims = async () => {
+    if (user.role !== UserRole.MANAGER) return;
+    setLoadingClaims(true);
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select(`
+          *,
+          user_profiles:user_id (first_name, last_name, avatar_url),
+          procedures:procedure_id (title, uuid)
+        `)
+        .ilike('title', 'CLAIM_MASTERY_%')
+        .eq('viewed', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setMasteryClaims(data);
+    } catch (err) {
+      console.error("Error fetching mastery claims:", err);
+    } finally {
+      setLoadingClaims(false);
+    }
+  };
+
+  const handleToggleBadge = async (userId: string, badgeId: string, isAwarding: boolean) => {
+    try {
+      if (isAwarding) {
+        const badge = badges.find(b => b.id === badgeId);
+        let expiresAt = null;
+        if (badge?.is_ephemeral && badge?.validity_months) {
+          const date = new Date();
+          date.setMonth(date.getMonth() + badge.validity_months);
+          expiresAt = date.toISOString();
+        }
+
+        const { error } = await supabase.from('user_badges').insert({
+          user_id: userId,
+          badge_id: badgeId,
+          awarded_by: user.id,
+          expires_at: expiresAt
+        });
+
+        if (error) throw error;
+
+        // If it was a manual mastery badge, also add as referent for the procedure
+        if (badge?.type === 'manual' && badge?.procedure_id) {
+          await supabase.from('procedure_referents').insert({
+            procedure_id: badge.procedure_id,
+            user_id: userId
+          });
+        }
+
+        setToast({ message: "Badge attribué avec succès !", type: "success" });
+      } else {
+        const { error } = await supabase
+          .from('user_badges')
+          .delete()
+          .eq('user_id', userId)
+          .eq('badge_id', badgeId);
+        
+        if (error) throw error;
+
+        const badge = badges.find(b => b.id === badgeId);
+        if (badge?.type === 'manual' && badge?.procedure_id) {
+          await supabase
+            .from('procedure_referents')
+            .delete()
+            .eq('procedure_id', badge.procedure_id)
+            .eq('user_id', userId);
+        }
+
+        setToast({ message: "Badge retiré.", type: "info" });
+      }
+      fetchExpertiseData();
+    } catch (err) {
+      console.error("Error toggling badge:", err);
+      setToast({ message: "Erreur lors de la modification du badge.", type: "error" });
+    }
+  };
+
+
   const openSuggestionById = async (id: string) => {
     console.log("🔍 Dashboard: Opening suggestion detail for ID:", id);
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
@@ -554,22 +759,29 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     try {
       const now = new Date().toISOString();
-      const managerId = user.id;
+      const isReferentUser = user.role === UserRole.TECHNICIAN;
 
       // 1. Update the suggestion record
+      const updatePayload: any = { 
+        status, 
+        manager_response: managerResponse,
+        responded_at: now
+      };
+
+      if (isReferentUser) {
+        updatePayload.referent_id = user.id;
+      } else {
+        updatePayload.manager_id = user.id;
+      }
+
       const { error: updateError } = await supabase
         .from("procedure_suggestions")
-        .update({ 
-          status, 
-          manager_response: managerResponse,
-          responded_at: now,
-          manager_id: managerId
-        })
+        .update(updatePayload)
         .eq("id", selectedSuggestion.id);
 
       if (updateError) throw updateError;
 
-      // 🎮 GAMIFICATION : Gain d'XP pour le technicien si approuvé (+50 XP)
+      // 🎮 GAMIFICATION : Gain d'XP pour l'auteur (+50 XP) si approuvé
       if (status === 'approved') {
         const { data: profile } = await supabase
           .from('user_profiles')
@@ -587,6 +799,28 @@ const Dashboard: React.FC<DashboardProps> = ({
             })
             .eq('id', selectedSuggestion.user_id);
         }
+
+        // 🎮 GAMIFICATION : Gain d'XP pour le RÉFÉRENT (+20 XP) sil a fait la revue
+        if (isReferentUser) {
+           const { data: refProfile } = await supabase
+            .from('user_profiles')
+            .select('xp_points')
+            .eq('id', user.id)
+            .single();
+          
+          if (refProfile) {
+            const newRefXP = (refProfile.xp_points || 0) + 20;
+            await supabase
+              .from('user_profiles')
+              .update({ 
+                xp_points: newRefXP, 
+                level: Math.floor(newRefXP / 100) + 1 
+              })
+              .eq('id', user.id);
+            
+            setToast({ message: "Revue validée ! +20 XP gagnés.", type: "success" });
+          }
+        }
       }
 
       // 2. Create a notification response for the technician (UI sync)
@@ -595,7 +829,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .insert({
           suggestion_id: selectedSuggestion.id,
           user_id: selectedSuggestion.user_id,
-          manager_id: managerId,
+          manager_id: !isReferentUser ? user.id : null,
           status,
           manager_response: managerResponse,
           procedure_title: selectedSuggestion.procedureTitle,
@@ -909,7 +1143,20 @@ const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
 
-
+          {user.role === UserRole.MANAGER && (
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                    setSelectedMember(null);
+                    setShowCertifyModal(true);
+                }}
+                className="px-6 py-4 rounded-2xl bg-orange-50 text-orange-600 font-black text-xs uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-3 border border-orange-100"
+              >
+                <i className="fa-solid fa-certificate text-sm"></i>
+                Certification Flash
+              </button>
+            </div>
+          )}
         </div>
 
 
@@ -1037,7 +1284,64 @@ const Dashboard: React.FC<DashboardProps> = ({
         {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
         <div className="flex-1 space-y-8">
           {viewMode === "personal" ? (
-            <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
+            <div className="space-y-8">
+              {/* Expert Review Section (Referents only) */}
+              {isReferent && pendingReviews.length > 0 && (
+                <section className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group border border-indigo-500/20">
+                  <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i className="fa-solid fa-user-shield text-[12rem] rotate-12"></i>
+                  </div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 backdrop-blur-md flex items-center justify-center text-2xl border border-indigo-400/30 text-indigo-400">
+                          <i className="fa-solid fa-microscope"></i>
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-black tracking-tight uppercase">Revues d'Expert</h2>
+                          <p className="text-indigo-400/80 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">
+                             {pendingReviews.length} procédure{pendingReviews.length > 1 ? 's' : ''} à valider
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/30 animate-pulse">
+                        Savoir Délégué
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {pendingReviews.slice(0, 2).map((proc) => (
+                        <div 
+                          key={proc.id}
+                          onClick={() => onSelectProcedure(proc)}
+                          className="bg-white/5 hover:bg-white/10 backdrop-blur-sm p-6 rounded-[2rem] border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer group/item"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-black text-xs">
+                                {proc.title.substring(0, 2).toUpperCase()}
+                             </div>
+                             <i className="fa-solid fa-chevron-right text-white/20 group-hover/item:text-indigo-400 group-hover/item:translate-x-1 transition-all"></i>
+                          </div>
+                          <h4 className="font-bold text-white text-sm mb-1 group-hover/item:text-indigo-300 transition-colors truncate">{proc.title}</h4>
+                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{proc.category}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {pendingReviews.length > 2 && (
+                      <button className="mt-6 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors flex items-center gap-2">
+                         Voir toutes les revues
+                         <i className="fa-solid fa-arrow-right"></i>
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+
+
+              <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
+
               <div className="flex-1 space-y-4">
                 <div className="flex items-center gap-4 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
@@ -1058,6 +1362,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <span className="text-lg font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
                   </div>
                 </div>
+                
+                <button 
+                  onClick={() => setToast({ message: "Fonctionnalité de réclamation à venir : Contactez votre manager pour valider une maîtrise !", type: "info" })}
+                  className="w-full mt-6 py-4 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-3 group"
+                >
+                  <i className="fa-solid fa-medal group-hover:rotate-12 transition-transform"></i>
+                  Réclamer une Maîtrise
+                </button>
               </div>
 
               <div className="w-full md:w-[300px] h-[300px] flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-4">
@@ -1083,8 +1395,55 @@ const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
             </section>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full animate-fade-in">
+          </div>
+        ) : (
+            <div className="space-y-8">
+              {/* Badge Collection Section */}
+              <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl opacity-60"></div>
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl border border-indigo-100 shadow-sm">
+                      <i className="fa-solid fa-medal"></i>
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Mes Badges</h3>
+                      <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Savoir & Contributions</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
+                  {personalStats.badges && personalStats.badges.length > 0 ? (
+                    personalStats.badges.map((badge: any, idx: number) => (
+                      <div key={idx} className="flex flex-col items-center gap-3 group">
+                        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
+                           badge.type === 'manual' 
+                             ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
+                             : 'bg-slate-50 text-slate-400 border border-slate-100'
+                        }`}>
+                          <i className={`fa-solid ${badge.icon}`}></i>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">{badge.name}</p>
+                          {badge.is_ephemeral && (
+                            <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                      <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
+                        Accède au rang de Maître pour débloquer ton premier badge !
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full animate-fade-in">
+
               {/* Widget 1: Health Chart (2/3 width) */}
               <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -1188,12 +1547,18 @@ const Dashboard: React.FC<DashboardProps> = ({
                  >
                     <span>Créer maintenant</span>
                     <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform"></i>
-                 </button>
-              </div>
+                  </button>
+               </div>
+             </div>
             </div>
           )}
         </div>
       </div>
+
+
+
+
+
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStats.map((stat, idx) => (
@@ -1334,8 +1699,61 @@ const Dashboard: React.FC<DashboardProps> = ({
             </section>
           </div>
 
-          {/* Right Column: Activity Journal (30%) */}
+          {/* Right Column: Activity & Claims (30%) */}
           <div className="lg:w-[30%] space-y-6">
+            {/* NEW: Mastery Claims (Revendications) */}
+            {masteryClaims.length > 0 && (
+              <section className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[2.5rem] p-6 text-white shadow-lg shadow-orange-500/20 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <i className="fa-solid fa-certificate text-8xl rotate-12"></i>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+                       <i className="fa-solid fa-medal"></i>
+                       Revendications ({masteryClaims.length})
+                    </h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {masteryClaims.map((claim) => (
+                      <div 
+                        key={claim.id}
+                        className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 hover:bg-white/20 transition-all"
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <img 
+                            src={claim.user_profiles?.avatar_url} 
+                            alt="" 
+                            className="w-8 h-8 rounded-full border border-white/30"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-bold text-xs truncate">{claim.user_profiles?.first_name} {claim.user_profiles?.last_name}</p>
+                            <p className="text-[10px] text-white/60 truncate italic">{claim.procedures?.title}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            // Point toward the certification modal or directly handle
+                            setSelectedMember(claim.user_profiles);
+                            setShowCertifyModal(true);
+                            // Mark claim as processed locally/DB
+                            await supabase.from('notes').update({ viewed: true }).eq('id', claim.id);
+                            setMasteryClaims(prev => prev.filter(c => c.id !== claim.id));
+                          }}
+                          className="w-full py-2 bg-white text-orange-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-2"
+                        >
+                          <i className="fa-solid fa-award"></i>
+                          Certifier l'Expert
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
             <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
               <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1587,6 +2005,145 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>,
         document.body
       )}
+
+      {/* MODAL CERTIFICATION FLASH (MANAGER) */}
+      {showCertifyModal && (
+        createPortal(
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl animate-scale-up border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-8 flex items-center justify-between">
+                <div className="flex items-center gap-4 text-white">
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner">
+                    <i className="fa-solid fa-certificate"></i>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight uppercase">Certification Flash</h2>
+                    <p className="text-white/80 font-bold text-sm">Attribuez ou révoquez les maîtrises de l'équipe</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCertifyModal(false)}
+                  className="w-12 h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-all"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-hidden flex bg-slate-50">
+                {/* Left Side: Tech List */}
+                <div className="w-1/3 border-r border-slate-200 overflow-y-auto p-4 space-y-2">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Techniciens</h3>
+                  {teamMembers.map(member => (
+                    <div 
+                      key={member.id}
+                      onClick={() => setSelectedMember(member)}
+                      className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center gap-3 ${
+                        selectedMember?.id === member.id 
+                          ? 'bg-white shadow-md border-l-4 border-orange-500' 
+                          : 'hover:bg-white/50 border-l-4 border-transparent'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center font-black text-slate-500 overflow-hidden">
+                         {member.avatar_url ? (
+                           <img src={member.avatar_url} alt="" className="w-full h-full object-cover" />
+                         ) : (
+                           member.first_name[0]
+                         )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 text-sm truncate">{member.first_name} {member.last_name}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">{member.xp_points} XP • Niv.{member.level}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right Side: Badge Matrix */}
+                <div className="flex-1 overflow-y-auto p-8">
+                  {selectedMember ? (
+                    <div className="animate-fade-in">
+                      <div className="flex items-center justify-between mb-8">
+                        <h4 className="text-xl font-black text-slate-900 tracking-tight">
+                           Badges pour <span className="text-orange-500">{selectedMember.first_name}</span>
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {badges.map(badge => {
+                          const isAwarded = selectedMember.user_badges?.some((ub: any) => ub.badge_id === badge.id);
+                          return (
+                            <div 
+                              key={badge.id}
+                              className={`p-5 rounded-[2rem] border-2 transition-all group ${
+                                isAwarded 
+                                  ? 'bg-white border-orange-500 shadow-xl shadow-orange-500/10' 
+                                  : 'bg-white border-slate-100 opacity-60 grayscale hover:opacity-100 hover:grayscale-0'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                                  isAwarded 
+                                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 group-hover:scale-110' 
+                                    : 'bg-slate-50 text-slate-400'
+                                }`}>
+                                  <i className={`fa-solid ${badge.icon}`}></i>
+                                </div>
+                                <button
+                                  onClick={() => handleToggleBadge(selectedMember.id, badge.id, !isAwarded)}
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                    isAwarded 
+                                      ? 'text-rose-500 hover:bg-rose-50' 
+                                      : 'text-emerald-500 hover:bg-emerald-50'
+                                  }`}
+                                >
+                                  <i className={`fa-solid ${isAwarded ? 'fa-minus-circle' : 'fa-plus-circle'}`}></i>
+                                </button>
+                              </div>
+                              <h5 className="font-black text-slate-900 text-sm mb-1">{badge.name}</h5>
+                              <p className="text-[10px] text-slate-400 font-medium leading-relaxed mb-3">{badge.description}</p>
+                              
+                              <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50">
+                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                                  +{badge.xp_reward} XP
+                                </span>
+                                {badge.type === 'manual' && (
+                                  <span className="flex items-center gap-1 text-[9px] font-black text-orange-500 uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-lg">
+                                    <i className="fa-solid fa-lock"></i>
+                                    Expertise
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                       <i className="fa-solid fa-users-viewfinder text-6xl mb-4 opacity-20"></i>
+                       <p className="font-bold text-sm tracking-wide">Sélectionnez un technicien pour gérer ses badges</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 bg-white border-t border-slate-200 flex justify-end">
+                <button 
+                  onClick={() => setShowCertifyModal(false)}
+                  className="px-10 py-4 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
+                >
+                  Terminer
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      )}
+
       <CustomToast
         message={toast?.message || ""}
         type={toast?.type || "info"}

@@ -130,72 +130,68 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   useEffect(() => {
+    // Initial fetches common to all or handled by role
+    fetchPendingSuggestions(); // Both Managers and Referents need this
+
     if (user.role === UserRole.MANAGER) {
       fetchReadLogs();
-      fetchPendingSuggestions();
-
-      // Real-time subscription pour les confirmations de lecture
+      
       const channel = supabase
-        .channel('schema-db-changes')
+        .channel('manager-notifs')
         .on(
           'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notes',
-          },
+          { event: 'INSERT', schema: 'public', table: 'notes' },
           (payload) => {
-            if (payload.new && payload.new.title) {
-              if (payload.new.title.startsWith("LOG_READ_")) {
-                setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
-              }
+            if (payload.new && payload.new.title?.startsWith("LOG_READ_")) {
+              setReadLogs(prev => [payload.new, ...prev].slice(0, 5));
             }
           }
         )
         .on(
           'postgres_changes',
-          {
-            event: '*', // Listen to ALL changes (INSERT, UPDATE, DELETE) for suggestions
-            schema: 'public',
-            table: 'procedure_suggestions',
-          },
-          () => {
-            // Re-fetch pour mettre à jour le badge immédiatement
-            fetchPendingSuggestions();
-          }
+          { event: '*', schema: 'public', table: 'procedure_suggestions' },
+          () => fetchPendingSuggestions()
         )
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else if (user.role === UserRole.TECHNICIAN) {
+      return () => { supabase.removeChannel(channel); };
+    } else {
+      // Technician logic
       fetchSuggestionResponses();
 
-      // Real-time pour nouvelles réponses
-      const channel = supabase
+      const suggestionChannel = supabase
+        .channel('tech-suggestions')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'procedure_suggestions' },
+          () => fetchPendingSuggestions()
+        )
+        .subscribe();
+
+      const responseChannel = supabase
         .channel('tech-responses')
         .on(
           'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
             table: 'suggestion_responses',
-            filter: `user_id=eq.${user.id}`,
+            filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            if (payload.new) {
-              setSuggestionResponses(prev => [payload.new, ...prev]);
-            }
+            if (payload.new) setSuggestionResponses(prev => [payload.new, ...prev]);
           }
         )
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(suggestionChannel);
+        supabase.removeChannel(responseChannel);
       };
     }
   }, [user.role, user.id]);
+
+
 
   // Fermeture des notifications avec Escape
   useEffect(() => {
@@ -211,26 +207,36 @@ const Header: React.FC<HeaderProps> = ({
 
   const fetchPendingSuggestions = async () => {
     try {
-      const { data } = await supabase
+      let query = supabase
         .from("procedure_suggestions")
-        .select(
-          `
-          id,
-          suggestion,
-          created_at,
-          user_id,
-          procedure_id,
-          status,
-          procedure_id,
-          status,
-          viewed,
+        .select(`
+          id, suggestion, created_at, user_id, procedure_id, status, viewed,
           user_profiles:user_id (first_name, last_name, email),
           procedures:procedure_id (title)
-        `
-        )
+        `)
         .eq("status", "pending")
-        .eq("viewed", false) // Fetch only unviewed suggestions for the badge count
+        .eq("viewed", false);
+
+      // If Technician, only show suggestions where they are a Referent
+      if (user.role === UserRole.TECHNICIAN) {
+        const { data: referentData } = await supabase
+          .from('procedure_referents')
+          .select('procedure_id')
+          .eq('user_id', user.id);
+        
+        const referentProcIds = referentData?.map(r => r.procedure_id) || [];
+        
+        if (referentProcIds.length === 0) {
+          setPendingSuggestions([]);
+          return;
+        }
+        
+        query = query.in('procedure_id', referentProcIds);
+      }
+
+      const { data } = await query
         .order("created_at", { ascending: false });
+
 
       if (data) {
         // Mapping manuel pour adapter la structure si nécessaire
@@ -632,50 +638,88 @@ const Header: React.FC<HeaderProps> = ({
 
                 {/* Pour les TECHNICIENS */}
 
-                {user.role === UserRole.TECHNICIAN && suggestionResponses.map((response) => (
-                  <div
-                    key={response.id}
-                    onClick={async () => {
-                      // Marquer comme lu
-                      await supabase
-                        .from('suggestion_responses')
-                        .update({ read: true })
-                        .eq('id', response.id);
-                      
-                      setSuggestionResponses(prev => prev.filter(r => r.id !== response.id));
-                      setShowNotifications(false);
-                      
-                      // Ouvrir le modal stylisé
-                      setSelectedResponse(response);
-                    }}
-                    className={`p-3 rounded-xl border cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group ${
-                      response.status === 'approved' 
-                        ? 'border-emerald-200 bg-emerald-50/50' 
-                        : 'border-rose-200 bg-rose-50/50'
-                    }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <i className={`fa-solid ${response.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'} ${
-                        response.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'
-                      } text-[10px]`}></i>
-                      <span className={`${response.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'} text-[10px] font-black uppercase tracking-widest`}>
-                        {response.status === 'approved' ? 'Suggestion Validée' : 'Suggestion Refusée'}
-                      </span>
-                      <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                    </div>
-                    <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
-                      {response.procedure_title}
-                    </p>
-                    <p className="text-[10px] text-slate-500 italic mt-1 line-clamp-2">
-                      "{response.suggestion_content}"
-                    </p>
-                    <span className="text-[9px] text-slate-400 font-bold block mt-2">
-                      {new Date(response.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                ))}
+                {user.role === UserRole.TECHNICIAN && (
+                  <>
+                    {/* Referent Reviews (Dynamic Tasks) */}
+                    {pendingSuggestions.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-3 ml-1 px-2 py-1 bg-indigo-50 rounded-lg w-fit">
+                          Revues d'Expert
+                        </p>
+                        <div className="space-y-3">
+                          {pendingSuggestions.map((s) => (
+                            <div 
+                              key={s.id} 
+                              onClick={async () => {
+                                // Marquer comme vu en BDD
+                                await supabase.from("procedure_suggestions").update({ viewed: true }).eq("id", s.id);
+                                // Mise à jour locale
+                                setPendingSuggestions(prev => prev.filter(p => p.id !== s.id));
+                                
+                                onNotificationClick?.('suggestion', s.id);
+                                setShowNotifications(false);
+                              }}
+                              className="p-3 bg-indigo-900 text-white rounded-xl border border-indigo-700 cursor-pointer hover:bg-slate-900 transition-all group relative overflow-hidden"
+                            >
+                              <div className="absolute -top-4 -right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i className="fa-solid fa-microscope text-5xl rotate-12"></i>
+                              </div>
+                              <div className="flex justify-between items-start mb-1 gap-2 relative z-10">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                                  {s.userName} • {s.procedureTitle}
+                                </span>
+                                <i className="fa-solid fa-chevron-right text-[8px] text-indigo-400 group-hover:translate-x-1 transition-transform"></i>
+                              </div>
+                              <p className="text-xs font-bold leading-relaxed line-clamp-2 relative z-10">
+                                {s.content}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Standard Responses */}
+                    {suggestionResponses.map((response) => (
+                      <div
+                        key={response.id}
+                        onClick={async () => {
+                          // Marquer comme lu
+                          await supabase
+                            .from('suggestion_responses')
+                            .update({ read: true })
+                            .eq('id', response.id);
+                          
+                          setSuggestionResponses(prev => prev.filter(r => r.id !== response.id));
+                          setShowNotifications(false);
+                          
+                          // Ouvrir le modal stylisé
+                          setSelectedResponse(response);
+                        }}
+                        className={`p-3 rounded-xl border cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group ${
+                          response.status === 'approved' 
+                            ? 'border-emerald-200 bg-emerald-50/50' 
+                            : 'border-rose-200 bg-rose-50/50'
+                        }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <i className={`fa-solid ${response.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'} ${
+                            response.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'
+                          } text-[10px]`}></i>
+                          <span className={`${response.status === 'approved' ? 'text-emerald-600' : 'text-rose-600'} text-[10px] font-black uppercase tracking-widest`}>
+                            {response.status === 'approved' ? 'Suggestion Validée' : 'Suggestion Refusée'}
+                          </span>
+                          <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </div>
+                        <p className="text-[11px] text-slate-700 font-bold leading-tight">
+                          {response.procedure_title}
+                        </p>
+                        <p className="text-[10px] text-slate-500 italic mt-1 line-clamp-1">
+                          "{response.suggestion_content}"
+                        </p>
+                      </div>
+                    ))}
+                  </>
+                )}
 
                 {totalNotifs === 0 && (
                   <div className="text-center py-12 px-6 flex flex-col items-center gap-4 animate-fade-in">

@@ -5,10 +5,32 @@ export enum UserRole {
 
 export interface Badge {
   id: string;
-  icon: string;
   name: string;
   description: string;
-  color: string;
+  type: 'auto' | 'manual';
+  icon: string;
+  xp_reward: number;
+  is_ephemeral: boolean;
+  validity_months?: number;
+  category?: string;
+  procedure_id?: string;
+  created_at: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  awarded_at: string;
+  expires_at?: string;
+  awarded_by?: string;
+}
+
+export interface ProcedureReferent {
+  id: string;
+  procedure_id: string;
+  user_id: string;
+  assigned_at: string;
 }
 
 export interface User {

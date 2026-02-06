@@ -811,7 +811,25 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               <span>{isChatOpen ? "Fermer IA" : "Discuter avec le PDF"}</span>
             </button>
 
+            {/* Claim Mastery Button */}
+            <button
+              onClick={() => {
+                setNotification({ msg: "Réclamation envoyée au manager !", type: "success" });
+                supabase.from("notes").insert([{
+                  user_id: user.id,
+                  title: `CLAIM_MASTERY_${procedure.title.substring(0, 50)}`,
+                  content: `${user.firstName} réclame la maîtrise sur la procédure "${procedure.title}"`,
+                  procedure_id: procedure.db_id || procedure.uuid || null
+                }]);
+              }}
+              className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
+              title="Réclamer la maîtrise sur cette procédure">
+              <i className="fa-solid fa-certificate"></i>
+              <span className="hidden xl:inline">Réclamer Maîtrise</span>
+            </button>
+
             {/* Suggestion Button */}
+
             <button
               onClick={() => setIsSuggestionModalOpen(true)}
               className="px-4 py-3 h-10 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm flex items-center gap-2">
