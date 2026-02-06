@@ -14,7 +14,7 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 
 // 🎨 Custom Styles to hide unwanted "Whole words" option
 const hideWholeWordsStyles = `
-  .rpv-search__popover-footer-item:nth-child(3) {
+  .rpv-search__popover-footer-item:nth-child(2) {
     display: none !important;
   }
 `;
@@ -97,6 +97,28 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
 
 
   const plugins = useMemo(() => [searchPluginInstance, zoomPluginInstance], [searchPluginInstance, zoomPluginInstance]);
+
+  // ⚡️ EFFECT: Trigger highlight when fileUrl changes (specifically the hash)
+  useEffect(() => {
+    try {
+      // 1. Check prop hash first (passed from ChatAssistant)
+      if (fileUrl && fileUrl.includes('#search=')) {
+        const parts = fileUrl.split('search=');
+        if (parts.length > 1) {
+          const rawTerm = parts[1].split('&')[0]; // Handle potential other params
+          const safeTerm = String(rawTerm).replace(/"/g, '');
+          const searchTerm = decodeURIComponent(safeTerm);
+          if (searchTerm && searchTerm.length > 2) {
+            console.log("🔦 Auto-highlighting (Effect):", searchTerm);
+            // Small delay to ensure document is ready if it's a fresh load
+            setTimeout(() => highlight(searchTerm), 500);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error in highlight effect:", e);
+    }
+  }, [fileUrl, highlight]);
 
 
   return (
