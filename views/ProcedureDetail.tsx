@@ -158,7 +158,7 @@ const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
                       const parts = hash.split('=');
                       if (parts.length > 1) {
                         const rawTerm = parts[1];
-                        if (rawTerm) {
+                        if (rawTerm && typeof rawTerm === 'string') {
                           const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
                           if (searchTerm && searchTerm.length > 2) {
                             console.log("🔦 Auto-highlighting (onLoad):", searchTerm);
@@ -188,8 +188,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 }) => {
   const cleanTitle = useMemo(() => {
     try {
-      if (!procedure?.title || typeof procedure.title !== 'string') return "Procédure sans titre";
-      return procedure.title
+      if (!procedure?.title) return "Procédure sans titre";
+      return String(procedure.title)
         .replace(/\.[^/.]+$/, "")
         .replace(/^[0-9a-f.-]+-/i, "")
         .replace(/_/g, " ")
