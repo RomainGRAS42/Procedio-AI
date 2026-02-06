@@ -164,7 +164,7 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
                 fileUrl={fileUrl} 
                 plugins={plugins}
                 theme="dark"
-                localization={localization as any}
+                // localization={localization as any} // DISABLING LOCALIZATION causing crash
                 onDocumentLoad={(e) => {
                   try {
                     const hash = window.location.hash;
