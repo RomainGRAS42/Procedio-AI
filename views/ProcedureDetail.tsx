@@ -39,6 +39,125 @@ interface SuggestionItem {
   manager?: { first_name: string };
 }
 
+// 🛡️ ISOLATED PDF VIEWER COMPONENT
+// This prevents high-level re-renders from breaking the PDF.js plugin state
+const SafePDFViewer: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
+  // 🔍 PDF Search Plugin
+  const searchPluginInstance = useMemo(() => searchPlugin(), []);
+  const { highlight, ShowSearchPopover } = searchPluginInstance;
+
+  // 🔎 PDF Zoom Plugin
+  const zoomPluginInstance = useMemo(() => zoomPlugin(), []);
+  const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
+
+  // 🇫🇷 French Localization
+  const localization = useMemo(() => ({
+    search: {
+      clearAll: 'Tout effacer',
+      enterToSearch: 'Rechercher...',
+      matchCase: 'Respecter la casse',
+      nextMatch: 'Suivant',
+      previousMatch: 'Précédent',
+      wholeWords: 'Mots entiers',
+      close: 'Fermer',
+    },
+    zoom: {
+      zoomIn: 'Zoom avant',
+      zoomOut: 'Zoom arrière',
+    },
+    core: {
+      noFiles: 'Aucun fichier',
+    }
+  }), []);
+
+  const plugins = useMemo(() => [searchPluginInstance, zoomPluginInstance], [searchPluginInstance, zoomPluginInstance]);
+
+  useEffect(() => {
+    const handleHashSearch = () => {
+      try {
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#search=')) {
+          const parts = hash.split('=');
+          if (parts.length > 1) {
+            const rawTerm = parts[1];
+            if (rawTerm) {
+              const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
+              if (searchTerm && searchTerm.length > 2) {
+                console.log("🔦 Auto-highlighting:", searchTerm);
+                setTimeout(() => highlight(searchTerm), 500);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing search hash:", e);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashSearch);
+    let timer = setTimeout(handleHashSearch, 2000);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashSearch);
+      clearTimeout(timer);
+    };
+  }, [fileUrl, highlight]);
+
+  return (
+    <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
+      {/* FLOATING TOOLBAR */}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-2 bg-slate-800/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl opacity-0 group-hover/viewer:opacity-100 transition-all duration-300 translate-y-2 group-hover/viewer:translate-y-0">
+        <div className="flex items-center gap-1 pr-2 border-r border-white/10">
+          <ZoomOut>
+            {(props) => (
+              <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                <i className="fa-solid fa-magnifying-glass-minus"></i>
+              </button>
+            )}
+          </ZoomOut>
+          <div className="min-w-[45px] text-center">
+            <Zoom>
+              {(props) => (
+                <span className="text-[10px] font-black text-indigo-400">
+                  {Math.round(props.scale * 100)}%
+                </span>
+              )}
+            </Zoom>
+          </div>
+          <ZoomIn>
+            {(props) => (
+              <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                <i className="fa-solid fa-magnifying-glass-plus"></i>
+              </button>
+            )}
+          </ZoomIn>
+        </div>
+        
+        <ShowSearchPopover>
+          {(props) => (
+            <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all" title="Rechercher dans le document">
+              <i className="fa-solid fa-search"></i>
+            </button>
+          )}
+        </ShowSearchPopover>
+      </div>
+
+      <div className="flex-1 overflow-hidden" style={{ filter: 'brightness(0.95) contrast(1.05)' }}>
+        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+          <div className="h-full w-full">
+            <Viewer 
+              fileUrl={fileUrl} 
+              plugins={plugins}
+              theme="dark"
+              localization={localization as any}
+            />
+          </div>
+        </Worker>
+      </div>
+    </div>
+  );
+};
+
 const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   procedure,
   user,
@@ -507,68 +626,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // 🔍 PDF Search Plugin - Stabilized with useMemo
-  const searchPluginInstance = useMemo(() => searchPlugin(), []);
-  const { highlight, ShowSearchPopover } = searchPluginInstance;
-
-  // 🔎 PDF Zoom Plugin - Stabilized with useMemo
-  const zoomPluginInstance = useMemo(() => zoomPlugin(), []);
-  const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
-
-  // 🇫🇷 French Localization
-  const localization = {
-    search: {
-      clearAll: 'Tout effacer',
-      enterToSearch: 'Rechercher...',
-      matchCase: 'Respecter la casse',
-      nextMatch: 'Suivant',
-      previousMatch: 'Précédent',
-      wholeWords: 'Mots entiers',
-      close: 'Fermer',
-    },
-    zoom: {
-      zoomIn: 'Zoom avant',
-      zoomOut: 'Zoom arrière',
-    },
-    core: {
-      noFiles: 'Aucun fichier',
-    }
-  };
-
-  useEffect(() => {
-    // Watch for hash changes (e.g., #search="text")
-    const handleHashSearch = () => {
-      try {
-        const hash = window.location.hash;
-        if (hash && hash.startsWith('#search=')) {
-          const parts = hash.split('=');
-          if (parts.length > 1) {
-            const rawTerm = parts[1];
-            if (rawTerm) {
-              const searchTerm = decodeURIComponent(rawTerm.replace(/"/g, ''));
-              if (searchTerm && searchTerm.length > 2) {
-                console.log("🔦 Auto-highlighting:", searchTerm);
-                // Delay highlight to ensure PDF content is indexed
-                setTimeout(() => highlight(searchTerm), 500);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing search hash:", e);
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashSearch);
-    // Trigger on initial load if hash is present
-    if (docUrl) {
-      const timer = setTimeout(handleHashSearch, 2000); // 💡 Slightly more delay for smooth load
-      return () => clearTimeout(timer);
-    }
-    
-    return () => window.removeEventListener('hashchange', handleHashSearch);
-  }, [docUrl, highlight]);
-
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
       {notification && (
@@ -731,66 +788,16 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
-          {/* FLOATING TOOLBAR - Centered for maximum visibility */}
-          <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-2 bg-slate-800/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl opacity-0 group-hover/viewer:opacity-100 transition-all duration-300 translate-y-2 group-hover/viewer:translate-y-0">
-            <div className="flex items-center gap-1 pr-2 border-r border-white/10">
-              <ZoomOut>
-                {(props) => (
-                  <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                    <i className="fa-solid fa-magnifying-glass-minus"></i>
-                  </button>
-                )}
-              </ZoomOut>
-              <div className="min-w-[45px] text-center">
-                <Zoom>
-                  {(props) => (
-                    <span className="text-[10px] font-black text-indigo-400">
-                      {Math.round(props.scale * 100)}%
-                    </span>
-                  )}
-                </Zoom>
-              </div>
-              <ZoomIn>
-                {(props) => (
-                  <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                    <i className="fa-solid fa-magnifying-glass-plus"></i>
-                  </button>
-                )}
-              </ZoomIn>
+        {docUrl ? (
+          <SafePDFViewer fileUrl={docUrl} />
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-900 rounded-[3rem] border border-slate-800">
+            <div className="w-16 h-16 rounded-3xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 mb-6 animate-pulse">
+              <i className="fa-solid fa-file-pdf text-2xl"></i>
             </div>
-            
-            <ShowSearchPopover>
-              {(props) => (
-                <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all" title="Rechercher dans le document">
-                  <i className="fa-solid fa-search"></i>
-                </button>
-              )}
-            </ShowSearchPopover>
+            <p className="text-slate-400 font-medium animate-pulse">Chargement du document...</p>
           </div>
-
-          {docUrl ? (
-            <div className="flex-1 overflow-hidden" style={{ filter: 'brightness(0.95) contrast(1.05)' }}>
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-                <div className="h-full w-full">
-                  <Viewer 
-                    fileUrl={docUrl} 
-                    plugins={[searchPluginInstance, zoomPluginInstance]}
-                    theme="dark"
-                    localization={localization as any}
-                  />
-                </div>
-              </Worker>
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-6">
-              <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="font-black text-[10px] uppercase tracking-widest">
-                Récupération du PDF...
-              </p>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* HISTORIQUE DES SUGGESTIONS - COLLAPSIBLE */}
         <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
