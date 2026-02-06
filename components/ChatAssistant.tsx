@@ -6,8 +6,12 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  type?: 'expert' | 'explorer' | 'uncertain';
   procedures?: Procedure[];
+  suggestions?: any[];
   timestamp: Date;
+  source?: string;
+  sourcePath?: string;
 }
 
 interface ChatAssistantProps {
@@ -78,83 +82,61 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     setIsLoading(true);
 
     try {
-      const { data, error: supabaseError } = await supabase.functions.invoke('query-rag', {
+      const { data, error: supabaseError } = await supabase.functions.invoke('copilot-assistant', {
         body: {
-          query: input,
-          user_email: user.email
+          question: input,
+          userName: `${user.firstName} ${user.lastName}`,
+          userId: user.id
         }
       });
 
-      if (supabaseError) {
-        console.error('Supabase Error:', supabaseError);
-        throw new Error(`Erreur Supabase: ${supabaseError.message}`);
-      }
-      console.log('🤖 Chatbot Response:', data); // DEBUG
-      
-      // Handle response from n8n (Array or Object)
-      let responseText = '';
-      let procedures: Procedure[] = [];
-
-      // Case 1: Array with output [{ "output": "...", "procedures": [...] }]
-      if (Array.isArray(data) && data.length > 0) {
-        if (data[0].output) responseText = data[0].output;
-        if (data[0].procedures) procedures = data[0].procedures;
-      } 
-      // Case 2: Direct Object { "output": "...", "procedures": [...] }
-      else if (typeof data === 'object') {
-        if (data.output && typeof data.output === 'string') responseText = data.output;
-        if (data.procedures) procedures = data.procedures;
-      }
-      
-      // Fallback strategies if main parsing failed
-      if (!responseText && !procedures.length) {
-         if (typeof data === 'string') responseText = data;
-         else {
-           console.warn('⚠️ Unknown response format:', data);
-           responseText = "Désolé, je n'ai pas compris la réponse du serveur (Format inconnu).";
-         }
-      }
+      if (supabaseError) throw supabaseError;
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responseText,
-        procedures: procedures,
+        content: data.output || "Désolé, je ne parviens pas à répondre.",
+        type: data.type,
+        suggestions: data.suggestions,
+        source: data.source,
+        sourcePath: data.sourcePath,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // 🚀 AUTOMATISATION : Traçage des Opportunités Manquées (Recherche infructueuse)
-      if (!procedures.length && responseText.toLowerCase().includes("désolé") || (!procedures.length && responseText.length < 200)) {
-        // On log seulement si aucune procédure n'est suggérée et que le texte semble indiquer un échec
-        await supabase.from("notes").insert([{
-          user_id: user.id,
-          title: `LOG_SEARCH_FAIL_${input.substring(0, 50)}`,
-          content: `Recherche infructueuse de ${user.firstName} : "${input}"`,
-        }]);
-      }
     } catch (error: any) {
       console.error('Erreur chatbot:', error);
       
-      let errorMessageContent = "⚠️ Désolé, une erreur s'est produite.";
-      
-      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-        errorMessageContent = "⚠️ Erreur de connexion (CORS). Le serveur n8n ne permet pas l'accès direct depuis ce domaine. Veuillez vérifier la configuration CORS du webhook ou utiliser un proxy.";
-      } else if (error.message.includes('Erreur webhook')) {
-        errorMessageContent = `⚠️ Erreur serveur: ${error.message}`;
-      }
-
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: errorMessageContent,
+        content: "⚠️ Désolé, une erreur s'est produite lors de la communication avec le Copilote.",
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAlertManager = async (question: string) => {
+    try {
+      await supabase.from("notes").insert([{
+        user_id: user.id,
+        title: `🚨 ALERTE_COPILOTE`,
+        content: `L'utilisateur ${user.firstName} ${user.lastName} a posé une question restée sans réponse : "${question}"`,
+      }]);
+      
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "✅ Votre demande d'assistance a été transmise aux managers. On s'en occupe ! 🚀",
+        timestamp: new Date()
+      }]);
+    } catch (err) {
+      console.error("Failed to alert manager", err);
     }
   };
 
@@ -243,7 +225,16 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
           <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-800 border border-slate-200'} px-4 py-3 rounded-2xl`}>
+                <div className={`max-w-[90%] sm:max-w-[80%] ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-800 border border-slate-200'} px-4 py-3 rounded-2xl`}>
+                  
+                  {/* Badge Élite pour l'Expert AI */}
+                  {msg.type === 'expert' && (
+                    <div className="flex items-center gap-1.5 mb-2 py-0.5 px-2 bg-indigo-100 border border-indigo-200 rounded-full w-fit">
+                      <i className="fa-solid fa-wand-magic-sparkles text-[10px] text-indigo-600"></i>
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Expert AI</span>
+                    </div>
+                  )}
+
                   <div 
                     onClick={async (e) => {
                       // Interception des clics sur les liens générés
@@ -254,70 +245,30 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                         const href = link.getAttribute('href');
                         if (href) {
                           e.preventDefault();
-                          
-                          // 1. Chercher dans le contexte local (rapide)
                           const decodedHref = decodeURIComponent(href);
-                          let procedure = msg.procedures?.find(p => {
-                            const pUrl = p.fileUrl || (p as any).file_url;
-                            if (!pUrl) return false;
-                            const decodedPUrl = decodeURIComponent(pUrl);
-                            return pUrl === href || decodedPUrl === decodedHref || decodedPUrl === href || pUrl === decodedHref;
-                          });
-
-                          // 2. Si non trouvé, fallback sur Supabase (robuste)
-                          if (!procedure && (href.includes('supabase.co') || href.endsWith('.pdf'))) {
-                            try {
-                                // A. Recherche par URL Exacte
-                                let { data } = await supabase
-                                  .from('procedures')
-                                  .select('*')
-                                  .or(`file_url.eq.${href},file_url.eq.${decodedHref}`)
-                                  .maybeSingle(); 
-
-                                // B. Fallback : Recherche par Titre (Link Text)
-                                if (!data && link.innerText) {
-                                  let title = link.innerText.trim();
-                                  // Nettoyer le titre si c'est une URL brute
-                                  if (title.startsWith('http')) {
-                                    // Extraire le nom du fichier de l'URL pour une recherche plus précise
-                                    const parts = title.split('/');
-                                    const fileName = parts[parts.length - 1].replace('.pdf', '').replace(/%20/g, ' ');
-                                    title = fileName;
-                                  }
-
-                                  const { data: titleData } = await supabase
-                                    .from('procedures')
-                                    .select('*')
-                                    .ilike('title', `%${title}%`)
-                                    .limit(1)
-                                    .maybeSingle();
-                                  data = titleData;
-                                  console.log("Fallback title search result for:", title, data);
-                                }
-                                
-                                if (data) {
-                                  procedure = {
-                                    id: data.file_id || data.uuid, 
-                                    file_id: data.file_id || data.uuid,
-                                    title: data.title,
-                                    category: data.Type || 'NON CLASSÉ',
-                                    fileUrl: data.file_url,
-                                    pinecone_document_id: data.pinecone_document_id,
-                                    createdAt: data.created_at,
-                                    views: data.views || 0,
-                                    status: data.status
-                                  } as Procedure;
-                                }
-                            } catch (err) {
-                              console.warn("Fallback search failed", err);
-                            }
-                          }
                           
-                          if (procedure) {
-                            onSelectProcedure(procedure);
-                            setIsOpen(false);
+                          // 1. Chercher par Titre d'abord (plus fiable dans ce contexte)
+                          const linkText = link.innerText.trim();
+                          const { data: procData } = await supabase
+                            .from('procedures')
+                            .select('*')
+                            .or(`title.ilike.%${linkText}%,file_url.eq.${href},file_url.eq.${decodedHref}`)
+                            .maybeSingle();
+
+                          if (procData) {
+                             const procedure = {
+                                id: procData.file_id || procData.uuid, 
+                                file_id: procData.file_id || procData.uuid,
+                                title: procData.title,
+                                category: procData.Type || 'NON CLASSÉ',
+                                fileUrl: procData.file_url,
+                                createdAt: procData.created_at,
+                                views: procData.views || 0,
+                                status: procData.status
+                             } as Procedure;
+                             onSelectProcedure(procedure);
+                             setIsOpen(false);
                           } else {
-                            // 3. Dernier recours : Ouvrir dans un nouvel onglet
                             window.open(href, '_blank', 'noopener,noreferrer');
                           }
                         }
@@ -338,12 +289,12 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                             return `__LINK_TOKEN_${linkPlaceholders.length - 1}__`;
                           });
 
-                          // 2. Raw URLs (not inside a markdown link placeholder)
+                          // 2. Raw URLs
                           html = html.replace(/(https?:\/\/[^\s<)]+)/g, (url) => {
                             return `<a href="${url}" class="text-indigo-600 underline font-bold hover:text-indigo-800 break-all cursor-pointer">${url}</a>`;
                           });
 
-                          // 3. Restore Markdown Links
+                          // 3. Restore
                           html = html.replace(/__LINK_TOKEN_(\d+)__/g, (_, index) => linkPlaceholders[parseInt(index)]);
                           
                           return html;
@@ -351,34 +302,74 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                       }} 
                     />
                   </div>
-                  
-                  {/* Procédures trouvées */}
-                  {msg.procedures && msg.procedures.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {msg.procedures.map((proc) => (
-                        <button
-                          key={proc.id}
-                          onClick={() => {
-                            onSelectProcedure(proc);
-                            setIsOpen(false);
-                          }}
-                          className="w-full text-left p-3 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl transition-all group shadow-sm"
-                        >
-                          <div className="flex items-start gap-2">
-                            <i className="fa-solid fa-file-lines text-indigo-600 text-xs mt-1" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors">
-                                {proc.title}
-                              </p>
-                              <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                                {proc.category}
-                              </p>
-                            </div>
-                            <i className="fa-solid fa-chevron-right text-[8px] text-slate-400 group-hover:text-indigo-600 transition-colors" />
-                          </div>
-                        </button>
-                      ))}
+
+                  {/* UI EXPLORER (RÉSULTATS MULTIPLES) */}
+                  {msg.type === 'explorer' && msg.suggestions && (
+                    <div className="mt-4 space-y-2">
+                       {msg.suggestions.map((s, idx) => (
+                         <button
+                           key={idx}
+                           onClick={async () => {
+                             const { data } = await supabase.from('procedures').select('*').ilike('title', `%${s.title}%`).maybeSingle();
+                             if (data) {
+                               onSelectProcedure({
+                                 id: data.file_id || data.uuid,
+                                 title: data.title,
+                                 category: data.Type,
+                                 fileUrl: data.file_url
+                               } as any);
+                               setIsOpen(false);
+                             } else if (s.path) {
+                               const fullUrl = `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${s.path}`;
+                               window.open(fullUrl, '_blank');
+                             }
+                           }}
+                           className="w-full text-left p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-all shadow-sm"
+                         >
+                           <p className="text-xs font-bold text-slate-800 line-clamp-1">{s.title}</p>
+                           <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 italic">"...{s.content.substring(0, 100)}..."</p>
+                         </button>
+                       ))}
                     </div>
+                  )}
+
+                  {/* UI UNCERTAIN (ALERTE MANAGER) */}
+                  {msg.type === 'uncertain' && (
+                    <div className="mt-4 flex flex-col gap-2">
+                       <button
+                         onClick={() => {
+                           const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+                           if (lastUserMsg) handleAlertManager(lastUserMsg.content);
+                         }}
+                         className="w-full py-2.5 px-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+                       >
+                         <i className="fa-solid fa-bell"></i>
+                         Alerter un manager
+                       </button>
+                    </div>
+                  )}
+
+                  {/* SOURCE UNIQUE (EXPERT) */}
+                  {msg.type === 'expert' && msg.source && (
+                    <button
+                      onClick={async () => {
+                        const { data } = await supabase.from('procedures').select('*').ilike('title', `%${msg.source}%`).maybeSingle();
+                        if (data) {
+                           onSelectProcedure({
+                             id: data.file_id || data.uuid,
+                             title: data.title,
+                             category: data.Type,
+                             fileUrl: data.file_url
+                           } as any);
+                           setIsOpen(false);
+                        }
+                      }}
+                      className="mt-4 flex items-center gap-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md group"
+                    >
+                      <i className="fa-solid fa-file-pdf text-xs ml-1"></i>
+                      <span className="text-[10px] font-bold truncate max-w-[200px]">Lire : {msg.source}</span>
+                      <i className="fa-solid fa-chevron-right text-[8px] opacity-70 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
                   )}
                   
                   <span className={`text-[9px] font-medium mt-2 block ${msg.role === 'user' ? 'text-indigo-100' : 'text-slate-500'}`}>

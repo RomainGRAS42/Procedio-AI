@@ -30,64 +30,74 @@ const ExpertAIModal: React.FC<ExpertAIModalProps> = ({ isOpen, onClose, onSelect
     try {
       console.log("🤖 Expert IA: Recherche pour:", query);
       
-      const { data, error: supabaseError } = await supabase.functions.invoke('query-rag', {
-        body: { question: query }
-      });
-
-      if (supabaseError) {
-        throw new Error(`Erreur Supabase: ${supabaseError.message}`);
-      }
-      console.log("📦 Réponse webhook:", data);
-
-      // Parse new format
-      if (!Array.isArray(data)) {
-        console.warn("⚠️ Format inattendu");
-        setResults([]);
-        return;
-      }
-
-      // Extract unique titles
-      const uniqueTitles = new Set<string>();
-      data.forEach((item: any) => {
-        if (item.document?.metadata?.titre) {
-          uniqueTitles.add(item.document.metadata.titre);
+      const { data, error: supabaseError } = await supabase.functions.invoke('copilot-assistant', {
+        body: { 
+          question: query,
+          userName: `${user.firstName} ${user.lastName}`,
+          userId: user.id
         }
       });
 
-      console.log(`🔍 ${uniqueTitles.size} documents trouvés`);
+      if (supabaseError) throw supabaseError;
 
-      // Fetch full procedures from Supabase
-      const { data: procedures, error } = await supabase
-        .from('procedures')
-        .select('*')
-        .in('title', Array.from(uniqueTitles));
+      // New unified format handling
+      let foundProcedures: Procedure[] = [];
 
-      if (error) {
-        console.error("❌ Erreur Supabase:", error);
-        setResults([]);
-        return;
+      // Case 1: Expert Synthesis (we fetch the main source)
+      if (data.type === 'expert' && data.source) {
+        const { data: proc } = await supabase
+          .from('procedures')
+          .select('*')
+          .ilike('title', `%${data.source}%`)
+          .maybeSingle();
+        
+        if (proc) {
+          foundProcedures.push({
+            id: proc.file_id || proc.uuid,
+            file_id: proc.file_id || proc.uuid,
+            title: proc.title,
+            category: proc.Type,
+            fileUrl: proc.file_url,
+            createdAt: proc.created_at,
+            views: proc.views || 0,
+            status: proc.status
+          } as Procedure);
+        }
       }
 
-      const foundProcedures: Procedure[] = (procedures || []).map(f => ({
-        id: f.file_id || f.uuid,
-        file_id: f.file_id || f.uuid,
-        title: f.title || "Sans titre",
-        category: f.Type || 'NON CLASSÉ',
-        fileUrl: f.file_url,
-        pinecone_document_id: f.pinecone_document_id,
-        createdAt: f.created_at,
-        views: f.views || 0,
-        status: f.status || 'validated'
-      }));
+      // Case 2/3: Explorer or Uncertain (fetch all matching titles)
+      if (data.suggestions && data.suggestions.length > 0) {
+        const titles = data.suggestions.map((s: any) => s.title);
+        const { data: procs } = await supabase
+          .from('procedures')
+          .select('*')
+          .in('title', titles);
+        
+        if (procs) {
+          procs.forEach(p => {
+             if (!foundProcedures.find(fp => fp.id === (p.file_id || p.uuid))) {
+               foundProcedures.push({
+                 id: p.file_id || p.uuid,
+                 file_id: p.file_id || p.uuid,
+                 title: p.title,
+                 category: p.Type,
+                 fileUrl: p.file_url,
+                 createdAt: p.created_at,
+                 views: p.views || 0,
+                 status: p.status
+               } as Procedure);
+             }
+          });
+        }
+      }
 
-      console.log("✨ Résultats:", foundProcedures);
       setResults(foundProcedures);
 
-      // Log search
-      if (foundProcedures.length === 0 && query.trim().length > 2) {
+      // Log failure if nothing found
+      if (foundProcedures.length === 0) {
         await supabase.from('notes').insert({
-          title: `LOG_AI_SEARCH_FAIL_${query.trim()}`,
-          content: `Recherche IA sans résultat par ${user.email}`,
+          title: `🚨 LOG_EXPERT_FAIL`,
+          content: `Recherche IA sans résultat par ${user.firstName}: "${query}"`,
           user_id: user.id
         });
       }
