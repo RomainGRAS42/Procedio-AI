@@ -554,8 +554,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
          </div>
       )}
 
-      {/* LISTE DES NOTES - MODE FLASH (GRID) vs NORMAL (LIST) */}
-      <div className={mode === "flash" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
+      {/* LISTE DES NOTES - MODE FLASH (GRID) vs PERSONAL (LIST) */}
+      <div className={mode === "flash" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4"}>
         {notes
           .filter(
             (note) =>
@@ -570,7 +570,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
              const borderClass = mode === "flash" ? "border-transparent" : "border-slate-200";
 
              return (
-            <div
+             <div
               key={note.id}
               onClick={() => {
                 if (note.is_protected && !unlockedNotes.has(note.id)) {
@@ -579,67 +579,98 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   setViewingNote(note);
                 }
               }}
-              className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`}>
-              <div className="flex justify-between items-start mb-4">
-                <h3 className={`font-black text-xl line-clamp-2 ${mode === "flash" ? "text-slate-800" : "text-slate-700"}`} style={{ wordBreak: 'break-word' }}>
-                  {note.title}
-                </h3>
-                {note.is_protected ? (
-                  unlockedNotes.has(note.id) ? (
-                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
-                      <i className="fa-solid fa-lock-open text-xs"></i>
-                    </span>
-                  ) : (
-                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
-                      <i className="fa-solid fa-lock text-xs"></i>
-                    </span>
-                  )
-                ) : (
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${mode === "flash" ? "bg-white/50 text-slate-500" : "bg-slate-50 text-slate-300"}`}>
-                    <i className="fa-solid fa-eye text-xs"></i>
-                  </span>
-                )}
-              </div>
+              className={mode === "flash" 
+                ? `group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`
+                : `group hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 rounded-2xl p-5 relative cursor-pointer flex flex-row items-center gap-6 shadow-sm hover:shadow-lg ${cardColor} border ${borderClass}`
+              }>
+              
+              {mode === "flash" ? (
+                // FLASH MODE: Vertical Card
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-black text-xl line-clamp-2 text-slate-800" style={{ wordBreak: 'break-word' }}>
+                      {note.title}
+                    </h3>
+                    {note.is_protected ? (
+                      unlockedNotes.has(note.id) ? (
+                        <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                          <i className="fa-solid fa-lock-open text-xs"></i>
+                        </span>
+                      ) : (
+                        <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+                          <i className="fa-solid fa-lock text-xs"></i>
+                        </span>
+                      )
+                    ) : (
+                      <span className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 text-slate-500">
+                        <i className="fa-solid fa-eye text-xs"></i>
+                      </span>
+                    )}
+                  </div>
 
-              <div
-                className={`flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative ${mode === "flash" ? "text-slate-600 font-medium" : "text-slate-400"}`}
-                >
-                  <div dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
-                  {/* Fade out effect */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${mode === "flash" ? "from-" + cardColor.replace("bg-", "") : "from-white"} to-transparent pointer-events-none`}></div>
-              </div>
+                  <div className="flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative text-slate-600 font-medium">
+                    <div dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
+                    <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-${cardColor.replace("bg-", "")} to-transparent pointer-events-none`}></div>
+                  </div>
 
-              <div className="mt-auto flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {note.updatedAt}
-                </span>
-                
-                {/* ACTION BUTTONS */}
-                <div className="flex gap-2">
-                   {/* COPY BUTTON FOR FLASH NOTES */}
-                   {mode === "flash" && !note.is_protected && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, '')); // Strip HTML roughly
-                          alert("Copié !"); 
-                        }}
-                        className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
-                        title="Copier le texte"
-                      >
-                         <i className="fa-regular fa-copy"></i>
+                  <div className="mt-auto flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {note.updatedAt}
+                    </span>
+                    
+                    <div className="flex gap-2">
+                      {!note.is_protected && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, ''));
+                            alert("Copié !"); 
+                          }}
+                          className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
+                          title="Copier le texte">
+                          <i className="fa-regular fa-copy"></i>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(e) => handleDelete(e, note.id)}
+                        className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+                        title="Supprimer">
+                        <i className="fa-solid fa-trash-can text-xs"></i>
                       </button>
-                   )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // PERSONAL MODE: Horizontal List Item
+                <>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <h3 className="font-bold text-lg text-slate-900 line-clamp-1" style={{ wordBreak: 'break-word' }}>
+                        {note.title}
+                      </h3>
+                      {note.is_protected && (
+                        <span className="shrink-0 w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                          <i className="fa-solid fa-lock text-[10px]"></i>
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-slate-500 line-clamp-2 mb-3" dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {note.updatedAt}
+                    </span>
+                  </div>
 
-                   {/* DELETE ONLY IF OWNER or MANAGER */}
-                   <button
-                    onClick={(e) => handleDelete(e, note.id)}
-                    className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
-                    title="Supprimer">
-                    <i className="fa-solid fa-trash-can text-xs"></i>
-                   </button>
-                </div>
-              </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={(e) => handleDelete(e, note.id)}
+                      className="w-9 h-9 rounded-xl hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center"
+                      title="Supprimer">
+                      <i className="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
             );
           })}
@@ -700,6 +731,15 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                            }
                            if (result.error) throw result.error;
                            
+                           // Create notification for Manager
+                           await supabase.from("notes").insert([{
+                              title: `FLASH_NOTE_SUGGESTION`,
+                              content: `${user.firstName} ${user.lastName || ""} a proposé une Flash Note: "${activeNote.title.trim()}"`,
+                              is_protected: false,
+                              user_id: user.id,
+                              tags: ["FLASH_NOTE", "SUGGESTION"],
+                           }]);
+
                            setSuccessModal({
                               title: "Flash Note Proposée !",
                               message: "Votre suggestion a été envoyée au manager. Vous serez notifié de sa décision.",
@@ -907,11 +947,28 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                          onClick={async (e) => {
                             e.stopPropagation();
                             if(!confirm("Valider cette Flash Note pour toute l'équipe ?")) return;
-                            const { error } = await supabase.from('notes').update({ status: 'public' }).eq('id', viewingNote.id);
-                            if(!error) {
+                            try {
+                               const { error } = await supabase.from('notes').update({ status: 'public' }).eq('id', viewingNote.id);
+                               if(error) throw error;
+                               
+                               // Create notification for Technician
+                               await supabase.from("flash_note_responses").insert([{
+                                  note_id: viewingNote.id,
+                                  user_id: viewingNote.user_id,
+                                  manager_id: user?.id,
+                                  status: 'approved',
+                                  manager_response: "Votre Flash Note a été validée et est maintenant visible par toute l'équipe !",
+                                  note_title: viewingNote.title,
+                                  note_content: viewingNote.content,
+                                  read: false
+                               }]);
+
                                alert("Flash Note validée !");
                                handleCloseNote();
                                fetchNotes();
+                            } catch (err) {
+                               console.error("Error validating flash note:", err);
+                               alert("Erreur lors de la validation.");
                             }
                          }}
                          className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
@@ -922,11 +979,28 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                          onClick={async (e) => {
                             e.stopPropagation();
                             if(!confirm("Refuser cette suggestion ? Elle redeviendra privée pour l'auteur.")) return;
-                            const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
-                             if(!error) {
+                            try {
+                               const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
+                               if(error) throw error;
+                               
+                               // Create notification for Technician
+                               await supabase.from("flash_note_responses").insert([{
+                                  note_id: viewingNote.id,
+                                  user_id: viewingNote.user_id,
+                                  manager_id: user?.id,
+                                  status: 'rejected',
+                                  manager_response: "Votre suggestion de Flash Note a été refusée. Elle reste privée.",
+                                  note_title: viewingNote.title,
+                                  note_content: viewingNote.content,
+                                  read: false
+                               }]);
+
                                alert("Suggestion refusée.");
                                handleCloseNote();
                                fetchNotes();
+                            } catch (err) {
+                               console.error("Error refusing flash note:", err);
+                               alert("Erreur lors du refus.");
                             }
                          }}
                          className="px-4 py-2 bg-white text-rose-500 border border-rose-100 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
