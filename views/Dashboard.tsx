@@ -68,6 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Flash Note Notifications (Manager Only)
   const [flashNoteNotifications, setFlashNoteNotifications] = useState<any[]>([]);
   const [loadingFlashNotes, setLoadingFlashNotes] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
   // État de la vue (Personnel vs Équipe) - Initialisé selon le rôle
   const [viewMode, setViewMode] = useState<"personal" | "team">(user.role === UserRole.MANAGER ? "team" : "personal");
@@ -930,6 +931,72 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
         </div>
+
+        {/* NOTIFICATION BELL (Manager Only) */}
+        {user.role === UserRole.MANAGER && flashNoteNotifications.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+              className="relative w-14 h-14 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-all shadow-sm hover:shadow-md group"
+            >
+              <i className="fa-solid fa-bell text-xl"></i>
+              <span className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 text-white text-xs font-black rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                {flashNoteNotifications.length}
+              </span>
+            </button>
+
+            {/* DROPDOWN MENU */}
+            {showNotificationDropdown && (
+              <div className="absolute right-0 top-16 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
+                <div className="bg-gradient-to-r from-indigo-500 to-violet-500 p-4">
+                  <h3 className="text-white font-black text-sm uppercase tracking-wider">
+                    <i className="fa-solid fa-lightbulb mr-2"></i>
+                    Nouvelles Suggestions
+                  </h3>
+                </div>
+                
+                <div className="max-h-96 overflow-y-auto">
+                  {flashNoteNotifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={async () => {
+                        // Navigate to Flash Notes
+                        const flashNotesLink = document.querySelector('[href="#flash-notes"]') as HTMLAnchorElement;
+                        if (flashNotesLink) flashNotesLink.click();
+                        
+                        // Delete notification
+                        await supabase.from('notes').delete().eq('id', notif.id);
+                        fetchFlashNoteNotifications();
+                        setShowNotificationDropdown(false);
+                      }}
+                      className="p-4 border-b border-slate-100 hover:bg-indigo-50 cursor-pointer transition-colors group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                          <i className="fa-solid fa-note-sticky"></i>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-900 line-clamp-2">
+                            {notif.content}
+                          </p>
+                          <span className="text-xs text-slate-400 mt-1 block">
+                            {new Date(notif.created_at).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-600 transition-colors"></i>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* L'éclair du Trend - Uniquement si activé */}
         {trendProcedure && (
