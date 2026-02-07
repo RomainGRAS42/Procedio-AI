@@ -284,18 +284,29 @@ const Procedures: React.FC<ProceduresProps> = ({
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
             </div>
           ) : isSearching ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {searchResults.length > 0 ? searchResults.map(res => (
-                <div key={res.id} onClick={() => onSelectProcedure(res)} className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex items-center gap-6 cursor-pointer hover:shadow-2xl transition-all animate-slide-up group">
-                   <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl group-hover:bg-rose-500 group-hover:text-white transition-all shadow-sm"><i className="fa-solid fa-file-pdf"></i></div>
-                   <div className="flex-1 overflow-hidden">
-                     <span className="font-black text-slate-800 block truncate text-lg">{res.title}</span>
-                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 block">{res.category}</span>
+                <div 
+                  key={res.id} 
+                  onClick={() => onSelectProcedure(res)} 
+                  className="p-6 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-5 cursor-pointer hover:shadow-2xl hover:border-indigo-200 transition-all animate-slide-up group bg-gradient-to-br from-white to-slate-50/30"
+                >
+                   <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-lg group-hover:bg-rose-500 group-hover:text-white transition-all shadow-sm shrink-0">
+                     <i className="fa-solid fa-file-pdf"></i>
                    </div>
-                   <i className="fa-solid fa-chevron-right text-slate-100 group-hover:text-indigo-600 transition-colors"></i>
+                   <div className="flex-1 min-w-0">
+                     <span className="font-bold text-slate-800 block truncate text-sm mb-1 group-hover:text-indigo-600 transition-colors">{res.title}</span>
+                     <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block opacity-70">{res.category}</span>
+                   </div>
+                   <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[10px] text-slate-200 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
+                     <i className="fa-solid fa-arrow-right"></i>
+                   </div>
                 </div>
               )) : (
-                 <div className="col-span-full py-20 text-center text-slate-300">Aucune procédure ne correspond à votre recherche.</div>
+                 <div className="col-span-full py-20 text-center text-slate-300 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200">
+                   <i className="fa-solid fa-magnifying-glass text-3xl mb-4 opacity-20"></i>
+                   <p className="text-[10px] font-black uppercase tracking-widest">Aucune procédure ne correspond à votre recherche</p>
+                 </div>
               )}
             </div>
           ) : (
@@ -309,23 +320,22 @@ const Procedures: React.FC<ProceduresProps> = ({
                     <div 
                       key={folderName}
                       onClick={() => setCurrentFolder(folderName)}
-                      className="group relative flex flex-col items-center justify-center aspect-square rounded-[3.5rem] p-10 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
+                      className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up group"
                     >
-                      <div className="text-7xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
+                      <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
                         <i className="fa-solid fa-folder"></i>
                       </div>
                       <div className="flex flex-col items-center gap-2 mt-2">
                         <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
                           {folderName}
                         </span>
-                        {/* REFINED BADGE (WCAG & SUBTLE) */}
                         <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
                           <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
                             {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
                           </span>
                         </div>
                       </div>
-                      <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                      <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
                         <i className="fa-solid fa-arrow-right"></i>
                       </div>
                     </div>
@@ -335,57 +345,78 @@ const Procedures: React.FC<ProceduresProps> = ({
               {/* FICHIERS (GRID OR LIST) */}
               {currentFolder !== null && (
                 viewType === 'grid' ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
                     {files.map((file) => (
                       <div 
                         key={file.id}
                         onClick={() => onSelectProcedure(file)}
-                        className="group relative flex flex-col items-center justify-center aspect-square rounded-[3.5rem] p-10 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-emerald-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up"
+                        className="group relative flex flex-col p-6 rounded-[2rem] cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-emerald-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up overflow-hidden h-full min-h-[180px]"
                       >
-                        <div className="text-7xl mb-6 text-slate-50 transition-all group-hover:scale-110 group-hover:text-emerald-500">
+                        <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-sm mb-6">
                           <i className="fa-solid fa-file-pdf"></i>
                         </div>
-                        <span className="font-black text-slate-900 text-[11px] uppercase tracking-widest text-center leading-tight line-clamp-2 px-2">
-                          {cleanFileName(file.title)}
-                        </span>
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                          <span className="w-2 h-2 bg-emerald-200 rounded-full"></span>
+                        <div className="flex-1">
+                          <h4 className="font-black text-slate-900 text-[11px] uppercase tracking-widest leading-tight line-clamp-3 mb-2 group-hover:text-emerald-600 transition-colors">
+                            {cleanFileName(file.title)}
+                          </h4>
                         </div>
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Procedio Doc</span>
+                           <i className="fa-solid fa-chevron-right text-[10px] text-slate-200 group-hover:text-emerald-400 transition-colors"></i>
+                        </div>
+                        {/* Squircle corner decor */}
+                        <div className="absolute -top-6 -right-6 w-12 h-12 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors"></div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-3 px-4">
-                    {files.map((file) => (
-                      <div 
-                        key={file.id}
-                        onClick={() => onSelectProcedure(file)}
-                        className="group bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-indigo-400 flex items-center justify-between cursor-pointer transition-all hover:shadow-xl hover:-translate-x-1 animate-slide-up"
-                      >
-                        <div className="flex items-center gap-6">
-                          <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                            <i className="fa-solid fa-file-pdf"></i>
-                          </div>
-                          <div>
-                            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-1 group-hover:text-indigo-600 transition-colors">
-                              {cleanFileName(file.title)}
-                            </h4>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded">
+                  <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden animate-slide-up">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/50 border-b border-slate-100">
+                          <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nom du fichier</th>
+                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hidden md:table-cell">Modifié le</th>
+                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hidden lg:table-cell">Catégorie</th>
+                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {files.map((file) => (
+                          <tr 
+                            key={file.id}
+                            onClick={() => onSelectProcedure(file)}
+                            className="group hover:bg-indigo-50/30 cursor-pointer transition-colors"
+                          >
+                            <td className="px-8 py-5">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                  <i className="fa-solid fa-file-pdf"></i>
+                                </div>
+                                <span className="font-bold text-slate-700 text-sm group-hover:text-indigo-600 transition-colors truncate max-w-[200px] md:max-w-xs">
+                                  {cleanFileName(file.title)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 hidden md:table-cell">
+                              <span className="text-[11px] font-medium text-slate-400">
+                                {file.createdAt ? new Date(file.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 hidden lg:table-cell">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
                                 {file.category}
                               </span>
-                              <span className="text-[9px] font-bold text-slate-300">
-                                Ajouté le {file.createdAt ? new Date(file.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                          <i className="fa-solid fa-arrow-right"></i>
-                        </div>
-                      </div>
-                    ))}
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <div className="flex items-center justify-end gap-2 text-slate-400">
+                                <span className="text-[11px] font-bold">{file.views || 0}</span>
+                                <i className="fa-solid fa-eye text-[10px] opacity-30"></i>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )
               )}
