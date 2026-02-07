@@ -284,7 +284,7 @@ const Procedures: React.FC<ProceduresProps> = ({
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
             </div>
           ) : isSearching ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {searchResults.length > 0 ? searchResults.map(res => (
                 <div 
                   key={res.id} 
@@ -298,7 +298,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                      <span className="font-bold text-slate-800 block truncate text-xs mb-1 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{res.title}</span>
                      <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest block opacity-70">{res.category}</span>
                    </div>
-                   <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[10px] text-slate-200 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
+                   <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[10px] text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                      <i className="fa-solid fa-arrow-right"></i>
                    </div>
                 </div>
@@ -345,78 +345,88 @@ const Procedures: React.FC<ProceduresProps> = ({
               {/* FICHIERS (GRID OR LIST) */}
               {currentFolder !== null && (
                 viewType === 'grid' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 px-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
                     {files.map((file) => (
                       <div 
                         key={file.id}
                         onClick={() => onSelectProcedure(file)}
-                        className="group relative flex flex-col items-center justify-between aspect-[3/4] rounded-3xl p-6 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-emerald-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up overflow-hidden"
+                        className="group relative flex flex-col justify-between rounded-3xl p-6 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-emerald-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up overflow-hidden min-h-[160px]"
                       >
-                        <div className="w-full flex justify-center mb-4">
-                          <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center text-xl transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-sm shrink-0">
                             <i className="fa-solid fa-file-pdf"></i>
                           </div>
+                          <div className="px-2 py-1 bg-slate-50 rounded text-[8px] font-black text-slate-300 uppercase tracking-widest">
+                            {file.category}
+                          </div>
                         </div>
-                        <div className="flex-1 w-full text-center">
-                          <h4 className="font-black text-slate-900 text-[10px] uppercase tracking-widest leading-normal line-clamp-3 group-hover:text-emerald-600 transition-colors mb-2">
+                        <div className="flex-1 w-full">
+                          <h4 className="font-bold text-slate-800 text-xs leading-normal line-clamp-2 group-hover:text-emerald-600 transition-colors mb-4 uppercase tracking-tight">
                             {cleanFileName(file.title)}
                           </h4>
                         </div>
                         <div className="w-full border-t border-slate-50 pt-3 flex items-center justify-between">
-                           <span className="text-[8px] font-black text-slate-300 uppercase">PDF</span>
-                           <i className="fa-solid fa-chevron-right text-[8px] text-slate-200 group-hover:text-emerald-400"></i>
+                           <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300">
+                             <i className="fa-solid fa-eye text-[8px]"></i> {file.views || 0}
+                           </div>
+                           <i className="fa-solid fa-arrow-right text-[10px] text-slate-200 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all"></i>
                         </div>
                         {/* Squircle corner decor */}
-                        <div className="absolute -top-6 -right-6 w-12 h-12 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors"></div>
+                        <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors"></div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="mx-4 overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-sm animate-slide-up">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse min-w-[600px]">
-                        <thead>
-                          <tr className="bg-slate-50/50 border-b border-slate-100">
-                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nom</th>
-                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest md:table-cell">Modifié</th>
-                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest lg:table-cell">Type</th>
-                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right pr-8">Vues</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {files.map((file) => (
-                            <tr 
-                              key={file.id}
-                              onClick={() => onSelectProcedure(file)}
-                              className="group hover:bg-slate-50 cursor-pointer transition-colors"
-                            >
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
-                                    <i className="fa-solid fa-file-pdf"></i>
-                                  </div>
-                                  <span className="font-bold text-slate-700 text-xs group-hover:text-indigo-600 transition-colors truncate max-w-[150px] md:max-w-xs uppercase tracking-tight">
-                                    {cleanFileName(file.title)}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 md:table-cell">
-                                <span className="text-[10px] font-medium text-slate-400">
-                                  {file.createdAt ? new Date(file.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 lg:table-cell">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
-                                  {file.category}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-right pr-8">
-                                <span className="text-[10px] font-bold text-slate-400">{file.views || 0}</span>
-                              </td>
+                  <div className="px-4 animate-slide-up">
+                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
+                          <thead>
+                            <tr className="bg-slate-50/50 border-b border-slate-100">
+                              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nom du fichier</th>
+                              <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest md:table-cell">Modifié le</th>
+                              <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest lg:table-cell">Catégorie</th>
+                              <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right pr-10">Vues</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {files.map((file) => (
+                              <tr 
+                                key={file.id}
+                                onClick={() => onSelectProcedure(file)}
+                                className="group hover:bg-slate-50/80 cursor-pointer transition-colors"
+                              >
+                                <td className="px-8 py-5">
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center text-sm group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
+                                      <i className="fa-solid fa-file-pdf"></i>
+                                    </div>
+                                    <span className="font-bold text-slate-700 text-sm group-hover:text-emerald-600 transition-colors truncate max-w-[250px] md:max-w-md uppercase tracking-tight">
+                                      {cleanFileName(file.title)}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-5 md:table-cell">
+                                  <span className="text-[11px] font-medium text-slate-400">
+                                    {file.createdAt ? new Date(file.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-5 lg:table-cell">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-md">
+                                    {file.category}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-5 text-right pr-10">
+                                  <div className="flex items-center justify-end gap-2 text-slate-400">
+                                    <span className="text-[11px] font-bold">{file.views || 0}</span>
+                                    <i className="fa-solid fa-eye text-[10px] opacity-30"></i>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )
