@@ -284,7 +284,7 @@ const Procedures: React.FC<ProceduresProps> = ({
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
             </div>
           ) : isSearching ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
               {searchResults.length > 0 ? searchResults.map(res => (
                 <div 
                   key={res.id} 
@@ -357,7 +357,7 @@ const Procedures: React.FC<ProceduresProps> = ({
               {/* FICHIERS (GRID OR LIST) */}
               {currentFolder !== null && (
                 viewType === 'grid' ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
                     {files.map((file) => (
                       <div 
                         key={file.id}
