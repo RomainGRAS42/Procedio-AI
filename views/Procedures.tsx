@@ -165,7 +165,7 @@ const Procedures: React.FC<ProceduresProps> = ({
   };
 
   return (
-    <div className="space-y-12 h-full flex flex-col pb-10 animate-fade-in">
+    <div className="space-y-12 h-full flex flex-col pb-10 px-4 md:px-10 animate-fade-in">
       {/* Expert IA Modal moved to App.tsx */}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
@@ -390,7 +390,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                 ) : (
                   <div className="animate-slide-up">
                     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-                      <div className="overflow-x-auto">
+                      <div>
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-100">
