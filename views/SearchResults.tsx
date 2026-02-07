@@ -138,39 +138,36 @@ const SearchResults: React.FC<SearchResultsProps> = ({
            </div>
         </section>
       ) : (
-        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <section className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {results.length > 0 ? (
             results.map((proc) => (
               <article
                 key={proc.id}
                 onClick={() => onSelectProcedure(proc)}
-                className="group relative flex flex-col bg-white border border-slate-100 rounded-3xl p-8 cursor-pointer transition-all hover:-translate-y-2 hover:border-indigo-400 hover:shadow-2xl shadow-sm animate-slide-up overflow-hidden"
-                style={{minHeight: '200px'}}
+                className="group relative flex flex-col bg-white border border-slate-100 rounded-2xl p-5 cursor-pointer transition-all hover:-translate-y-1 hover:border-indigo-400 hover:shadow-xl shadow-sm overflow-hidden"
               >
-                <div className="flex justify-between items-start mb-6">
-                  <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl transition-all group-hover:bg-indigo-600 group-hover:text-white shadow-sm shrink-0">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg transition-all group-hover:bg-indigo-600 group-hover:text-white shadow-sm shrink-0">
                     <i className="fa-solid fa-file-pdf"></i>
                   </div>
-                  <div className="px-3 py-1.5 bg-slate-50 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <div className="px-2 py-1 bg-slate-50 rounded text-[8px] font-black text-slate-400 uppercase tracking-widest">
                     {proc.category}
                   </div>
                 </div>
                 
-                <div className="flex-1 mb-6">
-                  <h3 className="font-bold text-slate-900 text-sm leading-relaxed line-clamp-3 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                <div className="flex-1 mb-3">
+                  <h3 className="font-bold text-slate-900 text-xs leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
                     {proc.title}
                   </h3>
                 </div>
                 
-                <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
-                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-[9px]">
+                   <div className="flex items-center gap-1.5 font-bold text-slate-400">
                      <i className="fa-solid fa-eye"></i>
-                     <span>{proc.views || 0} vues</span>
+                     <span>{proc.views || 0}</span>
                    </div>
-                   <i className="fa-solid fa-chevron-right text-xs text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all"></i>
+                   <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all"></i>
                 </div>
-                
-                <div className="absolute -bottom-8 -right-8 w-20 h-20 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors"></div>
               </article>
             ))
           ) : (

@@ -284,38 +284,35 @@ const Procedures: React.FC<ProceduresProps> = ({
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
             </div>
           ) : isSearching ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {searchResults.length > 0 ? searchResults.map(res => (
                 <div 
                   key={res.id} 
                   onClick={() => onSelectProcedure(res)} 
-                  className="group relative flex flex-col bg-white border border-slate-100 rounded-3xl p-8 cursor-pointer transition-all hover:-translate-y-2 hover:border-indigo-400 hover:shadow-2xl shadow-sm animate-slide-up overflow-hidden"
-                  style={{minHeight: '200px'}}
+                  className="group relative flex flex-col bg-white border border-slate-100 rounded-2xl p-5 cursor-pointer transition-all hover:-translate-y-1 hover:border-indigo-400 hover:shadow-xl shadow-sm overflow-hidden"
                 >
-                   <div className="flex justify-between items-start mb-6">
-                     <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-rose-500 group-hover:text-white transition-all shadow-sm shrink-0">
+                   <div className="flex items-center gap-3 mb-4">
+                     <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center text-lg group-hover:bg-rose-500 group-hover:text-white transition-all shadow-sm shrink-0">
                        <i className="fa-solid fa-file-pdf"></i>
                      </div>
-                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">
+                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">
                        {res.category}
                      </span>
                    </div>
                    
-                   <div className="flex-1 mb-6">
-                     <h3 className="font-bold text-slate-900 text-sm leading-relaxed group-hover:text-indigo-600 transition-colors uppercase tracking-tight line-clamp-3">
+                   <div className="flex-1 mb-3">
+                     <h3 className="font-bold text-slate-900 text-xs leading-snug group-hover:text-indigo-600 transition-colors uppercase tracking-tight line-clamp-2">
                        {res.title}
                      </h3>
                    </div>
 
-                   <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
-                     <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                   <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-[9px]">
+                     <div className="flex items-center gap-1.5 font-bold text-slate-400">
                        <i className="fa-solid fa-eye"></i>
-                       <span>{res.views || 0} vues</span>
+                       <span>{res.views || 0}</span>
                      </div>
-                     <i className="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all"></i>
+                     <i className="fa-solid fa-arrow-right text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all"></i>
                    </div>
-                   
-                   <div className="absolute -bottom-8 -right-8 w-20 h-20 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors"></div>
                 </div>
               )) : (
                  <div className="col-span-full py-20 text-center text-slate-300 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200">
@@ -360,35 +357,33 @@ const Procedures: React.FC<ProceduresProps> = ({
               {/* FICHIERS (GRID OR LIST) */}
               {currentFolder !== null && (
                 viewType === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {files.map((file) => (
                       <div 
                         key={file.id}
                         onClick={() => onSelectProcedure(file)}
-                        className="group relative flex flex-col bg-white border border-slate-100 rounded-3xl p-8 cursor-pointer transition-all hover:-translate-y-2 hover:border-emerald-400 hover:shadow-2xl shadow-sm animate-slide-up overflow-hidden"
-                        style={{minHeight: '200px'}}
+                        className="group relative flex flex-col bg-white border border-slate-100 rounded-2xl p-5 cursor-pointer transition-all hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl shadow-sm overflow-hidden"
                       >
-                        <div className="flex justify-between items-start mb-6">
-                          <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-sm shrink-0">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center text-lg transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-sm shrink-0">
                             <i className="fa-solid fa-file-pdf"></i>
                           </div>
-                          <div className="px-3 py-1.5 bg-slate-50 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <div className="px-2 py-1 bg-slate-50 rounded text-[8px] font-black text-slate-400 uppercase tracking-widest">
                             {file.category}
                           </div>
                         </div>
-                        <div className="flex-1 mb-6">
-                          <h4 className="font-bold text-slate-900 text-sm leading-relaxed line-clamp-3 group-hover:text-emerald-600 transition-colors uppercase tracking-tight">
+                        <div className="flex-1 mb-3">
+                          <h4 className="font-bold text-slate-900 text-xs leading-snug line-clamp-2 group-hover:text-emerald-600 transition-colors uppercase tracking-tight">
                             {cleanFileName(file.title)}
                           </h4>
                         </div>
-                        <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
-                           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                        <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-[9px]">
+                           <div className="flex items-center gap-1.5 font-bold text-slate-400">
                              <i className="fa-solid fa-eye"></i>
-                             <span>{file.views || 0} vues</span>
+                             <span>{file.views || 0}</span>
                            </div>
-                           <i className="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all"></i>
+                           <i className="fa-solid fa-arrow-right text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all"></i>
                         </div>
-                        <div className="absolute -bottom-8 -right-8 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors"></div>
                       </div>
                     ))}
                   </div>
