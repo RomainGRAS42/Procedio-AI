@@ -1194,35 +1194,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             </h1>
             <div className="flex items-center gap-4 mt-4">
               <p className="text-slate-400 font-medium text-lg">
-                {viewMode === "personal" 
-                  ? "Prêt à piloter tes propres missions aujourd'hui ?" 
-                  : "Voici l'état des troupes et du savoir collectif."}
+                {user.role === UserRole.MANAGER 
+                  ? "Voici l'état des troupes et du savoir collectif."
+                  : viewMode === "personal" 
+                    ? "Prêt à piloter tes propres missions aujourd'hui ?" 
+                    : "Voici l'état des troupes et du savoir collectif."}
               </p>
-              
-              {user.role === UserRole.MANAGER && (
-                <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner ml-4">
-                  <button 
-                    onClick={() => setViewMode("team")}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        viewMode === "team" 
-                          ? "bg-white text-indigo-600 shadow-sm border border-slate-100" 
-                          : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    Équipe
-                  </button>
-                  <button 
-                    onClick={() => setViewMode("personal")}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        viewMode === "personal" 
-                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                          : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    Ma Vue
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
