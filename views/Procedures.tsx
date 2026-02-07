@@ -407,12 +407,12 @@ const Procedures: React.FC<ProceduresProps> = ({
                                 onClick={() => onSelectProcedure(file)}
                                 className="group hover:bg-slate-50/80 cursor-pointer transition-colors"
                               >
-                                <td className="px-8 py-5">
+                                <td className="px-8 py-6">
                                   <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center text-sm group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
                                       <i className="fa-solid fa-file-pdf"></i>
                                     </div>
-                                    <span className="font-bold text-slate-700 text-sm group-hover:text-emerald-600 transition-colors uppercase tracking-tight">
+                                    <span className="font-bold text-slate-700 text-sm group-hover:text-emerald-600 transition-colors uppercase tracking-tight whitespace-nowrap">
                                       {cleanFileName(file.title)}
                                     </span>
                                   </div>
