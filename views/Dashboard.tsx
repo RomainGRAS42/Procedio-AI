@@ -124,6 +124,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [missedOpportunities, setMissedOpportunities] = useState<{ term: string, count: number, trend: string }[]>([]);
   const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]);
   const [healthData, setHealthData] = useState<{ name: string, id: string, value: number, color: string }[]>([]);
+  const [allAvailableBadges, setAllAvailableBadges] = useState<any[]>([]);
   const [allProcedures, setAllProcedures] = useState<Procedure[]>([]);
 
   const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
@@ -159,14 +160,21 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   ] : [
     {
-      label: "Niveau d'Expertise",
-      value: `Niv. ${personalStats.level}`,
+      label: "Rang d'Expertise",
+      value: (() => {
+        const level = personalStats.level;
+        if (level >= 5) return "Oracle";
+        if (level >= 4) return "Mentor";
+        if (level >= 3) return "Pilote";
+        if (level >= 2) return "Acteur";
+        return "Éclaireur";
+      })(),
       icon: "fa-award",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
       desc: `${personalStats.xp} XP total`,
       tooltipTitle: "Progression & Savoir",
-      tooltipDesc: `Tu as accumulé ${personalStats.xp} XP à travers tes lectures (${personalStats.consultations} consultations) et tes contributions.`
+      tooltipDesc: `Ton rang évolue avec ton expertise. Tu as accumulé ${personalStats.xp} XP à travers tes lectures (${personalStats.consultations} consultations) et tes contributions.`
     },
     {
       label: "Impact Équipe",
@@ -206,10 +214,20 @@ const Dashboard: React.FC<DashboardProps> = ({
         fetchExpertiseData();
         fetchMasteryClaims();
       }
+      fetchAllBadges();
 
     }
   }, [user?.id, user?.role]);
 
+
+  const fetchAllBadges = async () => {
+    try {
+      const { data } = await supabase.from('badges').select('*');
+      if (data) setAllAvailableBadges(data);
+    } catch (err) {
+      console.error("Error fetching all badges:", err);
+    }
+  };
 
   const fetchPersonalStats = async () => {
     try {
@@ -1143,20 +1161,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
 
-          {user.role === UserRole.MANAGER && (
-            <div className="flex gap-4">
-              <button 
-                onClick={() => {
-                    setSelectedMember(null);
-                    setShowCertifyModal(true);
-                }}
-                className="px-6 py-4 rounded-2xl bg-orange-50 text-orange-600 font-black text-xs uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-3 border border-orange-100"
-              >
-                <i className="fa-solid fa-certificate text-sm"></i>
-                Certification Flash
-              </button>
-            </div>
-          )}
+          {/* Certification tag removed from header for cleaner UI */}
         </div>
 
 
@@ -1414,28 +1419,38 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
-                  {personalStats.badges && personalStats.badges.length > 0 ? (
-                    personalStats.badges.map((badge: any, idx: number) => (
-                      <div key={idx} className="flex flex-col items-center gap-3 group">
-                        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
-                           badge.type === 'manual' 
-                             ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
-                             : 'bg-slate-50 text-slate-400 border border-slate-100'
-                        }`}>
-                          <i className={`fa-solid ${badge.icon}`}></i>
+                  {allAvailableBadges.length > 0 ? (
+                    allAvailableBadges.map((badge: any, idx: number) => {
+                      const isUnlocked = personalStats.badges.some((ub: any) => ub.id === badge.id);
+                      return (
+                        <div key={idx} className="flex flex-col items-center gap-3 group">
+                          <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
+                             isUnlocked 
+                               ? badge.type === 'manual' 
+                                 ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
+                                 : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-200 group-hover:scale-110'
+                               : 'bg-slate-50 text-slate-200 border border-slate-100 opacity-40 group-hover:opacity-60'
+                          }`}>
+                            <i className={`fa-solid ${badge.icon}`}></i>
+                          </div>
+                          <div className="text-center">
+                            <p className={`text-[10px] font-black uppercase tracking-tight ${isUnlocked ? 'text-slate-800' : 'text-slate-300'}`}>
+                              {badge.name}
+                            </p>
+                            {!isUnlocked && (
+                              <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Verrouillé</span>
+                            )}
+                            {isUnlocked && badge.is_ephemeral && (
+                              <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">{badge.name}</p>
-                          {badge.is_ephemeral && (
-                            <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
                       <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
-                        Accède au rang de Maître pour débloquer ton premier badge !
+                        Parcourez les procédures pour débloquer votre premier badge !
                       </p>
                     </div>
                   )}

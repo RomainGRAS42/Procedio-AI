@@ -236,6 +236,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [history, setHistory] = useState<SuggestionItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [referentExpert, setReferentExpert] = useState<{ first_name: string; last_name: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -279,7 +280,29 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       }
     }
     fetchHistory();
+    fetchReferent();
   }, [procedure?.id, procedure?.fileUrl]);
+
+  const fetchReferent = async () => {
+    const targetUuid = procedure.db_id || (typeof procedure.id === "string" && procedure.id.includes('-') ? procedure.id : null);
+    if (!targetUuid) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("procedure_referents")
+        .select(`
+          user:user_profiles (first_name, last_name)
+        `)
+        .eq("procedure_id", targetUuid)
+        .maybeSingle();
+
+      if (data && (data as any).user) {
+        setReferentExpert((data as any).user);
+      }
+    } catch (err) {
+      console.error("Error fetching referent:", err);
+    }
+  };
 
   const fetchHistory = async () => {
     // We prioritize UUID for consistency in joins
@@ -564,6 +587,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           question: textToSend,
           file_id: procedure.file_id || procedure.id,
           userName: fullUserName,
+          referentName: referentExpert ? `${referentExpert.first_name} ${referentExpert.last_name}` : undefined,
         }),
       });
 
@@ -792,9 +816,17 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </button>
             <div className="min-w-0">
               <h2 className="font-black text-slate-900 text-xl truncate mb-1">{cleanTitle}</h2>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                {procedure?.category}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
+                  {procedure?.category}
+                </span>
+                {referentExpert && (
+                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 flex items-center gap-2">
+                    <i className="fa-solid fa-certificate text-[8px]"></i>
+                    Expert : {referentExpert.first_name} {referentExpert.last_name}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
