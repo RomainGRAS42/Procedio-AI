@@ -62,6 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Modal Obsolètes
   const [showObsoleteModal, setShowObsoleteModal] = useState(false);
   const [obsoleteProcedures, setObsoleteProcedures] = useState<Procedure[]>([]);
+  const [modalType, setModalType] = useState<"fresh" | "verify" | "obsolete">("obsolete");
 
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -117,7 +118,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [managerKPIs, setManagerKPIs] = useState({
     searchGaps: 0,
     health: 0,
-    usage: 0
+    usage: 0,
+    redZone: 0
   });
   
   // Cockpit Widgets State (Manager)
@@ -157,6 +159,37 @@ const Dashboard: React.FC<DashboardProps> = ({
       desc: "Lectures cumulées",
       tooltipTitle: "Adoption de l'outil",
       tooltipDesc: "Nombre total de consultations réalisées par votre équipe. Mesure l'engagement global sur Procedio."
+    }
+  ] : user.role === UserRole.MANAGER && viewMode === "personal" ? [
+    {
+      label: "Pilotage & Impact",
+      value: `${personalStats.suggestions + personalStats.notes}`,
+      icon: "fa-rocket",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+      desc: "Actions managériales",
+      tooltipTitle: "Contribution Manager",
+      tooltipDesc: "Nombre d'annonces, réponses aux suggestions et actions de pilotage effectuées."
+    },
+    {
+      label: "Validation Équipe",
+      value: pendingSuggestions.filter(s => s.status === 'approved').length.toString(),
+      icon: "fa-certificate",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      desc: "Suggestions validées",
+      tooltipTitle: "Amélioration continue",
+      tooltipDesc: "Nombre de suggestions de votre équipe que vous avez validées."
+    },
+    {
+      label: "Notes de Terrain",
+      value: personalStats.notes.toString(),
+      icon: "fa-book-open",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      desc: "Observations partagées",
+      tooltipTitle: "Transmission",
+      tooltipDesc: "Notes et retours partagés avec l'équipe pour améliorer les processus."
     }
   ] : [
     {
@@ -433,10 +466,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         ]);
       }
 
+      // 3. Zone Rouge: Procédures sans référent
+      const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
+      const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
+      const redZoneCount = procs?.filter(p => !referentSet.has(p.uuid)).length || 0;
+
       setManagerKPIs({
         searchGaps: searchCount || 0,
         health: healthPct,
-        usage: totalViews
+        usage: totalViews,
+        redZone: redZoneCount
       });
 
       // 3. Top Contributors
@@ -498,6 +537,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .eq('role', 'technicien');
       
       if (membersData) setTeamMembers(membersData);
+      if (badgesData) setAllAvailableBadges(badgesData);
     } catch (err) {
       console.error("Error fetching expertise data:", err);
     } finally {
@@ -922,7 +962,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const [modalType, setModalType] = useState<"fresh" | "verify" | "obsolete">("obsolete");
 
   const handleShowHealthCategory = (type: "fresh" | "verify" | "obsolete") => {
      const sixMonthsAgo = new Date();
@@ -1153,12 +1192,38 @@ const Dashboard: React.FC<DashboardProps> = ({
             <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">
               Bonjour, <span className="text-indigo-600">{user.firstName}</span>
             </h1>
-            <p className="text-slate-400 font-medium text-lg ml-1">
-              {viewMode === "personal" 
-                ? "Prêt à piloter tes propres missions aujourd'hui ?" 
-                : "Prêt à simplifier le support IT de l'équipe aujourd'hui ?"
-              }
-            </p>
+            <div className="flex items-center gap-4 mt-4">
+              <p className="text-slate-400 font-medium text-lg">
+                {viewMode === "personal" 
+                  ? "Prêt à piloter tes propres missions aujourd'hui ?" 
+                  : "Voici l'état des troupes et du savoir collectif."}
+              </p>
+              
+              {user.role === UserRole.MANAGER && (
+                <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner ml-4">
+                  <button 
+                    onClick={() => setViewMode("team")}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        viewMode === "team" 
+                          ? "bg-white text-indigo-600 shadow-sm border border-slate-100" 
+                          : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Équipe
+                  </button>
+                  <button 
+                    onClick={() => setViewMode("personal")}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        viewMode === "personal" 
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+                          : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Ma Vue
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Certification tag removed from header for cleaner UI */}
@@ -1403,59 +1468,152 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ) : (
             <div className="space-y-8">
-              {/* Badge Collection Section */}
-              <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
-                <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl opacity-60"></div>
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl border border-indigo-100 shadow-sm">
-                      <i className="fa-solid fa-medal"></i>
+              {/* Talent Map Section (Manager Only) */}
+              {user.role === UserRole.MANAGER && viewMode === "team" ? (
+                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
+                  <div className="absolute -top-10 -right-10 w-64 h-64 bg-amber-50/50 rounded-full blur-3xl opacity-60"></div>
+                  <div className="flex items-center justify-between mb-10 relative z-10">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100 shadow-sm">
+                        <i className="fa-solid fa-map-location-dot"></i>
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Talent Map</h3>
+                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Cartographie de l'Expertise Équipe</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Mes Badges</h3>
-                      <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Savoir & Contributions</p>
+                    
+                    {/* Alerte Zone Rouge Dynamique */}
+                    {managerKPIs.redZone > 0 && (
+                      <div className="flex items-center gap-3 px-6 py-3 bg-rose-50 border border-rose-100 rounded-2xl">
+                        <i className="fa-solid fa-triangle-exclamation text-rose-500 text-xs animate-pulse"></i>
+                        <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
+                          Attention : {managerKPIs.redZone} Procs sans expert
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                    {teamMembers.length > 0 ? (
+                      teamMembers.map((member, idx) => {
+                        const memberBadgesCount = member.user_badges?.length || 0;
+                        const mainExpertise = member.stats_by_category 
+                          ? Object.entries(member.stats_by_category as object)
+                              .sort((a,b) => (b[1] as number) - (a[1] as number))[0]?.[0]
+                          : "Général";
+
+                        return (
+                          <div key={idx} className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all group">
+                             <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg">
+                                      {member.first_name?.[0]}{member.last_name?.[0]}
+                                   </div>
+                                   <div>
+                                      <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{member.first_name} {member.last_name}</p>
+                                      <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-0.5">Expert {mainExpertise}</p>
+                                   </div>
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    setSelectedMember(member);
+                                    setShowCertifyModal(true);
+                                  }}
+                                  className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-200 flex items-center justify-center transition-all"
+                                  title="Certifier ce membre"
+                                >
+                                  <i className="fa-solid fa-certificate"></i>
+                                </button>
+                             </div>
+                             
+                             <div className="flex items-center gap-2">
+                                <div className="flex -space-x-2">
+                                  {member.user_badges?.slice(0, 3).map((ub: any, bIdx: number) => {
+                                    const bDetail = badges.find(b => b.id === ub.badge_id);
+                                    return (
+                                      <div key={bIdx} className="w-6 h-6 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm text-[10px] text-indigo-500" title={bDetail?.name}>
+                                        <i className={`fa-solid ${bDetail?.icon || 'fa-medal'}`}></i>
+                                      </div>
+                                    );
+                                  })}
+                                  {memberBadgesCount > 3 && (
+                                    <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400">
+                                      +{memberBadgesCount - 3}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                                  {memberBadgesCount} Badge{memberBadgesCount > 1 ? 's' : ''}
+                                </span>
+                             </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-full py-12 text-center bg-slate-50/30 rounded-[2rem] border border-dashed border-slate-200">
+                         <i className="fa-solid fa-users-slash text-slate-200 text-3xl mb-4"></i>
+                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun membre d'équipe détecté</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              ) : (
+                /* Badge Collection Section (Technician or Personal View) */
+                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
+                  <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl opacity-60"></div>
+                  <div className="flex items-center justify-between mb-8 relative z-10">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl border border-indigo-100 shadow-sm">
+                        <i className="fa-solid fa-medal"></i>
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Mes Badges</h3>
+                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Savoir & Contributions</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
-                  {allAvailableBadges.length > 0 ? (
-                    allAvailableBadges.map((badge: any, idx: number) => {
-                      const isUnlocked = personalStats.badges.some((ub: any) => ub.id === badge.id);
-                      return (
-                        <div key={idx} className="flex flex-col items-center gap-3 group">
-                          <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
-                             isUnlocked 
-                               ? badge.type === 'manual' 
-                                 ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
-                                 : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-200 group-hover:scale-110'
-                               : 'bg-slate-50 text-slate-200 border border-slate-100 opacity-40 group-hover:opacity-60'
-                          }`}>
-                            <i className={`fa-solid ${badge.icon}`}></i>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
+                    {allAvailableBadges.length > 0 ? (
+                      allAvailableBadges.map((badge: any, idx: number) => {
+                        const isUnlocked = personalStats.badges.some((ub: any) => ub.id === badge.id);
+                        return (
+                          <div key={idx} className="flex flex-col items-center gap-3 group">
+                            <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
+                               isUnlocked 
+                                 ? badge.type === 'manual' 
+                                   ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
+                                   : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-200 group-hover:scale-110'
+                                 : 'bg-slate-50 text-slate-200 border border-slate-100 opacity-40 group-hover:opacity-60'
+                            }`}>
+                              <i className={`fa-solid ${badge.icon}`}></i>
+                            </div>
+                            <div className="text-center">
+                              <p className={`text-[10px] font-black uppercase tracking-tight ${isUnlocked ? 'text-slate-800' : 'text-slate-300'}`}>
+                                {badge.name}
+                              </p>
+                              {!isUnlocked && (
+                                <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Verrouillé</span>
+                              )}
+                              {isUnlocked && badge.is_ephemeral && (
+                                <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-center">
-                            <p className={`text-[10px] font-black uppercase tracking-tight ${isUnlocked ? 'text-slate-800' : 'text-slate-300'}`}>
-                              {badge.name}
-                            </p>
-                            {!isUnlocked && (
-                              <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Verrouillé</span>
-                            )}
-                            {isUnlocked && badge.is_ephemeral && (
-                              <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                      <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
-                        Parcourez les procédures pour débloquer votre premier badge !
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </section>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
+                          Parcourez les procédures pour débloquer votre premier badge !
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full animate-fade-in">
 

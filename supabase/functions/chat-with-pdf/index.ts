@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
             CONSIGNES CRITIQUES :
             1. Réponds UNIQUEMENT en te basant sur le CONTEXTE fourni ci-dessous.
             2. Si la réponse n'est pas dans le contexte ou que l'information est manquante :
-               - S'il y a un référant nommé (${referentName || 'personne pour l\'instant'}), dis poliment que tu n'as pas l'info précise dans le document mais que **${referentName}** est l'expert sur ce sujet et pourra sûrement t'aider.
+               - S'il y a un référant nommé (${referentName || "personne pour l'instant"}), dis poliment que tu n'as pas l'info précise dans le document mais que **${referentName}** est l'expert sur ce sujet et pourra sûrement t'aider.
                - S'il n'y a pas de référant nommé, dis que l'info est manquante et suggère à l'utilisateur de cliquer sur "Suggérer une modif" pour alerter le manager.
             3. Sois précis, technique et professionnel.
             4. Utilise le Markdown pour la mise en forme (gras, listes, étapes).
