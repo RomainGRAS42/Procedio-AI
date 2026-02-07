@@ -412,7 +412,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center text-sm group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
                                       <i className="fa-solid fa-file-pdf"></i>
                                     </div>
-                                    <span className="font-bold text-slate-700 text-sm group-hover:text-emerald-600 transition-colors truncate max-w-[250px] md:max-w-md uppercase tracking-tight">
+                                    <span className="font-bold text-slate-700 text-sm group-hover:text-emerald-600 transition-colors uppercase tracking-tight">
                                       {cleanFileName(file.title)}
                                     </span>
                                   </div>
