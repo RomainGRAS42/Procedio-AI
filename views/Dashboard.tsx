@@ -1410,7 +1410,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
 
 
-              <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
+              {/* Cercle de Maîtrise - Reservé aux techniciens */}
+              {user.role === UserRole.TECHNICIAN && (
+                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
 
               <div className="flex-1 space-y-4">
                 <div className="flex items-center gap-4 mb-2">
@@ -1465,6 +1467,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
             </section>
+              )}
           </div>
         ) : (
             <div className="space-y-8">
