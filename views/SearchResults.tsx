@@ -144,28 +144,30 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               <article
                 key={proc.id}
                 onClick={() => onSelectProcedure(proc)}
-                className="group relative flex flex-col justify-between rounded-3xl p-6 cursor-pointer transition-all hover:-translate-y-2 bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl shadow-indigo-500/5 animate-slide-up overflow-hidden min-h-[160px]"
+                className="bg-white p-6 rounded-[2rem] border border-slate-100 hover:shadow-2xl hover:border-indigo-400 hover:-translate-y-2 transition-all cursor-pointer group flex flex-col h-full min-h-[180px] relative overflow-hidden shadow-sm"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl transition-all group-hover:bg-indigo-600 group-hover:text-white shadow-sm shrink-0">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
                     <i className="fa-solid fa-file-pdf"></i>
                   </div>
-                  <div className="px-2 py-1 bg-slate-50 rounded text-[8px] font-black text-slate-300 uppercase tracking-widest">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-50/50 px-3 py-1 rounded-lg">
                     {proc.category}
-                  </div>
+                  </span>
                 </div>
                 
-                <div className="flex-1 w-full">
-                  <h3 className="text-xs font-bold text-slate-800 leading-normal line-clamp-2 group-hover:text-indigo-600 transition-colors mb-4 uppercase tracking-tight">
+                <div className="flex-1">
+                  <h3 className="text-sm font-black text-slate-800 leading-snug group-hover:text-indigo-600 transition-colors line-clamp-2 uppercase tracking-tight">
                     {proc.title}
                   </h3>
                 </div>
                 
-                <div className="w-full border-t border-slate-50 pt-3 flex items-center justify-between">
-                   <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300">
-                     <i className="fa-solid fa-eye text-[8px]"></i> {proc.views || 0}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
+                   <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+                     <i className="fa-solid fa-eye text-indigo-200"></i> {proc.views || 0}
                    </div>
-                   <i className="fa-solid fa-chevron-right text-[10px] text-slate-200 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
+                   <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
+                     <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                   </div>
                 </div>
                 {/* Visual decoration */}
                 <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-indigo-500/5 rounded-full blur-xl group-hover:bg-indigo-500/10 transition-colors"></div>
