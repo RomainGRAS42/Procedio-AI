@@ -399,7 +399,7 @@ const AppContent: React.FC<any> = ({
             }}
           />
         )}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide">
+        <main className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="mx-auto w-full">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
