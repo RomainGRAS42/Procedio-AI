@@ -389,7 +389,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                   </div>
                 ) : (
                   <div className="animate-slide-up">
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="w-full bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
                       <div>
                         <table className="w-full text-left border-collapse">
                           <thead>
