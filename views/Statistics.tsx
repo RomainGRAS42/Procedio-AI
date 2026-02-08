@@ -15,7 +15,6 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
   const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]);
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   
-  // 🚀 NOUVEL ÉTAT : Filtre de santé sélectionné (pour le popup)
   const [selectedHealthFilter, setSelectedHealthFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,27 +24,12 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch History & Performance
-      const { data: procData, error: procError } = await supabase
-        .from('procedures')
-        .select('*')
-        .order('views', { ascending: false });
-
+      const { data: procData, error: procError } = await supabase.from('procedures').select('*').order('views', { ascending: false });
       if (procError) throw procError;
 
-      // 1.1 Récupérer les nombres de suggestions par procédure
-      const { data: suggCounts } = await supabase
-        .from('procedure_suggestions')
-        .select('procedure_id');
-      
+      const { data: suggCounts } = await supabase.from('procedure_suggestions').select('procedure_id');
       const countsMap: Record<string, number> = {};
-      if (suggCounts) {
-        suggCounts.forEach((s: any) => {
-          if (s.procedure_id) {
-            countsMap[s.procedure_id] = (countsMap[s.procedure_id] || 0) + 1;
-          }
-        });
-      }
+      if (suggCounts) suggCounts.forEach((s: any) => { if (s.procedure_id) countsMap[s.procedure_id] = (countsMap[s.procedure_id] || 0) + 1; });
       
       const procs = (procData || []).map(p => ({
         id: p.uuid,
@@ -62,127 +46,56 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
       }));
       setHistory(procs);
 
-      // 2. Fetch Missed Opportunities (Search Logs)
-      const { data: logData } = await supabase
-        .from('notes')
-        .select('title, created_at')
-        .ilike('title', 'LOG_SEARCH_FAIL_%');
-
+      const { data: logData } = await supabase.from('notes').select('title, created_at').ilike('title', 'LOG_SEARCH_FAIL_%');
       if (logData) {
         const counts: Record<string, number> = {};
         logData.forEach(log => {
           const term = log.title?.replace('LOG_SEARCH_FAIL_', '').trim() || "Inconnu";
           counts[term] = (counts[term] || 0) + 1;
         });
-        
         const sortedGaps = Object.entries(counts)
-          .map(([term, count]) => ({ 
-            term: term.length > 30 ? term.substring(0, 27) + '...' : term, 
-            count, 
-            trend: "récent" 
-          }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 4);
-        
-        setMissedOpportunities(sortedGaps.length > 0 ? sortedGaps : [
-          { term: "Aucun manque détecté", count: 0, trend: "Stable" }
-        ]);
+          .map(([term, count]) => ({ term: term.length > 30 ? term.substring(0, 27) + '...' : term, count, trend: "récent" }))
+          .sort((a, b) => b.count - a.count).slice(0, 4);
+        setMissedOpportunities(sortedGaps.length > 0 ? sortedGaps : [{ term: "Aucun manque détecté", count: 0, trend: "Stable" }]);
       }
 
-      // 3. Fetch Top Contributors (Suggestions)
-      const { data: suggData } = await supabase
-        .from('procedure_suggestions')
-        .select(`
-          user_id,
-          user:user_profiles!user_id(first_name, last_name, role)
-        `);
-
+      const { data: suggData } = await supabase.from('procedure_suggestions').select('user_id, user:user_profiles!user_id(first_name, last_name, role)');
       if (suggData) {
         const contributors: Record<string, { count: number, name: string, role: string }> = {};
         suggData.forEach((s: any) => {
           if (!s.user_id) return;
-          if (!contributors[s.user_id]) {
-            contributors[s.user_id] = {
-              count: 0,
-              name: s.user ? `${s.user.first_name} ${s.user.last_name}` : "Anonyme",
-              role: s.user?.role || "Technicien"
-            };
-          }
+          if (!contributors[s.user_id]) contributors[s.user_id] = { count: 0, name: s.user ? `${s.user.first_name} ${s.user.last_name}` : "Anonyme", role: s.user?.role || "Technicien" };
           contributors[s.user_id].count++;
         });
-
         const colors = ["bg-indigo-600", "bg-purple-600", "bg-blue-600", "bg-emerald-600", "bg-rose-600"];
-        const sortedContribs = Object.values(contributors)
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 3)
-          .map((c, i) => ({
-            name: c.name,
-            role: c.role,
-            score: c.count,
-            initial: c.name.split(' ').map(n => n[0]).join('').toUpperCase() || "?",
-            color: colors[i % colors.length]
-          }));
-        
-        setTopContributors(sortedContribs.length > 0 ? sortedContribs : [
-          { name: "Aucune suggestion", role: "Prêt à aider ?", score: 0, initial: "?", color: "bg-slate-200" }
-        ]);
+        const sortedContribs = Object.values(contributors).sort((a, b) => b.count - a.count).slice(0, 3).map((c, i) => ({
+             ...c, score: c.count, initial: c.name.split(' ').map(n => n[0]).join('').toUpperCase() || "?", color: colors[i % colors.length]
+        }));
+        setTopContributors(sortedContribs.length > 0 ? sortedContribs : [{ name: "Aucune suggestion", role: "Prêt à aider ?", score: 0, initial: "?", color: "bg-slate-200" }]);
       }
 
-      // 4. Fetch Team Members for Skill Map
-      const { data: teamData } = await supabase
-        .from('user_profiles')
-        .select('*');
-      
-      if (teamData) {
-        setTeamMembers(teamData as User[]);
-      }
+      const { data: teamData } = await supabase.from('user_profiles').select('*');
+      if (teamData) setTeamMembers(teamData as User[]);
 
-    } catch (e) {
-      console.error("Erreur chargement Cockpit:", e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error("Erreur chargement Cockpit:", e); } finally { setLoading(false); }
   };
 
   const calculateHealthData = () => {
-    if (history.length === 0) return [
-      { name: 'Fraîches', id: 'fresh', value: 0, color: '#10b981' },
-      { name: 'À vérifier', id: 'warning', value: 0, color: '#f59e0b' },
-      { name: 'Obsolètes', id: 'obsolete', value: 0, color: '#ef4444' }
-    ];
-    
+    if (history.length === 0) return [ { name: 'Fraîches', id: 'fresh', value: 0, color: '#10b981' }, { name: 'À vérifier', id: 'warning', value: 0, color: '#f59e0b' }, { name: 'Obsolètes', id: 'obsolete', value: 0, color: '#ef4444' }];
     const now = new Date();
-    let fresh = 0;
-    let warning = 0;
-    let obsolete = 0;
-
+    let fresh = 0, warning = 0, obsolete = 0;
     history.forEach(p => {
-        const dateStr = p.updated_at || p.createdAt;
-        const date = new Date(dateStr);
-        const diffTime = Math.abs(now.getTime() - date.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-
-        if (diffDays < 90) fresh++;
-        else if (diffDays < 180) warning++;
-        else obsolete++;
+        const diffDays = Math.ceil(Math.abs(now.getTime() - new Date(p.updated_at || p.createdAt).getTime()) / (1000 * 60 * 60 * 24)); 
+        if (diffDays < 90) fresh++; else if (diffDays < 180) warning++; else obsolete++;
     });
-
-    return [
-        { name: 'Fraîches (< 3 mois)', id: 'fresh', value: fresh, color: '#10b981' }, 
-        { name: 'À vérifier (3-6 mois)', id: 'warning', value: warning, color: '#f59e0b' }, 
-        { name: 'Obsolètes (> 6 mois)', id: 'obsolete', value: obsolete, color: '#ef4444' } 
-    ];
+    return [ { name: 'Fraîches', id: 'fresh', value: fresh, color: '#10b981' }, { name: 'À vérifier', id: 'warning', value: warning, color: '#f59e0b' }, { name: 'Obsolètes', id: 'obsolete', value: obsolete, color: '#ef4444' } ];
   };
 
   const getFilteredProcedures = () => {
     if (!selectedHealthFilter) return [];
-    
     const now = new Date();
     return history.filter(p => {
-        const dateStr = p.updated_at || p.createdAt;
-        const date = new Date(dateStr);
-        const diffDays = Math.ceil(Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-        
+        const diffDays = Math.ceil(Math.abs(now.getTime() - new Date(p.updated_at || p.createdAt).getTime()) / (1000 * 60 * 60 * 24));
         if (selectedHealthFilter === 'fresh') return diffDays < 90;
         if (selectedHealthFilter === 'warning') return diffDays >= 90 && diffDays < 180;
         if (selectedHealthFilter === 'obsolete') return diffDays >= 180;
@@ -192,269 +105,181 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
 
   const healthData = calculateHealthData();
   const topConsultations = history.slice(0, 3);
-  
-  // 🚀 INTELLIGENCE : Calcul de la priorité de réécriture
-  const toRewrite = history
-    .map(p => {
-      // Calcul du score : (Age en mois / 2) + (Nombre de suggestions * 5) + (Vues / 10)
+  const toRewrite = history.map(p => {
       const monthsOld = Math.ceil(Math.abs(new Date().getTime() - new Date(p.updated_at || p.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
       const suggestionCount = p.suggestion_count || 0;
       const rewriteScore = (monthsOld / 2) + (suggestionCount * 5) + (p.views / 20);
-      
       let reason = "Ancienneté";
       if (suggestionCount > 0) reason = `${suggestionCount} suggestion${suggestionCount > 1 ? 's' : ''} en attente`;
       else if (p.views > 50) reason = "Très consulté mais ancien";
-      
       return { ...p, rewriteScore, reason };
-    })
-    .sort((a, b) => b.rewriteScore - a.rewriteScore)
-    .slice(0, 3);
-
+    }).sort((a, b) => b.rewriteScore - a.rewriteScore).slice(0, 3);
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="space-y-6 animate-fade-in pb-12">
       
       {/* HEADER */}
-      <div className="flex justify-between items-end mb-4">
+      <div className="flex justify-between items-end px-2">
         <div>
-           <h2 className="text-4xl font-black text-slate-900 tracking-tight">Cockpit de Pilotage</h2>
-           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Analyses & Aide à la décision</p>
+           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Analyse de la Base</h2>
+           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Santé • Opportunités • Équipe</p>
         </div>
       </div>
 
-      {/* SECTION 1: OPPORTUNITÉS MANQUÉES (Alertes) */}
-      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-         <div className="flex items-center gap-4 mb-8">
-            <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center text-lg animate-pulse-slow">
-                <i className="fa-solid fa-magnifying-glass-location"></i>
-            </div>
-            <div>
-                <h3 className="font-bold text-slate-900 text-lg">Opportunités Manquées</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ce que vos équipes cherchent sans trouver</p>
-            </div>
-            <i className="fa-solid fa-circle-info text-slate-300 ml-2" title="Basé sur les recherches 'Sans Résultat' des 7 derniers jours"></i>
-         </div>
-
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {missedOpportunities.map((item, idx) => (
-                <div key={idx} className="bg-white border border-slate-100 rounded-3xl p-6 hover:shadow-xl hover:shadow-rose-50 transition-all group relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-rose-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-150"></div>
-                    
-                    <div className="flex justify-between items-start mb-4 relative z-10">
-                        <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">{item.count} échecs</span>
-                        <span className="text-[9px] text-slate-300 font-bold uppercase">{item.trend}</span>
-                    </div>
-                    <h4 className="font-bold text-slate-800 text-sm mb-6 relative z-10 leading-relaxed">"{item.term}"</h4>
-                    <button 
-                        onClick={onUploadClick}
-                        className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all relative z-10 flex items-center justify-center gap-2"
-                    >
-                        <i className="fa-solid fa-plus"></i> Créer
-                    </button>
+      {/* ROW 1: HEALTH & OPPORTUNITIES */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         
+         {/* ZONE 1: SANTÉ DE LA BASE (Compact Pie) */}
+         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
+             <div className="w-full h-40 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={healthData}
+                            innerRadius={40}
+                            outerRadius={60}
+                            paddingAngle={5}
+                            dataKey="value"
+                            className="cursor-pointer"
+                            onClick={(data) => setSelectedHealthFilter(data.id)}
+                        >
+                            {healthData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} stroke="none" className="hover:opacity-80 transition-opacity" />
+                            ))}
+                        </Pie>
+                        <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '10px' }} />
+                    </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                     <span className="text-2xl font-black text-slate-800">{history.length}</span>
                 </div>
-            ))}
-         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* SECTION 2: SANTÉ DE LA BASE (Chart) */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col">
-             <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center text-sm">
-                    <i className="fa-solid fa-heart-pulse"></i>
-                </div>
-                <h3 className="font-bold text-slate-900">Santé de la Base</h3>
              </div>
              
-             <div className="flex-1 flex items-center justify-center min-h-[250px] relative">
-                {loading ? (
-                    <div className="animate-spin w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full"></div>
-                ) : (
-                    <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                            <Pie
-                                data={healthData}
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                                className="cursor-pointer"
-                                onClick={(data) => setSelectedHealthFilter(data.id)}
-                            >
-                                {healthData.map((entry, index) => (
-                                    <Cell 
-                                        key={`cell-${index}`} 
-                                        fill={entry.color} 
-                                        stroke="none"
-                                        className="hover:opacity-80 transition-opacity"
-                                    />
-                                ))}
-                            </Pie>
-                            <RechartsTooltip 
-                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                itemStyle={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: '#334155' }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
-                )}
-                {/* Center Text */}
-                {!loading && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-center">
-                            <span className="block text-3xl font-black text-slate-800">{history.length}</span>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Docs</span>
-                        </div>
-                    </div>
-                )}
-             </div>
-
-             <div className="space-y-3 mt-6">
+             <div className="flex w-full justify-between gap-2 mt-4 px-2">
                 {healthData.map((item, idx) => (
-                    <div 
-                        key={idx} 
-                        className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors group"
-                        onClick={() => setSelectedHealthFilter(item.id)}
-                    >
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-slate-900 transition-colors">{item.name}</span>
-                        </div>
-                        <span className="text-xs font-black text-slate-700">{Math.round((item.value / (history.length || 1)) * 100)}%</span>
+                    <div key={idx} className="text-center cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-colors flex flex-col items-center" onClick={() => setSelectedHealthFilter(item.id)}>
+                        <span className="w-2 h-2 rounded-full mb-1" style={{ backgroundColor: item.color }}></span>
+                        <span className="text-[10px] font-bold text-slate-700">{Math.round((item.value / (history.length || 1)) * 100)}%</span>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">{item.name.split(' ')[0]}</span>
                     </div>
                 ))}
              </div>
-          </div>
+         </div>
 
-          {/* SECTION 3: PERFORMANCE DU CONTENU */}
-          <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-             <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center text-sm">
-                    <i className="fa-solid fa-chart-line"></i>
+         {/* ZONE 2: OPPORTUNITÉS MANQUÉES (List) */}
+         <div className="lg:col-span-2 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col">
+             <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-rose-50 text-rose-500 rounded-lg flex items-center justify-center text-sm animate-pulse-slow">
+                    <i className="fa-solid fa-magnifying-glass-location"></i>
                 </div>
-                <h3 className="font-bold text-slate-900">Performance du Contenu</h3>
+                <div>
+                   <h3 className="font-bold text-slate-900 text-sm tracking-tight">Opportunités Manquées</h3>
+                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Recherches sans résultats (7j)</p>
+                </div>
              </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+                {missedOpportunities.map((item, idx) => (
+                    <div key={idx} className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between hover:bg-white hover:shadow-md transition-all group">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-black">{item.count}</span>
+                                <h4 className="font-bold text-slate-800 text-xs truncate group-hover:text-rose-600 transition-colors">"{item.term}"</h4>
+                            </div>
+                            <span className="text-[8px] text-slate-400 uppercase tracking-wider font-medium">{item.trend}</span>
+                        </div>
+                        <button onClick={onUploadClick} className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm">
+                            <i className="fa-solid fa-plus text-[10px]"></i>
+                        </button>
+                    </div>
+                ))}
+             </div>
+         </div>
+      </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                {/* TOP CONSULTATIONS */}
-                <div className="space-y-6">
-                    <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <i className="fa-solid fa-arrow-trend-up"></i> Top Consultations
-                    </h4>
+      {/* ROW 2: PERFORMANCE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* TOP CONSULTATIONS */}
+          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i className="fa-solid fa-arrow-trend-up"></i> Top Consultations
+                </h4>
+                <div className="space-y-3">
                     {topConsultations.map((doc, i) => (
-                        <a 
-                            key={doc.id} 
-                            href={`/procedure/${doc.id}`}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                onSelectProcedure?.(doc);
-                            }}
-                            className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group border border-transparent hover:border-indigo-100 cursor-pointer"
-                        >
-                            <div className="flex items-center gap-4">
-                                <span className="text-2xl font-black text-slate-200 group-hover:text-indigo-200 transition-colors">#{i+1}</span>
-                                <div>
-                                    <p className="font-bold text-slate-800 text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">{doc.title}</p>
-                                    <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">{doc.category}</p>
-                                </div>
-                            </div>
-                            <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">
-                                {doc.views} vues
-                            </span>
+                        <a key={doc.id} href={`/procedure/${doc.id}`} onClick={(e) => { e.preventDefault(); onSelectProcedure?.(doc); }} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group">
+                             <div className="flex items-center gap-3 overflow-hidden">
+                                 <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center font-black text-xs shrink-0">#{i+1}</div>
+                                 <div className="min-w-0">
+                                     <p className="font-bold text-slate-800 text-xs truncate group-hover:text-emerald-600 transition-colors">{doc.title}</p>
+                                     <p className="text-[9px] text-slate-400 uppercase tracking-wider bg-slate-50 px-1.5 rounded w-fit mt-0.5">{doc.category}</p>
+                                 </div>
+                             </div>
+                             <span className="text-[10px] font-black text-slate-400">{doc.views} vues</span>
                         </a>
                     ))}
                 </div>
+          </div>
 
-                {/* A REECRIRE */}
-                <div className="space-y-6">
-                    <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <i className="fa-solid fa-arrow-trend-down"></i> À Réécrire (Vieux Docs)
-                    </h4>
+          {/* A REECRIRE */}
+          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i className="fa-solid fa-arrow-trend-down"></i> À Réécrire (Prio)
+                </h4>
+                <div className="space-y-3">
                     {toRewrite.map((doc: any, i) => (
-                        <a 
-                          key={doc.id} 
-                          href={`/procedure/${doc.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            onSelectProcedure?.(doc);
-                          }}
-                          className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between hover:border-rose-200 hover:shadow-lg transition-all group relative cursor-pointer"
-                          title={`Priorité : ${Math.round(doc.rewriteScore)} - Raison : ${doc.reason}`}
-                        >
-                             <div>
-                                <p className="font-medium text-slate-600 text-sm line-clamp-1 group-hover:text-rose-600 transition-colors">{doc.title}</p>
-                                <p className="text-[9px] text-slate-300 uppercase tracking-wider mt-0.5">
-                                  {doc.reason} • {new Date(doc.updated_at || doc.createdAt).toLocaleDateString()}
-                                </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                                <span className="text-[10px] font-bold text-rose-400">Prio {Math.round(doc.rewriteScore)}</span>
-                                <i className="fa-solid fa-chevron-right text-[8px] text-slate-300 group-hover:text-rose-400 transition-colors"></i>
-                            </div>
+                        <a key={doc.id} href={`/procedure/${doc.id}`} onClick={(e) => { e.preventDefault(); onSelectProcedure?.(doc); }} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group">
+                             <div className="min-w-0 flex-1">
+                                 <p className="font-bold text-slate-800 text-xs truncate group-hover:text-rose-600 transition-colors">{doc.title}</p>
+                                 <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[8px] bg-rose-50 text-rose-500 px-1.5 rounded font-bold uppercase">{doc.reason}</span>
+                                    <span className="text-[8px] text-slate-300 font-medium">{new Date(doc.updated_at || doc.createdAt).toLocaleDateString()}</span>
+                                 </div>
+                             </div>
+                             <i className="fa-solid fa-chevron-right text-[10px] text-slate-200 group-hover:text-rose-400 transition-colors"></i>
                         </a>
                     ))}
                 </div>
-             </div>
           </div>
       </div>
 
-      {/* SECTION 4: TOP CONTRIBUTEURS (LIGHT & SOFT) - Updated */}
-      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 overflow-hidden relative">
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl border border-indigo-100">
-                <i className="fa-solid fa-trophy"></i>
-            </div>
-            <div>
-                <h3 className="font-black text-slate-900 text-2xl tracking-tight">Top Contributeurs</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ils construisent la base avec vous</p>
-            </div>
+      {/* ROW 3: TEAM & SKILLS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* TOP CONTRIBUTORS */}
+          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                 <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg shadow-sm">
+                    <i className="fa-solid fa-trophy"></i>
+                 </div>
+                 <h3 className="font-black text-slate-900 text-sm tracking-tight">Top Contributeurs</h3>
+              </div>
+              <div className="space-y-4 flex-1">
+                {topContributors.map((contrib, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shadow-md ${contrib.color}`}>{contrib.initial}</div>
+                        <div className="flex-1">
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-slate-800 text-xs">{contrib.name}</span>
+                                <span className="text-[10px] font-black text-indigo-600">{contrib.score} pts</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                                <div className={`h-full ${contrib.color}`} style={{ width: `${(contrib.score / 20) * 100}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+              </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topContributors.map((contrib, i) => (
-                <div key={i} className="bg-slate-50 rounded-3xl p-6 flex flex-col gap-6 hover:bg-white hover:shadow-xl hover:shadow-indigo-50 transition-all group border border-transparent hover:border-indigo-100">
-                    <div className="flex items-center justify-between">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm shadow-sm text-white ${contrib.color}`}>
-                            {contrib.initial}
-                        </div>
-                        {i === 0 && <i className="fa-solid fa-crown text-amber-500 text-xl animate-bounce-subtle"></i>}
-                    </div>
-                    
-                    <div>
-                        <h4 className="font-bold text-slate-800 text-lg">{contrib.name}</h4>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{contrib.role}</p>
-                    </div>
-
-                    <div className="mt-auto pt-4 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-2">
-                             <span className="text-[9px] font-bold text-slate-400 uppercase">Impact</span>
-                             <span className="text-2xl font-black text-slate-800">{contrib.score}</span>
-                        </div>
-                        <p className="text-[9px] text-slate-400 font-medium">Suggestions envoyées</p>
-                        <div className="w-full h-1 bg-slate-200 rounded-full mt-3 overflow-hidden">
-                            <div 
-                                className={`h-full ${contrib.color}`} 
-                                style={{ width: `${(contrib.score / 20) * 100}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                </div>
-            ))}
-          </div>
-      </div>
-
-      {/* SECTION 5: SKILL MAP - CHAMPIONS (Migrated from Dashboard) */}
-      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 mt-8">
-           <div className="flex items-center gap-4 mb-8">
-             <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl shadow-lg shadow-indigo-200">
-                 <i className="fa-solid fa-map-location-dot"></i>
-             </div>
-             <div>
-                 <h3 className="font-black text-slate-900 text-2xl tracking-tight uppercase">Skill Map</h3>
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Maîtrise & Expertise Équipe</p>
-             </div>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* SKILL MAP (Champions) */}
+          <div className="lg:col-span-2 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+               <div className="flex items-center gap-3 mb-6">
+                 <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">
+                    <i className="fa-solid fa-crown"></i>
+                 </div>
+                 <h3 className="font-black text-slate-900 text-sm tracking-tight">Champions par Catégorie</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                {(() => {
                   const categories = ['Logiciel', 'Réseau', 'Infrastructure', 'Sécurité'];
                   const champions = categories.map(cat => {
@@ -467,117 +292,46 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
                   }).filter(c => c.score > 0).sort((a,b) => b.score - a.score);
 
                   return champions.length > 0 ? champions.map((champ, idx) => (
-                     <div key={idx} className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex items-center gap-4 hover:bg-white hover:shadow-lg hover:border-indigo-100 transition-all group">
-                        <div className="relative">
-                           <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-600 overflow-hidden text-xl">
-                              {champ.user?.avatar_url ? <img src={champ.user.avatar_url} className="w-full h-full object-cover"/> : (champ.user?.first_name?.[0] || "?")}
-                           </div>
-                           <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-amber-400 rounded-full flex items-center justify-center text-xs text-white border-2 border-white shadow-sm">
-                              <i className="fa-solid fa-crown"></i>
-                           </div>
+                     <div key={idx} className="bg-slate-50 rounded-xl p-3 flex items-center gap-3 border border-slate-100 hover:border-indigo-200 transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                           {champ.user?.avatar_url ? <img src={champ.user.avatar_url} className="w-full h-full object-cover"/> : <span className="font-black text-slate-600 text-xs">{champ.user?.first_name?.[0] || "?"}</span>}
                         </div>
-                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-1">{champ.category}</p>
-                           <p className="font-bold text-slate-900 text-base truncate">{champ.user?.first_name} {champ.user?.last_name}</p>
-                           <div className="flex items-center gap-3 mt-2">
-                              <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                 <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${Math.min(((champ.user?.stats_by_category as any)?.[champ.category] / 20) * 100, 100)}%` }}></div>
-                              </div>
-                              <span className="text-[10px] font-black text-slate-400">Lv. {Math.round((champ.user?.stats_by_category as any)?.[champ.category])}</span>
-                           </div>
+                        <div className="min-w-0 flex-1">
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{champ.category}</p>
+                           <p className="font-bold text-slate-900 text-xs truncate">{champ.user?.first_name} {champ.user?.last_name}</p>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <i className="fa-solid fa-medal text-amber-400 text-sm"></i>
+                            <span className="text-[9px] font-black text-slate-300">Lv.{Math.round(champ.score)}</span>
                         </div>
                      </div>
-                  )) : (
-                     <div className="col-span-full text-center py-10">
-                        <p className="text-slate-400 text-sm italic">Aucune donnée suffisante pour déterminer les champions.</p>
-                     </div>
-                  );
+                  )) : <div className="col-span-full text-center text-slate-300 text-xs">Données insuffisantes</div>;
                })()}
-           </div>
+              </div>
+          </div>
       </div>
+
+       {/* MODAL HEALTH FILTER */}
       {selectedHealthFilter && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl flex flex-col animate-scale-up">
-            
-            {/* Header Modal */}
-            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${
-                   selectedHealthFilter === 'fresh' ? 'bg-emerald-50 text-emerald-500' :
-                   selectedHealthFilter === 'warning' ? 'bg-amber-50 text-amber-500' :
-                   'bg-rose-50 text-rose-500'
-                }`}>
-                  <i className={`fa-solid ${
-                    selectedHealthFilter === 'fresh' ? 'fa-check-circle' :
-                    selectedHealthFilter === 'warning' ? 'fa-clock' :
-                    'fa-triangle-exclamation'
-                  }`}></i>
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-slate-900">
-                    Procédures {
-                      selectedHealthFilter === 'fresh' ? 'Fraîches' :
-                      selectedHealthFilter === 'warning' ? 'À Vérifier' :
-                      'Obsolètes'
-                    }
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {getFilteredProcedures().length} document(s) trouvé(s)
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setSelectedHealthFilter(null)}
-                className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
-              >
-                <i className="fa-solid fa-xmark text-lg"></i>
-              </button>
-            </div>
-
-            {/* List Modal */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-              <div className="space-y-3">
-                {getFilteredProcedures().length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-slate-400 text-sm italic">Aucune procédure dans cette catégorie.</p>
-                  </div>
-                ) : (
-                  getFilteredProcedures().map(proc => (
-                    <div key={proc.id} className="group bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 rounded-2xl p-4 flex items-center justify-between transition-all">
-                      <div className="flex items-center gap-4">
-                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm group-hover:text-indigo-500 transition-colors">
-                            <i className="fa-solid fa-file-pdf"></i>
-                         </div>
-                         <div>
-                            <p className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proc.title}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-                              {proc.category} • Mis à jour le {new Date(proc.updated_at || proc.createdAt).toLocaleDateString()}
-                            </p>
-                         </div>
-                      </div>
-                      <a 
-                        href={`/procedure/${proc.id}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setSelectedHealthFilter(null);
-                          onSelectProcedure?.(proc);
-                        }}
-                        className="px-4 py-2 bg-white text-slate-600 hover:bg-indigo-600 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border border-slate-100 transition-all"
-                      >
-                         Voir
-                      </a>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedHealthFilter(null)}>
+          <div className="bg-white rounded-[2rem] w-full max-w-lg max-h-[70vh] flex flex-col shadow-2xl animate-scale-up" onClick={(e) => e.stopPropagation()}>
+             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="font-black text-slate-900 text-lg">
+                    {selectedHealthFilter === 'fresh' ? 'Procédures Fraîches' : selectedHealthFilter === 'warning' ? 'À Vérifier' : 'Obsolètes'}
+                </h3>
+                <button onClick={() => setSelectedHealthFilter(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-rose-50 hover:text-rose-500 transition-colors"><i className="fa-solid fa-xmark"></i></button>
+             </div>
+             <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                 {getFilteredProcedures().length > 0 ? getFilteredProcedures().map(proc => (
+                    <div key={proc.id} onClick={(e) => { e.preventDefault(); setSelectedHealthFilter(null); onSelectProcedure?.(proc); }} className="p-3 bg-slate-50 rounded-xl flex justify-between items-center hover:bg-white hover:shadow-md cursor-pointer transition-all border border-transparent hover:border-indigo-100">
+                        <div>
+                            <p className="font-bold text-slate-800 text-sm">{proc.title}</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider">{proc.category}</p>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Footer Modal */}
-            <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
-               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                 Procedio Intelligence Automatisée
-               </p>
-            </div>
+                 )) : <div className="text-center py-8 text-slate-400 text-sm">Aucun résultat</div>}
+             </div>
           </div>
         </div>
       )}
