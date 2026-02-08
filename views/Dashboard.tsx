@@ -380,7 +380,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           title: data.title || "Sans titre",
           category: data.Type || "GÉNÉRAL",
           fileUrl: data.file_url,
-          pinecone_document_id: data.pinecone_document_id,
           createdAt: data.created_at,
           views: data.views || 0,
           status: data.status || "validated",
@@ -948,7 +947,6 @@ const Dashboard: React.FC<DashboardProps> = ({
             title: p.title || "Sans titre",
             category: p.Type || "GÉNÉRAL",
             fileUrl: p.file_url,
-            pinecone_document_id: p.pinecone_document_id,
             createdAt: p.created_at,
             views: p.views || 0,
             status: p.status || "validated",
@@ -1070,22 +1068,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         .single();
 
       if (error) throw error;
-      
-      // 2. Déclencher le webhook n8n pour mise à jour généralisée ou ciblée (avec l'ID réel)
-      const webhookUrl = "https://n8n.srv901593.hstgr.cloud/webhook-test/6eebc351-9385-403a-9dde-b8f0cad831b2";
-      
-      // On lance le webhook sans bloquer l'UI (fire and forget ou await rapide)
-      fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: editContent,
-          user_id: user.id,
-          announcement_id: savedData?.id
-        }),
-      }).catch(err => console.error("Webhook Error:", err));
 
       setToast({ message: "Annonce publiée avec succès !", type: "success" });
       setIsEditing(false);
@@ -1447,7 +1429,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
           </div>
         ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Talent Map Section (Manager Only) */}
               {user.role === UserRole.MANAGER && viewMode === "team" ? (
                 <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
@@ -1595,10 +1577,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
 
 
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full animate-fade-in">
+              <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 w-full animate-fade-in">
 
-              {/* Widget 1: Health Chart (2/3 width) */}
-              <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+              {/* Widget 1: Health Chart (3/5 width on XL) */}
+              <div className="xl:col-span-3 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                     <i className="fa-solid fa-heart-pulse text-9xl text-slate-200 transform rotate-12"></i>
                  </div>
@@ -1657,8 +1639,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                  </div>
               </div>
 
-              {/* Widget 2: Missed Opportunities Mini-Grid (1/3 width) - Light Theme */}
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+              {/* Widget 2: Missed Opportunities Mini-Grid (2/5 width on XL) - Light Theme */}
+              <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
                  {/* Decorative BG */}
                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-rose-50 rounded-full blur-[80px] opacity-60"></div>
 
