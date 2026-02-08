@@ -352,7 +352,9 @@ const Procedures: React.FC<ProceduresProps> = ({
                       </div>
                     </div>
                   );
-                })}
+                  })}
+                </div>
+              )}
 
               {/* FICHIERS (GRID OR LIST) */}
               {currentFolder !== null && (
