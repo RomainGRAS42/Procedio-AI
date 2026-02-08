@@ -114,8 +114,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     } else {
       fetchPersonalStats();
       fetchWeeklyStats();
-      fetchReferentWorkload();
     }
+    // Always fetch workload as managers can be referents too
+    fetchReferentWorkload();
   }, [user.role]);
 
   // UseEffect pour rafraîchir les stats KPIs Team visualisables (legacy stats array)
@@ -792,77 +793,157 @@ const Dashboard: React.FC<DashboardProps> = ({
              
              {/* COL 1: Centre de Révision */}
              <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden">
-                 <div className="flex items-center justify-between mb-3 shrink-0">
-                   <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm">
-                       <i className="fa-solid fa-list-check"></i>
+            {/* TABS / HEADER */}
+            <div className="flex items-center gap-2 mb-4">
+               <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <i className="fa-solid fa-list-check"></i>
+               </div>
+               <h3 className="font-bold text-slate-900">Centre de Révision</h3>
+               {(pendingSuggestions.length > 0 || pendingReviews.length > 0 || masteryClaims.length > 0) && (
+                  <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    {pendingSuggestions.length + pendingReviews.length + masteryClaims.length}
+                  </span>
+               )}
+            </div>
+
+            <div className="space-y-2 flex-1 overflow-y-auto pr-1">
+               {/* 1. MASTERY CLAIMS */}
+               {masteryClaims.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Requêtes d'Expertise</h4>
+                    {masteryClaims.map((claim) => (
+                      <div key={claim.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group" onClick={() => {
+                        // Handle Claim
+                      }}>
+                         <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2">
+                               <img src={claim.user_profiles?.avatar_url || `https://ui-avatars.com/api/?name=${claim.user_profiles?.first_name}+${claim.user_profiles?.last_name}&background=random`} className="w-6 h-6 rounded-full" />
+                               <div>
+                                  <p className="text-xs font-bold text-slate-900">{claim.user_profiles?.first_name} {claim.user_profiles?.last_name}</p>
+                                  <p className="text-[10px] text-slate-500">Prétend à l'expertise sur <span className="text-indigo-600 font-bold">{claim.procedures?.title}</span></p>
+                               </div>
+                            </div>
+                            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                         </div>
                       </div>
-                      <h3 className="font-black text-slate-900 text-sm tracking-tight flex items-center">
-                         Révision
-                      </h3>
-                   </div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">
-                     {pendingSuggestions.length} en attente
-                   </span>
-                 </div>
+                    ))}
+                  </div>
+               )}
 
-                 <div className="space-y-2 flex-1 overflow-y-auto pr-1">
-                    {masteryClaims.length > 0 && (
-                       <div className="bg-amber-50 rounded-xl p-2 border border-amber-100 flex items-center justify-between animate-pulse cursor-pointer hover:bg-amber-100 transition-colors shrink-0"
-                            onClick={onViewHistory}
-                       >
-                          <div className="flex items-center gap-2">
-                             <i className="fa-solid fa-medal text-amber-500 text-xs"></i>
-                             <span className="text-[10px] font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
-                          </div>
-                          <i className="fa-solid fa-arrow-right text-amber-500 text-[10px]"></i>
-                       </div>
-                    )}
+               {/* 2. PROCEDURE REVIEWS (VALIDATIONS) - NOW VISIBLE FOR MANAGERS */}
+               {pendingReviews.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Validations en Attente</h4>
+                    {pendingReviews.map((proc) => (
+                      <div key={proc.id} onClick={() => onViewComplianceHistory && onViewComplianceHistory()} className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
+                         <div className="flex justify-between items-start mb-1">
+                            <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded">À Valider</span>
+                            <span className="text-[10px] text-slate-400">{formatDate(proc.createdAt)}</span>
+                         </div>
+                         <h4 className="font-bold text-sm text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors mb-1">
+                            {proc.title}
+                         </h4>
+                         <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                            <i className="fa-solid fa-folder-open"></i>
+                            {proc.category}
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+               )}
 
-                    {pendingSuggestions.length > 0 ? pendingSuggestions.map((sugg) => (
-                       <div key={sugg.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer group" onClick={() => { setSelectedSuggestion(sugg); setShowSuggestionModal(true); }}>
-                          <div className="flex items-center gap-3 overflow-hidden">
-                             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
-                             <div className="min-w-0">
-                                <p className="text-[11px] font-bold text-slate-800 truncate leading-tight group-hover:text-indigo-600 transition-colors">{sugg.procedureTitle}</p>
-                                <p className="text-[9px] font-bold text-slate-400 truncate">{sugg.userName} • {sugg.type}</p>
-                             </div>
-                          </div>
-                          <i className="fa-solid fa-chevron-right text-slate-300 text-[9px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                       </div>
-                    )) : (
-                       <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 opacity-50">
-                           <i className="fa-solid fa-clipboard-check text-2xl mb-2"></i>
-                           <p className="text-[10px] font-bold uppercase tracking-widest">Tout est à jour</p>
-                       </div>
-                    )}
-                 </div>
+               {/* 3. SUGGESTIONS */}
+               {pendingSuggestions.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Suggestions Terrain</h4>
+                    {pendingSuggestions.map((sugg) => (
+                      <div key={sugg.id} onClick={() => openSuggestionById(sugg.id)} className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
+                        <div className="flex justify-between items-start mb-1">
+                           <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-amber-400'}`}></span>
+                              <span className="text-[10px] font-bold text-slate-600 uppercase">{sugg.type}</span>
+                           </div>
+                           <span className="text-[10px] text-slate-400">{formatDate(sugg.createdAt)}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 line-clamp-2 mb-2 group-hover:text-slate-900 transition-colors">
+                           {sugg.content}
+                        </p>
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                           <div className="flex items-center gap-1">
+                              <i className="fa-solid fa-file-lines text-[10px] text-slate-300"></i>
+                              <span className="text-[10px] font-bold text-slate-500 truncate max-w-[120px]">{sugg.procedureTitle}</span>
+                           </div>
+                           <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-700">
+                                 {sugg.userName.charAt(0)}
+                              </div>
+                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+               )}
+
+               {pendingSuggestions.length === 0 && pendingReviews.length === 0 && masteryClaims.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-40 text-slate-300">
+                     <i className="fa-solid fa-check-circle text-4xl mb-2 opacity-20"></i>
+                     <p className="text-xs font-bold uppercase tracking-widest">Tout est à jour</p>
+                  </div>
+               )}
+            </div>
              </div>
 
              {/* COL 2: Activité Récente */}
              <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden">
-                <div className="flex items-center justify-between mb-3 shrink-0">
-                    <h3 className="font-black text-slate-900 text-sm tracking-tight flex items-center gap-2">
-                       Activité
-                    </h3>
-                    <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors text-xs p-1"><i className="fa-solid fa-rotate-right"></i></button>
-                </div>
-                <div className="space-y-3 overflow-y-auto flex-1 pr-1">
-                   {activities.length > 0 ? activities.slice(0, 15).map((act) => (
-                      <div key={act.id} className="flex gap-2 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors group">
-                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform"></div>
-                         <div>
-                             <p className="text-[10px] font-bold text-slate-700 leading-tight">{act.content}</p>
-                             <p className="text-[8px] font-bold text-slate-400 mt-0.5 group-hover:text-indigo-400 transition-colors">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                          </div>
+            {/* TABS / HEADER */}
+            <div className="flex items-center gap-2 mb-4">
+               <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                  <i className="fa-solid fa-bolt"></i>
+               </div>
+               <h3 className="font-bold text-slate-900">Activité Récente</h3>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+               {/* 1. FLUX D'ACTIVITÉ */}
+               {activities.length > 0 ? activities.map((act) => (
+                  <div key={act.id} className="flex gap-3 items-start group">
+                     <div className="mt-1 w-2 h-2 rounded-full bg-slate-200 group-hover:bg-indigo-500 transition-colors shrink-0"></div>
+                     <div>
+                        <p className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors">
+                           <span className="font-bold text-slate-900">Système</span> : {act.title.replace('LOG_', '')}
+                        </p>
+                        <p className="text-[10px] text-slate-400">{formatDate(act.created_at)}</p>
+                     </div>
+                  </div>
+               )) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-slate-300 border-b border-slate-50 mb-4">
+                     <i className="fa-solid fa-ghost text-2xl mb-2 opacity-20"></i>
+                     <p className="text-[10px] font-bold uppercase tracking-widest">Calme plat...</p>
+                  </div>
+               )}
+
+               {/* 2. PROCEDURES RÉCENTES (Pour combler le vide manager) */}
+               {recentProcedures.length > 0 && (
+                  <div className="pt-4 mt-4 border-t border-dashed border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                         <i className="fa-solid fa-clock-rotate-left"></i> Derniers ajouts
+                      </h4>
+                      <div className="space-y-2">
+                         {recentProcedures.slice(0, 5).map(proc => (
+                            <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group">
+                               <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:shadow-sm group-hover:text-indigo-600 transition-all">
+                                  <i className={`fa-solid ${proc.category === 'RH' ? 'fa-users' : proc.category === 'TECH' ? 'fa-microchip' : 'fa-file-lines'}`}></i>
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                  <h5 className="text-xs font-bold text-slate-700 truncate group-hover:text-indigo-700 transition-colors">{proc.title}</h5>
+                                  <p className="text-[10px] text-slate-400">{formatDate(proc.createdAt)}</p>
+                               </div>
+                            </div>
+                         ))}
                       </div>
-                   )) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 opacity-50">
-                         <i className="fa-solid fa-ghost text-2xl mb-2"></i>
-                         <p className="text-[10px] font-bold uppercase tracking-widest">Calme plat...</p>
-                      </div>
-                   )}
-                </div>
+                  </div>
+               )}
+            </div>
              </div>
           </div>
         </div>
