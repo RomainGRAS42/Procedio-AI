@@ -397,109 +397,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           </section>
 
           {/* 🧩 SECTION 2: ANALYSE DU CONTENU & TEAM (Grid System) */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          <div className="space-y-12">
             
-            {/* LEFT: CONTENT FOCUS */}
-            <div className="space-y-12">
-              {/* HEALTH DONUT */}
-              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Qualité du Patrimoine
-                    <InfoTooltip text="Évaluation de l'obsolescence documentaire. Une base saine doit avoir plus de 70% de documents 'Frais'." />
-                  </h3>
-                </div>
-                
-                <div className="flex flex-col md:flex-row items-center gap-12">
-                  <div className="w-[280px] h-[280px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={healthData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={85}
-                          outerRadius={110}
-                          paddingAngle={8}
-                          dataKey="value"
-                        >
-                          {healthData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="text-center">
-                        <span className="block text-4xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Index Santé</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 space-y-4">
-                    {healthData.map((item, idx) => (
-                      <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:scale-[1.02] transition-transform">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg shadow-sm" style={{ backgroundColor: item.color }}>
-                            <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
-                          </div>
-                          <div>
-                            <p className="font-black text-slate-800 text-sm">{item.name}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.value} procédures</p>
-                          </div>
-                        </div>
-                        <span className="text-lg font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* TEAM LEADERBOARD */}
-              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Top Contributeurs
-                    <InfoTooltip text="Classement des collaborateurs les plus actifs sur la plateforme (XP, rédactions, validations)." />
-                  </h3>
-                </div>
-
-                <div className="space-y-4">
-                  {teamLeaderboard.map((member, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
-                      <div className="flex items-center gap-5">
-                        <div className="relative">
-                          {idx === 0 && <i className="fa-solid fa-crown absolute -top-3 -left-1 text-amber-400 text-sm rotate-[-20deg]"></i>}
-                          <img src={member.avatar_url} alt="" className="w-14 h-14 rounded-2xl object-cover ring-4 ring-white shadow-md" />
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-indigo-600 border-2 border-white text-[10px] font-black text-white flex items-center justify-center shadow-lg">
-                            {member.level}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
-                            {member.first_name} {member.last_name}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {member.role === UserRole.MANAGER ? 'Manager Expert' : 'Technicien Senior'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-black text-indigo-600">{member.current_xp.toLocaleString()}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expérience</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT: TALENT & OPPORTUNITIES */}
-            <div className="space-y-12">
-              {/* SKILL MAP RADAR */}
-              <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
+            {/* 📈 ROW 1: EXPÉRTISE & QUALITÉ (Bento 60/40) */}
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-12">
+              
+              {/* SKILL MAP RADAR (60%) */}
+              <div className="xl:col-span-3 bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                   <i className="fa-solid fa-compass-drafting text-9xl text-white"></i>
                 </div>
@@ -547,16 +451,114 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                 </div>
               </div>
 
-              {/* MISSED OPPORTUNITIES GRID */}
-              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
+              {/* HEALTH DONUT (40%) */}
+              <div className="xl:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Besoins Documentaires
+                    Qualité du Patrimoine
+                    <InfoTooltip text="Évaluation de l'obsolescence documentaire. Une base saine doit avoir plus de 70% de documents 'Frais'." />
+                  </h3>
+                </div>
+                
+                <div className="flex flex-col items-center gap-8">
+                  <div className="w-[240px] h-[240px] relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={healthData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={75}
+                          outerRadius={100}
+                          paddingAngle={8}
+                          dataKey="value"
+                        >
+                          {healthData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="text-center">
+                        <span className="block text-4xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Index Santé</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full space-y-3">
+                    {healthData.map((item, idx) => (
+                      <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:scale-[1.02] transition-transform">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base shadow-sm" style={{ backgroundColor: item.color }}>
+                            <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
+                          </div>
+                          <div>
+                            <p className="font-black text-slate-800 text-xs">{item.name}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.value} procédures</p>
+                          </div>
+                        </div>
+                        <span className="text-base font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 🏆 ROW 2: LEADERS & OPPORTUNITIES (Bento 40/60) */}
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-12">
+              
+              {/* TEAM LEADERBOARD (40%) */}
+              <div className="xl:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    Top Contributeurs
+                    <InfoTooltip text="Classement des collaborateurs les plus actifs sur la plateforme (XP, rédactions, validations)." />
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  {teamLeaderboard.map((member, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
+                      <div className="flex items-center gap-5">
+                        <div className="relative">
+                          {idx === 0 && <i className="fa-solid fa-crown absolute -top-3 -left-1 text-amber-400 text-sm rotate-[-20deg]"></i>}
+                          <img src={member.avatar_url} alt="" className="w-14 h-14 rounded-2xl object-cover ring-4 ring-white shadow-md" />
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-indigo-600 border-2 border-white text-[10px] font-black text-white flex items-center justify-center shadow-lg">
+                            {member.level}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                            {member.first_name} {member.last_name}
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {member.role === UserRole.MANAGER ? 'Manager Expert' : 'Technicien Senior'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-black text-indigo-600">{member.current_xp.toLocaleString()}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expérience</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* MISSED OPPORTUNITIES GRID (60%) */}
+              <div className="xl:col-span-3 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    Opportunités de Croissance
                     <InfoTooltip text="Lexique des termes recherchés mais non trouvés. Chaque bloc est une opportunité de croissance pour votre KB." />
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {missedOpportunities.length > 0 ? (
                     missedOpportunities.map((opp, idx) => (
                       <div key={idx} className="p-6 rounded-3xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-all group cursor-pointer">
@@ -582,8 +584,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                   )}
                 </div>
               </div>
-            </div>
 
+            </div>
           </div>
         </div>
       )}
