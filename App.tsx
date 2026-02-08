@@ -16,6 +16,7 @@ import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
 import ChatAssistant from "./components/ChatAssistant";
+import LoadingState from "./components/LoadingState";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -288,10 +289,7 @@ const App: React.FC = () => {
   if (loading)
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">
-          PROCEDIO INITIALIZATION
-        </p>
+        <LoadingState message="Initialisation de Procedio..." />
       </div>
     );
 

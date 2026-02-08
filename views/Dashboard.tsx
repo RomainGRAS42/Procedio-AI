@@ -5,6 +5,7 @@ import CustomToast from "../components/CustomToast";
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
+import LoadingState from '../components/LoadingState';
 
 interface DashboardProps {
   user: User;
@@ -1340,12 +1341,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
         <div className="divide-y divide-slate-50">
           {loadingProcedures ? (
-            <div className="p-20 flex flex-col items-center justify-center gap-4">
-              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Chargement des fichiers...
-              </p>
-            </div>
+            <LoadingState message="Récupération des documents récents..." />
           ) : recentProcedures.length > 0 ? (
             recentProcedures.slice(0, 1).map((proc) => (
               <a

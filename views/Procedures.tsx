@@ -5,6 +5,7 @@ import { User, UserRole, Procedure } from '../types';
 import { supabase } from '../lib/supabase';
 // ExpertAIModal moved to App.tsx
 import SharePointImportModal from './SharePointImportModal';
+import LoadingState from '../components/LoadingState';
 
 interface ProceduresProps {
   user: User;
@@ -279,10 +280,7 @@ const Procedures: React.FC<ProceduresProps> = ({
 
         <div className="min-h-[400px]">
           {loading && (files.length === 0 && (folders as any[]).length === 0) ? (
-            <div className="h-64 flex flex-col items-center justify-center gap-4">
-              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronisation cloud...</p>
-            </div>
+            <LoadingState message="Synchronisation cloud..." />
           ) : isSearching ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
               {searchResults.length > 0 ? searchResults.map(res => (

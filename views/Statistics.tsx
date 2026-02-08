@@ -7,6 +7,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import InfoTooltip from '../components/InfoTooltip';
+import LoadingState from '../components/LoadingState';
 
 interface StatisticsProps {
   user: User;
@@ -310,11 +311,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-80 bg-slate-50 rounded-[3rem] animate-pulse"></div>
-          ))}
-        </div>
+        <LoadingState message="Synthèse analytique de votre base..." />
       ) : (
         <div className="space-y-12">
           

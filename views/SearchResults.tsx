@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Procedure, User } from "../types";
 import { supabase } from "../lib/supabase";
+import LoadingState from "../components/LoadingState";
 
 interface SearchResultsProps {
   user: User;
@@ -124,19 +125,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
       {/* Loading State */}
       {loading ? (
-        <section className="flex flex-col items-center justify-center py-20 gap-8">
-           <div className="relative">
-             <div className="w-24 h-24 rounded-full border-4 border-indigo-100"></div>
-             <div className="absolute top-0 left-0 w-24 h-24 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin"></div>
-             <div className="absolute inset-0 flex items-center justify-center text-indigo-600 text-2xl">
-               <i className="fa-solid fa-brain animate-pulse"></i>
-             </div>
-           </div>
-           <div className="text-center">
-             <h3 className="text-lg font-black text-slate-800 mb-2">Analyse Sémantique en cours...</h3>
-             <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">L'IA décode votre intention</p>
-           </div>
-        </section>
+        <LoadingState message="L'IA décode votre intention..." />
       ) : (
         <section className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
           {results.length > 0 ? (
