@@ -1204,9 +1204,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </section>
               )}
-              </div>
-            ) : null }
-      </div>
+            </div>
+          ) : null }
+        </div>
       </div>
 
           {/* Manager Team View */}
@@ -1216,19 +1216,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {/* ZONE 1: KPIs Flash */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {stats.map((stat, idx) => (
-                    <div key={idx} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all group relative overflow-hidden">
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                         <InfoTooltip text={
-                            stat.label === "Procédures" ? "Total des documents actifs" : 
-                            stat.label === "Vues Hebdo" ? "Consultations sur 7 jours" : 
-                            "Moyenne des notes utilisateurs"
-                         } />
-                      </div>
+                    <div key={idx} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all group relative">
                       <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-xl`}>
                         <i className={`fa-solid ${stat.icon}`}></i>
                       </div>
                     <div>
-                      <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
+                        <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} />
+                      </div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{stat.label}</p>
                     </div>
                   </div>
@@ -1239,7 +1235,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  
                  {/* COL 1: Centre de Révision */}
-                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden h-full min-h-[400px]">
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
                      <div className="flex items-center justify-between mb-6">
                        <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
@@ -1273,7 +1269,7 @@ const Dashboard: React.FC<DashboardProps> = ({
  
                         {pendingSuggestions.slice(0, 10).map((sugg) => (
                            <div key={sugg.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedSuggestion(sugg); setShowSuggestionModal(true); }}>
-                              <div className="flex items-center gap-3 overflow-hidden">
+                              <div className="flex items-center gap-3">
                                  <div className={`w-2 h-2 rounded-full shrink-0 ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
                                  <div className="min-w-0">
                                     <p className="text-xs font-bold text-slate-800 truncate">{sugg.procedureTitle}</p>
@@ -1293,12 +1289,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                  </div>
  
                  {/* COL 2: Activité Récente */}
-                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden h-full min-h-[400px]">
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
                     <div className="flex items-center justify-between mb-4">
+                       <div className="flex items-center gap-3">
                         <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
                            Activité Récente
                            <InfoTooltip text="Surveillez les dernières actions de l'équipe en temps réel." />
                         </h3>
+                       </div>
                         <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none"><i className="fa-solid fa-rotate-right"></i></button>
                     </div>
                     <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
@@ -1323,17 +1321,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             </div>
           )}
-          
 
 
 
-
-
-
-
-      <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+      <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm">
         <div className="px-10 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-          <h3 className="font-black text-slate-900 text-lg tracking-tight">DERNIÈRE PROCÉDURE EN LIGNE</h3>
+          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+            DERNIÈRE PROCÉDURE EN LIGNE
+            <InfoTooltip text="Le dernier document partagé avec l'équipe." />
+          </h3>
           <button
             onClick={() => setShowHistoryModal(true)}
             className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
