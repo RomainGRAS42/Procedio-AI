@@ -1043,18 +1043,18 @@ const Dashboard: React.FC<DashboardProps> = ({
         ) : (
           <div className="flex flex-col gap-4">
              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-sm border border-indigo-100">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-lg border border-indigo-100 shadow-sm shadow-indigo-100/50">
                   {announcement?.author_initials || "??"}
                 </div>
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-0.5">
-                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Message • {announcement?.author_name}</span>
-                       <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                       <span className="text-[9px] font-bold text-slate-300 uppercase">
+                    <div className="flex items-center gap-2 mb-1.5">
+                       <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Message • {announcement?.author_name}</span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+                       <span className="text-xs font-bold text-slate-400 uppercase">
                          {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
                        </span>
                     </div>
-                    <p className="text-sm font-bold text-slate-700 leading-snug">"{announcement?.content}"</p>
+                    <p className="text-2xl font-black text-slate-900 leading-tight tracking-tight">"{announcement?.content}"</p>
                 </div>
              </div>
              
