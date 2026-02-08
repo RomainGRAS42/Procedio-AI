@@ -304,6 +304,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             color="text-rose-600"
             bg="bg-rose-50"
             tooltip="Vitesse de création/mise à jour de nouvelles connaissances par jour sur les 30 derniers jours."
+            align="right"
           />
         </div>
       </div>
@@ -590,13 +591,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 };
 
 // Sub-component for KPI Cards
-const KPICard = ({ label, value, unit, icon, color, bg, tooltip }: any) => (
+const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align }: any) => (
   <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
     <div className="flex items-start justify-between mb-3">
       <div className={`w-12 h-12 rounded-2xl ${bg} ${color} flex items-center justify-center text-xl`}>
         <i className={`fa-solid ${icon}`}></i>
       </div>
-      <InfoTooltip text={tooltip} />
+      <InfoTooltip text={tooltip} align={align} />
     </div>
     <div className="space-y-1">
       <div className="flex items-baseline gap-1">

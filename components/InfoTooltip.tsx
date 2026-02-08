@@ -2,10 +2,27 @@ import React, { useState } from 'react';
 
 interface InfoTooltipProps {
   text: string;
+  align?: 'left' | 'center' | 'right';
 }
 
-const InfoTooltip: React.FC<InfoTooltipProps> = ({ text }) => {
+const InfoTooltip: React.FC<InfoTooltipProps> = ({ text, align = 'center' }) => {
   const [isVisible, setIsVisible] = useState(false);
+
+  const getAlignClasses = () => {
+    switch (align) {
+      case 'left': return 'left-0 translate-x-0';
+      case 'right': return 'right-0 translate-x-0';
+      default: return 'left-1/2 -translate-x-1/2';
+    }
+  };
+
+  const getArrowClasses = () => {
+    switch (align) {
+      case 'left': return 'left-4 translate-x-0';
+      case 'right': return 'right-4 translate-x-0';
+      default: return 'left-1/2 -translate-x-1/2';
+    }
+  };
 
   return (
     <div 
@@ -13,12 +30,12 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({ text }) => {
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >
-      <i className="fa-solid fa-circle-info text-slate-300 hover:text-indigo-500 transition-colors cursor-help text-xs"></i>
+      <i className="fa-solid fa-circle-info text-slate-300 hover:text-indigo-500 transition-colors cursor-help text-[0.8rem]"></i>
       
       {isVisible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] p-3 rounded-xl shadow-xl z-50 animate-fade-in pointer-events-none">
-          <p className="font-medium leading-relaxed text-center">{text}</p>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
+        <div className={`absolute bottom-full mb-3 w-56 bg-slate-800 text-white text-[11px] p-4 rounded-xl shadow-2xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>
+          <p className="font-semibold leading-snug text-center antialiased">{text}</p>
+          <div className={`absolute top-full -mt-1 border-4 border-transparent border-t-slate-800 ${getArrowClasses()}`}></div>
         </div>
       )}
     </div>
