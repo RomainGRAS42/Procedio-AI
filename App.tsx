@@ -11,7 +11,6 @@ import ProcedureDetail from "./views/ProcedureDetail";
 import Notes from "./views/Notes";
 import Account from "./views/Account";
 import UploadProcedure from "./views/UploadProcedure";
-import History from "./views/ComplianceHistory";
 import Team from "./views/Team";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
@@ -412,8 +411,7 @@ const AppContent: React.FC<any> = ({
                   }}
                   onUploadClick={() => navigate("/upload")}
                   onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
-                  onViewHistory={() => navigate("/history")}
-                  onViewComplianceHistory={() => navigate("/history")}
+                  onViewComplianceHistory={() => navigate("/dashboard")}
                   targetAction={pendingAction}
                   onActionHandled={() => setPendingAction(null)}
                 />
@@ -455,9 +453,7 @@ const AppContent: React.FC<any> = ({
               } />
               <Route path="/team" element={<Team user={user} />} />
               <Route path="/account" element={<Account user={user} onGoToReset={() => {}} />} />
-              <Route path="/history" element={
-                <History user={user} onBack={() => navigate("/dashboard")} />
-              } />
+
               <Route path="/upload" element={
                 <UploadProcedure
                   onBack={() => navigate("/procedures")}

@@ -10,7 +10,6 @@ interface DashboardProps {
   user: User;
   onQuickNote: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
-  onViewHistory: () => void;
   onViewComplianceHistory: () => void;
   targetAction?: { type: 'suggestion' | 'read', id: string } | null;
   onActionHandled?: () => void;
@@ -31,7 +30,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   user,
   onQuickNote,
   onSelectProcedure,
-  onViewHistory,
   onViewComplianceHistory,
   targetAction,
   onActionHandled,
@@ -1263,7 +1261,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                            <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center justify-between animate-pulse cursor-pointer hover:bg-amber-100 transition-colors"
                                 onClick={() => {
                                   // Navigate to Statistics or handle claim
-                                  onViewHistory(); // Temporary link or handle
                                 }}
                            >
                               <div className="flex items-center gap-2">
@@ -1558,15 +1555,12 @@ const Dashboard: React.FC<DashboardProps> = ({
               ))}
             </div>
 
-            <div className="mt-8 pt-8 border-t border-slate-50 flex justify-end">
+            <div className="mt-6 flex justify-end">
               <button
-                onClick={() => {
-                  setShowHistoryModal(false);
-                  onViewHistory();
-                }}
-                className="px-8 py-3 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-600 shadow-xl shadow-slate-900/10 transition-all active:scale-95"
+                onClick={() => setShowHistoryModal(false)}
+                className="px-8 py-3 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95"
               >
-                Tout voir dans l'explorateur
+                Fermer
               </button>
             </div>
           </div>
