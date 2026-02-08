@@ -33,7 +33,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({
         {message}
       </h3>
       <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] animate-pulse">
-        Optimisation par Zorya AI
+        Intelligence Procedio
       </p>
     </div>
   );
