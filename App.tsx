@@ -17,6 +17,7 @@ import ResetPassword from "./views/ResetPassword";
 import MouseTrailEffect from "./components/MouseTrailEffect";
 import ChatAssistant from "./components/ChatAssistant";
 import LoadingState from "./components/LoadingState";
+import SearchResults from "./views/SearchResults";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -386,7 +387,7 @@ const AppContent: React.FC<any> = ({
             onMenuClick={() => setIsSidebarOpen(true)}
             onSearch={(t) => {
               setGlobalSearchTerm(t);
-              navigate("/procedures");
+              navigate("/search");
             }}
             onLogout={handleLogout}
             onNavigate={(view) => navigate(`/${view}`)}
@@ -419,10 +420,17 @@ const AppContent: React.FC<any> = ({
                   user={user}
                   onUploadClick={() => navigate("/upload")}
                   onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
-                  initialSearchTerm={globalSearchTerm}
                   onSearchClear={() => setGlobalSearchTerm("")}
                   initialFolder={lastFolder}
                   onFolderChange={setLastFolder}
+                />
+              } />
+              <Route path="/search" element={
+                <SearchResults
+                  user={user}
+                  searchTerm={globalSearchTerm}
+                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                  onBack={() => navigate(-1)}
                 />
               } />
               <Route path="/procedure/:id" element={<ProcedureDetailWrapper user={user} />} />

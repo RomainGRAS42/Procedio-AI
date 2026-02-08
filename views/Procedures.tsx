@@ -115,61 +115,9 @@ const Procedures: React.FC<ProceduresProps> = ({
   }, [currentFolder]);
 
   useEffect(() => {
-    if (initialSearchTerm) {
-      handleSearch(initialSearchTerm);
-    } else {
-      fetchStructure();
-    }
+    fetchStructure();
     onFolderChange?.(currentFolder);
-  }, [currentFolder, initialSearchTerm, fetchStructure]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('table-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'procedures' },
-        () => {
-          fetchStructure();
-          if (isSearching) handleSearch();
-        }
-      )
-      .subscribe((status) => {
-        setIsRealtimeActive(status === 'SUBSCRIBED');
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentFolder, isSearching, searchTerm, fetchStructure]);
-
-  const handleSearch = (termOverride?: string, goToFullResults: boolean = false) => {
-    const termToSearch = termOverride ?? searchTerm;
-    if (!termToSearch.trim()) {
-      setIsSearching(false);
-      onSearchClear?.();
-      setSearchResults([]);
-      return;
-    }
-    
-    console.log("🔍 Recherche:", termToSearch);
-    console.log("📦 Nombre total de procédures:", allProcedures.length);
-    
-    // Local case-insensitive filtering
-    const filtered = allProcedures.filter(p => {
-      const matchTitle = p.title.toLowerCase().includes(termToSearch.toLowerCase());
-      const matchCategory = p.category.toLowerCase().includes(termToSearch.toLowerCase());
-      return matchTitle || matchCategory;
-    });
-    
-    console.log("✅ Résultats filtrés:", filtered.length, filtered);
-    setSearchResults(filtered);
-    
-    // Only go to full results page if explicitly requested
-    if (goToFullResults) {
-      setIsSearching(true);
-    }
-  };
+  }, [currentFolder, fetchStructure]);
 
   return (
     <div className="space-y-12 h-full flex flex-col pb-10 px-4 md:px-10 animate-fade-in">
@@ -268,9 +216,9 @@ const Procedures: React.FC<ProceduresProps> = ({
           </span>
         </div>
         <div className="h-4 w-px bg-slate-200"></div>
-        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
-          {isSearching ? `${searchResults.length} résultats` : currentFolder ? `${currentFolder} - ${files.length} fichiers` : 'Dossiers'}
-        </span>
+          <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
+            {currentFolder ? `${currentFolder} - ${files.length} fichiers` : 'Dossiers'}
+          </span>
       </div>
 
       <div className="flex-1 space-y-10">
