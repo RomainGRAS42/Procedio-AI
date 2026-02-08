@@ -1599,24 +1599,64 @@ const Dashboard: React.FC<DashboardProps> = ({
 
               {/* ZONE 4: Team */}
               <div className="flex flex-col lg:flex-row gap-6">
-                 {/* Talent Map (Large) */}
+                 {/* Skill Map (Large) */}
                  <div className="flex-1 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Talent Map</h3>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{teamMembers.length} Membres</span>
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-indigo-200 shadow-lg">
+                              <i className="fa-solid fa-map-location-dot"></i>
+                           </div>
+                           <div>
+                              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Skill Map</h3>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Maîtrise & Expertise Équipe</p>
+                           </div>
+                        </div>
+                        <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">
+                           Voir tout
+                        </button>
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       {teamMembers.slice(0, 4).map((member, idx) => (
-                          <div key={idx} className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedMember(member); setShowCertifyModal(true); }}>
-                             <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
-                                {member.first_name?.[0]}{member.last_name?.[0]}
+                       {/* Logic to calculate champions on the fly */}
+                       {(() => {
+                          const categories = ['Logiciel', 'Réseau', 'Infrastructure', 'Sécurité']; // Example static categories or derive dynamic
+                          // Helper to find max score for a category
+                          const champions = categories.map(cat => {
+                             const champ = teamMembers.reduce((prev, current) => {
+                                const prevScore = (prev?.stats_by_category as any)?.[cat] || 0;
+                                const currScore = (current?.stats_by_category as any)?.[cat] || 0;
+                                return currScore > prevScore ? current : prev;
+                             }, null as any);
+                             return { category: cat, user: champ, score: (champ?.stats_by_category as any)?.[cat] || 0 };
+                          }).filter(c => c.score > 0).sort((a,b) => b.score - a.score).slice(0, 4);
+
+                          return champions.length > 0 ? champions.map((champ, idx) => (
+                             <div key={idx} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex items-center gap-4 hover:bg-white hover:shadow-md hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => { if(champ.user) { setSelectedMember(champ.user); setShowCertifyModal(true); } }}>
+                                <div className="relative">
+                                   <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-600 overflow-hidden">
+                                      {champ.user?.avatar_url ? <img src={champ.user.avatar_url} className="w-full h-full object-cover"/> : (champ.user?.first_name?.[0] || "?")}
+                                   </div>
+                                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center text-[10px] text-white border-2 border-white shadow-sm">
+                                      <i className="fa-solid fa-crown"></i>
+                                   </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                   <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">{champ.category}</p>
+                                   <p className="font-bold text-slate-900 text-sm truncate">{champ.user?.first_name} {champ.user?.last_name}</p>
+                                   <div className="flex items-center gap-2 mt-1">
+                                      <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                         <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min(champ.score / 2, 100)}%` }}></div>
+                                      </div>
+                                      <span className="text-[9px] font-bold text-slate-400">{champ.score} pts</span>
+                                   </div>
+                                </div>
                              </div>
-                             <div>
-                                <p className="text-xs font-black text-slate-800 uppercase">{member.first_name} {member.last_name}</p>
-                                <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-widest">{member.user_badges?.length || 0} Badges</p>
+                          )) : (
+                             <div className="col-span-full py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucune donnée d'expertise disponible</p>
                              </div>
-                          </div>
-                       ))}
+                          );
+                       })()}
                     </div>
                  </div>
 
