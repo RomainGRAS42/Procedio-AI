@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, UserRole } from '../types';
+import { User, Procedure, UserRole } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Radar, RadarChart, PolarGrid, PolarAngleAxis } from 'recharts';
 import InfoTooltip from '../components/InfoTooltip';
 
 interface StatisticsProps {
   user: User;
+  onUploadClick?: () => void;
+  onSelectProcedure?: (procedure: Procedure) => void;
 }
 
 const Statistics: React.FC<StatisticsProps> = ({ user }) => {

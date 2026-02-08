@@ -448,6 +448,7 @@ const AppContent: React.FC<any> = ({
               } />
               <Route path="/statistics" element={
                 <Statistics 
+                  user={user!}
                   onUploadClick={() => navigate("/upload")} 
                   onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
                 />
