@@ -1433,6 +1433,46 @@ const Dashboard: React.FC<DashboardProps> = ({
           {/* Manager Team View */}
           {user.role === UserRole.MANAGER && viewMode === "team" && (
             <div className="space-y-6">
+              {/* ZONE 1: Stats KPIs - Prioritized at top for Bento Grid */}
+              <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {stats.map((stat, idx) => (
+                  <article
+                    key={idx}
+                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 hover:shadow-md transition-all group relative overflow-visible">
+                    
+                    {(stat as any).tooltipTitle && (
+                      <div className="absolute top-6 right-6 group/tooltip">
+                        <i className="fa-solid fa-circle-info text-slate-200 hover:text-indigo-500 cursor-help transition-colors text-sm"></i>
+                        <div className="absolute bottom-full right-0 mb-3 w-56 p-4 bg-slate-900 text-white text-[10px] rounded-2xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] pointer-events-none border border-white/10 backdrop-blur-md">
+                          <p className="font-black mb-1 text-indigo-300 uppercase tracking-widest">{(stat as any).tooltipTitle}</p>
+                          <p className="text-slate-300 leading-relaxed font-medium">{(stat as any).tooltipDesc}</p>
+                          <div className="absolute top-full right-3 -translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900 border-r border-b border-white/10"></div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      className={`w-16 h-16 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-2xl shadow-sm transition-transform group-hover:scale-110`}>
+                      <i className={`fa-solid ${stat.icon}`}></i>
+                    </div>
+                    <div>
+                      <p className="text-4xl font-black text-slate-900 tracking-tighter leading-none">
+                        {stat.value}
+                      </p>
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">
+                        {stat.label}
+                      </h3>
+                      {stat.desc && (
+                        <p className="text-[9px] font-bold text-slate-300 mt-1 italic">
+                          {stat.desc}
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </section>
+
+              {/* ZONE 2: Talent Map */}
                 <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
                   <div className="absolute -top-10 -right-10 w-64 h-64 bg-amber-50/50 rounded-full blur-3xl opacity-60"></div>
                   <div className="flex items-center justify-between mb-10 relative z-10">
@@ -1521,60 +1561,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                 </section>
-              ) : (
-                /* Badge Collection Section (Technician or Personal View) */
-                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
-                  <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl opacity-60"></div>
-                  <div className="flex items-center justify-between mb-8 relative z-10">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl border border-indigo-100 shadow-sm">
-                        <i className="fa-solid fa-medal"></i>
-                      </div>
-                      <div>
-                        <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Mes Badges</h3>
-                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Savoir & Contributions</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
-                    {allAvailableBadges.length > 0 ? (
-                      allAvailableBadges.map((badge: any, idx: number) => {
-                        const isUnlocked = personalStats.badges.some((ub: any) => ub.id === badge.id);
-                        return (
-                          <div key={idx} className="flex flex-col items-center gap-3 group">
-                            <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
-                               isUnlocked 
-                                 ? badge.type === 'manual' 
-                                   ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
-                                   : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-200 group-hover:scale-110'
-                                 : 'bg-slate-50 text-slate-200 border border-slate-100 opacity-40 group-hover:opacity-60'
-                            }`}>
-                              <i className={`fa-solid ${badge.icon}`}></i>
-                            </div>
-                            <div className="text-center">
-                              <p className={`text-[10px] font-black uppercase tracking-tight ${isUnlocked ? 'text-slate-800' : 'text-slate-300'}`}>
-                                {badge.name}
-                              </p>
-                              {!isUnlocked && (
-                                <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Verrouillé</span>
-                              )}
-                              {isUnlocked && badge.is_ephemeral && (
-                                <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
-                          Parcourez les procédures pour débloquer votre premier badge !
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </section>
 
 
 
@@ -1687,6 +1674,62 @@ const Dashboard: React.FC<DashboardProps> = ({
                </div>
              </div>
             </div>
+          )}
+          
+          {/* Badge Collection Section (Technician or Personal View) */}
+          {(user.role !== UserRole.MANAGER || viewMode === "personal") && (
+            <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
+              <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl opacity-60"></div>
+              <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl border border-indigo-100 shadow-sm">
+                    <i className="fa-solid fa-medal"></i>
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Mes Badges</h3>
+                    <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Savoir & Contributions</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
+                {allAvailableBadges.length > 0 ? (
+                  allAvailableBadges.map((badge: any, idx: number) => {
+                    const isUnlocked = personalStats.badges.some((ub: any) => ub.id === badge.id);
+                    return (
+                      <div key={idx} className="flex flex-col items-center gap-3 group">
+                        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all shadow-lg ${
+                           isUnlocked 
+                             ? badge.type === 'manual' 
+                               ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 group-hover:scale-110' 
+                               : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-200 group-hover:scale-110'
+                             : 'bg-slate-50 text-slate-200 border border-slate-100 opacity-40 group-hover:opacity-60'
+                        }`}>
+                          <i className={`fa-solid ${badge.icon}`}></i>
+                        </div>
+                        <div className="text-center">
+                          <p className={`text-[10px] font-black uppercase tracking-tight ${isUnlocked ? 'text-slate-800' : 'text-slate-300'}`}>
+                            {badge.name}
+                          </p>
+                          {!isUnlocked && (
+                            <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Verrouillé</span>
+                          )}
+                          {isUnlocked && badge.is_ephemeral && (
+                            <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Éphémère</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
+                      Parcourez les procédures pour débloquer votre premier badge !
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
           )}
         </div>
       </div>
