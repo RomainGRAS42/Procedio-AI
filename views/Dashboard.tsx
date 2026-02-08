@@ -131,34 +131,34 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
     {
-      label: "Opportunités Manquées",
-      value: managerKPIs.searchGaps.toString(),
-      icon: "fa-magnifying-glass-minus",
-      color: managerKPIs.searchGaps > 0 ? "text-amber-600" : "text-slate-400",
-      bg: managerKPIs.searchGaps > 0 ? "bg-amber-50" : "bg-slate-50",
-      desc: "Recherches sans résultats",
-      tooltipTitle: "Contenu non trouvé",
-      tooltipDesc: "Nombre de fois où votre équipe a cherché une information qui n'existe pas encore. C'est votre priorité de rédaction."
+      label: "Urgent",
+      value: `${managerKPIs.searchGaps}`,
+      icon: "fa-triangle-exclamation",
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+      desc: "Recherches échouées",
+      tooltipTitle: "Alertes Critiques",
+      tooltipDesc: "Nombre de recherches sans résultat nécessitant une création de contenu immédiate."
     },
     {
-      label: "Santé du Patrimoine",
+      label: "Fiabilité",
       value: `${managerKPIs.health}%`,
-      icon: "fa-heart-pulse",
-      color: managerKPIs.health > 80 ? "text-emerald-600" : managerKPIs.health > 40 ? "text-amber-600" : "text-rose-600",
-      bg: managerKPIs.health > 80 ? "bg-emerald-50" : managerKPIs.health > 40 ? "bg-amber-50" : "bg-rose-50",
-      desc: "Procédures à jour",
-      tooltipTitle: "Indice de fraîcheur",
-      tooltipDesc: "Pourcentage de procédures créées ou mises à jour au cours des 6 derniers mois. Un score élevé garantit une info fiable."
+      icon: "fa-shield-heart",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      desc: "Score de santé",
+      tooltipTitle: "Santé du Patrimoine",
+      tooltipDesc: "Indicateur global de fraîcheur et de validation des procédures."
     },
     {
-      label: "Usage Documentaire",
-      value: managerKPIs.usage.toString(),
-      icon: "fa-chart-line",
-      color: managerKPIs.usage > 0 ? "text-indigo-600" : "text-slate-400",
-      bg: managerKPIs.usage > 0 ? "bg-indigo-50" : "bg-slate-50",
-      desc: "Lectures cumulées",
-      tooltipTitle: "Adoption de l'outil",
-      tooltipDesc: "Nombre total de consultations réalisées par votre équipe. Mesure l'engagement global sur Procedio."
+      label: "Dynamique",
+      value: `+${managerKPIs.usage}`,
+      icon: "fa-arrow-trend-up",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      desc: "Lectures période",
+      tooltipTitle: "Croissance d'Usage",
+      tooltipDesc: "Volume de consultations sur la période en cours."
     }
   ] : user.role === UserRole.MANAGER && viewMode === "personal" ? [
     {
@@ -1432,247 +1432,219 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Manager Team View */}
           {user.role === UserRole.MANAGER && viewMode === "team" && (
-            <div className="space-y-6">
-              {/* ZONE 1: Stats KPIs - Prioritized at top for Bento Grid */}
-              <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-6 animate-fade-in">
+              
+              {/* ZONE 1: KPIs Flash */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {stats.map((stat, idx) => (
-                  <article
-                    key={idx}
-                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 hover:shadow-md transition-all group relative overflow-visible">
-                    
-                    {(stat as any).tooltipTitle && (
-                      <div className="absolute top-6 right-6 group/tooltip">
-                        <i className="fa-solid fa-circle-info text-slate-200 hover:text-indigo-500 cursor-help transition-colors text-sm"></i>
-                        <div className="absolute bottom-full right-0 mb-3 w-56 p-4 bg-slate-900 text-white text-[10px] rounded-2xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] pointer-events-none border border-white/10 backdrop-blur-md">
-                          <p className="font-black mb-1 text-indigo-300 uppercase tracking-widest">{(stat as any).tooltipTitle}</p>
-                          <p className="text-slate-300 leading-relaxed font-medium">{(stat as any).tooltipDesc}</p>
-                          <div className="absolute top-full right-3 -translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900 border-r border-b border-white/10"></div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div
-                      className={`w-16 h-16 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-2xl shadow-sm transition-transform group-hover:scale-110`}>
+                  <div key={idx} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all group relative overflow-hidden">
+                    <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-xl`}>
                       <i className={`fa-solid ${stat.icon}`}></i>
                     </div>
                     <div>
-                      <p className="text-4xl font-black text-slate-900 tracking-tighter leading-none">
-                        {stat.value}
-                      </p>
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">
-                        {stat.label}
-                      </h3>
-                      {stat.desc && (
-                        <p className="text-[9px] font-bold text-slate-300 mt-1 italic">
-                          {stat.desc}
-                        </p>
-                      )}
+                      <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
                     </div>
-                  </article>
+                  </div>
                 ))}
-              </section>
+              </div>
 
-              {/* ZONE 2: Talent Map */}
-                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
-                  <div className="absolute -top-10 -right-10 w-64 h-64 bg-amber-50/50 rounded-full blur-3xl opacity-60"></div>
-                  <div className="flex items-center justify-between mb-10 relative z-10">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100 shadow-sm">
-                        <i className="fa-solid fa-map-location-dot"></i>
+              {/* ZONE 2: Urgence */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* COL 1: Opportunités & Action */}
+                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden group h-full">
+                   <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+                            <i className="fa-solid fa-magnifying-glass-chart"></i>
+                         </div>
+                         <h3 className="font-black text-slate-900 text-lg tracking-tight">Opportunités</h3>
                       </div>
-                      <div>
-                        <h3 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Talent Map</h3>
-                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Cartographie de l'Expertise Équipe</p>
-                      </div>
-                    </div>
-                    
-                    {/* Alerte Zone Rouge Dynamique */}
-                    {managerKPIs.redZone > 0 && (
-                      <div className="flex items-center gap-3 px-6 py-3 bg-rose-50 border border-rose-100 rounded-2xl">
-                        <i className="fa-solid fa-triangle-exclamation text-rose-500 text-xs animate-pulse"></i>
-                        <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
-                          Attention : {managerKPIs.redZone} Procs sans expert
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                      <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                        {missedOpportunities.length} Manques
+                      </span>
+                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
-                    {teamMembers.length > 0 ? (
-                      teamMembers.map((member, idx) => {
-                        const memberBadgesCount = member.user_badges?.length || 0;
-                        const mainExpertise = member.stats_by_category 
-                          ? Object.entries(member.stats_by_category as object)
-                              .sort((a,b) => (b[1] as number) - (a[1] as number))[0]?.[0]
-                          : "Général";
-
-                        return (
-                          <div key={idx} className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all group">
-                             <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg">
-                                      {member.first_name?.[0]}{member.last_name?.[0]}
-                                   </div>
-                                   <div>
-                                      <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{member.first_name} {member.last_name}</p>
-                                      <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-0.5">Expert {mainExpertise}</p>
-                                   </div>
-                                </div>
-                                <button 
-                                  onClick={() => {
-                                    setSelectedMember(member);
-                                    setShowCertifyModal(true);
-                                  }}
-                                  className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-200 flex items-center justify-center transition-all"
-                                  title="Certifier ce membre"
-                                >
-                                  <i className="fa-solid fa-certificate"></i>
-                                </button>
-                             </div>
-                             
-                             <div className="flex items-center gap-2">
-                                <div className="flex -space-x-2">
-                                  {member.user_badges?.slice(0, 3).map((ub: any, bIdx: number) => {
-                                    const bDetail = badges.find(b => b.id === ub.badge_id);
-                                    return (
-                                      <div key={bIdx} className="w-6 h-6 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm text-[10px] text-indigo-500" title={bDetail?.name}>
-                                        <i className={`fa-solid ${bDetail?.icon || 'fa-medal'}`}></i>
-                                      </div>
-                                    );
-                                  })}
-                                  {memberBadgesCount > 3 && (
-                                    <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400">
-                                      +{memberBadgesCount - 3}
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                  {memberBadgesCount} Badge{memberBadgesCount > 1 ? 's' : ''}
-                                </span>
-                             </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="col-span-full py-12 text-center bg-slate-50/30 rounded-[2rem] border border-dashed border-slate-200">
-                         <i className="fa-solid fa-users-slash text-slate-200 text-3xl mb-4"></i>
-                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun membre d'équipe détecté</p>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-
-
-
-              <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 w-full animate-fade-in">
-
-              {/* Widget 1: Health Chart (3/5 width on XL) */}
-              <div className="xl:col-span-3 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i className="fa-solid fa-heart-pulse text-9xl text-slate-200 transform rotate-12"></i>
-                 </div>
-                 
-                 <div className="flex-1 min-h-[220px] w-full relative z-10">
-                    <ResponsiveContainer width="100%" height={220}>
-                        <PieChart>
-                            <Pie
-                                data={healthData}
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
+                   <div className="space-y-3 flex-1">
+                      {missedOpportunities.slice(0, 4).map((item, idx) => (
+                         <div key={idx} className="bg-slate-50 rounded-xl p-3 flex items-center justify-between group/item hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
+                            <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                                <i className="fa-solid fa-triangle-exclamation text-rose-400 text-[10px]"></i>
+                                <span className="font-bold text-slate-700 text-xs truncate">"{item.term}"</span>
+                            </div>
+                            <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 onUploadClick();
+                               }}
+                               className="shrink-0 px-3 py-1.5 bg-white border border-slate-200 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-colors"
                             >
-                                {healthData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                                ))}
-                            </Pie>
-                            <RechartsTooltip 
-                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                                itemStyle={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: '#1e293b' }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
-                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-center">
-                            <span className="block text-3xl font-black text-slate-800 tracking-tighter">{allProcedures.length}</span>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Docs</span>
-                        </div>
-                    </div>
-                 </div>
-                 
-                 <div className="flex-1 space-y-6 w-full z-10">
-                    <div>
-                      <h4 className="font-black text-slate-900 text-lg tracking-tight mb-1">Santé de la Base</h4>
-                      <p className="text-xs font-medium text-slate-400">Répartition par fraîcheur des contenus.</p>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {healthData.map((item, idx) => (
-                          <div 
-                            key={idx} 
-                            onClick={() => {
-                                handleShowHealthCategory(item.id as "fresh" | "verify" | "obsolete");
-                            }}
-                            className={`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer hover:bg-slate-50 hover:shadow-sm`}
-                          >
-                              <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white" style={{ backgroundColor: item.color }}></div>
-                                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{item.name}</span>
-                              </div>
-                              <span className="text-sm font-black text-slate-800">{Math.round((item.value / (allProcedures.length || 1)) * 100)}%</span>
-                          </div>
+                               Créer
+                            </button>
+                         </div>
                       ))}
+                      {missedOpportunities.length === 0 && (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                           <i className="fa-solid fa-check-circle text-emerald-400 text-2xl mb-2"></i>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tout est couvert</p>
+                        </div>
+                      )}
+                   </div>
+                </div>
+
+                {/* COL 2: Centre de Révision */}
+                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden h-full">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
+                            <i className="fa-solid fa-list-check"></i>
+                         </div>
+                         <h3 className="font-black text-slate-900 text-lg tracking-tight">Centre de Révision</h3>
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                        {pendingSuggestions.length} en attente
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px] scrollbar-hide">
+                       {/* Mastery Claims Prompt */}
+                       {masteryClaims.length > 0 && (
+                          <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center justify-between animate-pulse">
+                             <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-medal text-amber-500"></i>
+                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
+                             </div>
+                             <i className="fa-solid fa-arrow-right text-amber-500 text-xs"></i>
+                          </div>
+                       )}
+
+                       {pendingSuggestions.slice(0, 5).map((sugg) => (
+                          <div key={sugg.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedSuggestion(sugg); setShowSuggestionModal(true); }}>
+                             <div className="flex items-center gap-3 overflow-hidden">
+                                <div className={`w-2 h-2 rounded-full shrink-0 ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
+                                <div className="min-w-0">
+                                   <p className="text-[11px] font-bold text-slate-800 truncate">{sugg.procedureTitle}</p>
+                                   <p className="text-[9px] font-medium text-slate-400 truncate">{sugg.userName} • {sugg.type}</p>
+                                </div>
+                             </div>
+                             <i className="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+                          </div>
+                       ))}
+                       {pendingSuggestions.length === 0 && (
+                          <div className="py-10 text-center">
+                             <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Aucune révision en attente</p>
+                          </div>
+                       )}
+                    </div>
+                </div>
+              </div>
+
+              {/* ZONE 3: Analyse & Activité */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 
+                 {/* COL 1: Santé de la Base */}
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+                     <div className="w-full md:w-1/2 h-[180px] relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={healthData} innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
+                                    {healthData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                            <span className="text-2xl font-black text-slate-800">{healthData.find(d => d.id === 'fresh')?.value || 0}%</span>
+                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Sains</span>
+                        </div>
+                     </div>
+                     <div className="flex-1 space-y-3 w-full">
+                        <h4 className="font-black text-slate-900 text-lg">Santé Base</h4>
+                        <div className="space-y-2">
+                           {healthData.map((item, idx) => (
+                               <div key={idx} className="flex items-center justify-between text-xs">
+                                   <div className="flex items-center gap-2">
+                                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                                       <span className="font-bold text-slate-500 uppercase tracking-wide">{item.name}</span>
+                                   </div>
+                                   <span className="font-black text-slate-800">{item.value}</span>
+                               </div>
+                           ))}
+                        </div>
+                     </div>
+                 </div>
+
+                 {/* COL 2: Dernières Activités */}
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-black text-slate-900 text-lg tracking-tight">Activité</h3>
+                        <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors"><i className="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                    <div className="space-y-4 overflow-y-auto max-h-[180px] scrollbar-hide">
+                       {activities.map((act) => (
+                          <div key={act.id} className="flex gap-3 items-start">
+                             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+                             <div>
+                                <p className="text-[11px] font-bold text-slate-700 leading-tight">{act.content}</p>
+                                <p className="text-[9px] font-medium text-slate-400 mt-0.5">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                             </div>
+                          </div>
+                       ))}
                     </div>
                  </div>
               </div>
 
-              {/* Widget 2: Missed Opportunities Mini-Grid (2/5 width on XL) - Light Theme */}
-              <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                 {/* Decorative BG */}
-                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-rose-50 rounded-full blur-[80px] opacity-60"></div>
-
-                 <div className="relative z-20 mb-6">
+              {/* ZONE 4: Team */}
+              <div className="flex flex-col lg:flex-row gap-6">
+                 {/* Talent Map (Large) */}
+                 <div className="flex-1 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden">
                     <div className="flex items-center justify-between mb-6">
-                       <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 border border-rose-100 shadow-sm">
-                          <i className="fa-solid fa-magnifying-glass-chart"></i>
-                       </div>
-                       <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-rose-100">
-                         {missedOpportunities.length} Alertes
-                       </span>
+                        <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Talent Map</h3>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{teamMembers.length} Membres</span>
                     </div>
-                    <h4 className="font-black text-slate-900 text-lg tracking-tight mb-2">Opportunités</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                      Ces termes sont recherchés par votre équipe mais ne donnent aucun résultat.
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {teamMembers.slice(0, 4).map((member, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedMember(member); setShowCertifyModal(true); }}>
+                             <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
+                                {member.first_name?.[0]}{member.last_name?.[0]}
+                             </div>
+                             <div>
+                                <p className="text-xs font-black text-slate-800 uppercase">{member.first_name} {member.last_name}</p>
+                                <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-widest">{member.user_badges?.length || 0} Badges</p>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
                  </div>
 
-                 <div className="relative z-20 space-y-3 mb-6">
-                    {missedOpportunities.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between group/item hover:border-rose-200 hover:shadow-md transition-all cursor-pointer" onClick={onUploadClick}>
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <i className="fa-solid fa-triangle-exclamation text-rose-400 text-[10px] group-hover/item:text-rose-600 transition-colors"></i>
-                                <span className="font-bold text-slate-600 text-xs truncate group-hover/item:text-slate-900 transition-colors">"{item.term}"</span>
-                            </div>
-                            <span className="text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg group-hover/item:bg-rose-50 group-hover/item:text-rose-600 transition-colors">{item.count}</span>
-                        </div>
-                    ))}
-                    {missedOpportunities.length === 0 && (
-                      <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center bg-slate-50/50">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">RAS • Tout est couvert</p>
-                      </div>
-                    )}
+                 {/* Top Contributors (Small) */}
+                 <div className="lg:w-1/3 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden">
+                     <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-black text-slate-900 text-lg tracking-tight">Top 3</h3>
+                        <i className="fa-solid fa-trophy text-amber-400"></i>
+                     </div>
+                     <div className="space-y-4">
+                        {topContributors.slice(0, 3).map((contrib, i) => (
+                           <div key={i} className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[10px] text-white ${contrib.color}`}>
+                                 {contrib.initial}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <p className="font-bold text-slate-800 text-xs truncate">{contrib.name}</p>
+                                 <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                                    <div className={`h-full ${contrib.color}`} style={{ width: `${Math.min(contrib.score * 5, 100)}%` }}></div>
+                                 </div>
+                              </div>
+                              <span className="text-[10px] font-black text-slate-400">{contrib.score}</span>
+                           </div>
+                        ))}
+                     </div>
                  </div>
+              </div>
 
-                 <button 
-                    onClick={onUploadClick} 
-                    className="relative z-20 w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-600 hover:shadow-lg hover:shadow-indigo-50 transition-all group flex items-center justify-center gap-2"
-                 >
-                    <span>Créer maintenant</span>
-                    <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform"></i>
-                  </button>
-               </div>
-             </div>
             </div>
           )}
           
@@ -1736,239 +1708,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
 
-      {/* Manager Specific Sections (Operational) */}
-      {user.role === UserRole.MANAGER && (
-        <div className="flex flex-col lg:flex-row gap-6 mb-12">
-          {/* Left Column: Suggestions (70%) */}
-          <div className="lg:w-[70%]">
-            <section className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm overflow-hidden h-full">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm border border-indigo-100">
-                  <i className="fa-solid fa-lightbulb"></i>
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-xl tracking-tight">Centre de Révision</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100/50">
-                      {pendingSuggestions.filter(s => s.status === 'pending').length} à traiter
-                    </span>
-                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-                      • {pendingSuggestions.length} au total
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="overflow-x-auto">
-                {pendingSuggestions.length > 0 ? (
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-50">
-                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</th>
-                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Priorité</th>
-                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Auteur</th>
-                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
-                        <th className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {pendingSuggestions.map((suggestion) => (
-                        <tr key={suggestion.id} className="group hover:bg-slate-50 transition-colors">
-                          <td className="p-4 text-[10px] font-bold text-slate-500 whitespace-nowrap">
-                            {formatDate(suggestion.createdAt)}
-                          </td>
-                          <td className="p-4">
-                            <span className="px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-100">
-                              {suggestion.type === 'correction' ? 'Correction' :
-                               suggestion.type === 'update' ? 'Mise à jour' : 'Ajout'}
-                            </span>
-                          </td>
-                          <td className="p-4 text-center">
-                            <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
-                              suggestion.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                              suggestion.priority === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              'bg-slate-50 text-slate-400 border-slate-100'
-                            }`}>
-                              {suggestion.priority === 'high' ? 'Urgent' :
-                               suggestion.priority === 'medium' ? 'Moyenne' : 'Basse'}
-                            </span>
-                          </td>
-                          <td className="p-4 text-[11px] font-bold text-slate-600 truncate max-w-[100px]">
-                            {suggestion.userName}
-                          </td>
-                          <td className="p-4">
-                            <span className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${
-                              suggestion.status === 'pending' ? 'text-indigo-600' :
-                              suggestion.status === 'approved' ? 'text-emerald-500' :
-                              'text-slate-400'
-                            }`}>
-                              <i className={`fa-solid ${
-                                suggestion.status === 'pending' ? 'fa-clock animate-pulse' :
-                                suggestion.status === 'approved' ? 'fa-circle-check' :
-                                'fa-circle-xmark'
-                              }`}></i>
-                              {suggestion.status === 'pending' ? 'En attente' :
-                               suggestion.status === 'approved' ? 'Validé' : 'Refusé'}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
-                            <button 
-                              onClick={() => {
-                                setSelectedSuggestion(suggestion);
-                                setShowSuggestionModal(true);
-                              }}
-                              className="bg-indigo-600 text-white px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-sm active:scale-95 flex items-center gap-2 ml-auto shadow-indigo-100"
-                            >
-                              <i className="fa-regular fa-eye"></i> {suggestion.status === 'pending' ? 'Examiner' : 'Consulter'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="py-20 text-center text-slate-300 flex flex-col items-center gap-4">
-                    <i className="fa-solid fa-check-double text-4xl opacity-20"></i>
-                    <p className="text-[10px] font-black uppercase tracking-widest">Tout est à jour ! Aucune suggestion.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {/* Right Column: Activity & Claims (30%) */}
-          <div className="lg:w-[30%] space-y-6">
-            {/* NEW: Mastery Claims (Revendications) */}
-            {masteryClaims.length > 0 && (
-              <section className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[2.5rem] p-6 text-white shadow-lg shadow-orange-500/20 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <i className="fa-solid fa-certificate text-8xl rotate-12"></i>
-                </div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-                       <i className="fa-solid fa-medal"></i>
-                       Revendications ({masteryClaims.length})
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    {masteryClaims.map((claim) => (
-                      <div 
-                        key={claim.id}
-                        className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 hover:bg-white/20 transition-all"
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <img 
-                            src={claim.user_profiles?.avatar_url} 
-                            alt="" 
-                            className="w-8 h-8 rounded-full border border-white/30"
-                          />
-                          <div className="min-w-0">
-                            <p className="font-bold text-xs truncate">{claim.user_profiles?.first_name} {claim.user_profiles?.last_name}</p>
-                            <p className="text-[10px] text-white/60 truncate italic">{claim.procedures?.title}</p>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={async () => {
-                            // Point toward the certification modal or directly handle
-                            setSelectedMember(claim.user_profiles);
-                            setShowCertifyModal(true);
-                            // Mark claim as processed locally/DB
-                            await supabase.from('notes').update({ viewed: true }).eq('id', claim.id);
-                            setMasteryClaims(prev => prev.filter(c => c.id !== claim.id));
-                          }}
-                          className="w-full py-2 bg-white text-orange-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-2"
-                        >
-                          <i className="fa-solid fa-award"></i>
-                          Certifier l'Expert
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
-              <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em]">Dernières Activités</h3>
-                </div>
-                <button 
-                  onClick={fetchActivities}
-                  className="w-8 h-8 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
-                  <i className={`fa-solid fa-rotate-right text-[10px] ${loadingActivities ? 'animate-spin' : ''}`}></i>
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto divide-y divide-slate-50 scrollbar-hide">
-                {activities.length > 0 ? (
-                  activities.map((act) => (
-                    <div 
-                      key={act.id}
-                      className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] shrink-0">
-                        <i className="fa-solid fa-circle-check"></i>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-700 leading-tight">
-                          {act.content}
-                        </p>
-                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter mt-1 block">
-                          {new Date(act.created_at || act.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-12 text-center text-slate-300 px-6">
-                    <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Aucune lecture enregistrée.</p>
-                  </div>
-                )}
-              </div>
-                
-              <div className="p-4 bg-slate-50 border-t border-slate-50">
-                <button 
-                  onClick={onViewComplianceHistory}
-                  className="w-full text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] hover:text-slate-900 transition-colors py-2 border border-indigo-100 rounded-xl bg-white">
-                  Voir tout l'historique
-                </button>
-              </div>
-            </section>
-
-             {/* Top Contributors Mini Widget */}
-             <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm">
-                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center text-xs">
-                        <i className="fa-solid fa-trophy"></i>
-                    </div>
-                    <h3 className="font-bold text-slate-900 text-sm">Top Contributeurs</h3>
-                 </div>
-                 <div className="space-y-4">
-                    {topContributors.length > 0 ? topContributors.slice(0, 3).map((contrib, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[10px] text-white ${contrib.color} shadow-sm`}>
-                                {contrib.initial}
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-bold text-slate-800 text-xs">{contrib.name}</p>
-                                <p className="text-[9px] text-slate-400 uppercase font-bold">{contrib.score} suggestions</p>
-                            </div>
-                            {i === 0 && <i className="fa-solid fa-crown text-amber-500 text-xs"></i>}
-                        </div>
-                    )) : (
-                        <p className="text-[10px] text-slate-400 italic">Aucune donnée.</p>
-                    )}
-                 </div>
-             </div>
-          </div>
-        </div>
-      )}
 
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
