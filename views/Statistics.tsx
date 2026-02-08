@@ -113,9 +113,20 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   const fetchMissedOpportunities = async () => {
     try {
-      const { data: failLogs } = await supabase
+      // 1. Fetch pending opportunities from the new specialized table
+      const { data: opportunities } = await supabase
+        .from('search_opportunities')
+        .select('term, search_count')
+        .eq('status', 'pending')
+        .order('search_count', { ascending: false })
+        .limit(6);
+
+      // 2. Calculate Search Success based on all search logs vs failures
+      // Note: We still use the 'notes' table for the global success % calculation 
+      // until a dedicated search_logs table is fully deployed.
+      const { count: failCount } = await supabase
         .from('notes')
-        .select('title, created_at')
+        .select('*', { count: 'exact', head: true })
         .ilike('title', 'LOG_SEARCH_FAIL_%');
 
       const { count: totalSearch } = await supabase
@@ -123,32 +134,22 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .select('*', { count: 'exact', head: true })
         .ilike('title', 'LOG_SEARCH_%');
 
-      if (!failLogs) return;
-
-      const failCount = failLogs.length;
       const successPct = totalSearch && totalSearch > 0 
-        ? Math.round(((totalSearch - failCount) / totalSearch) * 100) 
+        ? Math.round(((totalSearch - (failCount || 0)) / totalSearch) * 100) 
         : 100;
       
       setGlobalKPIs(prev => ({ ...prev, searchSuccess: successPct }));
 
-      const counts: Record<string, number> = {};
-      failLogs.slice(0, 100).forEach(log => {
-        const term = log.title.replace('LOG_SEARCH_FAIL_', '').toLowerCase();
-        counts[term] = (counts[term] || 0) + 1;
-      });
-
-      const sorted = Object.entries(counts)
-        .map(([term, count]) => ({
-          term,
-          count,
+      if (opportunities) {
+        const mapped = opportunities.map(opp => ({
+          term: opp.term,
+          count: opp.search_count,
           trend: 'stable'
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 6);
-
-      setMissedOpportunities(sorted);
-      cacheStore.set('stats_missed', sorted);
+        }));
+        setMissedOpportunities(mapped);
+        cacheStore.set('stats_missed', mapped);
+      }
+      
       cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccess: successPct });
     } catch (err) {
       console.error("Error fetching missed opportunities:", err);

@@ -356,11 +356,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const fetchManagerKPIs = async () => {
     try {
-      // 1. Calculate Search Gaps Count
-      const { count: searchCount } = await supabase
-        .from('notes')
+      // 1. Calculate Search Gaps Count using the new aggregated table
+      const { count: opportunityCount } = await supabase
+        .from('search_opportunities')
         .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_FAIL_%');
+        .eq('status', 'pending');
 
       // 2. Calculate Health % and Usage
       const { data: procs } = await supabase
@@ -382,16 +382,13 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       // 3. Zone Rouge: Procédures sans référent
       const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
-      const { count: totalProcsCount } = await supabase.from('procedures').select('*', { count: 'exact', head: true });
       
       const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
-      // Approximation for Red Zone if we don't fetch all IDs. 
-      // Ideally we fetch all IDs to compare. 
       const { data: allIds } = await supabase.from('procedures').select('uuid');
       const redZoneCount = allIds?.filter(p => !referentSet.has(p.uuid)).length || 0;
 
       const kpis = {
-        searchGaps: searchCount || 0,
+        searchGaps: opportunityCount || 0,
         health: healthPct,
         usage: totalViews,
         redZone: redZoneCount

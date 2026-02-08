@@ -82,6 +82,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         // Log si aucun résultat
         if (foundProcedures.length === 0) {
           console.log("⚠️ Aucune procédure trouvée pour:", searchTerm);
+          
+          // Only log if searchTerm is meaningful
+          if (searchTerm.length > 2) {
+            await supabase.from('notes').insert({
+              user_id: user.id,
+              title: `LOG_SEARCH_FAIL_${searchTerm.toUpperCase()}`,
+              content: `Recherche sémantique sans résultat pour l'utilisateur ${user.firstName}.`,
+              tags: ['system_log', 'search_fail'],
+              status: 'private',
+              category: 'general'
+            });
+            console.log("📝 Log de recherche échouée envoyé à Supabase");
+          }
         }
 
       } catch (err) {
