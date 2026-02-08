@@ -404,10 +404,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
               
               {/* SKILL MAP RADAR (60%) */}
               <div className="xl:col-span-3 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <i className="fa-solid fa-compass-drafting text-9xl text-slate-900"></i>
-                </div>
-                
                 <div className="flex items-center justify-between mb-10 relative z-10">
                   <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                     Cartographie d'Expertise
