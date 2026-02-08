@@ -17,8 +17,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onSelectProcedure,
   onBack,
 }) => {
-  const [loading, setLoading] = useState(!cacheStore.has(`search_${searchTerm}`));
-  const [results, setResults] = useState<Procedure[]>(cacheStore.get(`search_${searchTerm}`) || []);
+  const cachedResults = cacheStore.get(`search_${searchTerm}`);
+  const [loading, setLoading] = useState(!cachedResults && searchTerm.trim() !== "");
+  const [results, setResults] = useState<Procedure[]>(cachedResults || []);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
   useEffect(() => {

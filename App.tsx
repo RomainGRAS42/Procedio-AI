@@ -562,7 +562,7 @@ const ProcedureDetailWrapper: React.FC<{ user: User }> = ({ user }) => {
     <ProcedureDetail
       procedure={procedure}
       user={user}
-      onBack={() => navigate("/procedures")}
+      onBack={() => navigate(-1)}
     />
   );
 };
