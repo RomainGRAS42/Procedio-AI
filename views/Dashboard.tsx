@@ -1162,30 +1162,32 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-10 animate-slide-up pb-12">
-      <section className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-8">
+      <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-end gap-6">
         {/* Titre & Toggle de vue */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2 text-center md:text-left">
-            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-3">
+        <div className="flex-1">
+            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
               {new Date()
                 .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
                 .toUpperCase()}
             </p>
-            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">
-              Bonjour, <span className="text-indigo-600">{user.firstName}</span>
-            </h1>
-            <div className="flex items-center gap-4 mt-4">
-              <p className="text-slate-400 font-medium text-lg">
+            <div className="flex flex-col md:flex-row md:items-baseline gap-4 md:gap-8">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                Bonjour, <span className="text-indigo-600">{user.firstName}</span>
+              </h1>
+              <p className="text-slate-400 font-medium text-sm md:text-base border-l-2 border-slate-100 pl-4 hidden md:block">
                 {user.role === UserRole.MANAGER 
                   ? "Voici l'état des troupes et du savoir collectif."
                   : viewMode === "personal" 
                     ? "Prêt à piloter tes propres missions aujourd'hui ?" 
                     : "Voici l'état des troupes et du savoir collectif."}
               </p>
+              {/* Mobile version of the text without border */}
+              <p className="text-slate-400 font-medium text-sm md:hidden">
+                {user.role === UserRole.MANAGER 
+                  ? "L'état des troupes."
+                  : "À toi de jouer !"}
+              </p>
             </div>
-          </div>
-
-          {/* Certification tag removed from header for cleaner UI */}
         </div>
 
 
