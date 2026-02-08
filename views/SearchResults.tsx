@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Procedure, User } from "../types";
 import { supabase } from "../lib/supabase";
 import LoadingState from "../components/LoadingState";
+import { cacheStore } from "../lib/CacheStore";
 
 interface SearchResultsProps {
   user: User;
@@ -16,8 +17,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onSelectProcedure,
   onBack,
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [results, setResults] = useState<Procedure[]>([]);
+  const [loading, setLoading] = useState(!cacheStore.has(`search_${searchTerm}`));
+  const [results, setResults] = useState<Procedure[]>(cacheStore.get(`search_${searchTerm}`) || []);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
   useEffect(() => {
@@ -76,6 +77,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
         console.log("✨ Résultats formatés:", foundProcedures);
         setResults(foundProcedures);
+        cacheStore.set(`search_${searchTerm}`, foundProcedures);
 
         // Log si aucun résultat
         if (foundProcedures.length === 0) {

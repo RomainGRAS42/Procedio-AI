@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 // ExpertAIModal moved to App.tsx
 import SharePointImportModal from './SharePointImportModal';
 import LoadingState from '../components/LoadingState';
+import { cacheStore } from '../lib/CacheStore';
 
 interface ProceduresProps {
   user: User;
@@ -32,10 +33,10 @@ const Procedures: React.FC<ProceduresProps> = ({
   // AI Modal moved to App.tsx
   
   const [currentFolder, setCurrentFolder] = useState<string | null>(initialFolder); 
-  const [folders, setFolders] = useState<Array<{ name: string; count: number }>>([]);
+  const [folders, setFolders] = useState<Array<{ name: string; count: number }>>(cacheStore.get('proc_folders') || []);
   const [files, setFiles] = useState<Procedure[]>([]);
-  const [allProcedures, setAllProcedures] = useState<Procedure[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [allProcedures, setAllProcedures] = useState<Procedure[]>(cacheStore.get('proc_all') || []);
+  const [loading, setLoading] = useState(!cacheStore.get('proc_folders'));
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
   const [isSharePointModalOpen, setIsSharePointModalOpen] = useState(false);
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
@@ -48,7 +49,10 @@ const Procedures: React.FC<ProceduresProps> = ({
   };
 
   const fetchStructure = useCallback(async () => {
-    setLoading(true);
+    // SWR: Only show loader if we have NO cached data at all
+    if (!cacheStore.has('proc_folders')) {
+      setLoading(true);
+    }
     try {
       const { data: allProcs, error: dbError } = await supabase
         .from('procedures')
@@ -73,6 +77,7 @@ const Procedures: React.FC<ProceduresProps> = ({
         status: f.status || 'validated'
       }));
       setAllProcedures(mappedProcs);
+      cacheStore.set('proc_all', mappedProcs);
       
       console.log("📦 fetchStructure: Chargé", mappedProcs.length, "procédures dans allProcedures");
       
@@ -95,7 +100,8 @@ const Procedures: React.FC<ProceduresProps> = ({
         count: countsMap[folder] || 0
       }));
       
-      setFolders(foldersWithCounts as any); // Type assertion to avoid breaking existing state if needed, but better to update state type
+      setFolders(foldersWithCounts as any);
+      cacheStore.set('proc_folders', foldersWithCounts);
 
       if (currentFolder) {
         const filteredFiles = mappedProcs.filter(p => p.category.toUpperCase() === currentFolder.toUpperCase());

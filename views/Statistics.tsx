@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import InfoTooltip from '../components/InfoTooltip';
 import LoadingState from '../components/LoadingState';
+import { cacheStore } from '../lib/CacheStore';
 
 interface StatisticsProps {
   user: User;
@@ -22,17 +23,16 @@ interface ActivityData {
 }
 
 const Statistics: React.FC<StatisticsProps> = ({ user }) => {
-  const [loading, setLoading] = useState(true);
+  // Initialisation à partir du cache pour un affichage instantané
+  const [loading, setLoading] = useState(!cacheStore.has('stats_health'));
   
-  // Data States
-  const [healthData, setHealthData] = useState<{ name: string; value: number; color: string }[]>([]);
-  const [missedOpportunities, setMissedOpportunities] = useState<{ term: string; count: number; trend: string }[]>([]);
-  const [skillMapData, setSkillMapData] = useState<{ subject: string; A: number; fullMark: number; champion?: string }[]>([]);
-  const [activityData, setActivityData] = useState<ActivityData[]>([]);
-  const [teamLeaderboard, setTeamLeaderboard] = useState<any[]>([]);
+  const [healthData, setHealthData] = useState(cacheStore.get('stats_health') || []);
+  const [missedOpportunities, setMissedOpportunities] = useState(cacheStore.get('stats_missed') || []);
+  const [skillMapData, setSkillMapData] = useState(cacheStore.get('stats_skill_map') || []);
+  const [activityData, setActivityData] = useState(cacheStore.get('stats_activity') || []);
+  const [teamLeaderboard, setTeamLeaderboard] = useState(cacheStore.get('stats_leaderboard') || []);
   
-  // Global KPIs
-  const [globalKPIs, setGlobalKPIs] = useState({
+  const [globalKPIs, setGlobalKPIs] = useState(cacheStore.get('stats_global_kpis') || {
     searchSuccess: 0,
     teamIntensity: 0,
     healthPct: 0,
@@ -41,7 +41,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   useEffect(() => {
     const fetchAllStats = async () => {
-      setLoading(true);
+      // Si on a déjà des données en cache, on ne montre pas le loader global
+      // On revalide simplement en arrière-plan (SWR)
+      const hasCache = cacheStore.has('stats_health');
+      if (!hasCache) setLoading(true);
+
       try {
         await Promise.all([
           fetchHealthData(),
@@ -50,6 +54,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           fetchActivityTrends(),
           fetchTeamLeaderboard()
         ]);
+        
+        // Une fois tout fini, on met à jour le cache des KPIs globaux (qui sont mis à jour par petits bouts)
+        // Note: Les autres states sont mis à jour dans leurs fonctions fetch respectives
       } catch (error) {
         console.error("Error fetching statistics:", error);
       } finally {
@@ -90,11 +97,15 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       const total = procs.length;
       setGlobalKPIs(prev => ({ ...prev, healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0 }));
 
-      setHealthData([
+      const health = [
         { name: 'Frais (< 6 mois)', value: fresh, color: '#10b981' }, 
         { name: 'À revoir (6-12 mois)', value: aging, color: '#f59e0b' },
         { name: 'Obsolète (> 1 an)', value: old, color: '#ef4444' },
-      ]);
+      ];
+
+      setHealthData(health);
+      cacheStore.set('stats_health', health);
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0 });
     } catch (err) {
       console.error("Error fetching health data:", err);
     }
@@ -137,6 +148,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .slice(0, 6);
 
       setMissedOpportunities(sorted);
+      cacheStore.set('stats_missed', sorted);
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccess: successPct });
     } catch (err) {
       console.error("Error fetching missed opportunities:", err);
     }
@@ -175,6 +188,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       }));
 
       setSkillMapData(mapData);
+      cacheStore.set('stats_skill_map', mapData);
     } catch (err) {
       console.error("Error fetching skill map:", err);
     }
@@ -217,10 +231,15 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       })).reverse();
 
       setActivityData(chartData);
+      cacheStore.set('stats_activity', chartData);
 
       // Pulse KPI: Average contributions per day
       const avgContrib = procs ? Math.round((procs.length / 30) * 10) / 10 : 0;
-      setGlobalKPIs(prev => ({ ...prev, contributionPulse: avgContrib }));
+      setGlobalKPIs(prev => {
+        const next = { ...prev, contributionPulse: avgContrib };
+        cacheStore.set('stats_global_kpis', next);
+        return next;
+      });
 
     } catch (err) {
       console.error("Error fetching activity trends:", err);
@@ -235,11 +254,19 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .order('current_xp', { ascending: false })
         .limit(5);
 
-      if (data) setTeamLeaderboard(data);
+      if (data) {
+        setTeamLeaderboard(data);
+        cacheStore.set('stats_leaderboard', data);
+      }
 
       // Active Users Intensity KPI
       const activeCount = data?.length || 0; 
-      setGlobalKPIs(prev => ({ ...prev, teamIntensity: Math.min(100, (activeCount / 10) * 100) }));
+      const intensity = Math.min(100, (activeCount / 10) * 100);
+      setGlobalKPIs(prev => {
+        const next = { ...prev, teamIntensity: intensity };
+        cacheStore.set('stats_global_kpis', next);
+        return next;
+      });
     } catch (err) {
       console.error("Error fetching leaderboard:", err);
     }

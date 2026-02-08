@@ -6,6 +6,7 @@ import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
 import LoadingState from '../components/LoadingState';
+import { cacheStore } from "../lib/CacheStore";
 
 interface DashboardProps {
   user: User;
@@ -38,26 +39,26 @@ const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(cacheStore.get('dash_announcement') || null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(!cacheStore.has('dash_announcement'));
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [managerResponse, setManagerResponse] = useState("");
 
-  const [recentProcedures, setRecentProcedures] = useState<Procedure[]>([]);
-  const [loadingProcedures, setLoadingProcedures] = useState(true);
+  const [recentProcedures, setRecentProcedures] = useState<Procedure[]>(cacheStore.get('dash_recent_procs') || []);
+  const [loadingProcedures, setLoadingProcedures] = useState(!cacheStore.has('dash_recent_procs'));
 
   // Suggestions (Manager Only)
-  const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>(cacheStore.get('dash_suggestions') || []);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(!cacheStore.has('dash_suggestions') && user.role === UserRole.MANAGER);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
 
   // Activities
-  const [activities, setActivities] = useState<any[]>([]);
-  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [activities, setActivities] = useState<any[]>(cacheStore.get('dash_activities') || []);
+  const [loadingActivities, setLoadingActivities] = useState(!cacheStore.has('dash_activities'));
 
 
 
@@ -92,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [user.role]);
 
   // Stats personnelles
-  const [personalStats, setPersonalStats] = useState({
+  const [personalStats, setPersonalStats] = useState(cacheStore.get('dash_personal_stats') || {
     consultations: 0,
     suggestions: 0,
     notes: 0,
@@ -103,13 +104,13 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
   // Sprint Hebdo (XP gagnée cette semaine)
-  const [weeklyXP, setWeeklyXP] = useState(0);
+  const [weeklyXP, setWeeklyXP] = useState(cacheStore.get('dash_weekly_xp') || 0);
 
   // Trend du moment
   const [trendProcedure, setTrendProcedure] = useState<Procedure | null>(null);
 
   // Stats dynamiques (Manager)
-  const [managerKPIs, setManagerKPIs] = useState({
+  const [managerKPIs, setManagerKPIs] = useState(cacheStore.get('dash_manager_kpis') || {
     searchGaps: 0,
     health: 0,
     usage: 0,
@@ -303,15 +304,20 @@ const Dashboard: React.FC<DashboardProps> = ({
         fullMark: Math.max(...Object.values(profile.stats_by_category as object) as number[]) + 5
       })).slice(0, 6) : [];
 
-      setPersonalStats({
+      const stats = {
         consultations: consultCount || 0,
         suggestions: suggCount || 0,
         notes: realNotesCount,
         xp: profile?.xp_points || 0,
         level: profile?.level || 1,
         mastery: masteryData,
-      });
-      setWeeklyXP((weeklyConsults || 0) * 5); // +5 XP par lecture
+      };
+      setPersonalStats(stats);
+      cacheStore.set('dash_personal_stats', stats);
+
+      const weeklyXpVal = (weeklyConsults || 0) * 5;
+      setWeeklyXP(weeklyXpVal); // +5 XP par lecture
+      cacheStore.set('dash_weekly_xp', weeklyXpVal);
 
       // Fetch badges for personal view
 
@@ -384,12 +390,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       const { data: allIds } = await supabase.from('procedures').select('uuid');
       const redZoneCount = allIds?.filter(p => !referentSet.has(p.uuid)).length || 0;
 
-      setManagerKPIs({
+      const kpis = {
         searchGaps: searchCount || 0,
         health: healthPct,
         usage: totalViews,
         redZone: redZoneCount
-      });
+      };
+      setManagerKPIs(kpis);
+      cacheStore.set('dash_manager_kpis', kpis);
 
     } catch (err) {
       console.error("Erreur KPIs Manager:", err);
@@ -545,7 +553,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         .or("title.ilike.LOG_READ_%")
         .order("created_at", { ascending: false })
         .limit(5);
-      if (data) setActivities(data);
+      if (data) {
+        setActivities(data);
+        cacheStore.set('dash_activities', data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -580,8 +591,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (error) throw error;
 
       if (data) {
-        setPendingSuggestions(
-          data.map((item: any) => ({
+        const suggestions = data.map((item: any) => ({
             id: item.id,
             content: item.suggestion,
             status: item.status,
@@ -594,8 +604,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             procedure_id: item.procedure_id,
             managerResponse: item.manager_response,
             respondedAt: item.responded_at,
-          }))
-        );
+          }));
+        setPendingSuggestions(suggestions);
+        cacheStore.set('dash_suggestions', suggestions);
       }
     } catch (err) {
       console.error("Erreur fetch suggestions:", err);
@@ -740,8 +751,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (error) throw error;
       if (data) {
-        setRecentProcedures(
-          data.map((p) => ({
+        const procs = data.map((p) => ({
             id: p.uuid,
             db_id: p.uuid,
             file_id: p.file_id || p.uuid,
@@ -751,8 +761,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             createdAt: p.created_at,
             views: p.views || 0,
             status: p.status || "validated",
-          }))
-        );
+          }));
+        setRecentProcedures(procs);
+        cacheStore.set('dash_recent_procs', procs);
       }
     } catch (err) {
       console.error("Erreur fetch procedures:", err);
@@ -778,6 +789,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (data) {
         setAnnouncement(data);
+        cacheStore.set('dash_announcement', data);
         setRequiresConfirmation(data.requires_confirmation || false);
         
         // Vérifier si l'utilisateur a déjà lu cette annonce de manière persistante ET récupérer le message manager
