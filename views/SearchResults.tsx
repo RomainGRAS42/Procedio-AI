@@ -28,10 +28,40 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         return;
       }
 
-      console.log("🔍 SearchResults: Recherche via Webhook pour:", searchTerm);
+      console.log("🔍 SearchResults: Recherche Hybride pour:", searchTerm);
       setLoading(true);
+      
       try {
-        // Appel au Webhook n8n
+        // 1. RECHERCHE DIRECTE SUPABASE (MATCH EXACT/PARTIEL)
+        const { data: dbMatches, error: dbError } = await supabase
+          .from('procedures')
+          .select('*')
+          .or(`title.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
+          .limit(10);
+
+        if (dbError) console.error("❌ Database search error:", dbError);
+
+        if (dbMatches && dbMatches.length > 0) {
+          console.log("✅ Database matches found:", dbMatches.length);
+          const procedures: Procedure[] = dbMatches.map((f: any) => ({
+            id: f.uuid || f.file_id || f.id,
+            db_id: f.uuid,
+            file_id: f.file_id || f.uuid,
+            title: f.title || "Sans titre",
+            category: f.Type || 'NON CLASSÉ',
+            fileUrl: f.file_url,
+            pinecone_document_id: f.file_id || f.uuid,
+            createdAt: f.created_at,
+            views: f.views || 0,
+            status: f.status || 'validated'
+          }));
+          setResults(procedures);
+          setLoading(false);
+          return;
+        }
+
+        // 2. FALLBACK SÉMANTIQUE (WEBHOOK n8n)
+        console.log("🤖 Fallback: Recherche via Webhook pour:", searchTerm);
         const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
           method: 'POST',
           headers: {
@@ -48,21 +78,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         }
 
         const data = await response.json();
-        console.log("🤖 Webhook Response:", data);
-
-        let procedures: any[] = [];
-        
-        // Parse response (Array or Object)
-        // Format attendu: [ { success: true, results: [...] } ] ou { results: [...] }
         const resultData = Array.isArray(data) ? data[0] : data;
+        let webhookProcedures: any[] = [];
         
         if (resultData && resultData.results) {
-            procedures = resultData.results;
+            webhookProcedures = resultData.results;
         }
 
-        console.log(`✅ ${procedures.length} procédures trouvées`);
-
-        const foundProcedures: Procedure[] = procedures.map((f: any, index: number) => ({
+        const foundProcedures: Procedure[] = webhookProcedures.map((f: any, index: number) => ({
           id: f.id || f.uuid || `webhook-${index}`,
           db_id: f.id || f.uuid,
           file_id: f.id || f.uuid || `webhook-${index}`,
@@ -70,35 +93,30 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           category: f.category || 'NON CLASSÉ',
           fileUrl: f.file_url,
           pinecone_document_id: f.pinecone_document_id,
-          createdAt: new Date().toISOString(), // Webhook doesn't return date usually
+          createdAt: new Date().toISOString(),
           views: 0,
           status: 'validated'
         }));
 
-        console.log("✨ Résultats formatés:", foundProcedures);
         setResults(foundProcedures);
         cacheStore.set(`search_${searchTerm}`, foundProcedures);
 
-        // Log si aucun résultat
+        // Log si aucun résultat global
         if (foundProcedures.length === 0) {
-          console.log("⚠️ Aucune procédure trouvée pour:", searchTerm);
-          
-          // Only log if searchTerm is meaningful
+          console.log("⚠️ Aucune procédure trouvée au total pour:", searchTerm);
           if (searchTerm.length > 2) {
             await supabase.from('notes').insert({
               user_id: user.id,
               title: `LOG_SEARCH_FAIL_${searchTerm.toUpperCase()}`,
-              content: `Recherche sémantique sans résultat pour l'utilisateur ${user.firstName}.`,
+              content: `Recherche hybride sans résultat pour l'utilisateur ${user.firstName}.`,
               tags: ['system_log', 'search_fail'],
               status: 'private',
               category: 'general'
             });
-            console.log("📝 Log de recherche échouée envoyé à Supabase");
           }
         }
-
       } catch (err) {
-        console.error("❌ Semantic search error:", err);
+        console.error("❌ Search error:", err);
         setResults([]);
       } finally {
         setLoading(false);

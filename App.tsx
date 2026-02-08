@@ -389,6 +389,10 @@ const AppContent: React.FC<any> = ({
               setGlobalSearchTerm(t);
               navigate("/search");
             }}
+            onSelectProcedure={(p) => {
+              setGlobalSearchTerm("");
+              navigate(`/procedure/${p.id}`);
+            }}
             onLogout={handleLogout}
             onNavigate={(view) => navigate(`/${view}`)}
             onNotificationClick={(type, id) => {
