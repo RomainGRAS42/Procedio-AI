@@ -323,35 +323,36 @@ const Procedures: React.FC<ProceduresProps> = ({
             </div>
           ) : (
             <div className="space-y-12">
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-                {currentFolder === null && (folders as any[]).map((folder: any) => {
-                  const folderName = typeof folder === 'string' ? folder : folder.name;
-                  const folderCount = typeof folder === 'string' ? 0 : folder.count;
-                  
-                  return (
-                    <div 
-                      key={folderName}
-                      onClick={() => setCurrentFolder(folderName)}
-                      className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up group"
-                    >
-                      <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
-                        <i className="fa-solid fa-folder"></i>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 mt-2">
-                        <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
-                          {folderName}
-                        </span>
-                        <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
-                          <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
-                            {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
+              {currentFolder === null && (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                  {(folders as any[]).map((folder: any) => {
+                    const folderName = typeof folder === 'string' ? folder : folder.name;
+                    const folderCount = typeof folder === 'string' ? 0 : folder.count;
+                    
+                    return (
+                      <div 
+                        key={folderName}
+                        onClick={() => setCurrentFolder(folderName)}
+                        className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up group"
+                      >
+                        <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
+                          <i className="fa-solid fa-folder"></i>
+                        </div>
+                        <div className="flex flex-col items-center gap-2 mt-2">
+                          <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
+                            {folderName}
                           </span>
+                          <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
+                            <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
+                              {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
+                          <i className="fa-solid fa-arrow-right"></i>
                         </div>
                       </div>
-                      <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
-                        <i className="fa-solid fa-arrow-right"></i>
-                      </div>
-                    </div>
-                  );
+                    );
                   })}
                 </div>
               )}
@@ -455,8 +456,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
 
