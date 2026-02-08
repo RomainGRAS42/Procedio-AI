@@ -46,6 +46,7 @@ export interface User {
   currentXp: number;
   nextLevelXp: number;
   badges: Badge[];
+  stats_by_category?: Record<string, number>;
 }
 
 export interface Procedure {

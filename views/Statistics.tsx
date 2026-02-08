@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Procedure } from '../types';
+import { Procedure, User } from '../types';
 import { supabase } from '../lib/supabase';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
@@ -13,6 +13,7 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
   const [loading, setLoading] = useState(true);
   const [missedOpportunities, setMissedOpportunities] = useState<{ term: string, count: number, trend: string }[]>([]);
   const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
   
   // 🚀 NOUVEL ÉTAT : Filtre de santé sélectionné (pour le popup)
   const [selectedHealthFilter, setSelectedHealthFilter] = useState<string | null>(null);
@@ -125,6 +126,15 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
         setTopContributors(sortedContribs.length > 0 ? sortedContribs : [
           { name: "Aucune suggestion", role: "Prêt à aider ?", score: 0, initial: "?", color: "bg-slate-200" }
         ]);
+      }
+
+      // 4. Fetch Team Members for Skill Map
+      const { data: teamData } = await supabase
+        .from('user_profiles')
+        .select('*');
+      
+      if (teamData) {
+        setTeamMembers(teamData as User[]);
       }
 
     } catch (e) {
@@ -432,7 +442,59 @@ const Statistics: React.FC<StatisticsProps> = ({ onUploadClick, onSelectProcedur
           </div>
       </div>
 
-      {/* POPUP DE DÉTAIL "SANTÉ DE LA BASE" */}
+      {/* SECTION 5: SKILL MAP - CHAMPIONS (Migrated from Dashboard) */}
+      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 mt-8">
+           <div className="flex items-center gap-4 mb-8">
+             <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl shadow-lg shadow-indigo-200">
+                 <i className="fa-solid fa-map-location-dot"></i>
+             </div>
+             <div>
+                 <h3 className="font-black text-slate-900 text-2xl tracking-tight uppercase">Skill Map</h3>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Maîtrise & Expertise Équipe</p>
+             </div>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+               {(() => {
+                  const categories = ['Logiciel', 'Réseau', 'Infrastructure', 'Sécurité'];
+                  const champions = categories.map(cat => {
+                     const champ = teamMembers.reduce((prev, current) => {
+                        const prevScore = (prev?.stats_by_category as any)?.[cat] || 0;
+                        const currScore = (current?.stats_by_category as any)?.[cat] || 0;
+                        return currScore > prevScore ? current : prev;
+                     }, null as any);
+                     return { category: cat, user: champ, score: (champ?.stats_by_category as any)?.[cat] || 0 };
+                  }).filter(c => c.score > 0).sort((a,b) => b.score - a.score);
+
+                  return champions.length > 0 ? champions.map((champ, idx) => (
+                     <div key={idx} className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex items-center gap-4 hover:bg-white hover:shadow-lg hover:border-indigo-100 transition-all group">
+                        <div className="relative">
+                           <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-600 overflow-hidden text-xl">
+                              {champ.user?.avatar_url ? <img src={champ.user.avatar_url} className="w-full h-full object-cover"/> : (champ.user?.first_name?.[0] || "?")}
+                           </div>
+                           <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-amber-400 rounded-full flex items-center justify-center text-xs text-white border-2 border-white shadow-sm">
+                              <i className="fa-solid fa-crown"></i>
+                           </div>
+                        </div>
+                         <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-1">{champ.category}</p>
+                           <p className="font-bold text-slate-900 text-base truncate">{champ.user?.first_name} {champ.user?.last_name}</p>
+                           <div className="flex items-center gap-3 mt-2">
+                              <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                 <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${Math.min(((champ.user?.stats_by_category as any)?.[champ.category] / 20) * 100, 100)}%` }}></div>
+                              </div>
+                              <span className="text-[10px] font-black text-slate-400">Lv. {Math.round((champ.user?.stats_by_category as any)?.[champ.category])}</span>
+                           </div>
+                        </div>
+                     </div>
+                  )) : (
+                     <div className="col-span-full text-center py-10">
+                        <p className="text-slate-400 text-sm italic">Aucune donnée suffisante pour déterminer les champions.</p>
+                     </div>
+                  );
+               })()}
+           </div>
+      </div>
       {selectedHealthFilter && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl flex flex-col animate-scale-up">
