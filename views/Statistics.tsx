@@ -403,13 +403,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             <div className="grid grid-cols-1 xl:grid-cols-5 gap-12">
               
               {/* SKILL MAP RADAR (60%) */}
-              <div className="xl:col-span-3 bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <i className="fa-solid fa-compass-drafting text-9xl text-white"></i>
+              <div className="xl:col-span-3 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <i className="fa-solid fa-compass-drafting text-9xl text-slate-900"></i>
                 </div>
                 
                 <div className="flex items-center justify-between mb-10 relative z-10">
-                  <h3 className="text-xl font-black text-white tracking-tight flex items-center gap-3">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                     Cartographie d'Expertise
                     <InfoTooltip text="Visualisation radar du niveau moyen de compétence de l'équipe sur vos domaines clés. Identifiez les zones de fragilité." />
                   </h3>
@@ -418,18 +418,18 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                 <div className="h-[320px] w-full relative z-10">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="45%" outerRadius="80%" data={skillMapData}>
-                      <PolarGrid stroke="#334155" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 900 }} />
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900 }} />
                       <Radar
                         name="Équipe"
                         dataKey="A"
-                        stroke="#818cf8"
+                        stroke="#6366f1"
                         strokeWidth={4}
-                        fill="#818cf8"
-                        fillOpacity={0.3}
+                        fill="#6366f1"
+                        fillOpacity={0.15}
                       />
                       <RechartsTooltip 
-                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff' }}
+                        contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                       />
                     </RadarChart>
                   </ResponsiveContainer>
@@ -437,12 +437,12 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
                 <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
                   {skillMapData.slice(0, 4).map((skill, idx) => (
-                    <div key={idx} className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                    <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 transition-all hover:border-indigo-100">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{skill.subject}</span>
-                        <span className="text-xs font-black text-indigo-400">{skill.A}%</span>
+                        <span className="text-xs font-black text-indigo-600">{skill.A}%</span>
                       </div>
-                      <p className="text-xs font-black text-white truncate">
+                      <p className="text-xs font-black text-slate-700 truncate">
                         <i className="fa-solid fa-crown text-amber-400 mr-2"></i>
                         {skill.champion || 'N/A'}
                       </p>
