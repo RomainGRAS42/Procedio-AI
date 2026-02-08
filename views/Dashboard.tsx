@@ -1430,6 +1430,45 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ) : (
             <div className="space-y-6">
+              {/* ZONE 1: Stats KPIs - Prioritized at top for Bento Grid */}
+              <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredStats.map((stat, idx) => (
+                  <article
+                    key={idx}
+                    className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group relative overflow-visible">
+                    
+                    {(stat as any).tooltipTitle && (
+                      <div className="absolute top-6 right-6 group/tooltip">
+                        <i className="fa-solid fa-circle-info text-slate-200 hover:text-indigo-500 cursor-help transition-colors text-sm"></i>
+                        <div className="absolute bottom-full right-0 mb-3 w-56 p-4 bg-slate-900 text-white text-[10px] rounded-2xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] pointer-events-none border border-white/10 backdrop-blur-md">
+                          <p className="font-black mb-1 text-indigo-300 uppercase tracking-widest">{(stat as any).tooltipTitle}</p>
+                          <p className="text-slate-300 leading-relaxed font-medium">{(stat as any).tooltipDesc}</p>
+                          <div className="absolute top-full right-3 -translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900 border-r border-b border-white/10"></div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      className={`w-20 h-20 rounded-3xl ${stat.bg} ${stat.color} flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110`}>
+                      <i className={`fa-solid ${stat.icon}`}></i>
+                    </div>
+                    <div>
+                      <p className="text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                        {stat.value}
+                      </p>
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">
+                        {stat.label}
+                      </h3>
+                      {stat.desc && (
+                        <p className="text-[9px] font-bold text-slate-300 mt-1 italic">
+                          {stat.desc}
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </section>
+
               {/* Talent Map Section (Manager Only) */}
               {user.role === UserRole.MANAGER && viewMode === "team" ? (
                 <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm overflow-hidden relative">
@@ -1691,47 +1730,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
 
-
-
-
-
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStats.map((stat, idx) => (
-          <article
-            key={idx}
-            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-all group relative overflow-visible">
-            
-            {(stat as any).tooltipTitle && (
-              <div className="absolute top-6 right-6 group/tooltip">
-                <i className="fa-solid fa-circle-info text-slate-200 hover:text-indigo-500 cursor-help transition-colors text-sm"></i>
-                <div className="absolute bottom-full right-0 mb-3 w-56 p-4 bg-slate-900 text-white text-[10px] rounded-2xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] pointer-events-none border border-white/10 backdrop-blur-md">
-                  <p className="font-black mb-1 text-indigo-300 uppercase tracking-widest">{(stat as any).tooltipTitle}</p>
-                  <p className="text-slate-300 leading-relaxed font-medium">{(stat as any).tooltipDesc}</p>
-                  <div className="absolute top-full right-3 -translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
-
-            <div
-              className={`w-20 h-20 rounded-3xl ${stat.bg} ${stat.color} flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110`}>
-              <i className={`fa-solid ${stat.icon}`}></i>
-            </div>
-            <div>
-              <p className="text-5xl font-black text-slate-900 tracking-tighter leading-none">
-                {stat.value}
-              </p>
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">
-                {stat.label}
-              </h3>
-              {stat.desc && (
-                <p className="text-[9px] font-bold text-slate-300 mt-1 italic">
-                  {stat.desc}
-                </p>
-              )}
-            </div>
-          </article>
-        ))}
-      </section>
 
       {/* Manager Specific Sections (Operational) */}
       {user.role === UserRole.MANAGER && (
