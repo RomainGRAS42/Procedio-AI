@@ -9,79 +9,84 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieC
 interface DashboardProps {
   user: User;
   onQuickNote: () => void;
+  onSelectProcedure: (procedure: Procedure) => void;
   onViewHistory: () => void;
-  onSelectProcedure: (proc: Procedure) => void;
-  onUploadClick: () => void;
-  targetAction?: { type: string; id: string };
+  onViewComplianceHistory: () => void;
+  targetAction?: { type: 'suggestion' | 'read', id: string } | null;
   onActionHandled?: () => void;
-  onViewComplianceHistory?: () => void;
+  onUploadClick: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ 
-  user, 
-  onQuickNote, 
-  onViewHistory, 
-  onSelectProcedure, 
-  onUploadClick,
+interface Announcement {
+  id: string;
+  content: string;
+  author_name: string;
+  author_initials: string;
+  created_at: string;
+  author_id?: string;
+  requires_confirmation?: boolean;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({
+  user,
+  onQuickNote,
+  onSelectProcedure,
+  onViewHistory,
+  onViewComplianceHistory,
   targetAction,
   onActionHandled,
-  onViewComplianceHistory
+  onUploadClick,
 }) => {
-  const [viewMode, setViewMode] = useState<"personal" | "team">("personal");
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-  
-  // États
-  const [recentProcedures, setRecentProcedures] = useState<Procedure[]>([]);
-  const [loadingProcedures, setLoadingProcedures] = useState(true);
-  
-  const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
-  
-  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
-  const [managerResponse, setManagerResponse] = useState("");
-
-  const [activities, setActivities] = useState<any[]>([]);
-  const [loadingActivities, setLoadingActivities] = useState(false);
-
-  // Manager Stats (KPIs)
-  const [stats, setStats] = useState([
-    { label: "Procédures", value: 0, icon: "fa-file-lines", color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Vues Hebdo", value: 0, icon: "fa-eye", color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Satisfaction", value: "0%", icon: "fa-heart", color: "text-rose-600", bg: "bg-rose-50" },
-  ]);
-
-  const [managerKPIs, setManagerKPIs] = useState({
-    searchGaps: 0,
-    health: 0,
-    usage: 0,
-    redZone: 0
-  });
-
-  // Referent Review Logic
-  const [pendingReviews, setPendingReviews] = useState<Procedure[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(false);
-  const isReferent = user.role === UserRole.TECHNICIAN; // Assuming techs can be referents
-
-  // Mastery Claims (Manager only)
-  const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
-  const [loadingClaims, setLoadingClaims] = useState(false);
-
-  // Annonces
-  const [announcement, setAnnouncement] = useState<any>(null);
-  const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
+  console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
+  const [isRead, setIsRead] = useState(false);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
-  const [isRead, setIsRead] = useState(false);
+  const [managerResponse, setManagerResponse] = useState("");
 
+  const [recentProcedures, setRecentProcedures] = useState<Procedure[]>([]);
+  const [loadingProcedures, setLoadingProcedures] = useState(true);
+
+  // Suggestions (Manager Only)
+  const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+
+  // Activities
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+
+
+
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+
+  
+  // Referent System
+  const [isReferent, setIsReferent] = useState(false);
+  const [pendingReviews, setPendingReviews] = useState<Procedure[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  // Mastery Claims (Manager Only)
+  const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
+  const [loadingClaims, setLoadingClaims] = useState(false);
+
+
+
+
+
+
+  // État de la vue (Personnel vs Équipe) - Initialisé selon le rôle
+  const [viewMode, setViewMode] = useState<"personal" | "team">(user.role === UserRole.MANAGER ? "team" : "personal");
+
+  // Force update if role changes (though unlikely in session)
   useEffect(() => {
-    if (user.role === UserRole.MANAGER) {
-      setViewMode("team"); 
-    } else {
-      setViewMode("personal");
-    }
+    setViewMode(user.role === UserRole.MANAGER ? "team" : "personal");
   }, [user.role]);
 
   // Stats personnelles
@@ -101,110 +106,200 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Trend du moment
   const [trendProcedure, setTrendProcedure] = useState<Procedure | null>(null);
 
-  useEffect(() => {
-    fetchRecentProcedures();
-    fetchSuggestions();
-    fetchActivities(); 
-    fetchLatestAnnouncement();
-    fetchTrendProcedure();
+  // Stats dynamiques (Manager)
+  const [managerKPIs, setManagerKPIs] = useState({
+    searchGaps: 0,
+    health: 0,
+    usage: 0,
+    redZone: 0
+  });
+  
+  // Cockpit Widgets State (Manager)
+  // Cockpit Widgets State (Manager)
+  // const [missedOpportunities, setMissedOpportunities] = useState<{ term: string, count: number, trend: string }[]>([]); // MOVED TO STATISTICS
+  // const [topContributors, setTopContributors] = useState<{ name: string, role: string, score: number, initial: string, color: string }[]>([]); // MOVED TO STATISTICS
+  // const [healthData, setHealthData] = useState<{ name: string, id: string, value: number, color: string }[]>([]); // MOVED TO STATISTICS
+  // const [allAvailableBadges, setAllAvailableBadges] = useState<any[]>([]); // UNUSED
+  // const [allProcedures, setAllProcedures] = useState<Procedure[]>([]); // UNUSED
 
-    if (user.role === UserRole.MANAGER) {
-      fetchManagerKPIs();
-      fetchMasteryClaims();
-    } else {
+  const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
+    {
+      label: "Urgent",
+      value: `${managerKPIs.searchGaps}`,
+      icon: "fa-triangle-exclamation",
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+      desc: "Recherches échouées",
+      tooltipTitle: "Alertes Critiques",
+      tooltipDesc: "Nombre de recherches sans résultat nécessitant une création de contenu immédiate."
+    },
+    {
+      label: "Fiabilité",
+      value: `${managerKPIs.health}%`,
+      icon: "fa-shield-heart",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      desc: "Score de santé",
+      tooltipTitle: "Santé du Patrimoine",
+      tooltipDesc: "Indicateur global de fraîcheur et de validation des procédures."
+    },
+    {
+      label: "Dynamique",
+      value: `+${managerKPIs.usage}`,
+      icon: "fa-arrow-trend-up",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      desc: "Lectures période",
+      tooltipTitle: "Croissance d'Usage",
+      tooltipDesc: "Volume de consultations sur la période en cours."
+    }
+  ] : user.role === UserRole.MANAGER && viewMode === "personal" ? [
+    {
+      label: "Pilotage & Impact",
+      value: `${personalStats.suggestions + personalStats.notes}`,
+      icon: "fa-rocket",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+      desc: "Actions managériales",
+      tooltipTitle: "Contribution Manager",
+      tooltipDesc: "Nombre d'annonces, réponses aux suggestions et actions de pilotage effectuées."
+    },
+    {
+      label: "Validation Équipe",
+      value: pendingSuggestions.filter(s => s.status === 'approved').length.toString(),
+      icon: "fa-certificate",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      desc: "Suggestions validées",
+      tooltipTitle: "Amélioration continue",
+      tooltipDesc: "Nombre de suggestions de votre équipe que vous avez validées."
+    },
+    {
+      label: "Notes de Terrain",
+      value: personalStats.notes.toString(),
+      icon: "fa-book-open",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      desc: "Observations partagées",
+      tooltipTitle: "Transmission",
+      tooltipDesc: "Notes et retours partagés avec l'équipe pour améliorer les processus."
+    }
+  ] : [
+    {
+      label: "Rang d'Expertise",
+      value: (() => {
+        const level = personalStats.level;
+        if (level >= 5) return "Oracle";
+        if (level >= 4) return "Mentor";
+        if (level >= 3) return "Pilote";
+        if (level >= 2) return "Acteur";
+        return "Éclaireur";
+      })(),
+      icon: "fa-award",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      desc: `${personalStats.xp} XP total`,
+      tooltipTitle: "Progression & Savoir",
+      tooltipDesc: `Ton rang évolue avec ton expertise. Tu as accumulé ${personalStats.xp} XP à travers tes lectures (${personalStats.consultations} consultations) et tes contributions.`
+    },
+    {
+      label: "Impact Équipe",
+      value: `${personalStats.suggestions * 50} pts`,
+      icon: "fa-handshake-angle",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      desc: `${personalStats.suggestions} suggs validées`,
+      tooltipTitle: "Ton apport à l'équipe",
+      tooltipDesc: `Chaque suggestion validée aide tes collègues et prouve ton expertise métier.`
+    },
+    {
+      label: "Sprint Actuel",
+      value: `+${weeklyXP} XP`,
+      icon: "fa-bolt-lightning",
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      desc: "Cette semaine",
+      tooltipTitle: "Dynamique hebdomadaire",
+      tooltipDesc: "XP gagnée au cours des 7 derniers jours. Garde le rythme !"
+    },
+  ];
+
+  const filteredStats = stats;
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchRecentProcedures();
+      fetchActivities();
       fetchPersonalStats();
-      fetchWeeklyStats();
-    }
-    // Always fetch workload as managers can be referents too
-    fetchReferentWorkload();
-  }, [user.role]);
+      fetchTrendProcedure();
+      fetchLatestAnnouncement();
 
-  // UseEffect pour rafraîchir les stats KPIs Team visualisables (legacy stats array)
-  useEffect(() => {
-    if (user.role === UserRole.MANAGER) {
-      setStats([
-        { label: "Procédures", value: managerKPIs.usage, icon: "fa-file-lines", color: "text-indigo-600", bg: "bg-indigo-50" }, // Using usage as placeholder count
-        { label: "Vues Hebdo", value: managerKPIs.usage, icon: "fa-eye", color: "text-emerald-600", bg: "bg-emerald-50" }, // Placeholder
-        { label: "Satisfaction", value: `${managerKPIs.health}%`, icon: "fa-heart", color: "text-rose-600", bg: "bg-rose-50" },
-      ]);
-    }
-  }, [managerKPIs, user.role]);
+      if (user.role === UserRole.MANAGER) {
+        fetchSuggestions();
+        fetchManagerKPIs();
+        fetchMasteryClaims();
+      }
+      
+      // Always check for referent workload (anyone can be a referent)
+      fetchReferentWorkload();
 
-  const fetchWeeklyStats = async () => {
-    // Calcul de l'XP de la semaine (basé sur logs ou autre)
-    // Placeholder logic
-    setWeeklyXP(0);
-  };
+    }
+  }, [user?.id, user?.role]);
+
+
+
 
   const fetchPersonalStats = async () => {
     try {
-      // 1. Consultations (Vues)
+      // 1. Profil (XP, Niveau, Maîtrise)
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('xp_points, level, stats_by_category')
+        .eq('id', user.id)
+        .single();
+
+      // 2. Consultations Perso
       const { count: consultCount } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .ilike('title', 'LOG_READ_%');
+        .ilike('title', 'CONSULTATION_%');
 
-      // 2. Suggestions
+      // 3. Suggestions Impact
       const { count: suggCount } = await supabase
         .from('procedure_suggestions')
         .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'approved');
+
+      // 4. Vraies Notes
+      const { data: allNotes } = await supabase
+        .from('notes')
+        .select('title')
         .eq('user_id', user.id);
-
-      // 3. Notes Perso
-      const { count: notesCount } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .not('tags', 'ov', '{SUGGESTION}') 
-        .not('title', 'like', 'LOG_%');
-
-      // Filtrer les logs systÃ¨mes caches
-      const { data: realNotes } = await supabase
-        .from('notes')
-        .select('id')
-        .eq('user_id', user.id)
-        .not('title', 'ilike', 'LOG_%')
-        .not('title', 'ilike', 'CLAIM_%');
       
-      const realNotesCount = realNotes?.length || 0;
+      const realNotesCount = allNotes?.filter(n => 
+        !n.title.startsWith('LOG_') && 
+        !n.title.startsWith('CONSULTATION_') && 
+        !n.title.startsWith('SUGGESTION_')
+      ).length || 0;
 
-      // 4. XP & Level (Profile)
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('xp_points, level')
-        .eq('id', user.id)
-        .single();
-      
-      // 5. Mastery (Radar Data) - Mock based on Categories viewed
-      const { data: views } = await supabase
-        .from('notes') // Assuming logs are in notes
-        .select('content') // Content often contains Proc Title or ID
-        .eq('user_id', user.id)
-        .ilike('title', 'LOG_READ_%');
-      
-      // Since we don't have direct category link in logs easily without join, 
-      // we'll fetch profile mastery json if exists, or compute mock
-      // UPDATE: We do not have a mastery JSON column. We'll standard mock for now or fetch procedures.
-      
-      const masteryData = [
-         { subject: 'Logiciel', A: 65, fullMark: 100 },
-         { subject: 'RH', A: 30, fullMark: 100 },
-         { subject: 'SÃ©curitÃ©', A: 80, fullMark: 100 },
-         { subject: 'Infrastr.', A: 45, fullMark: 100 },
-         { subject: 'Juridique', A: 20, fullMark: 100 },
-         { subject: 'Finance', A: 50, fullMark: 100 },
-      ];
-
-      // Weekly Consults
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      // 5. XP Hebdo (Simplifié: on prend les notes/logs des 7 derniers jours)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const { count: weeklyConsults } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .ilike('title', 'LOG_READ_%')
-        .gt('created_at', oneWeekAgo.toISOString());
+        .ilike('title', 'CONSULTATION_%')
+        .gte('created_at', sevenDaysAgo.toISOString());
+
+      // 6. Transformer les stats par catégorie pour le RadarChart
+      const masteryData = profile?.stats_by_category ? Object.keys(profile.stats_by_category).map(cat => ({
+        subject: cat,
+        A: profile.stats_by_category[cat],
+        fullMark: Math.max(...Object.values(profile.stats_by_category as object) as number[]) + 5
+      })).slice(0, 6) : [];
 
       setPersonalStats({
         consultations: consultCount || 0,
@@ -215,6 +310,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         mastery: masteryData,
       });
       setWeeklyXP((weeklyConsults || 0) * 5); // +5 XP par lecture
+
+      // Fetch badges for personal view
+
 
     } catch (err) {
       console.error("Erreur stats personnelles:", err);
@@ -276,9 +374,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       // 3. Zone Rouge: Procédures sans référent
       const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
+      const { count: totalProcsCount } = await supabase.from('procedures').select('*', { count: 'exact', head: true });
       
       const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
       // Approximation for Red Zone if we don't fetch all IDs. 
+      // Ideally we fetch all IDs to compare. 
       const { data: allIds } = await supabase.from('procedures').select('uuid');
       const redZoneCount = allIds?.filter(p => !referentSet.has(p.uuid)).length || 0;
 
@@ -294,9 +394,13 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+
+
   const fetchReferentWorkload = async () => {
     setLoadingReviews(true);
     try {
+      // Fetch procedures waiting for validation (status 'ready' or 'draft')
+      // and where the user is a referent for that procedure (or category)
       const { data: referentSpecs } = await supabase
         .from('procedure_referents')
         .select('procedure_id')
@@ -305,11 +409,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       const procedureIds = referentSpecs?.map(r => r.procedure_id) || [];
 
       if (procedureIds.length > 0) {
+        setIsReferent(true); // User controls at least one procedure
         const { data: procs } = await supabase
           .from('procedures')
           .select('*')
           .in('uuid', procedureIds)
-          .eq('status', 'draft') 
+          .eq('status', 'draft') // Only show draft ones that need review
           .order('created_at', { ascending: false });
         
         if (procs) {
@@ -356,10 +461,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+
+
+
   const openSuggestionById = async (id: string) => {
+    console.log("🔍 Dashboard: Opening suggestion detail for ID:", id);
     let sugg = pendingSuggestions.find(s => String(s.id) === String(id));
     
     if (!sugg) {
+      console.log("🔍 Dashboard: Suggestion not found in local state, fetching from DB...");
       try {
         const { data, error } = await supabase
           .from("procedure_suggestions")
@@ -371,7 +481,10 @@ const Dashboard: React.FC<DashboardProps> = ({
           .eq("id", id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Dashboard: Error fetching suggestion detail:", error);
+          throw error;
+        }
 
         if (data) {
           sugg = {
@@ -390,15 +503,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           };
         }
       } catch (err) {
-        console.error("Dashboard: Error fetching suggestion:", err);
+        console.error("❌ Dashboard: Catch error in openSuggestionById:", err);
       }
     }
 
     if (!sugg) {
-       // Fallback
+      console.warn("⚠️ Dashboard: Suggestion truly not found or fetch failed.");
       sugg = {
         id,
-        content: "Détail introuvable.",
+        content: "Impossible de charger le détail de la suggestion pour le moment. L'ID est peut-être invalide ou l'enregistrement a été supprimé.",
         status: "pending",
         createdAt: new Date().toISOString(),
         userName: "Inconnu",
@@ -429,7 +542,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select("*")
         .or("title.ilike.LOG_READ_%")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
       if (data) setActivities(data);
     } catch (err) {
       console.error(err);
@@ -439,18 +552,31 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const fetchSuggestions = async () => {
+
     setLoadingSuggestions(true);
     try {
       const { data, error } = await supabase
         .from("procedure_suggestions")
-        .select(`
-          id, suggestion, type, priority, created_at, status, user_id, procedure_id, manager_response, responded_at,
+        .select(
+          `
+          id,
+          suggestion,
+          type,
+          priority,
+          created_at,
+          status,
+          user_id,
+          procedure_id,
+          manager_response,
+          responded_at,
           user:user_profiles!user_id(first_name, last_name, avatar_url),
           procedure:procedures!procedure_id(title)
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
       if (data) {
         setPendingSuggestions(
           data.map((item: any) => ({
@@ -478,8 +604,12 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleUpdateStatus = async (status: "approved" | "rejected") => {
     if (!selectedSuggestion) return;
+
     if (!managerResponse.trim()) {
-      setToast({ message: "Veuillez fournir une réponse au technicien.", type: "error" });
+      setToast({
+        message: "Veuillez fournir une réponse au technicien.",
+        type: "error"
+      });
       return;
     }
 
@@ -487,6 +617,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const now = new Date().toISOString();
       const isReferentUser = user.role === UserRole.TECHNICIAN;
 
+      // 1. Update the suggestion record
       const updatePayload: any = { 
         status, 
         manager_response: managerResponse,
@@ -506,25 +637,52 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (updateError) throw updateError;
 
-      // XP Logic reused (simplified sync)
-       if (status === 'approved') {
-        const { data: profile } = await supabase.from('user_profiles').select('xp_points').eq('id', selectedSuggestion.user_id).single();
+      // 🎮 GAMIFICATION : Gain d'XP pour l'auteur (+50 XP) si approuvé
+      if (status === 'approved') {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('xp_points')
+          .eq('id', selectedSuggestion.user_id)
+          .single();
+        
         if (profile) {
-           const newXP = (profile.xp_points || 0) + 50;
-           await supabase.from('user_profiles').update({ xp_points: newXP, level: Math.floor(newXP / 100) + 1 }).eq('id', selectedSuggestion.user_id);
+          const newXP = (profile.xp_points || 0) + 50;
+          await supabase
+            .from('user_profiles')
+            .update({ 
+              xp_points: newXP, 
+              level: Math.floor(newXP / 100) + 1 
+            })
+            .eq('id', selectedSuggestion.user_id);
         }
+
+        // 🎮 GAMIFICATION : Gain d'XP pour le RÉFÉRENT (+20 XP) sil a fait la revue
         if (isReferentUser) {
-           const { data: refProfile } = await supabase.from('user_profiles').select('xp_points').eq('id', user.id).single();
-           if (refProfile) {
-             const newRefXP = (refProfile.xp_points || 0) + 20;
-             await supabase.from('user_profiles').update({ xp_points: newRefXP, level: Math.floor(newRefXP / 100) + 1 }).eq('id', user.id);
-             setToast({ message: "Revue validée ! +20 XP gagnés.", type: "success" });
-           }
+           const { data: refProfile } = await supabase
+            .from('user_profiles')
+            .select('xp_points')
+            .eq('id', user.id)
+            .single();
+          
+          if (refProfile) {
+            const newRefXP = (refProfile.xp_points || 0) + 20;
+            await supabase
+              .from('user_profiles')
+              .update({ 
+                xp_points: newRefXP, 
+                level: Math.floor(newRefXP / 100) + 1 
+              })
+              .eq('id', user.id);
+            
+            setToast({ message: "Revue validée ! +20 XP gagnés.", type: "success" });
+          }
         }
       }
 
-      // Notification Response
-      await supabase.from("suggestion_responses").insert({
+      // 2. Create a notification response for the technician (UI sync)
+      await supabase
+        .from("suggestion_responses")
+        .insert({
           suggestion_id: selectedSuggestion.id,
           user_id: selectedSuggestion.user_id,
           manager_id: !isReferentUser ? user.id : null,
@@ -533,26 +691,38 @@ const Dashboard: React.FC<DashboardProps> = ({
           procedure_title: selectedSuggestion.procedureTitle,
           suggestion_content: selectedSuggestion.content,
           read: false
+        });
+
+      // 3. Update local state
+      setPendingSuggestions((prev) => 
+        prev.map((s) => 
+          s.id === selectedSuggestion.id 
+            ? { ...s, status, managerResponse: managerResponse, respondedAt: now }
+            : s
+        )
+      );
+
+      setToast({
+        message: status === 'approved' ? "Suggestion validée avec succès !" : "Suggestion refusée.",
+        type: "info"
       });
 
-      // Update Local
-      setPendingSuggestions((prev) => prev.map((s) => s.id === selectedSuggestion.id ? { ...s, status, managerResponse: managerResponse, respondedAt: now } : s));
-      setToast({ message: status === 'approved' ? "Suggestion validée !" : "Suggestion refusée.", type: "info" });
       setShowSuggestionModal(false);
       setSelectedSuggestion(null);
       setManagerResponse("");
 
-      // Log
-       await supabase.from("notes").insert([{
+      // 4. Log the action (Activity Feed)
+      await supabase.from("notes").insert([
+        {
           title: `SUGGESTION_${status.toUpperCase()}`,
           content: `Suggestion sur "${selectedSuggestion.procedureTitle}" ${status === "approved" ? "validée" : "refusée"} par ${user.firstName}.`,
           is_protected: false,
           user_id: user.id,
           tags: ["SUGGESTION", status.toUpperCase()],
-       }]);
-
+        },
+      ]);
     } catch (err) {
-      console.error("Error updating suggestion:", err);
+      console.error("❌ Dashboard: Error updating suggestion status:", err);
       setToast({ message: "Erreur lors de la mise à jour.", type: "error" });
     }
   };
@@ -564,7 +734,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .from("procedures")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       if (error) throw error;
       if (data) {
@@ -589,12 +759,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+
+
+
   const [managerMessage, setManagerMessage] = useState<string | null>(null);
 
   const fetchLatestAnnouncement = async () => {
     setLoadingAnnouncement(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("team_announcements")
         .select("*")
         .order("created_at", { ascending: false })
@@ -604,23 +777,44 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (data) {
         setAnnouncement(data);
         setRequiresConfirmation(data.requires_confirmation || false);
-        const { data: readRecord } = await supabase.from("announcement_reads").select("message_manager, read_at").eq("user_id", user.id).eq("announcement_id", data.id).maybeSingle();
+        
+        // Vérifier si l'utilisateur a déjà lu cette annonce de manière persistante ET récupérer le message manager
+        const { data: readRecord } = await supabase
+          .from("announcement_reads")
+          .select("message_manager, read_at")
+          .eq("user_id", user.id)
+          .eq("announcement_id", data.id)
+          .maybeSingle();
+
         if (readRecord) {
           setManagerMessage(readRecord.message_manager);
+          // Si le message manager est défini, on le met dans l'éditeur par défaut, sinon le contenu global
           setEditContent(readRecord.message_manager || data.content);
-          setIsRead(!!readRecord.read_at);
+          
+          if (readRecord.read_at) {
+             setIsRead(true);
+          } else {
+             setIsRead(false);
+          }
         } else {
           setIsRead(false);
           setManagerMessage(null);
           setEditContent(data.content);
         }
       } else {
-         // Default
-         setAnnouncement({ id: "default", content: "Bienvenue sur Procedio.", author_name: "Système", author_initials: "SY", created_at: new Date().toISOString() });
-         setEditContent("Bienvenue sur Procedio.");
+        const defaultAnn = {
+          id: "default",
+          content: "Bienvenue sur Procedio. Aucune annonce d'équipe pour le moment.",
+          author_name: "Système",
+          author_initials: "SY",
+          created_at: new Date().toISOString(),
+        };
+        setAnnouncement(defaultAnn);
+        setManagerMessage(null);
+        setEditContent(defaultAnn.content);
       }
     } catch (err) {
-      // ignore
+      console.error("Erreur annonces:", err);
     } finally {
       setLoadingAnnouncement(false);
     }
@@ -630,6 +824,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!editContent.trim()) return;
     setSaving(true);
     try {
+      // 1. Sauvegarder en BDD (Priorité)
       const announcementData = {
         content: editContent,
         author_name: user.firstName,
@@ -637,12 +832,24 @@ const Dashboard: React.FC<DashboardProps> = ({
         author_id: user.id,
         requires_confirmation: requiresConfirmation,
       };
-      await supabase.from("team_announcements").insert([announcementData]);
-      setToast({ message: "Annonce publiée !", type: "success" });
+
+      const { data: savedData, error } = await supabase
+        .from("team_announcements")
+        .insert([announcementData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setToast({ message: "Annonce publiée avec succès !", type: "success" });
       setIsEditing(false);
+      // Recharger pour avoir les IDs corrects
       await fetchLatestAnnouncement();
+      // Reset le flag de lecture locale pour voir le changement "non lu" si applicable
+      // setIsRead(false); 
     } catch (err) {
-      setToast({ message: "Erreur publication.", type: "error" });
+      console.error("Erreur save announcement:", err);
+      setToast({ message: "Erreur lors de la publication.", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -651,378 +858,543 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleMarkAsRead = async () => {
     if (!announcement) return;
     setIsRead(true);
+
     try {
+      // 1. Sauvegarde persistante dans la table dédiée
       await supabase.from("announcement_reads").upsert({
         user_id: user.id,
         announcement_id: announcement.id,
         read_at: new Date().toISOString()
       }, { onConflict: 'user_id,announcement_id' });
+
+      // 2. Log pour le manager (legacy)
+      await supabase.from("notes").insert([
+        {
+          user_id: user.id,
+          title: `LOG_READ_${announcement?.id || "unknown"}`,
+          content: `✅ ${user.firstName} ${user.lastName || ""} a lu l'annonce le ${new Date().toLocaleString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`,
+          is_locked: false,
+        },
+      ]);
     } catch (err) {
-      console.error(err);
+      console.error("Erreur log lecture persistante:", err);
     }
   };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "En attente...";
-    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    
+    // Fallback if date is invalid, try to parse different formats if needed
+    if (isNaN(date.getTime())) {
+      const parts = dateStr.split(/[- :]/);
+      if (parts.length >= 3) {
+        const fallbackDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+        if (!isNaN(fallbackDate.getTime())) return fallbackDate.toLocaleDateString("fr-FR");
+      }
+      return "En attente..."; // More professional than "Format Invalide"
+    }
+
+    return date.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   const toggleTrend = async (e: React.MouseEvent, proc: Procedure) => {
     e.preventDefault();
     e.stopPropagation();
+    
     const newTrendStatus = !proc.is_trend;
+    
+    // Si on active un trend, on peut vouloir désactiver les autres (optionnel)
+    // Ici on fait simple: on change juste l'état du document
     try {
-      await supabase.from('procedures').update({ is_trend: newTrendStatus }).eq('uuid', proc.id);
-      setRecentProcedures(prev => prev.map(p => p.id === proc.id ? { ...p, is_trend: newTrendStatus } : p));
-      setToast({ message: "Trend mis à jour", type: "success" });
-    } catch (err) { console.error(err); }
+      const { error } = await supabase
+        .from('procedures')
+        .update({ is_trend: newTrendStatus })
+        .eq('uuid', proc.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setRecentProcedures(prev => 
+        prev.map(p => p.id === proc.id ? { ...p, is_trend: newTrendStatus } : p)
+      );
+      
+      setToast({ 
+        message: newTrendStatus ? "Procédure mise en Trend !" : "Trend retiré.", 
+        type: "success" 
+      });
+    } catch (err) {
+      console.error("Error toggling trend:", err);
+    }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden gap-4 pb-4 animate-fade-in relative">
-      {toast && <CustomToast message={toast.message} type={toast.type} onClose={() => setToast(null)} visible={!!toast} />}
-      
-      {/* HEADER & STATS (Fixed Height) */}
-      <div className="shrink-0 space-y-4 px-4 pt-2">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bonjour, {user.firstName}</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {user.role === UserRole.MANAGER ? 'Pilotage & Supervision' : 'Espace Opérationnel'}
+    <div className="space-y-6 animate-slide-up pb-12">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-end gap-6">
+        {/* Titre & Toggle de vue */}
+        <div className="flex-1">
+            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
+              {new Date()
+                .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
+                .toUpperCase()}
             </p>
-          </div>
-          <div className="flex gap-2">
-             <button onClick={onQuickNote} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center gap-2">
-                <i className="fa-solid fa-plus"></i>
-                <span className="hidden sm:inline">Note Rapide</span>
-             </button>
-             {user.role === UserRole.MANAGER && (
-               <button onClick={onUploadClick} className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 flex items-center gap-2">
-                  <i className="fa-solid fa-cloud-arrow-up"></i>
-                  <span className="hidden sm:inline">Importer</span>
-               </button>
-             )}
-          </div>
+            <div className="flex flex-col md:flex-row md:items-baseline gap-4 md:gap-8">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                Bonjour, <span className="text-indigo-600">{user.firstName}</span>
+              </h1>
+              <p className="text-slate-400 font-medium text-sm md:text-base border-l-2 border-slate-100 pl-4 hidden md:block">
+                {user.role === UserRole.MANAGER 
+                  ? "Voici l'état des troupes et du savoir collectif."
+                  : viewMode === "personal" 
+                    ? "Prêt à piloter tes propres missions aujourd'hui ?" 
+                    : "Voici l'état des troupes et du savoir collectif."}
+              </p>
+              {/* Mobile version of the text without border */}
+              <p className="text-slate-400 font-medium text-sm md:hidden">
+                {user.role === UserRole.MANAGER 
+                  ? "L'état des troupes."
+                  : "À toi de jouer !"}
+              </p>
+            </div>
         </div>
 
-        {/* COMPACT ANNOUNCEMENT */}
-        <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden shrink-0">
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-             <i className="fa-solid fa-bullhorn text-6xl -rotate-12"></i>
+
+        {/* L'éclair du Trend - Uniquement si activé */}
+        {trendProcedure && (
+          <div className="mt-8 bg-gradient-to-r from-amber-500/10 via-amber-200/5 to-transparent p-6 rounded-[2.5rem] border border-amber-200/50 flex items-center justify-between gap-6 group hover:border-amber-400 transition-all cursor-pointer shadow-sm shadow-amber-100/20"
+               onClick={() => onSelectProcedure(trendProcedure)}>
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-amber-200 animate-pulse">
+                <i className="fa-solid fa-bolt"></i>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 flex items-center gap-2 mb-2 w-fit">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                  Trend du moment
+                </span>
+                <h3 className="font-bold text-slate-900 text-xl tracking-tight leading-none">
+                  {trendProcedure.title}
+                </h3>
+                <p className="text-slate-400 text-sm mt-1 font-medium">
+                  Le manager a mis cette procédure en priorité. Consulte-la maintenant !
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="text-right hidden sm:block">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adoption</p>
+                 <p className="text-lg font-bold text-slate-700">{trendProcedure.views} lectures</p>
+               </div>
+               <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-300 group-hover:text-amber-500 group-hover:border-amber-300 transition-all">
+                 <i className="fa-solid fa-arrow-right"></i>
+               </div>
+            </div>
           </div>
-          
-          {loadingAnnouncement ? (
-             <div className="animate-pulse flex gap-4 items-center">
-                <div className="w-8 h-8 bg-white/10 rounded-lg"></div>
-                <div className="h-2 bg-white/10 rounded w-1/3"></div>
-             </div>
-          ) : isEditing ? (
-             <div className="relative z-10 flex gap-2">
-                <input 
-                  type="text" 
-                  value={editContent} 
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="flex-1 bg-white/10 border border-white/10 rounded-lg px-3 py-1 text-xs text-white placeholder-white/30 outline-none focus:bg-white/20 transition-all"
-                  placeholder="Votre annonce..."
-                  autoFocus
-                />
-                <button 
-                  onClick={handleSaveAnnouncement}
-                  disabled={saving}
-                  className="bg-white text-indigo-900 px-3 py-1 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors disabled:opacity-50"
-                >
-                  {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>}
-                </button>
-                 <button 
-                  onClick={() => setIsEditing(false)}
-                  className="bg-white/10 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-white/20 transition-colors"
-                >
+        )}
+      </section>
+
+      {/* Message du Manager */}
+      <section className={`bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col gap-4 animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100 shadow-indigo-50"}`}>
+        {loadingAnnouncement ? (
+          <div className="flex items-center justify-center gap-4 py-2">
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement de l'annonce...</span>
+          </div>
+        ) : isEditing ? (
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                  Édition du message manager
+                </h4>
+                <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-rose-500">
                   <i className="fa-solid fa-xmark"></i>
                 </button>
-             </div>
-          ) : (
-             <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-indigo-300 border border-white/5">
-                      <i className="fa-solid fa-rss text-xs"></i>
-                   </div>
-                   <div>
-                      <p className="text-xs font-medium text-indigo-100/80 uppercase tracking-widest text-[9px]">Flash Info • {announcement?.author_name}</p>
-                      <p className="text-sm font-bold text-white leading-none mt-0.5 line-clamp-1">{announcement?.content || "Aucune annonce pour le moment."}</p>
-                   </div>
+              </div>
+              <div className="flex gap-4">
+                <textarea
+                    className="flex-1 h-20 p-4 bg-slate-50 border border-indigo-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="Message..."
+                />
+                <div className="flex flex-col gap-2 justify-between">
+                     <button
+                        onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${requiresConfirmation ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-white border-slate-100 text-slate-300"}`}
+                        title="Demander confirmation de lecture"
+                     >
+                        <i className={`fa-solid ${requiresConfirmation ? "fa-bell" : "fa-bell-slash"}`}></i>
+                     </button>
+                     <button
+                        onClick={handleSaveAnnouncement}
+                        disabled={saving || !editContent.trim()}
+                        className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-slate-900 transition-all disabled:opacity-50"
+                     >
+                        <i className="fa-solid fa-paper-plane"></i>
+                     </button>
                 </div>
+              </div>
+            </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+             <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-sm border border-indigo-100">
+                  {announcement?.author_initials || "??"}
+                </div>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-0.5">
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Message • {announcement?.author_name}</span>
+                       <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                       <span className="text-[9px] font-bold text-slate-300 uppercase">
+                         {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
+                       </span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-700 leading-snug">"{announcement?.content}"</p>
+                </div>
+             </div>
+             
+             <div className="flex items-center justify-end gap-3">
                 {user.role === UserRole.MANAGER && (
-                    <button onClick={() => setIsEditing(true)} className="w-6 h-6 rounded-md bg-white/5 hover:bg-white/20 text-white/50 hover:text-white transition-all flex items-center justify-center">
-                        <i className="fa-solid fa-pen text-[10px]"></i>
+                    <button onClick={() => setIsEditing(true)} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center">
+                        <i className="fa-solid fa-pen text-xs"></i>
                     </button>
                 )}
+                
+                {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
+                    <button
+                      onClick={handleMarkAsRead}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-indigo-100 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="hidden sm:inline">Lu et compris</span>
+                      <i className="fa-solid fa-check"></i>
+                    </button>
+                )}
+                {isRead && (
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center" title={`Lu le ${formatDate(new Date().toISOString())}`}>
+                        <i className="fa-solid fa-check-double text-xs"></i>
+                    </div>
+                )}
              </div>
-          )}
-        </section>
+          </div>
+        )}
+      </section>
       </div>
 
-      {/* MANAGER TEAM VIEW (NO SCROLL INTERNALLY HANDLED) */}
-      {user.role === UserRole.MANAGER && viewMode === "team" && (
-        <div className="flex flex-col flex-1 min-h-0 gap-4 px-4 pb-2">
-            {/* ZONE 1: KPIs Flash (Compact) */}
-            <div className="grid grid-cols-3 gap-3 shrink-0">
-              {stats.map((stat, idx) => (
-                <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 group relative overflow-hidden">
-                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                     <InfoTooltip text={
-                        stat.label === "Procédures" ? "Total des documents actifs" : 
-                        stat.label === "Vues Hebdo" ? "Consultations sur 7 jours" : 
-                        "Moyenne des notes utilisateurs"
-                     } />
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
+        <div className="flex-1 space-y-8">
+          {viewMode === "personal" ? (
+            <div className="space-y-8">
+              {/* Expert Review Section (Referents only) */}
+              {isReferent && pendingReviews.length > 0 && (
+                <section className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group border border-indigo-500/20">
+                  <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i className="fa-solid fa-user-shield text-[12rem] rotate-12"></i>
                   </div>
-                  <div className={`w-8 h-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center text-sm shrink-0`}>
-                    <i className={`fa-solid ${stat.icon}`}></i>
-                  </div>
-                <div>
-                  <p className="text-lg font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">{stat.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* ZONE 2: Centre de Révision & Activité (FILL HEIGHT) */}
-          <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-             
-             {/* COL 1: Centre de Révision */}
-             <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden">
-            {/* TABS / HEADER */}
-            <div className="flex items-center gap-2 mb-4">
-               <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                  <i className="fa-solid fa-list-check"></i>
-               </div>
-               <h3 className="font-bold text-slate-900">Centre de Révision</h3>
-               {(pendingSuggestions.length > 0 || pendingReviews.length > 0 || masteryClaims.length > 0) && (
-                  <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
-                    {pendingSuggestions.length + pendingReviews.length + masteryClaims.length}
-                  </span>
-               )}
-            </div>
-
-            <div className="space-y-2 flex-1 overflow-y-auto pr-1">
-               {/* 1. MASTERY CLAIMS */}
-               {masteryClaims.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Requêtes d'Expertise</h4>
-                    {masteryClaims.map((claim) => (
-                      <div key={claim.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group" onClick={() => {
-                        // Handle Claim
-                      }}>
-                         <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2">
-                               <img src={claim.user_profiles?.avatar_url || `https://ui-avatars.com/api/?name=${claim.user_profiles?.first_name}+${claim.user_profiles?.last_name}&background=random`} className="w-6 h-6 rounded-full" />
-                               <div>
-                                  <p className="text-xs font-bold text-slate-900">{claim.user_profiles?.first_name} {claim.user_profiles?.last_name}</p>
-                                  <p className="text-[10px] text-slate-500">Prétend à l'expertise sur <span className="text-indigo-600 font-bold">{claim.procedures?.title}</span></p>
-                               </div>
-                            </div>
-                            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-               )}
-
-               {/* 2. PROCEDURE REVIEWS (VALIDATIONS) - NOW VISIBLE FOR MANAGERS */}
-               {pendingReviews.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Validations en Attente</h4>
-                    {pendingReviews.map((proc) => (
-                      <div key={proc.id} onClick={() => onViewComplianceHistory && onViewComplianceHistory()} className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
-                         <div className="flex justify-between items-start mb-1">
-                            <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded">À Valider</span>
-                            <span className="text-[10px] text-slate-400">{formatDate(proc.createdAt)}</span>
-                         </div>
-                         <h4 className="font-bold text-sm text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors mb-1">
-                            {proc.title}
-                         </h4>
-                         <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                            <i className="fa-solid fa-folder-open"></i>
-                            {proc.category}
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-               )}
-
-               {/* 3. SUGGESTIONS */}
-               {pendingSuggestions.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Suggestions Terrain</h4>
-                    {pendingSuggestions.map((sugg) => (
-                      <div key={sugg.id} onClick={() => openSuggestionById(sugg.id)} className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
-                        <div className="flex justify-between items-start mb-1">
-                           <div className="flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-amber-400'}`}></span>
-                              <span className="text-[10px] font-bold text-slate-600 uppercase">{sugg.type}</span>
-                           </div>
-                           <span className="text-[10px] text-slate-400">{formatDate(sugg.createdAt)}</span>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 backdrop-blur-md flex items-center justify-center text-2xl border border-indigo-400/30 text-indigo-400">
+                          <i className="fa-solid fa-microscope"></i>
                         </div>
-                        <p className="text-xs text-slate-600 line-clamp-2 mb-2 group-hover:text-slate-900 transition-colors">
-                           {sugg.content}
-                        </p>
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-                           <div className="flex items-center gap-1">
-                              <i className="fa-solid fa-file-lines text-[10px] text-slate-300"></i>
-                              <span className="text-[10px] font-bold text-slate-500 truncate max-w-[120px]">{sugg.procedureTitle}</span>
-                           </div>
-                           <div className="flex items-center gap-1">
-                              <div className="w-4 h-4 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-700">
-                                 {sugg.userName.charAt(0)}
-                              </div>
-                           </div>
+                        <div>
+                          <h2 className="text-2xl font-black tracking-tight uppercase">Revues d'Expert</h2>
+                          <p className="text-indigo-400/80 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">
+                             {pendingReviews.length} procédure{pendingReviews.length > 1 ? 's' : ''} à valider
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-               )}
+                      <span className="px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/30 animate-pulse">
+                        Savoir Délégué
+                      </span>
+                    </div>
 
-               {pendingSuggestions.length === 0 && pendingReviews.length === 0 && masteryClaims.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-40 text-slate-300">
-                     <i className="fa-solid fa-check-circle text-4xl mb-2 opacity-20"></i>
-                     <p className="text-xs font-bold uppercase tracking-widest">Tout est à jour</p>
-                  </div>
-               )}
-            </div>
-             </div>
-
-             {/* COL 2: Activité Récente */}
-             <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden">
-            {/* TABS / HEADER */}
-            <div className="flex items-center gap-2 mb-4">
-               <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                  <i className="fa-solid fa-bolt"></i>
-               </div>
-               <h3 className="font-bold text-slate-900">Activité Récente</h3>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto pr-1 space-y-4">
-               {/* 1. FLUX D'ACTIVITÉ */}
-               {activities.length > 0 ? activities.map((act) => (
-                  <div key={act.id} className="flex gap-3 items-start group">
-                     <div className="mt-1 w-2 h-2 rounded-full bg-slate-200 group-hover:bg-indigo-500 transition-colors shrink-0"></div>
-                     <div>
-                        <p className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors">
-                           <span className="font-bold text-slate-900">Système</span> : {act.title.replace('LOG_', '')}
-                        </p>
-                        <p className="text-[10px] text-slate-400">{formatDate(act.created_at)}</p>
-                     </div>
-                  </div>
-               )) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-slate-300 border-b border-slate-50 mb-4">
-                     <i className="fa-solid fa-ghost text-2xl mb-2 opacity-20"></i>
-                     <p className="text-[10px] font-bold uppercase tracking-widest">Calme plat...</p>
-                  </div>
-               )}
-
-               {/* 2. PROCEDURES RÉCENTES (Pour combler le vide manager) */}
-               {recentProcedures.length > 0 && (
-                  <div className="pt-4 mt-4 border-t border-dashed border-slate-100">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                         <i className="fa-solid fa-clock-rotate-left"></i> Derniers ajouts
-                      </h4>
-                      <div className="space-y-2">
-                         {recentProcedures.slice(0, 5).map(proc => (
-                            <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group">
-                               <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:shadow-sm group-hover:text-indigo-600 transition-all">
-                                  <i className={`fa-solid ${proc.category === 'RH' ? 'fa-users' : proc.category === 'TECH' ? 'fa-microchip' : 'fa-file-lines'}`}></i>
-                               </div>
-                               <div className="flex-1 min-w-0">
-                                  <h5 className="text-xs font-bold text-slate-700 truncate group-hover:text-indigo-700 transition-colors">{proc.title}</h5>
-                                  <p className="text-[10px] text-slate-400">{formatDate(proc.createdAt)}</p>
-                               </div>
-                            </div>
-                         ))}
-                      </div>
-                  </div>
-               )}
-            </div>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* PERSONAL VIEW (Container Scroll) */}
-      {(viewMode === "personal" || user.role !== UserRole.MANAGER) && (
-         <div className="flex-1 overflow-y-auto px-4 pb-10 space-y-6 scrollbar-hide">
-            
-            {/* L'éclair du Trend */}
-            {trendProcedure && (
-              <div className="bg-gradient-to-r from-amber-500/10 via-amber-200/5 to-transparent p-6 rounded-[2.5rem] border border-amber-200/50 flex items-center justify-between gap-6 group hover:border-amber-400 transition-all cursor-pointer shadow-sm shadow-amber-100/20"
-                   onClick={() => onSelectProcedure(trendProcedure)}>
-                <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-amber-200 animate-pulse">
-                    <i className="fa-solid fa-bolt"></i>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 flex items-center gap-2 mb-2 w-fit">
-                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                      Trend du moment
-                    </span>
-                    <h3 className="font-bold text-slate-900 text-xl tracking-tight leading-none">
-                      {trendProcedure.title}
-                    </h3>
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-300 group-hover:text-amber-500 group-hover:border-amber-300 transition-all">
-                   <i className="fa-solid fa-arrow-right"></i>
-                </div>
-              </div>
-            )}
-
-            {/* Expert Review Section (Referents only) */}
-            {isReferent && pendingReviews.length > 0 && (
-                <section className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden group border border-indigo-500/20">
-                   <div className="flex items-center justify-between mb-8 relative z-10">
-                      <h2 className="text-xl font-black tracking-tight uppercase">Revues d'Expert ({pendingReviews.length})</h2>
-                      <span className="px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/30 animate-pulse">Action Requise</span>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                      {pendingReviews.slice(0, 4).map((proc) => (
-                        <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl cursor-pointer">
-                           <h4 className="font-bold text-white text-sm mb-1">{proc.title}</h4>
-                           <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{proc.category}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {pendingReviews.slice(0, 2).map((proc) => (
+                        <div 
+                          key={proc.id}
+                          onClick={() => onSelectProcedure(proc)}
+                          className="bg-white/5 hover:bg-white/10 backdrop-blur-sm p-6 rounded-[2rem] border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer group/item"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-black text-xs">
+                                {proc.title.substring(0, 2).toUpperCase()}
+                             </div>
+                             <i className="fa-solid fa-chevron-right text-white/20 group-hover/item:text-indigo-400 group-hover/item:translate-x-1 transition-all"></i>
+                          </div>
+                          <h4 className="font-bold text-white text-sm mb-1 group-hover/item:text-indigo-300 transition-colors truncate">{proc.title}</h4>
+                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{proc.category}</p>
                         </div>
                       ))}
-                   </div>
-                </section>
-            )}
+                    </div>
 
-            {/* Recent Procedures List */}
-            <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-             <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-               <h3 className="font-black text-slate-900 text-xl tracking-tight">Procédure mise en ligne</h3>
-             </div>
-             <div className="divide-y divide-slate-50">
-               {loadingProcedures ? (
-                 <div className="p-10 text-center"><i className="fa-solid fa-spinner animate-spin"></i></div>
-               ) : recentProcedures.length > 0 ? (
-                 recentProcedures.map((proc) => (
-                   <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="p-6 flex items-center justify-between hover:bg-slate-50 cursor-pointer group">
-                      <div className="flex items-center gap-6">
-                         <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-indigo-600 transition-colors"><i className="fa-solid fa-file-pdf"></i></div>
-                         <div>
-                            <h4 className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{proc.title}</h4>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{proc.category} • {formatDate(proc.createdAt)}</span>
-                         </div>
-                      </div>
-                      <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 transition-colors"></i>
-                   </div>
-                 ))
-               ) : (
-                 <div className="p-10 text-center text-slate-300">Aucune procédure récente</div>
-               )}
-             </div>
+                    {pendingReviews.length > 2 && (
+                      <button className="mt-6 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors flex items-center gap-2">
+                         Voir toutes les revues
+                         <i className="fa-solid fa-arrow-right"></i>
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+
+
+              {/* Cercle de Maîtrise - Reservé aux techniciens */}
+              {user.role === UserRole.TECHNICIAN && (
+                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
+
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                    <i className="fa-solid fa-circle-nodes"></i>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-xl tracking-tight">Cercle de Maîtrise</h3>
+                </div>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  Visualise l'évolution de ton expertise. Plus tu consultes de procédures dans une catégorie, plus ta zone de maîtrise s'étend.
+                </p>
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
+                    <span className="text-lg font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Niveau Suivant</span>
+                    <span className="text-lg font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setToast({ message: "Fonctionnalité de réclamation à venir : Contactez votre manager pour valider une maîtrise !", type: "info" })}
+                  className="w-full mt-6 py-4 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-3 group"
+                >
+                  <i className="fa-solid fa-medal group-hover:rotate-12 transition-transform"></i>
+                  Réclamer une Maîtrise
+                </button>
+              </div>
+
+              <div className="w-full md:w-[300px] h-[300px] flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-4">
+                {personalStats.mastery.length > 2 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
+                      <Radar
+                        name="Maîtrise"
+                        dataKey="A"
+                        stroke="#4f46e5"
+                        fill="#4f46e5"
+                        fillOpacity={0.6}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center p-8 space-y-3">
+                    <i className="fa-solid fa-chart-pie text-3xl text-slate-200"></i>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Continue tes consultations pour générer ton radar de compétences !</p>
+                  </div>
+                )}
+              </div>
             </section>
-         </div>
-      )}
+              )}
+              </div>
+            ) : null }
+      </div>
+      </div>
+
+          {/* Manager Team View */}
+          {user.role === UserRole.MANAGER && viewMode === "team" && (
+            <div className="space-y-6 animate-fade-in">
+              
+                {/* ZONE 1: KPIs Flash */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {stats.map((stat, idx) => (
+                    <div key={idx} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all group relative overflow-hidden">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                         <InfoTooltip text={
+                            stat.label === "Procédures" ? "Total des documents actifs" : 
+                            stat.label === "Vues Hebdo" ? "Consultations sur 7 jours" : 
+                            "Moyenne des notes utilisateurs"
+                         } />
+                      </div>
+                      <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-xl`}>
+                        <i className={`fa-solid ${stat.icon}`}></i>
+                      </div>
+                    <div>
+                      <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ZONE 2: Centre de Révision & Activité */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 
+                 {/* COL 1: Centre de Révision */}
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden h-full min-h-[400px]">
+                     <div className="flex items-center justify-between mb-6">
+                       <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
+                           <i className="fa-solid fa-list-check"></i>
+                          </div>
+                          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                             Centre de Révision
+                             <InfoTooltip text="Validez les suggestions et revendications de votre équipe." />
+                          </h3>
+                       </div>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                         {pendingSuggestions.length} en attente
+                       </span>
+                     </div>
+ 
+                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+                        {/* Mastery Claims Prompt */}
+                        {masteryClaims.length > 0 && (
+                           <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center justify-between animate-pulse cursor-pointer hover:bg-amber-100 transition-colors"
+                                onClick={() => {
+                                  // Navigate to Statistics or handle claim
+                                  onViewHistory(); // Temporary link or handle
+                                }}
+                           >
+                              <div className="flex items-center gap-2">
+                                 <i className="fa-solid fa-medal text-amber-500"></i>
+                                 <span className="text-xs font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
+                              </div>
+                              <i className="fa-solid fa-arrow-right text-amber-500 text-xs"></i>
+                           </div>
+                        )}
+ 
+                        {pendingSuggestions.slice(0, 10).map((sugg) => (
+                           <div key={sugg.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedSuggestion(sugg); setShowSuggestionModal(true); }}>
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                 <div className={`w-2 h-2 rounded-full shrink-0 ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
+                                 <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 truncate">{sugg.procedureTitle}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 truncate">{sugg.userName} • {sugg.type}</p>
+                                 </div>
+                              </div>
+                              <i className="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+                           </div>
+                        ))}
+                        {pendingSuggestions.length === 0 && (
+                           <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-400 opacity-50">
+                               <i className="fa-solid fa-clipboard-check text-4xl mb-3"></i>
+                               <p className="text-xs font-bold uppercase tracking-widest">Tout est à jour</p>
+                           </div>
+                        )}
+                     </div>
+                 </div>
+ 
+                 {/* COL 2: Activité Récente */}
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden h-full min-h-[400px]">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                           Activité Récente
+                           <InfoTooltip text="Surveillez les dernières actions de l'équipe en temps réel." />
+                        </h3>
+                        <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none"><i className="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                    <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
+                       {activities.slice(0, 10).map((act) => (
+                          <div key={act.id} className="flex gap-3 items-start p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+                             <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform"></div>
+                             <div>
+                                 <p className="text-xs font-bold text-slate-700 leading-tight">{act.content}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 mt-1 group-hover:text-indigo-400 transition-colors">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              </div>
+                          </div>
+                       ))}
+                       {activities.length === 0 && (
+                          <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-400 opacity-50">
+                             <i className="fa-solid fa-ghost text-4xl mb-3"></i>
+                             <p className="text-xs font-bold uppercase tracking-widest">Le calme plat...</p>
+                          </div>
+                       )}
+                    </div>
+                 </div>
+              </div>
+
+            </div>
+          )}
+          
+
+
+
+
+
+
+
+      <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+          <h3 className="font-black text-slate-900 text-xl tracking-tight">Procédure mise en ligne</h3>
+          <button
+            onClick={onViewHistory}
+            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
+            Tout voir
+          </button>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {loadingProcedures ? (
+            <div className="p-20 flex flex-col items-center justify-center gap-4">
+              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Chargement des fichiers...
+              </p>
+            </div>
+          ) : recentProcedures.length > 0 ? (
+            recentProcedures.map((proc) => (
+              <a
+                key={proc.id}
+                href={`/procedure/${proc.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectProcedure(proc);
+                }}
+                className="p-10 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
+                <div className="flex items-center gap-8">
+                  <div className="w-16 h-16 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
+                    <i className="fa-solid fa-file-pdf text-2xl"></i>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors leading-tight">
+                      {proc.title}
+                    </h4>
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-3 py-1 rounded-lg">
+                        {proc.category}
+                      </span>
+                      <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase bg-indigo-50 px-3 py-1 rounded-lg flex items-center gap-2">
+                        <i className="fa-solid fa-calendar-check"></i>
+                        {formatDate(proc.createdAt)}
+                      </span>
+                      <span className="text-[10px] text-emerald-500 font-black tracking-widest uppercase bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-2">
+                        <i className="fa-solid fa-eye"></i>
+                        {proc.views} vues
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-2 transition-all"></i>
+              </a>
+            ))
+          ) : (
+            <div className="p-20 text-center text-slate-300 flex flex-col items-center gap-4">
+              <i className="fa-solid fa-folder-open text-4xl opacity-20"></i>
+              <p className="text-[10px] font-black uppercase tracking-widest">
+                Aucune activité récente détectée
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
 
       {/* MODAL REVIEW SUGGESTION */}
       {showSuggestionModal && selectedSuggestion && createPortal(
@@ -1041,6 +1413,35 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                   {selectedSuggestion.procedureTitle}
                 </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mb-4">
+              <div className="flex-1 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Type
+                </span>
+                <span className={`text-xs font-black uppercase tracking-widest ${
+                  selectedSuggestion.type === 'correction' ? 'text-rose-500' :
+                  selectedSuggestion.type === 'update' ? 'text-amber-500' :
+                  'text-emerald-500'
+                }`}>
+                  {selectedSuggestion.type === 'correction' ? 'Correction' :
+                   selectedSuggestion.type === 'update' ? 'Mise à jour' : 'Ajout'}
+                </span>
+              </div>
+              <div className="flex-1 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Priorité
+                </span>
+                <span className={`text-xs font-black uppercase tracking-widest ${
+                  selectedSuggestion.priority === 'high' ? 'text-rose-500' :
+                  selectedSuggestion.priority === 'medium' ? 'text-amber-500' :
+                  'text-slate-500'
+                }`}>
+                  {selectedSuggestion.priority === 'high' ? 'Haute' :
+                   selectedSuggestion.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                </span>
               </div>
             </div>
 
@@ -1076,8 +1477,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center gap-3 justify-end pt-4 border-t border-slate-50">
               <button
                 onClick={() => setShowSuggestionModal(false)}
-                className="px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">
-                Fermer
+                className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center gap-2 ${
+                  selectedSuggestion.status === 'pending' 
+                    ? 'text-slate-400 hover:bg-slate-50 shadow-none' 
+                    : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-indigo-500/10'
+                }`}>
+                {selectedSuggestion.status === 'pending' ? 'Fermer' : 'Compris, Fermer'}
               </button>
               {selectedSuggestion.status === 'pending' && (
                 <>
@@ -1099,6 +1504,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>,
         document.body
       )}
+
 
     </div>
   );
