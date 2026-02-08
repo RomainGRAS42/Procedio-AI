@@ -14,6 +14,7 @@ interface DashboardProps {
   onUploadClick: () => void;
   targetAction?: { type: string; id: string };
   onActionHandled?: () => void;
+  onViewComplianceHistory?: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -23,7 +24,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onSelectProcedure, 
   onUploadClick,
   targetAction,
-  onActionHandled
+  onActionHandled,
+  onViewComplianceHistory
 }) => {
   const [viewMode, setViewMode] = useState<"personal" | "team">("personal");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -679,7 +681,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden gap-4 pb-4 animate-fade-in relative">
-      {toast && <CustomToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && <CustomToast message={toast.message} type={toast.type} onClose={() => setToast(null)} visible={!!toast} />}
       
       {/* HEADER & STATS (Fixed Height) */}
       <div className="shrink-0 space-y-4 px-4 pt-2">
