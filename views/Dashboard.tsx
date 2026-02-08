@@ -1273,7 +1273,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2 mb-0.5">
-                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Annonce • {announcement?.author_name}</span>
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Message • {announcement?.author_name}</span>
                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                        <span className="text-[9px] font-bold text-slate-300 uppercase">
                          {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
