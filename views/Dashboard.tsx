@@ -1049,7 +1049,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2 mb-1">
-                       <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Message • {announcement?.author_name}</span>
+                       <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                         {user.role === UserRole.MANAGER ? "Message à l'équipe" : "Message du manager"}
+                       </span>
                        <span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
                        <span className="text-xs font-bold text-slate-400 uppercase">
                          {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
