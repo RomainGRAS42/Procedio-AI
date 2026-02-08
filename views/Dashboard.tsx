@@ -1449,7 +1449,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                     <div>
                       <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{stat.label}</p>
                     </div>
                   </div>
                 ))}
@@ -1467,7 +1467,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                          </div>
                          <h3 className="font-black text-slate-900 text-lg tracking-tight">Opportunités</h3>
                       </div>
-                      <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                       <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                         {missedOpportunities.length} Manques
                       </span>
                    </div>
@@ -1476,15 +1476,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                       {missedOpportunities.slice(0, 4).map((item, idx) => (
                          <div key={idx} className="bg-slate-50 rounded-xl p-3 flex items-center justify-between group/item hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
                             <div className="flex items-center gap-3 overflow-hidden min-w-0">
-                                <i className="fa-solid fa-triangle-exclamation text-rose-400 text-[10px]"></i>
-                                <span className="font-bold text-slate-700 text-xs truncate">"{item.term}"</span>
+                                <i className="fa-solid fa-triangle-exclamation text-rose-400 text-xs"></i>
+                                <span className="font-bold text-slate-700 text-sm truncate">"{item.term}"</span>
                             </div>
                             <button
                                onClick={(e) => {
                                  e.stopPropagation();
                                  onUploadClick();
                                }}
-                               className="shrink-0 px-3 py-1.5 bg-white border border-slate-200 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-colors"
+                               className="shrink-0 px-3 py-1.5 bg-white border border-slate-200 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white active:scale-95 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 outline-none"
                             >
                                Créer
                             </button>
@@ -1493,7 +1493,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       {missedOpportunities.length === 0 && (
                         <div className="h-full flex flex-col items-center justify-center text-center p-4">
                            <i className="fa-solid fa-check-circle text-emerald-400 text-2xl mb-2"></i>
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tout est couvert</p>
+                           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Tout est couvert</p>
                         </div>
                       )}
                    </div>
@@ -1508,7 +1508,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                          </div>
                          <h3 className="font-black text-slate-900 text-lg tracking-tight">Centre de Révision</h3>
                       </div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                         {pendingSuggestions.length} en attente
                       </span>
                     </div>
@@ -1519,7 +1519,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center justify-between animate-pulse">
                              <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-medal text-amber-500"></i>
-                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
+                                <span className="text-xs font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
                              </div>
                              <i className="fa-solid fa-arrow-right text-amber-500 text-xs"></i>
                           </div>
@@ -1530,8 +1530,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                              <div className="flex items-center gap-3 overflow-hidden">
                                 <div className={`w-2 h-2 rounded-full shrink-0 ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
                                 <div className="min-w-0">
-                                   <p className="text-[11px] font-bold text-slate-800 truncate">{sugg.procedureTitle}</p>
-                                   <p className="text-[9px] font-medium text-slate-400 truncate">{sugg.userName} • {sugg.type}</p>
+                                   <p className="text-xs font-bold text-slate-800 truncate">{sugg.procedureTitle}</p>
+                                   <p className="text-[10px] font-bold text-slate-500 truncate">{sugg.userName} • {sugg.type}</p>
                                 </div>
                              </div>
                              <i className="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
@@ -1539,7 +1539,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                        ))}
                        {pendingSuggestions.length === 0 && (
                           <div className="py-10 text-center">
-                             <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Aucune révision en attente</p>
+                              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Aucune révision en attente</p>
                           </div>
                        )}
                     </div>
@@ -1564,7 +1564,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
                             <span className="text-2xl font-black text-slate-800">{healthData.find(d => d.id === 'fresh')?.value || 0}%</span>
-                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Sains</span>
+                             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Sains</span>
                         </div>
                      </div>
                      <div className="flex-1 space-y-3 w-full">
@@ -1587,16 +1587,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative overflow-hidden">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-black text-slate-900 text-lg tracking-tight">Activité</h3>
-                        <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors"><i className="fa-solid fa-rotate-right"></i></button>
+                        <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none"><i className="fa-solid fa-rotate-right"></i></button>
                     </div>
                     <div className="space-y-4 overflow-y-auto max-h-[180px] scrollbar-hide">
                        {activities.map((act) => (
                           <div key={act.id} className="flex gap-3 items-start">
                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                              <div>
-                                <p className="text-[11px] font-bold text-slate-700 leading-tight">{act.content}</p>
-                                <p className="text-[9px] font-medium text-slate-400 mt-0.5">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                             </div>
+                                 <p className="text-xs font-bold text-slate-700 leading-tight">{act.content}</p>
+                                 <p className="text-[10px] font-bold text-slate-500 mt-0.5">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              </div>
                           </div>
                        ))}
                     </div>
@@ -1614,10 +1614,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                            </div>
                            <div>
                               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Skill Map</h3>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Maîtrise & Expertise Équipe</p>
+                               <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Maîtrise & Expertise Équipe</p>
                            </div>
                         </div>
-                        <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">
+                        <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 outline-none">
                            Voir tout
                         </button>
                     </div>
@@ -1646,8 +1646,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                                       <i className="fa-solid fa-crown"></i>
                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                   <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">{champ.category}</p>
+                                 <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-0.5">{champ.category}</p>
                                    <p className="font-bold text-slate-900 text-sm truncate">{champ.user?.first_name} {champ.user?.last_name}</p>
                                    <div className="flex items-center gap-2 mt-1">
                                       <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
