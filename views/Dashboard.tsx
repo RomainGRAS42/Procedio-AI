@@ -65,6 +65,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  // History Modal State
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
 
   
   // Referent System
@@ -1047,14 +1050,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                   {announcement?.author_initials || "??"}
                 </div>
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 mb-1">
                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Message • {announcement?.author_name}</span>
                        <span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
                        <span className="text-xs font-bold text-slate-400 uppercase">
                          {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
                        </span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 leading-tight tracking-tight">"{announcement?.content}"</p>
+                    <p className="text-xl font-black text-slate-900 leading-tight tracking-tight">"{announcement?.content}"</p>
                 </div>
              </div>
              
@@ -1332,12 +1335,12 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
       <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-          <h3 className="font-black text-slate-900 text-xl tracking-tight">Procédure mise en ligne</h3>
+        <div className="px-10 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+          <h3 className="font-black text-slate-900 text-lg tracking-tight">DERNIÈRE PROCÉDURE EN LIGNE</h3>
           <button
-            onClick={onViewHistory}
+            onClick={() => setShowHistoryModal(true)}
             className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
-            Tout voir
+            Historique
           </button>
         </div>
         <div className="divide-y divide-slate-50">
@@ -1349,7 +1352,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
           ) : recentProcedures.length > 0 ? (
-            recentProcedures.map((proc) => (
+            recentProcedures.slice(0, 1).map((proc) => (
               <a
                 key={proc.id}
                 href={`/procedure/${proc.id}`}
@@ -1357,26 +1360,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                   e.preventDefault();
                   onSelectProcedure(proc);
                 }}
-                className="p-10 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
-                <div className="flex items-center gap-8">
-                  <div className="w-16 h-16 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
-                    <i className="fa-solid fa-file-pdf text-2xl"></i>
+                className="p-8 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
+                <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
+                    <i className="fa-solid fa-file-pdf text-xl"></i>
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors leading-tight">
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors leading-tight">
                       {proc.title}
                     </h4>
-                    <div className="flex flex-wrap items-center gap-3 mt-1">
-                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-3 py-1 rounded-lg">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-2 py-0.5 rounded-lg">
                         {proc.category}
                       </span>
-                      <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase bg-indigo-50 px-3 py-1 rounded-lg flex items-center gap-2">
-                        <i className="fa-solid fa-calendar-check"></i>
+                      <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase bg-indigo-50 px-2 py-0.5 rounded-lg flex items-center gap-2">
+                        <i className="fa-solid fa-calendar-check text-[8px]"></i>
                         {formatDate(proc.createdAt)}
-                      </span>
-                      <span className="text-[10px] text-emerald-500 font-black tracking-widest uppercase bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-2">
-                        <i className="fa-solid fa-eye"></i>
-                        {proc.views} vues
                       </span>
                     </div>
                   </div>
@@ -1385,8 +1384,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               </a>
             ))
           ) : (
-            <div className="p-20 text-center text-slate-300 flex flex-col items-center gap-4">
-              <i className="fa-solid fa-folder-open text-4xl opacity-20"></i>
+            <div className="p-10 text-center text-slate-300 flex flex-col items-center gap-2">
+              <i className="fa-solid fa-folder-open text-2xl opacity-20"></i>
               <p className="text-[10px] font-black uppercase tracking-widest">
                 Aucune activité récente détectée
               </p>
@@ -1505,6 +1504,75 @@ const Dashboard: React.FC<DashboardProps> = ({
         document.body
       )}
 
+
+      {/* MODAL HISTORY RECENT PROCEDURES */}
+      {showHistoryModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setShowHistoryModal(false)}>
+          <div
+            className="bg-white rounded-[3rem] p-10 w-full max-w-2xl shadow-2xl animate-scale-up border border-slate-100"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                  <i className="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-xl tracking-tight">Dernières Activités</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Historique des 5 publications récentes</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowHistoryModal(false)}
+                className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {recentProcedures.map((proc) => (
+                <div 
+                  key={proc.id}
+                  onClick={() => {
+                    onSelectProcedure(proc);
+                    setShowHistoryModal(false);
+                  }}
+                  className="flex items-center justify-between p-5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:border-indigo-100 hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 cursor-pointer transition-all group"
+                >
+                  <div className="flex items-center gap-5">
+                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-slate-300 group-hover:text-indigo-600 border border-slate-100 transition-colors">
+                      <i className="fa-solid fa-file-pdf text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proc.title}</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{proc.category} • {formatDate(proc.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                       <p className="text-xs font-black text-slate-800">{proc.views}</p>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase">Vues</p>
+                    </div>
+                    <i className="fa-solid fa-chevron-right text-slate-200 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-slate-50 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  onViewHistory();
+                }}
+                className="px-8 py-3 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-600 shadow-xl shadow-slate-900/10 transition-all active:scale-95"
+              >
+                Tout voir dans l'explorateur
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
