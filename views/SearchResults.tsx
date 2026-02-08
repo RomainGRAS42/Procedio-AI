@@ -137,7 +137,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-slide-up pb-12">
+    <div className="space-y-8 animate-slide-up pb-12 px-4 md:px-10 py-8 h-full">
       {/* Header Resultats */}
       {/* Header Resultats */}
       <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center gap-6">

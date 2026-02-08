@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { User, ViewType, UserRole, Suggestion, Procedure } from "../types";
 import { supabase } from "../lib/supabase";
@@ -53,6 +53,18 @@ const Header: React.FC<HeaderProps> = ({
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]); 
   const [selectedIndex, setSelectedIndex] = useState(-1); // Keyboard navigation state
   const [flashNoteNotifications, setFlashNoteNotifications] = useState<any[]>([]);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close search suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setAutocompleteSuggestions([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
 
   // Autocomplete Logic
@@ -360,6 +372,7 @@ const Header: React.FC<HeaderProps> = ({
     e.preventDefault();
     console.log("🔍 Header: Recherche soumise avec:", localSearch);
     if (localSearch.trim()) {
+      setAutocompleteSuggestions([]); // Close suggestions on submit
       onSearch(localSearch);
     }
   };
@@ -380,7 +393,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex-1 max-w-3xl px-4 flex items-center gap-3">
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" ref={searchContainerRef}>
           <form onSubmit={handleSearchSubmit} className="relative group">
             <input
               type="text"
