@@ -1161,7 +1161,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="space-y-10 animate-slide-up pb-12">
+    <div className="space-y-6 animate-slide-up pb-12">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-end gap-6">
         {/* Titre & Toggle de vue */}
         <div className="flex-1">
@@ -1310,6 +1311,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
       </section>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
@@ -1429,8 +1431,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </section>
               )}
-          </div>
-        ) : null}
+              </div>
+            ) : null }
+      </div>
+      </div>
 
           {/* Manager Team View */}
           {user.role === UserRole.MANAGER && viewMode === "team" && (
@@ -1744,9 +1748,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
             </section>
+
           )}
-        </div>
-      </div>
+
 
 
 
