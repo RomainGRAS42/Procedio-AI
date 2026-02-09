@@ -708,36 +708,36 @@ const Dashboard: React.FC<DashboardProps> = ({
     const isInProgress = assignedMission.status === 'in_progress';
 
     return (
-      <div className="bg-slate-900 rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[320px]">
-        {/* Background decoration */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[320px]">
+        {/* Background decoration - Lighter */}
         <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
-          isInProgress ? 'bg-indigo-400/30' : 'bg-indigo-600/20 group-hover:bg-indigo-600/30'
+          isInProgress ? 'bg-indigo-100/50' : 'bg-indigo-50/50 group-hover:bg-indigo-100/50'
         }`}></div>
         
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-xl transition-all duration-500 ${
-              isInProgress ? 'bg-indigo-500 shadow-indigo-500/40' : 'bg-indigo-600 shadow-indigo-500/20'
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 ${
+              isInProgress ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
             }`}>
-              <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning animate-pulse'}`}></i>
+              <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning'}`}></i>
             </div>
             <div className="flex flex-col items-end">
               <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg mb-1 ${
-                isInProgress ? 'bg-indigo-400 text-white' : 'bg-indigo-500 text-white'
+                isInProgress ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
               }`}>
                 {isInProgress ? 'En cours' : 'Priorité'}
               </span>
-              <span className="text-indigo-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+              <span className="text-indigo-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
                 <i className="fa-solid fa-star"></i>
                 {assignedMission.xp_reward} XP
               </span>
             </div>
           </div>
           
-          <h3 className="text-xl font-black text-white tracking-tight mb-2 line-clamp-2">
+          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2 line-clamp-2">
             {assignedMission.title}
           </h3>
-          <p className="text-slate-400 text-xs font-medium line-clamp-3 leading-relaxed">
+          <p className="text-slate-500 text-xs font-medium line-clamp-3 leading-relaxed">
             {assignedMission.description}
           </p>
         </div>
@@ -1441,22 +1441,22 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure */}
           {isReferent && pendingReviews.length > 0 && (
-            <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden border border-indigo-500/20">
+            <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                   <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 backdrop-blur-md flex items-center justify-center text-xl border border-indigo-400/30 text-indigo-400">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-xl text-indigo-600">
                       <i className="fa-solid fa-microscope"></i>
                     </div>
                     <div>
-                      <h3 className="text-lg font-black tracking-tight uppercase leading-none">Revues d'Expert</h3>
-                      <p className="text-indigo-400 text-[9px] font-bold uppercase tracking-widest mt-1">{pendingReviews.length} en attente</p>
+                      <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">Revues d'Expert</h3>
+                      <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mt-1">{pendingReviews.length} en attente</p>
                     </div>
                   </div>
                   <div className="flex gap-3 overflow-x-auto max-w-full pb-1 scrollbar-hide">
                     {pendingReviews.slice(0, 2).map((proc) => (
-                      <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="shrink-0 w-48 bg-white/5 p-4 rounded-xl border border-white/5 hover:border-indigo-400/50 transition-all cursor-pointer">
-                         <h4 className="font-bold text-white text-[10px] mb-1 truncate">{proc.title}</h4>
-                         <p className="text-[8px] text-indigo-400 font-bold uppercase tracking-widest">{proc.category}</p>
+                      <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="shrink-0 w-48 bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all cursor-pointer group/card">
+                         <h4 className="font-bold text-slate-800 text-[10px] mb-1 truncate group-hover/card:text-indigo-600 transition-colors">{proc.title}</h4>
+                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{proc.category}</p>
                       </div>
                     ))}
                   </div>
