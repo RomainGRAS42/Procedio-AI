@@ -28,9 +28,42 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
   const nextTitle = getLevelTitle(currentLevel + 1);
 
   return (
-    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-6 border border-indigo-100 shadow-sm mb-6 relative overflow-hidden">
+    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-6 border border-indigo-100 shadow-sm mb-6 relative overflow-hidden group">
       {/* Decorative background */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-200/20 to-transparent rounded-full blur-3xl -z-10"></div>
+      
+      {/* Info Tooltip */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="relative group/tooltip">
+          <button className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] hover:bg-indigo-200 transition-all">
+            <i className="fa-solid fa-question"></i>
+          </button>
+          
+          {/* Tooltip Content */}
+          <div className="absolute top-full right-0 mt-2 w-72 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all shadow-2xl z-50">
+            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Comment gagner de l'XP ?</p>
+            <ul className="space-y-2 text-[11px] leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">+5 XP</span>
+                <span className="text-slate-300">Lire une procédure</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">+5 XP</span>
+                <span className="text-slate-300">Lire une flash note</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 font-bold">+50 XP</span>
+                <span className="text-slate-300">Suggestion approuvée</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-purple-400 font-bold">Variable</span>
+                <span className="text-slate-300">Compléter une mission (selon difficulté)</span>
+              </li>
+            </ul>
+            <div className="absolute bottom-full right-6 border-8 border-transparent border-b-slate-900"></div>
+          </div>
+        </div>
+      </div>
       
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
