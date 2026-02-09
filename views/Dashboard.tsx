@@ -1492,31 +1492,43 @@ const Dashboard: React.FC<DashboardProps> = ({
       {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
           
-          {/* ZONE 1: Missions & Activité */}
+          {/* ZONE 1: Missions & Centre d'Action */}
           <div className="lg:col-span-2">
              <MissionSpotlight />
           </div>
 
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full min-h-[320px]">
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full min-h-[320px] hover:border-indigo-100 transition-all">
              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-black text-slate-900 text-lg tracking-tight">Activité Équipe</h3>
-                <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors"><i className="fa-solid fa-rotate-right"></i></button>
-             </div>
-             <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
-                {activities.slice(0, 5).map((act) => (
-                   <div key={act.id} className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-xl transition-colors group">
-                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
-                      <div>
-                          <p className="text-[11px] font-bold text-slate-700 leading-tight">{act.content}</p>
-                          <p className="text-[9px] font-bold text-slate-400 mt-0.5">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                       </div>
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                     <i className="fa-solid fa-layer-group"></i>
                    </div>
+                   <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Missions Suivantes</h3>
+                </div>
+                <button onClick={() => onNavigate?.('missions')} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">Voir tout</button>
+             </div>
+             
+             <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
+                {activeMissions.slice(0, 4).map((mission) => (
+                  <div key={mission.id} onClick={() => onNavigate?.('missions')} className="p-4 bg-slate-50 border border-transparent hover:border-indigo-100 hover:bg-white rounded-2xl transition-all cursor-pointer group/m">
+                     <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[7px] font-black uppercase tracking-widest ${mission.urgency === 'critical' ? 'text-rose-500' : 'text-indigo-500'}`}>{mission.urgency}</span>
+                        <span className="text-[9px] font-black text-indigo-600">{mission.xp_reward} XP</span>
+                     </div>
+                     <p className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>
+                  </div>
                 ))}
+                {activeMissions.length === 0 && (
+                   <div className="h-full flex flex-col items-center justify-center py-6 text-slate-300">
+                      <i className="fa-solid fa-mug-hot text-2xl mb-2"></i>
+                      <p className="text-[8px] font-black uppercase tracking-widest">Aucune mission</p>
+                   </div>
+                )}
              </div>
           </div>
 
           {/* ZONE 2: Expertise & Badges */}
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-orange-100 transition-all">
+          <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-orange-100 transition-all">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg border border-orange-100">
@@ -1605,7 +1617,7 @@ const Dashboard: React.FC<DashboardProps> = ({
              </div>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full hover:border-indigo-100 transition-all">
+          <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full hover:border-indigo-100 transition-all">
              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
@@ -1632,39 +1644,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cible Suivante</span>
                   <span className="text-xs font-black text-slate-700 uppercase">Rang {personalStats.level + 1}</span>
                 </div>
-             </div>
-          </div>
+              </div>
+           </div>
+        </div>
+      )}
 
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
-             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
-                     <i className="fa-solid fa-compass"></i>
-                   </div>
-                   <h3 className="font-black text-slate-900 text-lg tracking-tight">Missions</h3>
-                </div>
-                <button onClick={() => onNavigate?.('missions')} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Voir tout</button>
-             </div>
-             <div className="space-y-3 flex-1">
-                {activeMissions.slice(0, 3).map((mission) => (
-                  <div key={mission.id} onClick={() => onNavigate?.('missions')} className="p-4 bg-slate-50 border border-transparent hover:border-indigo-100 hover:bg-white rounded-2xl transition-all cursor-pointer group/m">
-                     <div className="flex justify-between items-start mb-2">
-                        <span className={`text-[7px] font-black uppercase tracking-widest ${mission.urgency === 'critical' ? 'text-rose-500' : 'text-indigo-500'}`}>{mission.urgency}</span>
-                        <span className="text-[9px] font-black text-indigo-600">{mission.xp_reward} XP</span>
-                     </div>
-                     <p className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>
-                  </div>
-                ))}
-                {activeMissions.length === 0 && (
-                   <div className="h-full flex flex-col items-center justify-center py-6 text-slate-300">
-                      <i className="fa-solid fa-mug-hot text-2xl mb-2"></i>
-                      <p className="text-[8px] font-black uppercase tracking-widest">Aucune mission</p>
-                   </div>
-                )}
-             </div>
-          </div>
-
-          {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure */}
+          {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure & RSS */}
           {isReferent && pendingReviews.length > 0 && (
             <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
