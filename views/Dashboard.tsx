@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { User, Procedure, Suggestion, UserRole, Mission } from "../types";
 import CustomToast from "../components/CustomToast";
+// MissionSpotlight is defined locally at line 372 so no import needed, remove line 5
+import TeamPodium from '../components/TeamPodium';
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
@@ -939,45 +941,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (updateError) throw updateError;
 
-      // 🎮 GAMIFICATION : Gain d'XP pour l'auteur (+50 XP) si approuvé
+      // 🎮 GAMIFICATION : Gain d'XP via Secure RPC
       if (status === 'approved') {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('xp_points')
-          .eq('id', selectedSuggestion.user_id)
-          .single();
-        
-        if (profile) {
-          const newXP = (profile.xp_points || 0) + 50;
-          await supabase
-            .from('user_profiles')
-            .update({ 
-              xp_points: newXP, 
-              level: Math.floor(newXP / 100) + 1 
-            })
-            .eq('id', selectedSuggestion.user_id);
-        }
+        const xpAmount = 50;
+        const { error: xpError } = await supabase.rpc('increment_user_xp', {
+           target_user_id: selectedSuggestion.user_id,
+           xp_amount: xpAmount,
+           reason: `Suggestion validée : ${selectedSuggestion.procedureTitle}`
+        });
 
-        // 🎮 GAMIFICATION : Gain d'XP pour le RÉFÉRENT (+20 XP) sil a fait la revue
+        if (xpError) console.error("Error giving XP to author:", xpError);
+
+        // 🎮 GAMIFICATION : Gain d'XP pour le RÉFÉRENT (+20 XP) s'il a fait la revue
         if (isReferentUser) {
-           const { data: refProfile } = await supabase
-            .from('user_profiles')
-            .select('xp_points')
-            .eq('id', user.id)
-            .single();
-          
-          if (refProfile) {
-            const newRefXP = (refProfile.xp_points || 0) + 20;
-            await supabase
-              .from('user_profiles')
-              .update({ 
-                xp_points: newRefXP, 
-                level: Math.floor(newRefXP / 100) + 1 
-              })
-              .eq('id', user.id);
-            
-            setToast({ message: "Revue validée ! +20 XP gagnés.", type: "success" });
-          }
+           const { error: refError } = await supabase.rpc('increment_user_xp', {
+             target_user_id: user.id,
+             xp_amount: 20,
+             reason: `Revue d'expert effectuée : ${selectedSuggestion.procedureTitle}`
+           });
+           
+           if (refError) console.error("Error giving XP to referent:", refError);
+           else setToast({ message: "Revue validée ! +20 XP gagnés.", type: "success" });
         }
       }
 
@@ -1648,63 +1632,65 @@ const Dashboard: React.FC<DashboardProps> = ({
                      </div>
                  </div>
 
-                 {/* COL 2: Missions d'Équipe */}
-                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
-                            <i className="fa-solid fa-map-location-dot"></i>
-                           </div>
-                           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
-                              Missions d'Équipe
-                              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." />
-                           </h3>
-                        </div>
-                        <button 
-                          onClick={() => onNavigate?.('missions')}
-                          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors"
-                        >
-                          Tout voir
-                        </button>
-                      </div>
+                 {/* COL 2: Missions d'Équipe & Team Podium */}
+                 <div className="flex flex-col gap-6 h-full">
+                     <TeamPodium />
+                     
+                     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative flex-1 min-h-[300px]">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                                <i className="fa-solid fa-map-location-dot"></i>
+                               </div>
+                               <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                                  Missions d'Équipe
+                                  <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." />
+                               </h3>
+                            </div>
+                            <button 
+                              onClick={() => onNavigate?.('missions')}
+                              className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                            >
+                              Tout voir
+                            </button>
+                          </div>
 
-                      <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
-                         {loadingMissions ? (
-                           <div className="h-full flex flex-col items-center justify-center py-10 gap-2">
-                             <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recherche...</span>
-                           </div>
-                         ) : activeMissions.length > 0 ? (
-                           activeMissions.slice(0, 5).map((mission) => (
-                             <div 
-                               key={mission.id} 
-                               className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-transparent hover:border-indigo-100 hover:bg-white transition-all cursor-pointer group/m"
-                               onClick={() => onNavigate?.('missions')}
-                             >
-                                <div className="min-w-0">
-                                   <div className="flex items-center gap-2 mb-1">
-                                      <span className={`text-[8px] font-black uppercase tracking-widest ${
-                                        mission.urgency === 'critical' ? 'text-rose-500' :
-                                        mission.urgency === 'high' ? 'text-orange-500' : 'text-indigo-500'
-                                      }`}>
-                                        {mission.urgency}
-                                      </span>
-                                   </div>
-                                   <p className="text-xs font-bold text-slate-800 truncate group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                   <p className="text-[10px] font-black text-indigo-600">{mission.xp_reward} XP</p>
-                                </div>
-                             </div>
-                           ))
-                         ) : (
-                           <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-300 opacity-50">
-                               <i className="fa-solid fa-mug-hot text-4xl mb-3"></i>
-                               <p className="text-xs font-bold uppercase tracking-widest">Repos total</p>
-                           </div>
-                         )}
-                      </div>
-                  </div>
+                          <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+                             {loadingMissions ? (
+                               <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                  <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Analyse en cours...</span>
+                               </div>
+                             ) : activeMissions.filter(m => m.status === 'open' || m.status === 'in_progress').length > 0 ? (
+                               activeMissions
+                                 .filter(m => m.status === 'open' || m.status === 'in_progress')
+                                 .slice(0, 5)
+                                 .map((mission) => (
+                                 <div key={mission.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => onNavigate?.('missions')}>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                                          mission.urgency === 'high' ? 'bg-rose-100 text-rose-600' : 
+                                          mission.urgency === 'medium' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500'
+                                        }`}>
+                                          {mission.urgency === 'high' ? 'Urgent' : mission.urgency === 'medium' ? 'Important' : 'Normal'}
+                                        </span>
+                                        <span className="text-[8px] font-bold text-indigo-400 flex items-center gap-1">
+                                          <i className="fa-solid fa-star text-[7px]"></i> {mission.xp_reward} XP
+                                        </span>
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 text-xs leading-tight mb-0.5 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</h4>
+                                    <p className="text-[9px] text-slate-400 line-clamp-1">{mission.description}</p>
+                                 </div>
+                               ))
+                             ) : (
+                               <div className="flex flex-col items-center justify-center py-12 px-6 text-center opacity-50">
+                                  <i className="fa-solid fa-flag-checkered text-3xl text-slate-300 mb-2"></i>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aucune mission en cours</p>
+                               </div>
+                             )}
+                          </div>
+                     </div>
+                 </div>
 
                  {/* COL 3: Activité Récente */}
                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">

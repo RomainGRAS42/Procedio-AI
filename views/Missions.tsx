@@ -192,10 +192,32 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       setReasonText("");
       fetchMissions();
 
-      // Lifecycle Notifications
+      // Lifecycle Notifications AND SCORING (Secure RPC)
       const mission = missions.find(m => m.id === missionId);
       if (mission) {
-        // 1. Manager cancels -> Notify technician
+        
+        // 1. Manager validates -> +50 XP via Secure RPC
+        if (newStatus === 'completed' && user.role === UserRole.MANAGER && mission.assigned_to) {
+           // Call the RPC
+           const { data: xpData, error: xpError } = await supabase.rpc('increment_user_xp', {
+             target_user_id: mission.assigned_to,
+             xp_amount: mission.xp_reward || 50,
+             reason: `Mission accomplie : ${mission.title}`
+           });
+
+           if (xpError) console.error("Error giving XP:", xpError);
+           
+           // Notify user
+           await supabase.from('notifications').insert({
+            user_id: mission.assigned_to,
+            type: 'mission',
+            title: 'Mission validée !',
+            content: `Votre mission "${mission.title}" a été validée. +${mission.xp_reward || 50} XP accordés !`,
+            link: '/missions'
+          });
+        }
+
+        // 2. Manager cancels -> Notify technician
         if (newStatus === 'cancelled' && mission.assigned_to && mission.assigned_to !== user.id) {
           await supabase.from('notifications').insert({
             user_id: mission.assigned_to,
@@ -205,7 +227,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
             link: '/missions'
           });
         }
-        // 2. Technician finishes -> Notify manager
+        
+        // 3. Technician finishes -> Notify manager
         if (newStatus === 'completed' && user.role === UserRole.TECHNICIAN && mission.created_by !== user.id) {
           await supabase.from('notifications').insert({
             user_id: mission.created_by,
@@ -215,18 +238,9 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
             link: '/missions'
           });
         }
-        // 3. Manager validates -> Notify technician
-        if (newStatus === 'completed' && user.role === UserRole.MANAGER && mission.assigned_to && mission.assigned_to !== user.id) {
-          await supabase.from('notifications').insert({
-            user_id: mission.assigned_to,
-            type: 'mission',
-            title: 'Mission validée !',
-            content: `Votre mission "${mission.title}" a été validée. XP accordée !`,
-            link: '/missions'
-          });
-        }
       }
     } catch (err) {
+      console.error(err);
       setToast({ message: "Erreur lors de la mise à jour.", type: "error" });
     } finally {
       setIsSubmitting(false);
