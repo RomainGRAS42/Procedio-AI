@@ -59,8 +59,35 @@ const TeamPodium: React.FC = () => {
     );
   }
 
-  // If no data at all (unlikely if RPC works, but safe fallback)
-  if (!data || (!data.progression && !data.expert && !data.explorer)) return null;
+  // If no data at all, show empty state instead of hiding
+  if (!data || (!data.progression && !data.expert && !data.explorer)) {
+    return (
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 animate-fade-in relative overflow-hidden min-h-[300px]">
+         {/* Decorative Background */}
+         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50/30 to-transparent rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+         <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-200">
+            <i className="fa-solid fa-medal"></i>
+          </div>
+          <div>
+              <h3 className="font-black text-slate-900 text-lg tracking-tight">Dynamique d'Équipe</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Champions de la semaine</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-20 h-20 rounded-full bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center mb-4">
+            <i className="fa-solid fa-trophy text-3xl text-slate-300"></i>
+          </div>
+          <h4 className="font-bold text-slate-700 text-sm mb-2">Pas encore de champions cette semaine</h4>
+          <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">
+            Les champions apparaîtront dès que votre équipe commencera à gagner de l'XP, approuver des suggestions et lire des procédures.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const renderCard = (champion: Champion | null, type: 'progression' | 'expert' | 'explorer') => {
     // Fallback static data if no champion found for a category (to avoid empty holes)
