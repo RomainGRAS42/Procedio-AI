@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Note, User, UserRole } from "../types";
 import { supabase } from "../lib/supabase";
 import CustomToast from "../components/CustomToast";
+import LoadingState from "../components/LoadingState";
 
 interface ProtectedNote extends Note {
   is_protected: boolean;
@@ -24,6 +25,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState<ProtectedNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
 
   // États pour l'édition/création (Mode Plein Écran)
   const [isEditing, setIsEditing] = useState(false);
@@ -563,14 +565,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   const modalContent = getModalContent();
 
   return (
-    <div className="space-y-8 animate-slide-up relative pt-6">
-      {/* Barre de recherche et Action globale */}
-      <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="relative flex-1 w-full max-w-2xl">
+    <div className="space-y-12 h-full flex flex-col pb-10 px-4 md:px-10 animate-fade-in">
+      {/* Header Section matching Procedures.tsx */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0 pt-6">
+        <div className="flex-1 w-full max-w-2xl relative">
           <input
             type="text"
             placeholder={mode === "flash" ? "Rechercher une Flash Note..." : "Rechercher une note..."}
-            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-none shadow-inner focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-100 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoComplete="off"
@@ -578,263 +580,133 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           />
           <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
         </div>
-        
-         {/* FLASH MODE HEADER EXTRA */}
-         {mode === "flash" && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 animate-pulse">
-               <i className="fa-solid fa-bolt"></i>
-               <span className="font-bold text-xs uppercase tracking-wider">Mode Flash</span>
-            </div>
-         )}
 
-        {/* CREATE BUTTON: Hidden for Technicians in Flash Mode */}
-        {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
-          <button
-            onClick={handleAddNew}
-            className={`w-full lg:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 ${
-              mode === "flash" 
-              ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200"
-              : "bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-100"
-            }`}>
-            <i className="fa-solid fa-plus-circle text-lg"></i> {mode === "flash" ? "Créer une flash note" : "Créer une note"}
+        <div className="flex items-center gap-6">
+          {/* ZONE 1 : UTILITAIRE (REFRESH) */}
+          <div className="group relative">
+            <button 
+              onClick={() => fetchNotes()}
+              className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all hover:shadow-lg active:scale-95"
+            >
+              <i className={`fa-solid fa-arrows-rotate ${loading ? 'animate-spin' : ''}`}></i>
+            </button>
+          </div>
+
+          <div className="h-8 w-px bg-slate-200"></div>
+
+          {/* CREATE BUTTON */}
+          {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
+            <button
+              onClick={handleAddNew}
+              className={`px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all shadow-2xl active:scale-95 ${
+                mode === "flash" 
+                ? "bg-amber-500 text-white hover:bg-slate-900 shadow-amber-200"
+                : "bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-200"
+              }`}>
+              <i className="fa-solid fa-plus text-sm"></i>
+              <span>{mode === "flash" ? "Nouvelle Flash Note" : "Nouvelle Note"}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 px-6">
+        <div className="flex items-center gap-2">
+          <div className="relative flex h-3 w-3">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${mode === 'flash' ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
+            <span className={`relative inline-flex rounded-full h-3 w-3 ${mode === 'flash' ? 'bg-amber-500' : 'bg-indigo-500'}`}></span>
+          </div>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            {mode === 'flash' ? 'Canal Flash Actif' : 'Espace Personnel'}
+          </span>
+        </div>
+        <div className="h-4 w-px bg-slate-200"></div>
+          <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
+            {currentFolder ? `${currentFolder} - ${notes.length} éléments` : 'Dossiers'}
+          </span>
+      </div>
+
+      <div className="flex-1 space-y-10">
+        {!searchTerm && currentFolder !== null && (
+          <button 
+            onClick={() => setCurrentFolder(null)} 
+            className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
+          >
+            <i className="fa-solid fa-arrow-left"></i> 
+            Retour aux dossiers
           </button>
         )}
-      </div>
 
-      {mode === "flash" && user?.role === UserRole.MANAGER && (
-         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
-                  <i className="fa-solid fa-lightbulb"></i>
-               </div>
-               <div>
-                  <h4 className="font-bold text-amber-800 text-sm uppercase tracking-wide">
-                    Suggestions en attente
-                    <span className="ml-2 px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full text-xs font-black">
-                      {notes.filter(n => n.status === 'suggestion').length}
-                    </span>
-                  </h4>
-                  <p className="text-xs text-amber-600">Validez les propositions de votre équipe.</p>
-               </div>
+        <div className="min-h-[400px]">
+          {loading && notes.length === 0 ? (
+            <LoadingState message="Chargement des notes..." />
+          ) : searchTerm ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {notes
+                .filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()) || n.content.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map(note => (
+                  <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+                ))
+              }
             </div>
-         </div>
-      )}
-
-      {/* SUGGESTIONS EN ATTENTE (Manager only) */}
-      {mode === "flash" && user?.role === UserRole.MANAGER && notes.filter(n => n.status === 'suggestion').length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-lg font-black text-slate-700 mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-hourglass-half text-amber-500"></i>
-            Suggestions en attente
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {notes.filter(n => n.status === 'suggestion').map((note) => {
-              const colors = ["bg-amber-100", "bg-orange-100", "bg-yellow-100"];
-              const colorIndex = note.id.charCodeAt(0) % colors.length;
-              const cardColor = colors[colorIndex];
-              
-              return (
-                <div
-                  key={note.id}
-                  onClick={() => setViewingNote(note)}
-                  className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border border-amber-200`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-black text-xl line-clamp-2 text-slate-800" style={{ wordBreak: 'break-word' }}>
-                      {note.title}
-                    </h3>
-                    <span className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-sm animate-pulse">
-                      <i className="fa-solid fa-clock text-xs"></i>
-                    </span>
-                  </div>
-
-                  <div className="flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative text-slate-600 font-medium">
-                    <div dangerouslySetInnerHTML={{ __html: note.content }} />
-                    <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-${cardColor.replace("bg-", "")} to-transparent pointer-events-none`}></div>
-                  </div>
-
-                  <div className="mt-auto">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
-                        <i className="fa-solid fa-user text-[8px]"></i>
-                        <span>{note.author_name}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                        <span>{note.createdAt}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* FLASH NOTES VALIDÉES */}
-      {mode === "flash" && notes.filter(n => n.status === 'public').length > 0 && (
-        <div>
-          <h3 className="text-lg font-black text-slate-700 mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-check-circle text-emerald-500"></i>
-            Flash Notes validées
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {notes
-          .filter((note) => note.status === 'public')
-          .filter(
-            (note) =>
-              note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              note.content.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          .map((note) => {
-             // Generate dynamic pastel color for Flash Cards based on index/id
-             const colors = ["bg-sky-100", "bg-emerald-100", "bg-violet-100", "bg-amber-100", "bg-rose-100"];
-             const colorIndex = note.id.charCodeAt(0) % colors.length;
-             const cardColor = mode === "flash" ? colors[colorIndex] : "bg-white";
-             const borderClass = mode === "flash" ? "border-transparent" : "border-slate-200";
-
-             return (
-             <div
-              key={note.id}
-              onClick={() => {
-                if (note.is_protected && !unlockedNotes.has(note.id)) {
-                  setPasswordVerify({ id: note.id, value: "", action: "UNLOCK" });
-                } else {
-                  setViewingNote(note);
-                }
-              }}
-              className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`}>
-              
-              <div className="flex justify-between items-start mb-4">
-                <h3 className={`font-black text-xl line-clamp-2 ${mode === "flash" ? "text-slate-800" : "text-slate-700"}`} style={{ wordBreak: 'break-word' }}>
-                  {note.title}
-                </h3>
-                {note.is_protected ? (
-                  unlockedNotes.has(note.id) ? (
-                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
-                      <i className="fa-solid fa-lock-open text-xs"></i>
-                    </span>
-                  ) : (
-                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
-                      <i className="fa-solid fa-lock text-xs"></i>
-                    </span>
-                  )
-                ) : (
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${mode === "flash" ? "bg-white/50 text-slate-500" : "bg-slate-50 text-slate-300"}`}>
-                    <i className="fa-solid fa-eye text-xs"></i>
-                  </span>
-                )}
-              </div>
-
-              <div className={`flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative ${mode === "flash" ? "text-slate-600 font-medium" : "text-slate-400"}`}>
-                <div dangerouslySetInnerHTML={{ __html: note.is_protected && !unlockedNotes.has(note.id) ? "🔒 Contenu protégé..." : note.content }} />
-                <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${mode === "flash" ? "from-" + cardColor.replace("bg-", "") : "from-white"} to-transparent pointer-events-none`}></div>
-              </div>
-
-              {mode === "flash" ? (
-                <div className="mt-auto">
-                  {/* Author & Date Info */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
-                      <i className="fa-solid fa-user text-[8px]"></i>
-                      <span>{note.author_name}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                      <span>{note.createdAt}</span>
-                    </div>
-                    
-                    {/* Action buttons: Only Managers can modify/delete Flash Notes */}
-                    {user?.role === UserRole.MANAGER && (
-                      <div className="flex gap-2">
-                        {!note.is_protected && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(note.content.replace(/<[^>]*>?/gm, ''));
-                              setToast({ message: "Note copiée dans le presse-papier !", type: "success" }); 
-                            }}
-                            className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all"
-                            title="Copier le texte">
-                            <i className="fa-regular fa-copy"></i>
-                          </button>
-                        )}
-
-                        <button
-                          onClick={(e) => handleDelete(e, note.id)}
-                          className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
-                          title="Supprimer">
-                          <i className="fa-solid fa-trash-can text-xs"></i>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+          ) : currentFolder === null ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+              {/* VIRTUAL FOLDERS */}
+              {mode === "personal" ? (
+                <>
+                  <FolderCard 
+                    name="TOUTES LES NOTES" 
+                    icon="fa-note-sticky" 
+                    count={notes.length} 
+                    onClick={() => setCurrentFolder("TOUTES LES NOTES")} 
+                  />
+                  <FolderCard 
+                    name="PROTÉGÉES" 
+                    icon="fa-lock" 
+                    count={notes.filter(n => n.is_protected).length} 
+                    onClick={() => setCurrentFolder("PROTÉGÉES")} 
+                  />
+                  <FolderCard 
+                    name="FLASH PROPOSÉES" 
+                    icon="fa-bolt" 
+                    count={notes.filter(n => n.is_flash_note).length} 
+                    onClick={() => setCurrentFolder("FLASH PROPOSÉES")} 
+                  />
+                </>
               ) : (
-                <div className="mt-auto flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {note.updatedAt}
-                  </span>
-                  
-                  <button
-                    onClick={(e) => handleDelete(e, note.id)}
-                    className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
-                    title="Supprimer">
-                    <i className="fa-solid fa-trash-can text-xs"></i>
-                  </button>
-                </div>
+                <>
+                  <FolderCard 
+                    name="FLASH VALIDÉES" 
+                    icon="fa-check-double" 
+                    count={notes.filter(n => n.status === 'public').length} 
+                    onClick={() => setCurrentFolder("FLASH VALIDÉES")} 
+                  />
+                  {user?.role === UserRole.MANAGER && (
+                    <FolderCard 
+                      name="SUGGESTIONS" 
+                      icon="fa-lightbulb" 
+                      count={notes.filter(n => n.status === 'suggestion').length} 
+                      onClick={() => setCurrentFolder("SUGGESTIONS")} 
+                    />
+                  )}
+                </>
               )}
             </div>
-            );
-          })}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+               {(currentFolder === "TOUTES LES NOTES" ? notes : 
+                 currentFolder === "PROTÉGÉES" ? notes.filter(n => n.is_protected) :
+                 currentFolder === "FLASH PROPOSÉES" ? notes.filter(n => n.is_flash_note) :
+                 currentFolder === "FLASH VALIDÉES" ? notes.filter(n => n.status === 'public') :
+                 currentFolder === "SUGGESTIONS" ? notes.filter(n => n.status === 'suggestion') : 
+                 []
+               ).map(note => (
+                 <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+               ))}
+            </div>
+          )}
+        </div>
       </div>
-        </div>
-      )}
-
-      {/* PERSONAL NOTES (mode === "personal") */}
-      {mode === "personal" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {notes
-            .filter(
-              (note) =>
-                note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                note.content.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .map((note) => {
-              const cardColor = "bg-white";
-              const borderClass = "border-slate-200";
-
-              return (
-                <div
-                  key={note.id}
-                  onClick={() => setViewingNote(note)}
-                  className={`group hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-3xl p-6 relative cursor-pointer flex flex-col h-64 shadow-md hover:shadow-xl ${cardColor} border ${borderClass}`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-black text-xl line-clamp-2 text-slate-800" style={{ wordBreak: 'break-word' }}>
-                      {note.title}
-                    </h3>
-                  </div>
-
-                  <div className="flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative text-slate-600 font-medium">
-                    <div dangerouslySetInnerHTML={{ __html: note.content }} />
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
-                  </div>
-
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      {note.updatedAt}
-                    </span>
-                    
-                    <button
-                      onClick={(e) => handleDelete(e, note.id)}
-                      className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
-                      title="Supprimer">
-                      <i className="fa-solid fa-trash-can text-xs"></i>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-      )}
 
       {/* MODALE ÉDITEUR PLEIN ÉCRAN */}
       {isEditing &&
@@ -1402,6 +1274,108 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         />
       )}
 
+    </div>
+  );
+};
+
+const FolderCard: React.FC<{ name: string; icon: string; count: number; onClick: () => void }> = ({ name, icon, count, onClick }) => (
+  <div 
+    onClick={onClick}
+    className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up"
+  >
+    <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
+      <i className={`fa-solid ${icon}`}></i>
+    </div>
+    <div className="flex flex-col items-center gap-2 mt-2">
+      <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
+        {name}
+      </span>
+      <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
+        <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
+          {count} {count > 1 ? 'éléments' : 'élément'}
+        </span>
+      </div>
+    </div>
+    <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
+      <i className="fa-solid fa-arrow-right"></i>
+    </div>
+  </div>
+);
+
+const NoteCard: React.FC<{ 
+  note: ProtectedNote; 
+  mode: string; 
+  user: User | null | undefined; 
+  onDelete: (e: React.MouseEvent, id: string) => void; 
+  onOpen: () => void;
+  unlockedNotes: Set<string>;
+  setPasswordVerify: (pv: any) => void;
+}> = ({ note, mode, user, onDelete, onOpen, unlockedNotes, setPasswordVerify }) => {
+  const isProtected = note.is_protected && !unlockedNotes.has(note.id);
+  const colors = ["bg-sky-100", "bg-emerald-100", "bg-violet-100", "bg-amber-100", "bg-rose-100"];
+  const colorIndex = note.id.charCodeAt(0) % colors.length;
+  const cardColor = mode === "flash" ? colors[colorIndex] : "bg-white";
+  const borderClass = mode === "flash" ? "border-transparent" : "border-slate-100";
+
+  return (
+    <div
+      onClick={() => {
+        if (note.is_protected && !unlockedNotes.has(note.id)) {
+          setPasswordVerify({ id: note.id, value: "", action: "UNLOCK" });
+        } else {
+          onOpen();
+        }
+      }}
+      className={`group hover:translate-y-[-4px] active:scale-95 transition-all duration-300 rounded-[2rem] p-6 relative cursor-pointer flex flex-col h-64 shadow-sm hover:shadow-xl ${cardColor} border ${borderClass}`}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <h3 className={`font-black text-lg line-clamp-2 ${mode === "flash" ? "text-slate-800" : "text-slate-900"} uppercase tracking-tight leading-tight`} style={{ wordBreak: 'break-word' }}>
+          {note.title}
+        </h3>
+        {note.is_protected ? (
+          unlockedNotes.has(note.id) ? (
+            <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+              <i className="fa-solid fa-lock-open text-xs"></i>
+            </span>
+          ) : (
+            <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+              <i className="fa-solid fa-lock text-xs"></i>
+            </span>
+          )
+        ) : (
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${mode === "flash" ? "bg-white/50 text-slate-500" : "bg-slate-50 text-slate-300 group-hover:bg-indigo-600 group-hover:text-white"}`}>
+            <i className={`fa-solid ${mode === 'flash' ? 'fa-bolt' : 'fa-eye'} text-xs`}></i>
+          </div>
+        )}
+      </div>
+
+      <div className={`flex-1 overflow-hidden text-sm leading-relaxed mb-4 relative ${mode === "flash" ? "text-slate-600 font-medium" : "text-slate-500"}`}>
+        <div dangerouslySetInnerHTML={{ __html: isProtected ? "🔒 Contenu protégé..." : note.content }} />
+        <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${mode === "flash" ? "from-" + cardColor.replace("bg-", "") : "from-white"} to-transparent pointer-events-none`}></div>
+      </div>
+
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100/50 pt-4">
+        <div className="flex flex-col">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+            {note.updatedAt || note.createdAt}
+          </span>
+          {note.author_name && (
+            <span className="text-[8px] font-bold text-slate-500 uppercase">{note.author_name}</span>
+          )}
+        </div>
+        
+        {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(e, note.id);
+            }}
+            className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+            title="Supprimer">
+            <i className="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
