@@ -150,7 +150,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full min-h-[400px] hover:border-indigo-100 transition-all">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col hover:border-indigo-100 transition-all">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg border border-orange-100 shadow-sm">
@@ -169,7 +169,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-3 h-[320px]">
+      <div className="overflow-y-auto pr-2 scrollbar-hide space-y-3 h-[420px]">
         {loading ? (
           <div className="h-full flex items-center justify-center py-10 gap-3">
              <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -200,10 +200,10 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                   </a>
                 </div>
               </div>
-              <h4 className="font-bold text-slate-800 text-xs leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors mb-1.5">
+              <h4 className="font-bold text-slate-800 text-[13px] leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors mb-2">
                 {item.title}
               </h4>
-              <p className="text-[10px] text-slate-500 line-clamp-2 font-medium leading-relaxed">
+              <p className="text-[11px] text-slate-500 line-clamp-3 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
                 {item.description}
               </p>
             </div>
