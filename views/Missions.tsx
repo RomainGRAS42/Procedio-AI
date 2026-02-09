@@ -29,6 +29,12 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     deadline: '',
   });
 
+  // Lifecycle Modals State
+  const [completingMission, setCompletingMission] = useState<Mission | null>(null);
+  const [cancellingMission, setCancellingMission] = useState<Mission | null>(null);
+  const [reasonText, setReasonText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [technicians, setTechnicians] = useState<{id: string, email: string, first_name: string, last_name: string}[]>([]);
 
   useEffect(() => {
@@ -162,22 +168,48 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     }
   };
 
-  const handleStatusUpdate = async (missionId: string, newStatus: MissionStatus) => {
+  const handleStatusUpdate = async (missionId: string, newStatus: MissionStatus, notes?: string) => {
     try {
+      const updateData: any = { status: newStatus };
+      if (newStatus === 'completed') updateData.completion_notes = notes;
+      if (newStatus === 'cancelled') updateData.cancellation_reason = notes;
+
       const { error } = await supabase
         .from('missions')
-        .update({ status: newStatus })
+        .update(updateData)
         .eq('id', missionId);
 
       if (error) throw error;
 
       setToast({ 
-        message: newStatus === 'completed' ? "Mission validée ! XP versée." : "Statut mis à jour.", 
+        message: newStatus === 'completed' ? "Mission validée ! XP versée." : 
+                 newStatus === 'cancelled' ? "Mission annulée." : "Statut mis à jour.", 
         type: "success" 
       });
+      
+      setCompletingMission(null);
+      setCancellingMission(null);
+      setReasonText("");
       fetchMissions();
     } catch (err) {
       setToast({ message: "Erreur lors de la mise à jour.", type: "error" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStartMission = async (missionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('missions')
+        .update({ status: 'in_progress' })
+        .eq('id', missionId);
+      
+      if (error) throw error;
+      setToast({ message: "Mission démarrée !", type: "success" });
+      fetchMissions();
+    } catch (err) {
+      setToast({ message: "Erreur lors du démarrage.", type: "error" });
     }
   };
 
@@ -200,10 +232,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
   const StatusBadge = ({ status }: { status: MissionStatus }) => {
     const config = {
       open: { color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Disponible' },
-      assigned: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'En cours' },
+      assigned: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'Assignée' },
+      in_progress: { color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'En cours' },
       in_review: { color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'À réviser' },
-      completed: { color: 'text-slate-400', bg: 'bg-slate-50', label: 'Terminé' },
-      cancelled: { color: 'text-rose-400', bg: 'bg-rose-50', label: 'Annulé' }
+      completed: { color: 'text-slate-400', bg: 'bg-slate-50', label: 'Terminée' },
+      cancelled: { color: 'text-rose-400', bg: 'bg-rose-50', label: 'Annulée' }
     }[status];
 
     return (
@@ -316,13 +349,63 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                   )}
 
                   {mission.assignee_name && (
-                    <div className="mt-6 pt-4 border-t border-slate-50 flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
-                        {mission.assignee_name.substring(0, 2)}
+                    <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
+                          {mission.assignee_name.substring(0, 2)}
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          {mission.status === 'completed' ? 'Complétée par' : mission.status === 'cancelled' ? 'Assignée à' : 'En cours par'} <span className="text-slate-700">{mission.assignee_name}</span>
+                        </p>
                       </div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {mission.status === 'completed' ? 'Complété par' : 'En cours par'} <span className="text-slate-700">{mission.assignee_name}</span>
-                      </p>
+
+                      {/* Action Buttons for Lifecycle */}
+                      <div className="flex gap-2">
+                        {mission.status === 'assigned' && mission.assigned_to === user.id && (
+                          <button 
+                            onClick={() => handleStartMission(mission.id)}
+                            className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all"
+                          >
+                            Démarrer
+                          </button>
+                        )}
+                        {mission.status === 'in_progress' && mission.assigned_to === user.id && (
+                          <button 
+                            onClick={() => {
+                              setCompletingMission(mission);
+                              setReasonText("");
+                            }}
+                            className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all"
+                          >
+                            Terminer
+                          </button>
+                        )}
+                        {(mission.status === 'assigned' || mission.status === 'in_progress') && user.role === UserRole.MANAGER && (
+                          <button 
+                            onClick={() => {
+                              setCancellingMission(mission);
+                              setReasonText("");
+                            }}
+                            className="px-4 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all"
+                          >
+                            Annuler
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Display Reasons */}
+                  {mission.status === 'completed' && mission.completion_notes && (
+                    <div className="mt-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                       <span className="block text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1 italic">Bilan d'expertise</span>
+                       <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">{mission.completion_notes}</p>
+                    </div>
+                  )}
+                  {mission.status === 'cancelled' && mission.cancellation_reason && (
+                    <div className="mt-4 p-4 bg-rose-50/50 border border-rose-100 rounded-2xl">
+                       <span className="block text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1 italic">Motif d'annulation</span>
+                       <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">{mission.cancellation_reason}</p>
                     </div>
                   )}
                 </div>
@@ -505,6 +588,68 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                >
                  Lancer la Mission
                </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL COMPLETION MISSION */}
+      {completingMission && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up">
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Mission Terminée</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase mb-6 tracking-widest">Décrivez brièvement ce qui a été fait</p>
+            
+            <textarea
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+              placeholder="Notes de clôture..."
+              className="w-full h-32 p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-emerald-500 outline-none transition-all font-medium text-slate-600 resize-none mb-6"
+            />
+            
+            <div className="flex gap-3">
+              <button onClick={() => setCompletingMission(null)} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">
+                Annuler
+              </button>
+              <button 
+                onClick={() => handleStatusUpdate(completingMission.id, 'completed', reasonText)}
+                disabled={!reasonText.trim() || isSubmitting}
+                className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              >
+                Terminer
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL CANCELLATION MISSION */}
+      {cancellingMission && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up">
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Annuler la Mission</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase mb-6 tracking-widest">Pourquoi arrêter cette mission ?</p>
+            
+            <textarea
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+              placeholder="Motif d'annulation..."
+              className="w-full h-32 p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-rose-500 outline-none transition-all font-medium text-slate-600 resize-none mb-6"
+            />
+            
+            <div className="flex gap-3">
+              <button onClick={() => setCancellingMission(null)} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">
+                Fermer
+              </button>
+              <button 
+                onClick={() => handleStatusUpdate(cancellingMission.id, 'cancelled', reasonText)}
+                disabled={!reasonText.trim() || isSubmitting}
+                className="flex-1 py-4 bg-rose-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
+              >
+                Confirmer l'Annulation
+              </button>
             </div>
           </div>
         </div>,

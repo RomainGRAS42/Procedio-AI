@@ -114,7 +114,7 @@ export type ViewType =
   | "flash-notes"
   | "missions";
 
-export type MissionStatus = 'open' | 'assigned' | 'in_review' | 'completed' | 'cancelled';
+export type MissionStatus = 'open' | 'assigned' | 'in_progress' | 'in_review' | 'completed' | 'cancelled';
 export type MissionUrgency = 'low' | 'medium' | 'high' | 'critical';
 
 export interface Mission {
@@ -130,6 +130,8 @@ export interface Mission {
   assigned_to?: string;
   opportunity_id?: string;
   procedure_id?: string;
+  completion_notes?: string;
+  cancellation_reason?: string;
   // Joins
   assignee_name?: string;
   creator_name?: string;

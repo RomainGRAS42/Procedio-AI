@@ -71,6 +71,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  // Mission Lifecycle State
+  const [completingMission, setCompletingMission] = useState<Mission | null>(null);
+  const [completionNotes, setCompletionNotes] = useState("");
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
+
   // History Modal State
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
@@ -613,47 +618,96 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleAcceptMission = async (missionId: string) => {
+  const handleStartMission = async (missionId: string) => {
     try {
       const { error } = await supabase
         .from('missions')
-        .update({ status: 'assigned' })
+        .update({ status: 'in_progress' })
         .eq('id', missionId);
       
       if (error) throw error;
-      setToast({ message: "Mission acceptée ! À vous de jouer.", type: "success" });
+      setToast({ message: "Mission démarrée ! Bon courage.", type: "success" });
       
       const updatedMissions = activeMissions.map(m => 
-        m.id === missionId ? { ...m, status: 'assigned' as const } : m
+        m.id === missionId ? { ...m, status: 'in_progress' as const } : m
       );
       setActiveMissions(updatedMissions);
       cacheStore.set('dash_active_missions', updatedMissions);
     } catch (err) {
       console.error(err);
+      setToast({ message: "Erreur lors du démarrage.", type: "error" });
+    }
+  };
+
+  const handleCompleteMission = async () => {
+    if (!completingMission || !completionNotes.trim()) return;
+    
+    setIsSubmittingCompletion(true);
+    try {
+      const { error } = await supabase
+        .from('missions')
+        .update({ 
+          status: 'completed',
+          completion_notes: completionNotes.trim()
+        })
+        .eq('id', completingMission.id);
+      
+      if (error) throw error;
+      
+      // Update local state to remove it from active
+      const updatedMissions = activeMissions.filter(m => m.id !== completingMission.id);
+      setActiveMissions(updatedMissions);
+      cacheStore.set('dash_active_missions', updatedMissions);
+
+      setToast({ message: "Mission terminée ! XP accordée.", type: "success" });
+      setCompletingMission(null);
+      setCompletionNotes("");
+      
+      // Refresh user stats to show XP gain
+      fetchPersonalStats();
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Erreur lors de la validation.", type: "error" });
+    } finally {
+      setIsSubmittingCompletion(false);
     }
   };
 
   const MissionSpotlight = () => {
+    // Priority: 'in_progress' first, then 'assigned'
     const assignedMission = activeMissions.find(m => 
-      m.status === 'assigned' && 
-      m.assigned_to === user.id
+      m.assigned_to === user.id && 
+      (m.status === 'in_progress' || m.status === 'assigned')
     );
     
     if (!assignedMission) return null;
 
+    const isInProgress = assignedMission.status === 'in_progress';
+
     return (
       <div className="mb-0 animate-slide-up px-4 md:px-0">
-        <div className="bg-slate-900 rounded-[3rem] p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden group">
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full group-hover:bg-indigo-600/30 transition-all"></div>
+        <div className={`rounded-[3rem] p-8 md:p-10 border shadow-2xl relative overflow-hidden group transition-all duration-500 ${
+          isInProgress ? 'bg-indigo-900 border-indigo-400/30' : 'bg-slate-900 border-white/10'
+        }`}>
+          {/* Background decoration */}
+          <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
+            isInProgress ? 'bg-indigo-400/30' : 'bg-indigo-600/20 group-hover:bg-indigo-600/30'
+          }`}></div>
           
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="w-20 h-20 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-3xl shadow-xl shadow-indigo-500/20">
-              <i className="fa-solid fa-bolt-lightning animate-pulse"></i>
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl text-white shadow-xl transition-all duration-500 ${
+              isInProgress ? 'bg-indigo-500 shadow-indigo-500/40 scale-110' : 'bg-indigo-600 shadow-indigo-500/20'
+            }`}>
+              <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning animate-pulse'}`}></i>
             </div>
             
             <div className="flex-1 text-center md:text-left">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3">
-                <span className="px-3 py-1 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">Mission Prioritaire</span>
+                <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-colors ${
+                  isInProgress ? 'bg-indigo-400 text-white' : 'bg-indigo-500 text-white'
+                }`}>
+                  {isInProgress ? 'En cours' : 'Mission Prioritaire'}
+                </span>
                 <span className="text-indigo-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
                   <i className="fa-solid fa-star"></i>
                   Gagnez {assignedMission.xp_reward} XP
@@ -668,12 +722,21 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <button 
-                onClick={() => onNavigate?.('missions')}
-                className="px-8 py-4 bg-white text-slate-900 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95 w-full sm:w-auto text-center"
-              >
-                Démarrer
-              </button>
+              {!isInProgress ? (
+                <button 
+                  onClick={() => handleStartMission(assignedMission.id)}
+                  className="px-8 py-4 bg-white text-slate-900 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95 w-full sm:w-auto text-center"
+                >
+                  Démarrer
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setCompletingMission(assignedMission)}
+                  className="px-8 py-4 bg-emerald-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 w-full sm:w-auto text-center"
+                >
+                  Terminer
+                </button>
+              )}
               <button 
                 onClick={() => onNavigate?.('missions')}
                 className="px-6 py-4 bg-white/5 text-white border border-white/10 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all w-full sm:w-auto text-center"
@@ -1784,6 +1847,70 @@ const Dashboard: React.FC<DashboardProps> = ({
         document.body
       )}
 
+
+      {/* MODAL COMPLETION MISSION */}
+      {completingMission && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up border border-slate-100">
+            <div className="flex items-center gap-5 mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-inner">
+                <i className="fa-solid fa-trophy"></i>
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-xl tracking-tight">Mission Terminée</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bilan d'expertise requis</p>
+              </div>
+            </div>
+
+            <div className="mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+              <h4 className="font-bold text-slate-800 text-sm mb-1">{completingMission.title}</h4>
+              <p className="text-xs text-slate-500 font-medium line-clamp-2">{completingMission.description}</p>
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">
+                Notes de clôture
+              </label>
+              <textarea
+                value={completionNotes}
+                onChange={(e) => setCompletionNotes(e.target.value)}
+                placeholder="Décrivez brièvement ce qui a été accompli..."
+                autoFocus
+                className="w-full h-32 p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 outline-none transition-all font-medium text-slate-700 text-sm resize-none shadow-inner"
+              />
+              <p className="text-[9px] text-slate-400 font-bold mt-2 italic px-1">
+                Ces notes permettront au manager de valider officiellement votre contribution.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 justify-end pt-6 border-t border-slate-50">
+              <button
+                onClick={() => {
+                  setCompletingMission(null);
+                  setCompletionNotes("");
+                }}
+                disabled={isSubmittingCompletion}
+                className="px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCompleteMission}
+                disabled={isSubmittingCompletion || !completionNotes.trim()}
+                className="px-10 py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95 disabled:opacity-50 disabled:bg-slate-200 flex items-center gap-2"
+              >
+                {isSubmittingCompletion ? (
+                  <i className="fa-solid fa-circle-notch fa-spin"></i>
+                ) : (
+                  <i className="fa-solid fa-check"></i>
+                )}
+                Terminer
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* MODAL HISTORY RECENT PROCEDURES */}
       {showHistoryModal && createPortal(
