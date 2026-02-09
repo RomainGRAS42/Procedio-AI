@@ -57,26 +57,23 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
     try {
       const allItems: RSSItem[] = [];
       
-      // Use a proxy to avoid CORS issues if not using Edge Functions
-      const proxy = "https://api.allorigins.win/get?url=";
-      
       const fetchPromises = feedList.map(async (feed) => {
         try {
-          const res = await fetch(`${proxy}${encodeURIComponent(feed.url)}`);
+          // Use rss2json for robust CORS handling and pre-parsed JSON data
+          const apiKey = ""; // Free tier doesn't strictly need one for low volume
+          const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`;
+          
+          const res = await fetch(apiUrl);
           const data = await res.json();
-          const xmlText = data.contents;
           
-          const parser = new DOMParser();
-          const xml = parser.parseFromString(xmlText, "text/xml");
-          const channelTitle = xml.querySelector('channel > title')?.textContent || feed.title;
+          if (data.status !== 'ok') throw new Error(data.message);
           
-          const entryElements = Array.from(xml.querySelectorAll('item'));
-          return entryElements.slice(0, 5).map(el => ({
-            title: el.querySelector('title')?.textContent || '',
-            link: el.querySelector('link')?.textContent || '',
-            pubDate: el.querySelector('pubDate')?.textContent || '',
-            description: el.querySelector('description')?.textContent?.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' || '',
-            source: channelTitle
+          return data.items.slice(0, 5).map((item: any) => ({
+            title: item.title || '',
+            link: item.link || '',
+            pubDate: item.pubDate || '',
+            description: item.description?.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' || '',
+            source: data.feed.title || feed.title
           }));
         } catch (e) {
           console.error(`Failed to fetch feed: ${feed.url}`, e);
