@@ -28,11 +28,18 @@ const TeamPodium: React.FC = () => {
   useEffect(() => {
     const fetchChampions = async () => {
       try {
+        console.log('[TeamPodium] Fetching weekly champions...');
         const { data: champions, error } = await supabase.rpc('get_weekly_champions');
-        if (error) throw error;
+        
+        if (error) {
+          console.error('[TeamPodium] RPC Error:', error);
+          throw error;
+        }
+        
+        console.log('[TeamPodium] Champions data received:', champions);
         setData(champions);
       } catch (err) {
-        console.error("Error fetching champions:", err);
+        console.error('[TeamPodium] Error fetching champions:', err);
       } finally {
         setLoading(false);
       }
