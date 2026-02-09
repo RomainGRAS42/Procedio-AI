@@ -191,6 +191,41 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       setCancellingMission(null);
       setReasonText("");
       fetchMissions();
+
+      // Lifecycle Notifications
+      const mission = missions.find(m => m.id === missionId);
+      if (mission) {
+        // 1. Manager cancels -> Notify technician
+        if (newStatus === 'cancelled' && mission.assigned_to && mission.assigned_to !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: mission.assigned_to,
+            type: 'mission',
+            title: 'Mission annulée',
+            content: `La mission "${mission.title}" a été annulée par le manager.`,
+            link: '/missions'
+          });
+        }
+        // 2. Technician finishes -> Notify manager
+        if (newStatus === 'completed' && user.role === UserRole.TECHNICIAN && mission.created_by !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: mission.created_by,
+            type: 'mission',
+            title: 'Bilan déposé',
+            content: `${user.firstName} a terminé la mission : ${mission.title}`,
+            link: '/missions'
+          });
+        }
+        // 3. Manager validates -> Notify technician
+        if (newStatus === 'completed' && user.role === UserRole.MANAGER && mission.assigned_to && mission.assigned_to !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: mission.assigned_to,
+            type: 'mission',
+            title: 'Mission validée !',
+            content: `Votre mission "${mission.title}" a été validée. XP accordée !`,
+            link: '/missions'
+          });
+        }
+      }
     } catch (err) {
       setToast({ message: "Erreur lors de la mise à jour.", type: "error" });
     } finally {
@@ -208,6 +243,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       if (error) throw error;
       setToast({ message: "Mission démarrée !", type: "success" });
       fetchMissions();
+
+      // Notify Creator
+      const mission = missions.find(m => m.id === missionId);
+      if (mission && mission.created_by !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: mission.created_by,
+          type: 'mission',
+          title: 'Mission démarrée',
+          content: `${user.firstName} a démarré la mission : ${mission.title}`,
+          link: '/missions'
+        });
+      }
     } catch (err) {
       setToast({ message: "Erreur lors du démarrage.", type: "error" });
     }

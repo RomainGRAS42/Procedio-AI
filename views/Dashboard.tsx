@@ -633,6 +633,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       );
       setActiveMissions(updatedMissions);
       cacheStore.set('dash_active_missions', updatedMissions);
+
+      // Notify Creator
+      const mission = activeMissions.find(m => m.id === missionId);
+      if (mission && mission.created_by !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: mission.created_by,
+          type: 'mission',
+          title: 'Mission démarrée',
+          content: `${user.firstName} a démarré la mission : ${mission.title}`,
+          link: '/missions'
+        });
+      }
     } catch (err) {
       console.error(err);
       setToast({ message: "Erreur lors du démarrage.", type: "error" });
@@ -658,6 +670,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       const updatedMissions = activeMissions.filter(m => m.id !== completingMission.id);
       setActiveMissions(updatedMissions);
       cacheStore.set('dash_active_missions', updatedMissions);
+
+      // Notify Creator
+      if (completingMission.created_by !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: completingMission.created_by,
+          type: 'mission',
+          title: 'Bilan déposé',
+          content: `${user.firstName} a terminé la mission : ${completingMission.title}`,
+          link: '/missions'
+        });
+      }
 
       setToast({ message: "Mission terminée ! XP accordée.", type: "success" });
       setCompletingMission(null);
