@@ -742,28 +742,36 @@ const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        <div className="relative z-10 mt-8 flex gap-3">
+        <div className="relative z-10 mt-8 flex items-center justify-end gap-3">
+          <button 
+            onClick={() => onNavigate?.('missions')}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:scale-105 transition-all active:scale-95"
+            title="Détails de la mission"
+          >
+            <i className="fa-solid fa-arrow-right -rotate-45 text-xs"></i>
+          </button>
+
           {!isInProgress ? (
             <button 
               onClick={() => handleStartMission(assignedMission.id)}
-              className="flex-1 py-3 bg-white text-slate-900 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95"
+              className="pl-4 pr-5 py-2.5 bg-white text-slate-900 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95 flex items-center gap-2 group/btn"
             >
+              <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+                <i className="fa-solid fa-play text-[8px] ml-0.5"></i>
+              </span>
               Démarrer
             </button>
           ) : (
             <button 
               onClick={() => setCompletingMission(assignedMission)}
-              className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+              className="pl-4 pr-5 py-2.5 bg-emerald-500 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2 group/btn"
             >
+              <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+                <i className="fa-solid fa-check text-[10px]"></i>
+              </span>
               Terminer
             </button>
           )}
-          <button 
-            onClick={() => onNavigate?.('missions')}
-            className="px-4 py-3 bg-white/5 text-white border border-white/10 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white/10 transition-all"
-          >
-            Détails
-          </button>
         </div>
       </div>
     );
