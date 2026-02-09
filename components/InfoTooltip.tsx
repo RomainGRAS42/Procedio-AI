@@ -33,8 +33,8 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({ text, align = 'center' }) => 
       <i className="fa-solid fa-circle-info text-slate-300 hover:text-indigo-500 transition-colors cursor-help text-[0.8rem]"></i>
       
       {isVisible && (
-        <div className={`absolute bottom-full mb-3 w-56 bg-slate-800 text-white text-[11px] p-4 rounded-xl shadow-2xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>
-          <p className="font-semibold leading-snug text-center antialiased">{text}</p>
+        <div className={`absolute bottom-full mb-3 w-64 bg-slate-800 text-white text-xs p-4 rounded-xl shadow-2xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>
+          <p className="font-semibold leading-relaxed tracking-wide text-center antialiased">{text}</p>
           <div className={`absolute top-full -mt-1 border-4 border-transparent border-t-slate-800 ${getArrowClasses()}`}></div>
         </div>
       )}

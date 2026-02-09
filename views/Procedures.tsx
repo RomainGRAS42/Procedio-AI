@@ -138,7 +138,7 @@ const Procedures: React.FC<ProceduresProps> = ({
               <i className={`fa-solid fa-arrows-rotate ${loading ? 'animate-spin' : ''}`}></i>
             </button>
             {/* Tooltip Refresh */}
-            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-48 p-3 bg-slate-800 text-white text-[10px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-56 p-4 bg-slate-800 text-white text-xs font-semibold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed tracking-wide antialiased">
               Actualiser la liste pour voir les dernières procédures ajoutées par l'équipe.
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
             </div>
@@ -179,7 +179,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                   <span>Nouvelle Procédure</span>
                 </button>
                 {/* Tooltip Nouvelle Procédure */}
-                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 p-3 bg-slate-800 text-white text-[10px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 p-4 bg-slate-800 text-white text-xs font-semibold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed tracking-wide antialiased">
                   Ajouter manuellement un PDF ou créer une procédure vierge depuis votre ordinateur.
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
                 </div>
@@ -195,7 +195,7 @@ const Procedures: React.FC<ProceduresProps> = ({
                 </button>
                 
                 {/* Tooltip Premium */}
-                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-80 p-4 bg-slate-800 text-white text-[10px] font-medium rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed">
+                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-80 p-5 bg-slate-800 text-white text-xs font-semibold rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed tracking-wide antialiased">
                   Connectez votre Cloud pour synchroniser automatiquement vos dossiers SharePoint masifs.
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
                 </div>
