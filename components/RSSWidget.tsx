@@ -169,36 +169,44 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-4">
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-3 h-[320px]">
         {loading ? (
-          <div className="h-full flex flex-col items-center justify-center py-10 gap-3">
+          <div className="h-full flex items-center justify-center py-10 gap-3">
              <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Récupération des flux...</span>
           </div>
         ) : items.length > 0 ? (
           items.map((item, idx) => (
-            <a 
+            <div 
               key={idx} 
-              href={item.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="group block p-4 bg-slate-50/50 hover:bg-white border border-transparent hover:border-indigo-100 rounded-2xl transition-all"
+              className="group block p-4 bg-slate-50/50 hover:bg-white border border-transparent hover:border-indigo-100 rounded-2xl transition-all relative"
             >
               <div className="flex justify-between items-start mb-2">
                 <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                   {item.source}
                 </span>
-                <span className="text-[8px] font-bold text-slate-400">
-                  {new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-bold text-slate-400">
+                    {new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <a 
+                    href={item.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-5 h-5 rounded-md bg-white border border-slate-100 flex items-center justify-center text-slate-300 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                    title="Ouvrir le lien externe"
+                  >
+                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                  </a>
+                </div>
               </div>
-              <h4 className="font-bold text-slate-800 text-xs leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors mb-1">
+              <h4 className="font-bold text-slate-800 text-xs leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors mb-1.5">
                 {item.title}
               </h4>
-              <p className="text-[9px] text-slate-500 line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <p className="text-[10px] text-slate-500 line-clamp-2 font-medium leading-relaxed">
                 {item.description}
               </p>
-            </a>
+            </div>
           ))
         ) : (
           <div className="h-full flex flex-col items-center justify-center py-10 text-center opacity-50">
