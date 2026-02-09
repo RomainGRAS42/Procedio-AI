@@ -379,6 +379,15 @@ const Header: React.FC<HeaderProps> = ({
 
       setSuggestionResponses([]);
       setSystemNotifications([]);
+
+      // DELETE Flash Note Notifications (since they are stored as notes)
+      await supabase
+        .from('notes')
+        .delete()
+        .in('title', ["FLASH_NOTE_VALIDATED", "FLASH_NOTE_REJECTED"])
+        .eq('user_id', user.id);
+      
+      setFlashNoteNotifications([]);
     } else {
       // Manager: Mark all as viewed in DB
       const now = new Date().toISOString();
