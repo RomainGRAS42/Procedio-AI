@@ -26,8 +26,9 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
   const [feeds, setFeeds] = useState<RSSFeed[]>([]);
   const [items, setItems] = useState<RSSItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
   const [newFeed, setNewFeed] = useState({ url: '', title: '', is_global: false });
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     fetchFeeds();
@@ -125,7 +126,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
       }
 
       setFeeds([...feeds, data]);
-      setShowAddModal(false);
+      setIsAdding(false);
       setNewFeed({ url: '', title: '', is_global: false });
       fetchAllItems([...feeds, data]);
     } catch (err) {
@@ -162,10 +163,11 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
           </div>
         </div>
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => setShowManageModal(true)}
           className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white border border-slate-100 transition-all flex items-center justify-center"
+          title="Gérer les flux"
         >
-          <i className="fa-solid fa-plus text-xs"></i>
+          <i className="fa-solid fa-gear text-xs"></i>
         </button>
       </div>
 
@@ -217,73 +219,135 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
         )}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
+      <div 
+        onClick={() => setShowManageModal(true)}
+        className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between cursor-pointer group/manage"
+      >
          <div className="flex -space-x-2">
             {feeds.slice(0, 3).map(f => (
-              <div key={f.id} className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 shadow-sm" title={f.title}>
+              <div key={f.id} className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 shadow-sm group-hover/manage:border-indigo-300 transition-colors" title={f.title}>
                  <i className={`fa-solid ${f.icon}`}></i>
               </div>
             ))}
             {feeds.length > 3 && (
-              <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400">
+              <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400 group-hover/manage:bg-indigo-50 transition-colors">
                 +{feeds.length - 3}
               </div>
             )}
+            <div className="w-6 h-6 ml-4 opacity-0 group-hover/manage:opacity-100 transition-opacity flex items-center justify-center text-indigo-500">
+              <i className="fa-solid fa-plus-circle text-[10px]"></i>
+            </div>
          </div>
-         <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Fil d'actualité actif</span>
+         <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest group-hover/manage:text-indigo-400 transition-colors">Gérer les sources</span>
       </div>
 
-      {/* Modal Ajout Flux */}
-      {showAddModal && (
+      {/* Modal Gestion Flux */}
+      {showManageModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-scale-up border border-slate-100">
-             <h3 className="font-black text-slate-900 text-lg mb-6 flex items-center gap-3 uppercase tracking-tight">
-               <i className="fa-solid fa-plus-circle text-indigo-600"></i> Nouveau Flux
-             </h3>
-             <div className="space-y-4">
-                <div>
-                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">URL du flux</label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none text-xs font-bold text-slate-700 transition-all"
-                     placeholder="https://.../rss.xml"
-                     value={newFeed.url}
-                     onChange={e => setNewFeed({...newFeed, url: e.target.value})}
-                   />
-                </div>
-                <div>
-                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nom (Optionnel)</label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none text-xs font-bold text-slate-700 transition-all"
-                     placeholder="Ex: Veille Cybersécurité"
-                     value={newFeed.title}
-                     onChange={e => setNewFeed({...newFeed, title: e.target.value})}
-                   />
-                </div>
-                
-                {user.role === UserRole.MANAGER && (
-                  <div className="pt-2">
-                     <button 
-                       onClick={() => setNewFeed({...newFeed, is_global: !newFeed.is_global})}
-                       className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all w-full ${newFeed.is_global ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
-                     >
-                        <i className={`fa-solid ${newFeed.is_global ? 'fa-check-circle' : 'fa-circle'}`}></i>
-                        <span className="text-[10px] font-black uppercase tracking-widest">Diffuser au technicien</span>
-                     </button>
-                  </div>
-                )}
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-scale-up border border-slate-100 flex flex-col max-h-[90vh]">
+             <div className="flex justify-between items-center mb-8">
+                <h3 className="font-black text-slate-900 text-lg flex items-center gap-3 uppercase tracking-tight leading-none">
+                  <i className="fa-solid fa-rss text-orange-500"></i> Gestion des Flux
+                </h3>
+                <button 
+                  onClick={() => { setShowManageModal(false); setIsAdding(false); }}
+                  className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all flex items-center justify-center"
+                >
+                  <i className="fa-solid fa-times"></i>
+                </button>
              </div>
 
-             <div className="flex gap-3 mt-8">
-                <button onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all">Annuler</button>
-                <button 
-                  onClick={handleAddFeed}
-                  disabled={!newFeed.url}
-                  className="flex-1 py-3 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all disabled:opacity-50"
-                 >
-                   Ajouter
-                 </button>
+             <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-4">
+                <div className="space-y-2">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Sources Actives</p>
+                   {feeds.map((feed) => (
+                      <div key={feed.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group/feed hover:bg-white transition-all">
+                         <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 group-hover/feed:text-indigo-500 transition-colors">
+                               <i className={`fa-solid ${feed.icon}`}></i>
+                            </div>
+                            <div className="min-w-0">
+                               <p className="text-[11px] font-black text-slate-700 truncate capitalize">{feed.title}</p>
+                               <div className="flex items-center gap-2">
+                                  <p className="text-[8px] font-bold text-slate-400 truncate max-w-[150px]">{feed.url}</p>
+                                  {feed.is_global && (
+                                     <span className="text-[7px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">Global</span>
+                                  )}
+                               </div>
+                            </div>
+                         </div>
+                         <button 
+                           onClick={() => deleteFeed(feed.id)}
+                           className="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all flex items-center justify-center"
+                           title="Supprimer ce flux"
+                         >
+                            <i className="fa-solid fa-trash-can text-xs"></i>
+                         </button>
+                      </div>
+                   ))}
+                   {feeds.length === 0 && (
+                      <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aucun flux enregistré</p>
+                      </div>
+                   )}
+                </div>
+
+                {!isAdding ? (
+                   <button 
+                     onClick={() => setIsAdding(true)}
+                     className="w-full py-4 mt-4 border-2 border-dashed border-slate-200 rounded-2xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-3"
+                   >
+                      <i className="fa-solid fa-plus-circle"></i>
+                      Ajouter une nouvelle source
+                   </button>
+                ) : (
+                   <div className="bg-white border-t border-slate-100 pt-6 mt-6 animate-fade-in space-y-4">
+                      <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-4">Nouvelle Source</p>
+                      <div>
+                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">URL du flux</label>
+                         <input 
+                           type="text" 
+                           className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none text-xs font-bold text-slate-700 transition-all"
+                           placeholder="https://.../rss.xml"
+                           value={newFeed.url}
+                           onChange={e => setNewFeed({...newFeed, url: e.target.value})}
+                         />
+                      </div>
+                      <div>
+                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nom (Optionnel)</label>
+                         <input 
+                           type="text" 
+                           className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none text-xs font-bold text-slate-700 transition-all"
+                           placeholder="Ex: Veille Cybersécurité"
+                           value={newFeed.title}
+                           onChange={e => setNewFeed({...newFeed, title: e.target.value})}
+                         />
+                      </div>
+                      
+                      {user.role === UserRole.MANAGER && (
+                        <div className="pt-2">
+                           <button 
+                             onClick={() => setNewFeed({...newFeed, is_global: !newFeed.is_global})}
+                             className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all w-full ${newFeed.is_global ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
+                           >
+                              <i className={`fa-solid ${newFeed.is_global ? 'fa-check-circle' : 'fa-circle'}`}></i>
+                              <span className="text-[10px] font-black uppercase tracking-widest">Diffuser à l'équipe</span>
+                           </button>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 mt-4">
+                         <button onClick={() => setIsAdding(false)} className="flex-1 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all font-inter">Annuler</button>
+                         <button 
+                           onClick={handleAddFeed}
+                           disabled={!newFeed.url}
+                           className="flex-1 py-3 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all disabled:opacity-50"
+                          >
+                            Ajouter
+                          </button>
+                      </div>
+                   </div>
+                )}
              </div>
           </div>
         </div>
