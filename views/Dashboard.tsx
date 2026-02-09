@@ -788,7 +788,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all duration-500 ${
                  isInProgress ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
                }`}>
-                 <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning'}`}></i>
+                 <i className={`fa-solid ${isInProgress ? 'fa-thumbtack' : 'fa-bolt-lightning'}`}></i>
                </div>
                <div>
                  <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
