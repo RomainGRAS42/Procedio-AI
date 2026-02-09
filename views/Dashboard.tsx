@@ -4,6 +4,7 @@ import { User, Procedure, Suggestion, UserRole, Mission } from "../types";
 import CustomToast from "../components/CustomToast";
 // MissionSpotlight is defined locally at line 372 so no import needed, remove line 5
 import TeamPodium from '../components/TeamPodium';
+import XPProgressBar from '../components/XPProgressBar';
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
@@ -1373,6 +1374,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
       </div>
+
+      {/* XP Progress Bar - Only for Technicians */}
+      {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
+        <XPProgressBar 
+          currentXP={personalStats.xp} 
+          currentLevel={personalStats.level} 
+        />
+      )}
 
       {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
