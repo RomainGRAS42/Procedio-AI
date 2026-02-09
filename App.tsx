@@ -19,6 +19,7 @@ import ChatAssistant from "./components/ChatAssistant";
 import LoadingState from "./components/LoadingState";
 import SearchResults from "./views/SearchResults";
 import Missions from "./views/Missions";
+import XPProgressBarTest from "./views/XPProgressBarTest";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -465,6 +466,7 @@ const AppContent: React.FC<any> = ({
               } />
               <Route path="/team" element={<Team user={user} />} />
               <Route path="/missions" element={<Missions user={user} />} />
+              <Route path="/xp-test" element={<XPProgressBarTest />} />
               <Route path="/account" element={<Account user={user} onGoToReset={() => {}} />} />
 
               <Route path="/upload" element={
