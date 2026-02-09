@@ -233,7 +233,37 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     }
   };
 
+  // Real-time Sync
+  useEffect(() => {
+    const channel = supabase
+      .channel('missions_view_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'missions' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setMissions(prev => [payload.new as Mission, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const newMission = payload.new as Mission;
+            setMissions(prev => prev.map(m => m.id === newMission.id ? { ...m, ...newMission } : m));
+          } else if (payload.eventType === 'DELETE') {
+            setMissions(prev => prev.filter(m => m.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleStartMission = async (missionId: string) => {
+    // Optimistic Update
+    const previousMissions = [...missions];
+    setMissions(prev => prev.map(m => m.id === missionId ? { ...m, status: 'in_progress' } : m));
+    setToast({ message: "Mission démarrée !", type: "success" });
+
     try {
       const { error } = await supabase
         .from('missions')
@@ -241,8 +271,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         .eq('id', missionId);
       
       if (error) throw error;
-      setToast({ message: "Mission démarrée !", type: "success" });
-      fetchMissions();
+      // No need to fetchMissions() if subscription works, but keeping it as backup or for consistency if payload implies heavy data not in payload? 
+      // Payload usually has all columns. 
+      // Actually, payload might lack joined fields (assignee, creator).
+      // So fetching might be safer for complex views, OR we just update status which is fine.
+      // But let's rely on subscription for other clients, and this local update for self.
+      // The subscription will also trigger an update coming from own change?
+      // Yes, Supabase sends back the change. We should handle it gracefully (idempotent map).
 
       // Notify Creator
       const mission = missions.find(m => m.id === missionId);
@@ -256,6 +291,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         });
       }
     } catch (err) {
+      // Revert
+      setMissions(previousMissions);
       setToast({ message: "Erreur lors du démarrage.", type: "error" });
     }
   };

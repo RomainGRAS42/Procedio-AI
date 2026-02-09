@@ -596,16 +596,75 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  // Real-time Mission Sync
+  useEffect(() => {
+    // Manager listens to ALL missions, Tech listens only to theirs/open ones
+    const filter = user.role === UserRole.MANAGER 
+      ? undefined 
+      : `assigned_to=eq.${user.id}`;
+
+    const channel = supabase
+      .channel('mission_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'missions',
+          filter: filter // Manager gets global updates, Tech gets personal updates
+        },
+        (payload) => {
+          console.log("Realtime Mission Update:", payload);
+          const newMission = payload.new as Mission;
+          
+          setActiveMissions((prev) => {
+            // If mission is completed and we're not manager viewing history, remove it
+            if (newMission.status === 'completed' && user.role !== UserRole.MANAGER) {
+              return prev.filter(m => m.id !== newMission.id);
+            }
+            // Update existing or add if matches criteria (for Manager)
+            const exists = prev.find(m => m.id === newMission.id);
+            if (exists) {
+              return prev.map((m) => m.id === newMission.id ? { ...m, status: newMission.status } : m);
+            }
+            // If it's a new mission for the feed (e.g. just assigned), we might want to fetch it or ignore
+            // For simple status sync, updating existing is enough.
+            return prev;
+          });
+          
+          // Also update cache
+          const currentCache = cacheStore.get('dash_active_missions') || [];
+          const updatedCache = currentCache.map((m: Mission) => m.id === newMission.id ? { ...m, status: newMission.status } : m);
+          cacheStore.set('dash_active_missions', updatedCache);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id, user.role]);
+
   const fetchActiveMissions = async () => {
     setLoadingMissions(true);
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('missions')
-        .select('*')
-        .or(`status.eq.open,assigned_to.eq.${user.id}`)
-        .not('status', 'eq', 'completed')
+        .select('*');
+
+      if (user.role === UserRole.MANAGER) {
+        // Manager sees ALL active missions (not completed)
+        // Adjust filter as needed for team scope
+        query = query.neq('status', 'completed');
+      } else {
+        // Technician sees assigned or open
+        query = query.or(`status.eq.open,assigned_to.eq.${user.id}`)
+                     .not('status', 'eq', 'completed');
+      }
+
+      const { data } = await query
         .order('urgency', { ascending: false })
-        .limit(5);
+        .limit(10); // Increased limit for Manager view
 
       if (data) {
         setActiveMissions(data as Mission[]);
@@ -619,6 +678,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleStartMission = async (missionId: string) => {
+    // 1. Optimistic Update: Immediately update local state
+    const previousMissions = [...activeMissions];
+    const updatedMissions = activeMissions.map(m => 
+      m.id === missionId ? { ...m, status: 'in_progress' as const } : m
+    );
+    setActiveMissions(updatedMissions);
+    cacheStore.set('dash_active_missions', updatedMissions);
+    // User feedback immediately
+    setToast({ message: "Mission démarrée ! Bon courage.", type: "success" });
+
     try {
       const { error } = await supabase
         .from('missions')
@@ -626,15 +695,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         .eq('id', missionId);
       
       if (error) throw error;
-      setToast({ message: "Mission démarrée ! Bon courage.", type: "success" });
       
-      const updatedMissions = activeMissions.map(m => 
-        m.id === missionId ? { ...m, status: 'in_progress' as const } : m
-      );
-      setActiveMissions(updatedMissions);
-      cacheStore.set('dash_active_missions', updatedMissions);
-
-      // Notify Creator
+      // Notify Creator (Fire and Forget)
       const mission = activeMissions.find(m => m.id === missionId);
       if (mission && mission.created_by !== user.id) {
         await supabase.from('notifications').insert({
@@ -646,8 +708,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
       }
     } catch (err) {
-      console.error(err);
-      setToast({ message: "Erreur lors du démarrage.", type: "error" });
+      console.error("Error starting mission:", err);
+      // Revert optimistic update on error
+      setActiveMissions(previousMissions);
+      cacheStore.set('dash_active_missions', previousMissions);
+      setToast({ message: "Erreur lors du démarrage. Veuillez réessayer.", type: "error" });
     }
   };
 
@@ -716,13 +781,24 @@ const Dashboard: React.FC<DashboardProps> = ({
         
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 ${
-              isInProgress ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
-            }`}>
-              <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning'}`}></i>
+            <div className="flex items-center gap-4">
+               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all duration-500 ${
+                 isInProgress ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
+               }`}>
+                 <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning'}`}></i>
+               </div>
+               <div>
+                 <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
+                   {isInProgress ? 'Mission en cours' : 'Ordre de Mission'}
+                 </h3>
+                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mt-1">
+                   {isInProgress ? 'Objectif actif' : 'Assignée par le manager'}
+                 </p>
+               </div>
             </div>
+            
             <div className="flex flex-col items-end">
-              <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg mb-1 ${
+              <span className={`px-2 py-1 text-[7px] font-black uppercase tracking-widest rounded-md mb-1 ${
                 isInProgress ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
               }`}>
                 {isInProgress ? 'En cours' : 'Priorité'}
@@ -745,7 +821,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="relative z-10 mt-8 flex items-center justify-end gap-3">
           <button 
             onClick={() => onNavigate?.('missions')}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:scale-105 transition-all active:scale-95"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100 hover:bg-white hover:border-indigo-100 hover:text-indigo-600 hover:scale-105 transition-all active:scale-95 shadow-sm"
             title="Détails de la mission"
           >
             <i className="fa-solid fa-arrow-right -rotate-45 text-xs"></i>
@@ -754,9 +830,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           {!isInProgress ? (
             <button 
               onClick={() => handleStartMission(assignedMission.id)}
-              className="pl-4 pr-5 py-2.5 bg-white text-slate-900 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95 flex items-center gap-2 group/btn"
+              className="pl-4 pr-5 py-2.5 bg-slate-900 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95 flex items-center gap-2 group/btn"
             >
-              <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+              <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center group-hover/btn:scale-110 transition-transform">
                 <i className="fa-solid fa-play text-[8px] ml-0.5"></i>
               </span>
               Démarrer
