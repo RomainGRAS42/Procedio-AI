@@ -27,6 +27,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     assigned_to: '',
     hasDeadline: false,
     deadline: '',
+    needs_attachment: false,
   });
 
   // Lifecycle Modals State
@@ -34,6 +35,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
   const [cancellingMission, setCancellingMission] = useState<Mission | null>(null);
   const [reasonText, setReasonText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [technicians, setTechnicians] = useState<{id: string, email: string, first_name: string, last_name: string}[]>([]);
 
@@ -117,7 +120,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
           deadline: newMission.hasDeadline ? newMission.deadline : null,
           assigned_to: assigned_to,
           created_by: user.id,
-          status: assigned_to ? 'assigned' : 'open'
+          status: assigned_to ? 'assigned' : 'open',
+          needs_attachment: newMission.needs_attachment
         }]);
 
       if (error) throw error;
@@ -143,7 +147,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         targetType: 'team',
         assigned_to: '',
         hasDeadline: false,
-        deadline: ''
+        deadline: '',
+        needs_attachment: false
       });
       fetchMissions();
     } catch (err) {
@@ -168,51 +173,89 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     }
   };
 
-  const handleStatusUpdate = async (missionId: string, newStatus: MissionStatus, notes?: string) => {
+  const handleStatusUpdate = async (missionId: string, newStatus: MissionStatus, notes?: string, attachmentUrl?: string) => {
+    setIsSubmitting(true);
     try {
-      const updateData: any = { status: newStatus };
-      if (newStatus === 'completed') updateData.completion_notes = notes;
-      if (newStatus === 'cancelled') updateData.cancellation_reason = notes;
-
-      const { error } = await supabase
-        .from('missions')
-        .update(updateData)
-        .eq('id', missionId);
-
-      if (error) throw error;
-
-      setToast({ 
-        message: newStatus === 'completed' ? "Mission validée ! XP versée." : 
-                 newStatus === 'cancelled' ? "Mission annulée." : "Statut mis à jour.", 
-        type: "success" 
-      });
-      
-      setCompletingMission(null);
-      setCancellingMission(null);
-      setReasonText("");
-      fetchMissions();
-
-      // Lifecycle Notifications AND SCORING (Secure RPC)
       const mission = missions.find(m => m.id === missionId);
-      if (mission) {
-        
-        // 1. Manager validates -> +50 XP via Secure RPC
-        if (newStatus === 'completed' && user.role === UserRole.MANAGER && mission.assigned_to) {
-           // Call the RPC
-           const { data: xpData, error: xpError } = await supabase.rpc('increment_user_xp', {
+      if (!mission) return;
+
+      // Handle Awaiting Validation Logic (Technician finishes a mission that needs attachment)
+      if (newStatus === 'completed' && mission.needs_attachment && user.role === UserRole.TECHNICIAN) {
+        // Call the RPC for submission bonus
+        const { error: submitError } = await supabase.rpc('reward_mission_submission', {
+          mission_id: missionId
+        });
+
+        if (submitError) throw submitError;
+
+        // Update with notes and file URL
+        const { error: updateError } = await supabase
+          .from('missions')
+          .update({ 
+            status: 'awaiting_validation', // Forced state
+            completion_notes: notes,
+            attachment_url: attachmentUrl
+          })
+          .eq('id', missionId);
+
+        if (updateError) throw updateError;
+
+        setToast({ message: "Livrable envoyé ! En attente de validation du manager (+10 XP bonus).", type: "success" });
+      } 
+      // Handle Final Validation (Manager validates)
+      else if (newStatus === 'completed' && user.role === UserRole.MANAGER && mission.status === 'awaiting_validation') {
+         const { error: validateError } = await supabase.rpc('validate_mission_completion', {
+           mission_id: missionId,
+           feedback: notes
+         });
+
+         if (validateError) throw validateError;
+         setToast({ message: "Mission validée officiellement ! XP totale versée.", type: "success" });
+      }
+      // Standard flow (no attachment needed or manager manual update)
+      else {
+        const updateData: any = { status: newStatus };
+        if (newStatus === 'completed') updateData.completion_notes = notes;
+        if (newStatus === 'cancelled') updateData.cancellation_reason = notes;
+
+        const { error } = await supabase
+          .from('missions')
+          .update(updateData)
+          .eq('id', missionId);
+
+        if (error) throw error;
+
+        // Give XP if transitioning to completed directly (standard way)
+        if (newStatus === 'completed' && mission.assigned_to) {
+           await supabase.rpc('increment_user_xp', {
              target_user_id: mission.assigned_to,
              xp_amount: mission.xp_reward || 50,
              reason: `Mission accomplie : ${mission.title}`
            });
+        }
 
-           if (xpError) console.error("Error giving XP:", xpError);
-           
-           // Notify user
+        setToast({ 
+          message: newStatus === 'completed' ? "Mission validée ! XP versée." : 
+                   newStatus === 'cancelled' ? "Mission annulée." : "Statut mis à jour.", 
+          type: "success" 
+        });
+      }
+      
+      setCompletingMission(null);
+      setCancellingMission(null);
+      setReasonText("");
+      setSelectedFile(null);
+      fetchMissions();
+
+      // Lifecycle Notifications
+      if (mission) {
+        // 1. Manager validates -> Notify user
+        if (newStatus === 'completed' && user.role === UserRole.MANAGER && mission.assigned_to) {
            await supabase.from('notifications').insert({
             user_id: mission.assigned_to,
             type: 'mission',
             title: 'Mission validée !',
-            content: `Votre mission "${mission.title}" a été validée. +${mission.xp_reward || 50} XP accordés !`,
+            content: `Votre mission "${mission.title}" a été validée. XP finale accordée !`,
             link: '/missions'
           });
         }
@@ -233,8 +276,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
           await supabase.from('notifications').insert({
             user_id: mission.created_by,
             type: 'mission',
-            title: 'Bilan déposé',
-            content: `${user.firstName} a terminé la mission : ${mission.title}`,
+            title: mission.needs_attachment ? 'Livrable déposé' : 'Mission terminée',
+            content: `${user.firstName} a soumis son travail pour : ${mission.title}`,
             link: '/missions'
           });
         }
@@ -332,7 +375,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       open: { color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Disponible' },
       assigned: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'Assignée' },
       in_progress: { color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'En cours' },
-      in_review: { color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'À réviser' },
+      awaiting_validation: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'À Valider' },
       completed: { color: 'text-slate-400', bg: 'bg-slate-50', label: 'Terminée' },
       cancelled: { color: 'text-rose-400', bg: 'bg-rose-50', label: 'Annulée' }
     }[status];
@@ -429,12 +472,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                       </button>
                     )}
 
-                    {mission.status === 'in_review' && user.role === UserRole.MANAGER && (
+                    {mission.status === 'awaiting_validation' && user.role === UserRole.MANAGER && (
                       <button 
-                        onClick={() => handleStatusUpdate(mission.id, 'completed')}
-                        className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                        onClick={() => {
+                          setCompletingMission(mission);
+                          setReasonText(mission.completion_notes || "");
+                        }}
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2"
                       >
-                        Valider XP
+                        <i className="fa-solid fa-microscope"></i>
+                        Réviser Livrable
                       </button>
                     )}
                   </div>
@@ -684,6 +731,22 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                   </div>
                </div>
 
+               {/* New Toggle: Needs Attachment */}
+               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between group/toggle hover:border-indigo-200 transition-all cursor-pointer" onClick={() => setNewMission({...newMission, needs_attachment: !newMission.needs_attachment})}>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm transition-all ${newMission.needs_attachment ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                      <i className="fa-solid fa-paperclip"></i>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Preuve de travail requise</p>
+                      <p className="text-[10px] font-medium text-slate-500">Le technicien devra uploader un fichier pour valider.</p>
+                    </div>
+                  </div>
+                  <div className={`w-12 h-6 rounded-full transition-all relative ${newMission.needs_attachment ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${newMission.needs_attachment ? 'right-1' : 'left-1'}`}></div>
+                  </div>
+               </div>
+
                <button 
                  onClick={handleCreateMission}
                  className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95"
@@ -696,31 +759,169 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         document.body
       )}
 
-      {/* MODAL COMPLETION MISSION */}
+      {/* MODAL COMPLETION/REVIEW MISSION */}
       {completingMission && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up">
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Mission Terminée</h3>
-            <p className="text-xs font-bold text-slate-400 uppercase mb-6 tracking-widest">Décrivez brièvement ce qui a été fait</p>
-            
-            <textarea
-              value={reasonText}
-              onChange={(e) => setReasonText(e.target.value)}
-              placeholder="Notes de clôture..."
-              className="w-full h-32 p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-emerald-500 outline-none transition-all font-medium text-slate-600 resize-none mb-6"
-            />
-            
-            <div className="flex gap-3">
-              <button onClick={() => setCompletingMission(null)} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">
-                Annuler
-              </button>
-              <button 
-                onClick={() => handleStatusUpdate(completingMission.id, 'completed', reasonText)}
-                disabled={!reasonText.trim() || isSubmitting}
-                className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-              >
-                Terminer
-              </button>
+          <div className={`bg-white rounded-[2.5rem] p-10 w-full shadow-2xl animate-scale-up ${completingMission.status === 'awaiting_validation' ? 'max-w-4xl' : 'max-w-lg'}`}>
+            <div className="flex items-center justify-between mb-8">
+               <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${
+                    completingMission.status === 'awaiting_validation' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                  }`}>
+                     <i className={`fa-solid ${completingMission.status === 'awaiting_validation' ? 'fa-magnifying-glass-chart' : 'fa-check-double'}`}></i>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                      {completingMission.status === 'awaiting_validation' ? 'Révision Stratégique' : 'Mission Terminée'}
+                    </h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
+                      {completingMission.title}
+                    </p>
+                  </div>
+               </div>
+               <button onClick={() => {
+                 setCompletingMission(null);
+                 setSelectedFile(null);
+               }} className="text-slate-300 hover:text-rose-500 transition-colors">
+                  <i className="fa-solid fa-xmark text-2xl"></i>
+               </button>
+            </div>
+
+            <div className={`grid gap-10 ${completingMission.status === 'awaiting_validation' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+               
+               {/* Left Column: Livrable & Info */}
+               <div className="space-y-8">
+                  {completingMission.status === 'awaiting_validation' && completingMission.attachment_url && (
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                         <i className="fa-solid fa-paperclip text-indigo-500"></i>
+                         Livrable déposé
+                       </label>
+                       <div className="p-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex items-center justify-between group hover:border-indigo-200 transition-all">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl bg-white text-indigo-600 flex items-center justify-center text-xl shadow-sm border border-slate-100">
+                                <i className={`fa-solid ${completingMission.attachment_url.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image'}`}></i>
+                             </div>
+                             <div>
+                                <p className="text-xs font-black text-slate-700 uppercase tracking-tight">Pièce jointe</p>
+                                <p className="text-[9px] font-medium text-slate-400">Envoyé par le technicien</p>
+                             </div>
+                          </div>
+                          <a 
+                            href={`${supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all"
+                          >
+                            Consulter
+                          </a>
+                       </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Notes du Technicien</label>
+                     <div className="p-6 bg-slate-50/50 border border-slate-100 rounded-[1.5rem] min-h-[100px]">
+                        <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                          "{completingMission.completion_notes || "Aucune note."}"
+                        </p>
+                     </div>
+                  </div>
+
+                  {user.role === UserRole.TECHNICIAN && completingMission.status === 'in_progress' && completingMission.needs_attachment && (
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center justify-between">
+                           Livrable (PDF, Image)
+                           {selectedFile && <span className="text-emerald-500 lowercase font-bold">{selectedFile.name}</span>}
+                        </label>
+                        
+                        <div className={`relative group border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center transition-all ${
+                           selectedFile 
+                           ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
+                           : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-300 hover:bg-white hover:text-indigo-600'
+                        }`}>
+                           <input 
+                             type="file" 
+                             className="absolute inset-0 opacity-0 cursor-pointer" 
+                             accept="application/pdf,image/*"
+                             onChange={(e) => {
+                               if (e.target.files && e.target.files[0]) {
+                                 setSelectedFile(e.target.files[0]);
+                               }
+                             }}
+                           />
+                           <i className={`fa-solid ${selectedFile ? 'fa-file-circle-check' : 'fa-cloud-arrow-up'} text-2xl mb-2`}></i>
+                           <p className="text-[10px] font-black uppercase tracking-widest">
+                             {selectedFile ? 'Fichier prêt' : 'Glisser ou cliquer'}
+                           </p>
+                        </div>
+                    </div>
+                  )}
+               </div>
+
+               {/* Right Column: Feedback & Actions */}
+               <div className="space-y-8">
+                  <div className="space-y-3">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                       {user.role === UserRole.MANAGER ? 'Commentaires & Feedback' : 'Résumé de l\'accomplissement'}
+                     </label>
+                     <textarea
+                       value={reasonText}
+                       onChange={(e) => setReasonText(e.target.value)}
+                       placeholder={user.role === UserRole.MANAGER ? "Donnez votre avis sur le travail réalisé..." : "Qu'avez-vous réalisé ?"}
+                       className="w-full h-48 p-6 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none shadow-inner"
+                     />
+                  </div>
+
+                  <div className="flex gap-4">
+                     {user.role === UserRole.MANAGER && completingMission.status === 'awaiting_validation' && (
+                       <button 
+                         onClick={() => handleStatusUpdate(completingMission.id, 'in_progress', reasonText)}
+                         disabled={isSubmitting}
+                         className="flex-1 py-5 bg-rose-50 text-rose-500 border border-rose-100 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all active:scale-95"
+                       >
+                         {isSubmitting ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Demander Correction'}
+                       </button>
+                     )}
+                     
+                     <button 
+                       onClick={async () => {
+                         let fileUrl = '';
+                         if (selectedFile) {
+                            setUploadingFile(true);
+                            try {
+                              const fileExt = selectedFile.name.split('.').pop();
+                              const fileName = `${completingMission.id}/${Date.now()}.${fileExt}`;
+                              const { data, error } = await supabase.storage
+                                .from('mission-attachments')
+                                .upload(fileName, selectedFile);
+                              
+                              if (error) throw error;
+                              fileUrl = data.path;
+                            } catch (err) {
+                              console.error("Upload error:", err);
+                              setToast({ message: "Erreur lors de l'upload.", type: "error" });
+                              return;
+                            } finally {
+                              setUploadingFile(false);
+                            }
+                         }
+                         handleStatusUpdate(completingMission.id, 'completed', reasonText, fileUrl);
+                       }}
+                       disabled={!reasonText.trim() || (completingMission.needs_attachment && user.role === UserRole.TECHNICIAN && !selectedFile) || isSubmitting || uploadingFile}
+                       className="flex-[1.5] py-5 bg-slate-900 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                     >
+                       {uploadingFile || isSubmitting ? (
+                         <i className="fa-solid fa-circle-notch animate-spin"></i>
+                       ) : (
+                         user.role === UserRole.MANAGER && completingMission.status === 'awaiting_validation' 
+                         ? 'Approuver & Libérer XP' 
+                         : (completingMission.needs_attachment && user.role === UserRole.TECHNICIAN ? 'Soumettre Livrable (+10 XP)' : 'Valider Mission')
+                       )}
+                     </button>
+                  </div>
+               </div>
+
             </div>
           </div>
         </div>,
