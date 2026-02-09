@@ -1646,8 +1646,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
            </div>
-        </div>
-      )}
 
           {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure & RSS */}
           {isReferent && pendingReviews.length > 0 && (
