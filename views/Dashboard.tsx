@@ -5,6 +5,7 @@ import CustomToast from "../components/CustomToast";
 // MissionSpotlight is defined locally at line 372 so no import needed, remove line 5
 import TeamPodium from '../components/TeamPodium';
 import XPProgressBar from '../components/XPProgressBar';
+import MasteryProgress from '../components/MasteryProgress';
 import LevelUpModal from '../components/LevelUpModal';
 import BadgeUnlockedModal from '../components/BadgeUnlockedModal';
 import InfoTooltip from "../components/InfoTooltip";
@@ -1493,71 +1494,94 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* ZONE 2: Expertise & Badges */}
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6">
-             <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
-                  <i className="fa-solid fa-trophy"></i>
-                </div>
-                <h3 className="font-black text-slate-900 text-lg tracking-tight">Mes Badges</h3>
-             </div>
-             <div className="flex flex-wrap gap-3">
-                {earnedBadges.length > 0 ? (
-                  earnedBadges.map((ub) => (
-                    <div key={ub.id} className="group relative">
-                      <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-indigo-200 hover:bg-white transition-all cursor-help">
-                        <i className={`fa-solid ${ub.badges.icon} text-lg text-indigo-600`}></i>
-                        <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter truncate w-10 text-center">
-                          {ub.badges.name}
-                        </span>
-                      </div>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl">
-                         <p className="font-black text-indigo-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
-                         <p className="text-slate-300 leading-relaxed">{ub.badges.description}</p>
-                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="w-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Aucun badge</p>
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-indigo-100 transition-all">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
+                    <i className="fa-solid fa-trophy"></i>
                   </div>
-                )}
+                  <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
+                </div>
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                  {earnedBadges.length} Obtenus
+                </span>
+             </div>
+
+             <div className="flex-1 space-y-6">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Collection active</p>
+                  <div className="flex flex-wrap gap-3">
+                    {earnedBadges.length > 0 ? (
+                      earnedBadges.map((ub) => (
+                        <div key={ub.id} className="group relative">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-indigo-200 hover:bg-white transition-all cursor-help transform hover:-translate-y-1">
+                            <i className={`fa-solid ${ub.badges.icon} text-lg text-indigo-600`}></i>
+                            <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter truncate w-10 text-center">
+                              {ub.badges.name}
+                            </span>
+                          </div>
+                          {/* Improved Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
+                             <p className="font-black text-indigo-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
+                             <p className="text-slate-300 leading-relaxed">{ub.badges.description}</p>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="w-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Aucun badge débloqué</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-50">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Prochain Défi</p>
+                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-300 flex items-center justify-center text-sm group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500 transition-colors">
+                          <i className="fa-solid fa-book-bookmark"></i>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-700 uppercase leading-none mb-1">Lecteur Assidu</p>
+                          <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                            <div className="h-full bg-amber-400 w-3/4 animate-pulse"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">75%</span>
+                   </div>
+                </div>
              </div>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
-             <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                  <i className="fa-solid fa-circle-nodes"></i>
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full hover:border-indigo-100 transition-all">
+             <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                    <i className="fa-solid fa-graduation-cap"></i>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
                 </div>
-                <h3 className="font-black text-slate-900 text-lg tracking-tight">Maitrise</h3>
+                <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." />
              </div>
-             <div className="flex-1 flex flex-col justify-between">
-                <div className="h-40 w-full">
-                   {personalStats.mastery.length > 2 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
-                          <PolarGrid stroke="#f1f5f9" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 8, fontWeight: 'bold' }} />
-                          <Radar name="Maîtrise" dataKey="A" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.6} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                   ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                         <i className="fa-solid fa-chart-pie text-slate-100 text-3xl mb-2"></i>
-                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-tight">Consultez plus de contenus pour voir votre radar</p>
-                      </div>
-                   )}
+             
+             <div className="flex-1">
+                <MasteryProgress data={personalStats.mastery} />
+             </div>
+
+             <div className="mt-8 pt-6 border-t border-slate-50 grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-black text-indigo-600">{(personalStats.level * 100) - personalStats.xp}</span>
+                    <span className="text-[10px] font-bold text-slate-300 uppercase">Points</span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
-                    <span className="text-sm font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Cible</span>
-                    <span className="text-sm font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
-                  </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cible Suivante</span>
+                  <span className="text-xs font-black text-slate-700 uppercase">Rang {personalStats.level + 1}</span>
                 </div>
              </div>
           </div>
