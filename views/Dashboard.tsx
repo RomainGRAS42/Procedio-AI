@@ -613,6 +613,80 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleAcceptMission = async (missionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('missions')
+        .update({ status: 'assigned' })
+        .eq('id', missionId);
+      
+      if (error) throw error;
+      setToast({ message: "Mission acceptée ! À vous de jouer.", type: "success" });
+      
+      const updatedMissions = activeMissions.map(m => 
+        m.id === missionId ? { ...m, status: 'assigned' as const } : m
+      );
+      setActiveMissions(updatedMissions);
+      cacheStore.set('dash_active_missions', updatedMissions);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const MissionSpotlight = () => {
+    const assignedMission = activeMissions.find(m => 
+      m.status === 'assigned' && 
+      m.assigned_to === user.id
+    );
+    
+    if (!assignedMission) return null;
+
+    return (
+      <div className="mb-0 animate-slide-up px-4 md:px-0">
+        <div className="bg-slate-900 rounded-[3rem] p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden group">
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full group-hover:bg-indigo-600/30 transition-all"></div>
+          
+          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-3xl shadow-xl shadow-indigo-500/20">
+              <i className="fa-solid fa-bolt-lightning animate-pulse"></i>
+            </div>
+            
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3">
+                <span className="px-3 py-1 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">Mission Prioritaire</span>
+                <span className="text-indigo-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <i className="fa-solid fa-star"></i>
+                  Gagnez {assignedMission.xp_reward} XP
+                </span>
+              </div>
+              <h3 className="text-2xl md:text-3xl font-black text-white tracking-tighter mb-2">
+                {assignedMission.title}
+              </h3>
+              <p className="text-slate-400 text-sm md:text-base font-medium max-w-2xl line-clamp-2">
+                {assignedMission.description}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <button 
+                onClick={() => onNavigate?.('missions')}
+                className="px-8 py-4 bg-white text-slate-900 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95 w-full sm:w-auto text-center"
+              >
+                Démarrer
+              </button>
+              <button 
+                onClick={() => onNavigate?.('missions')}
+                className="px-6 py-4 bg-white/5 text-white border border-white/10 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all w-full sm:w-auto text-center"
+              >
+                Détails
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const fetchSuggestions = async () => {
 
     setLoadingSuggestions(true);
@@ -1149,6 +1223,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
       </div>
+
+      {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
+        <MissionSpotlight />
+      )}
 
 
       <div className="flex flex-col lg:flex-row gap-8">

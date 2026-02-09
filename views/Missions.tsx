@@ -116,6 +116,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
 
       if (error) throw error;
 
+      // Trigger Notification for the assigned technician
+      if (assigned_to) {
+        await supabase.from('notifications').insert({
+          user_id: assigned_to,
+          type: 'mission',
+          title: 'Nouvelle mission assignée',
+          content: `On vous a confié la mission : ${newMission.title}`,
+          link: '/missions' // Navigate to missions view
+        });
+      }
+
       setToast({ message: "Mission stratégique crée !", type: "success" });
       setShowCreateModal(false);
       setNewMission({ 

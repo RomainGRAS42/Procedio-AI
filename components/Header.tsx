@@ -53,6 +53,7 @@ const Header: React.FC<HeaderProps> = ({
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]); 
   const [selectedIndex, setSelectedIndex] = useState(-1); // Keyboard navigation state
   const [flashNoteNotifications, setFlashNoteNotifications] = useState<any[]>([]);
+  const [systemNotifications, setSystemNotifications] = useState<any[]>([]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Click outside to close search suggestions
@@ -325,6 +326,29 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const fetchSystemNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("read", false)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      if (data) setSystemNotifications(data);
+    } catch (err) {
+      console.error("Error fetching system notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSystemNotifications();
+    const interval = setInterval(fetchSystemNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [user.id]);
+
   useEffect(() => {
     fetchFlashNoteNotifications();
     const interval = setInterval(fetchFlashNoteNotifications, 10000);
@@ -333,21 +357,28 @@ const Header: React.FC<HeaderProps> = ({
 
 
   const totalNotifs = (user.role === UserRole.MANAGER
-    ? (pendingSuggestions.length + readLogs.length) // Simplifié car on filtre déjà à la source (viewed=false)
-    : suggestionResponses.length) + flashNoteNotifications.length;
+    ? (pendingSuggestions.length + readLogs.length) 
+    : suggestionResponses.length) 
+    + flashNoteNotifications.length
+    + systemNotifications.length;
 
 
   const handleClearAll = async () => {
     if (user.role === UserRole.TECHNICIAN) {
       // Mark all responses as read
-      const { error } = await supabase
+      await supabase
         .from('suggestion_responses')
         .update({ read: true })
         .eq('user_id', user.id);
       
-      if (!error) {
-        setSuggestionResponses([]);
-      }
+      // Also clear system notifications
+      await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id);
+
+      setSuggestionResponses([]);
+      setSystemNotifications([]);
     } else {
       // Manager: Mark all as viewed in DB
       const now = new Date().toISOString();
@@ -729,6 +760,50 @@ const Header: React.FC<HeaderProps> = ({
                         <p className="text-[10px] text-slate-500 italic mt-1 line-clamp-1">
                           "{response.suggestion_content}"
                         </p>
+                      </div>
+                    ))}
+
+                    {/* System & Mission Notifications */}
+                    {systemNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={async () => {
+                          // Mark as read
+                          await supabase
+                            .from('notifications')
+                            .update({ read: true })
+                            .eq('id', notif.id);
+                          
+                          setSystemNotifications(prev => prev.filter(n => n.id !== notif.id));
+                          setShowNotifications(false);
+                          
+                          if (notif.link) {
+                            // Special case for missions: check if we are already on missions view or use onNavigate
+                            if (notif.link === '/missions') {
+                              onNavigate('missions');
+                            } else {
+                              // Generic navigation if needed
+                              console.log("Navigating to:", notif.link);
+                            }
+                          }
+                        }}
+                        className="p-3 bg-white rounded-xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <i className={`fa-solid ${notif.type === 'mission' ? 'fa-thumbtack text-indigo-600' : 'fa-circle-info text-slate-400'} text-[10px]`}></i>
+                          <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest">
+                            {notif.title}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-700 font-bold leading-relaxed line-clamp-2">
+                          {notif.content}
+                        </p>
+                        <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                          {new Date(notif.created_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
                     ))}
                   </>
