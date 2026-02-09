@@ -158,35 +158,64 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   const fetchSkillMap = async () => {
     try {
+      // 1. Fetch real categories from procedures (to match Procedures.tsx logic)
+      const { data: procs } = await supabase
+        .from('procedures')
+        .select('Type');
+      
+      const dbCategories = Array.from(new Set(
+        procs?.map(p => (p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ')) || []
+      ));
+      
+      const defaultCats = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEUR'];
+      const synchronizedCategories = Array.from(new Set([...defaultCats, ...dbCategories])).sort();
+
+      // 2. Fetch user profiles for expertise
       const { data: profiles } = await supabase
         .from('user_profiles')
         .select('first_name, last_name, stats_by_category');
 
       if (!profiles) return;
 
-      const categories: Record<string, { total: number; count: number; max: number; champion: string }> = {};
+      const stats: Record<string, { total: number; count: number; max: number; champion: string }> = {};
+      
+      // Initialize with synchronized categories
+      synchronizedCategories.forEach(cat => {
+        stats[cat] = { total: 0, count: 0, max: 0, champion: '' };
+      });
 
       profiles.forEach((p: any) => {
         if (p.stats_by_category) {
           Object.entries(p.stats_by_category).forEach(([cat, score]) => {
-            const s = score as number;
-            if (!categories[cat]) categories[cat] = { total: 0, count: 0, max: 0, champion: '' };
-            categories[cat].total += s;
-            categories[cat].count += 1;
-            if (s > categories[cat].max) {
-              categories[cat].max = s;
-              categories[cat].champion = `${p.first_name} ${p.last_name}`;
+            const normalizedCat = cat.toUpperCase();
+            // Only count if it's in our synchronized categories
+            if (stats[normalizedCat]) {
+              const s = score as number;
+              stats[normalizedCat].total += s;
+              stats[normalizedCat].count += 1;
+              if (s > stats[normalizedCat].max) {
+                stats[normalizedCat].max = s;
+                stats[normalizedCat].champion = `${p.first_name} ${p.last_name}`;
+              }
             }
           });
         }
       });
 
-      const mapData = Object.keys(categories).map(cat => ({
+      let mapData = synchronizedCategories.map(cat => ({
         subject: cat,
-        A: Math.round(categories[cat].total / categories[cat].count),
+        A: stats[cat].count > 0 ? Math.round(stats[cat].total / stats[cat].count) : 0,
         fullMark: 100,
-        champion: categories[cat].champion
+        champion: stats[cat].champion
       }));
+
+      // Radar chart needs at least 3 points for a proper shape
+      if (mapData.length < 3) {
+        const fallbacks = ['GENERAL', 'SYSTEME', 'RESEAU'].slice(0, 3 - mapData.length);
+        fallbacks.forEach(f => {
+          mapData.push({ subject: f, A: 0, fullMark: 100, champion: '' });
+        });
+      }
 
       setSkillMapData(mapData);
       cacheStore.set('stats_skill_map', mapData);
