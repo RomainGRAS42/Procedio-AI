@@ -708,66 +708,62 @@ const Dashboard: React.FC<DashboardProps> = ({
     const isInProgress = assignedMission.status === 'in_progress';
 
     return (
-      <div className="mb-0 animate-slide-up px-4 md:px-0">
-        <div className={`rounded-[3rem] p-8 md:p-10 border shadow-2xl relative overflow-hidden group transition-all duration-500 ${
-          isInProgress ? 'bg-indigo-900 border-indigo-400/30' : 'bg-slate-900 border-white/10'
-        }`}>
-          {/* Background decoration */}
-          <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
-            isInProgress ? 'bg-indigo-400/30' : 'bg-indigo-600/20 group-hover:bg-indigo-600/30'
-          }`}></div>
-          
-          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl text-white shadow-xl transition-all duration-500 ${
-              isInProgress ? 'bg-indigo-500 shadow-indigo-500/40 scale-110' : 'bg-indigo-600 shadow-indigo-500/20'
+      <div className="bg-slate-900 rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[320px]">
+        {/* Background decoration */}
+        <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
+          isInProgress ? 'bg-indigo-400/30' : 'bg-indigo-600/20 group-hover:bg-indigo-600/30'
+        }`}></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-xl transition-all duration-500 ${
+              isInProgress ? 'bg-indigo-500 shadow-indigo-500/40' : 'bg-indigo-600 shadow-indigo-500/20'
             }`}>
               <i className={`fa-solid ${isInProgress ? 'fa-spinner fa-spin-pulse' : 'fa-bolt-lightning animate-pulse'}`}></i>
             </div>
-            
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3">
-                <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-colors ${
-                  isInProgress ? 'bg-indigo-400 text-white' : 'bg-indigo-500 text-white'
-                }`}>
-                  {isInProgress ? 'En cours' : 'Mission Prioritaire'}
-                </span>
-                <span className="text-indigo-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-                  <i className="fa-solid fa-star"></i>
-                  Gagnez {assignedMission.xp_reward} XP
-                </span>
-              </div>
-              <h3 className="text-2xl md:text-3xl font-black text-white tracking-tighter mb-2">
-                {assignedMission.title}
-              </h3>
-              <p className="text-slate-400 text-sm md:text-base font-medium max-w-2xl line-clamp-2">
-                {assignedMission.description}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              {!isInProgress ? (
-                <button 
-                  onClick={() => handleStartMission(assignedMission.id)}
-                  className="px-8 py-4 bg-white text-slate-900 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95 w-full sm:w-auto text-center"
-                >
-                  Démarrer
-                </button>
-              ) : (
-                <button 
-                  onClick={() => setCompletingMission(assignedMission)}
-                  className="px-8 py-4 bg-emerald-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 w-full sm:w-auto text-center"
-                >
-                  Terminer
-                </button>
-              )}
-              <button 
-                onClick={() => onNavigate?.('missions')}
-                className="px-6 py-4 bg-white/5 text-white border border-white/10 rounded-[2rem] font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all w-full sm:w-auto text-center"
-              >
-                Détails
-              </button>
+            <div className="flex flex-col items-end">
+              <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg mb-1 ${
+                isInProgress ? 'bg-indigo-400 text-white' : 'bg-indigo-500 text-white'
+              }`}>
+                {isInProgress ? 'En cours' : 'Priorité'}
+              </span>
+              <span className="text-indigo-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                <i className="fa-solid fa-star"></i>
+                {assignedMission.xp_reward} XP
+              </span>
             </div>
           </div>
+          
+          <h3 className="text-xl font-black text-white tracking-tight mb-2 line-clamp-2">
+            {assignedMission.title}
+          </h3>
+          <p className="text-slate-400 text-xs font-medium line-clamp-3 leading-relaxed">
+            {assignedMission.description}
+          </p>
+        </div>
+
+        <div className="relative z-10 mt-8 flex gap-3">
+          {!isInProgress ? (
+            <button 
+              onClick={() => handleStartMission(assignedMission.id)}
+              className="flex-1 py-3 bg-white text-slate-900 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg active:scale-95"
+            >
+              Démarrer
+            </button>
+          ) : (
+            <button 
+              onClick={() => setCompletingMission(assignedMission)}
+              className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+            >
+              Terminer
+            </button>
+          )}
+          <button 
+            onClick={() => onNavigate?.('missions')}
+            className="px-4 py-3 bg-white/5 text-white border border-white/10 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white/10 transition-all"
+          >
+            Détails
+          </button>
         </div>
       </div>
     );
@@ -1311,223 +1307,183 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
-        <MissionSpotlight />
-      )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+          
+          {/* ZONE 1: Missions & Activité */}
+          <div className="lg:col-span-2">
+             <MissionSpotlight />
+          </div>
 
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full min-h-[320px]">
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="font-black text-slate-900 text-lg tracking-tight">Activité Équipe</h3>
+                <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors"><i className="fa-solid fa-rotate-right"></i></button>
+             </div>
+             <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
+                {activities.slice(0, 5).map((act) => (
+                   <div key={act.id} className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-xl transition-colors group">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+                      <div>
+                          <p className="text-[11px] font-bold text-slate-700 leading-tight">{act.content}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-0.5">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                       </div>
+                   </div>
+                ))}
+             </div>
+          </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
-        <div className="flex-1 space-y-8">
-          {viewMode === "personal" ? (
-            <div className="space-y-8">
-              {/* Expert Review Section (Referents only) */}
-              {isReferent && pendingReviews.length > 0 && (
-                <section className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group border border-indigo-500/20">
-                  <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i className="fa-solid fa-user-shield text-[12rem] rotate-12"></i>
-                  </div>
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 backdrop-blur-md flex items-center justify-center text-2xl border border-indigo-400/30 text-indigo-400">
-                          <i className="fa-solid fa-microscope"></i>
-                        </div>
-                        <div>
-                          <h2 className="text-2xl font-black tracking-tight uppercase">Revues d'Expert</h2>
-                          <p className="text-indigo-400/80 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">
-                             {pendingReviews.length} procédure{pendingReviews.length > 1 ? 's' : ''} à valider
-                          </p>
-                        </div>
+          {/* ZONE 2: Expertise & Badges */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6">
+             <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
+                  <i className="fa-solid fa-trophy"></i>
+                </div>
+                <h3 className="font-black text-slate-900 text-lg tracking-tight">Mes Badges</h3>
+             </div>
+             <div className="flex flex-wrap gap-3">
+                {earnedBadges.length > 0 ? (
+                  earnedBadges.map((ub) => (
+                    <div key={ub.id} className="group relative">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-indigo-200 hover:bg-white transition-all cursor-help">
+                        <i className={`fa-solid ${ub.badges.icon} text-lg text-indigo-600`}></i>
+                        <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter truncate w-10 text-center">
+                          {ub.badges.name}
+                        </span>
                       </div>
-                      <span className="px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/30 animate-pulse">
-                        Savoir Délégué
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {pendingReviews.slice(0, 2).map((proc) => (
-                        <div 
-                          key={proc.id}
-                          onClick={() => onSelectProcedure(proc)}
-                          className="bg-white/5 hover:bg-white/10 backdrop-blur-sm p-6 rounded-[2rem] border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer group/item"
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-black text-xs">
-                                {proc.title.substring(0, 2).toUpperCase()}
-                             </div>
-                             <i className="fa-solid fa-chevron-right text-white/20 group-hover/item:text-indigo-400 group-hover/item:translate-x-1 transition-all"></i>
-                          </div>
-                          <h4 className="font-bold text-white text-sm mb-1 group-hover/item:text-indigo-300 transition-colors truncate">{proc.title}</h4>
-                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{proc.category}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {pendingReviews.length > 2 && (
-                      <button className="mt-6 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors flex items-center gap-2">
-                         Voir toutes les revues
-                         <i className="fa-solid fa-arrow-right"></i>
-                      </button>
-                    )}
-                  </div>
-                </section>
-              )}
-
-
-              {/* Cercle de Maîtrise - Reservé aux techniciens */}
-              {user.role === UserRole.TECHNICIAN && (
-                <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
-                <div className="flex-1 space-y-4">
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
-                      <i className="fa-solid fa-trophy"></i>
-                    </div>
-                    <h3 className="font-black text-slate-900 text-xl tracking-tight">Mes Badges</h3>
-                  </div>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Tes succès et certifications. Décroche des badges en accomplissant des missions et en partageant ton savoir.
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-4 pt-4">
-                    {loadingBadges ? (
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[10px] font-black uppercase tracking-widest">Récupération des trophées...</span>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl">
+                         <p className="font-black text-indigo-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
+                         <p className="text-slate-300 leading-relaxed">{ub.badges.description}</p>
+                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
                       </div>
-                    ) : earnedBadges.length > 0 ? (
-                      earnedBadges.map((ub) => (
-                        <div key={ub.id} className="group relative">
-                          <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-indigo-200 hover:bg-white transition-all cursor-help shadow-sm hover:shadow-indigo-100">
-                            <i className={`fa-solid ${ub.badges.icon} text-xl text-indigo-600 group-hover:scale-110 transition-transform`}></i>
-                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter truncate w-12 text-center">
-                              {ub.badges.name}
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Aucun badge</p>
+                  </div>
+                )}
+             </div>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
+             <div className="flex items-center gap-4 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                  <i className="fa-solid fa-circle-nodes"></i>
+                </div>
+                <h3 className="font-black text-slate-900 text-lg tracking-tight">Maitrise</h3>
+             </div>
+             <div className="flex-1 flex flex-col justify-between">
+                <div className="h-40 w-full">
+                   {personalStats.mastery.length > 2 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
+                          <PolarGrid stroke="#f1f5f9" />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 8, fontWeight: 'bold' }} />
+                          <Radar name="Maîtrise" dataKey="A" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.6} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                   ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                         <i className="fa-solid fa-chart-pie text-slate-100 text-3xl mb-2"></i>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-tight">Consultez plus de contenus pour voir votre radar</p>
+                      </div>
+                   )}
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
+                    <span className="text-sm font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Cible</span>
+                    <span className="text-sm font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
+                  </div>
+                </div>
+             </div>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
+             <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                     <i className="fa-solid fa-compass"></i>
+                   </div>
+                   <h3 className="font-black text-slate-900 text-lg tracking-tight">Missions</h3>
+                </div>
+                <button onClick={() => onNavigate?.('missions')} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Voir tout</button>
+             </div>
+             <div className="space-y-3 flex-1">
+                {activeMissions.slice(0, 3).map((mission) => (
+                  <div key={mission.id} onClick={() => onNavigate?.('missions')} className="p-4 bg-slate-50 border border-transparent hover:border-indigo-100 hover:bg-white rounded-2xl transition-all cursor-pointer group/m">
+                     <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[7px] font-black uppercase tracking-widest ${mission.urgency === 'critical' ? 'text-rose-500' : 'text-indigo-500'}`}>{mission.urgency}</span>
+                        <span className="text-[9px] font-black text-indigo-600">{mission.xp_reward} XP</span>
+                     </div>
+                     <p className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>
+                  </div>
+                ))}
+                {activeMissions.length === 0 && (
+                   <div className="h-full flex flex-col items-center justify-center py-6 text-slate-300">
+                      <i className="fa-solid fa-mug-hot text-2xl mb-2"></i>
+                      <p className="text-[8px] font-black uppercase tracking-widest">Aucune mission</p>
+                   </div>
+                )}
+             </div>
+          </div>
+
+          {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure */}
+          {isReferent && pendingReviews.length > 0 && (
+            <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden border border-indigo-500/20">
+               <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                  <div className="flex items-center gap-5">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 backdrop-blur-md flex items-center justify-center text-xl border border-indigo-400/30 text-indigo-400">
+                      <i className="fa-solid fa-microscope"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black tracking-tight uppercase leading-none">Revues d'Expert</h3>
+                      <p className="text-indigo-400 text-[9px] font-bold uppercase tracking-widest mt-1">{pendingReviews.length} en attente</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto max-w-full pb-1 scrollbar-hide">
+                    {pendingReviews.slice(0, 2).map((proc) => (
+                      <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="shrink-0 w-48 bg-white/5 p-4 rounded-xl border border-white/5 hover:border-indigo-400/50 transition-all cursor-pointer">
+                         <h4 className="font-bold text-white text-[10px] mb-1 truncate">{proc.title}</h4>
+                         <p className="text-[8px] text-indigo-400 font-bold uppercase tracking-widest">{proc.category}</p>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
+          )}
+
+          <div className={`${isReferent && pendingReviews.length > 0 ? '' : 'lg:col-span-3'} bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm`}>
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Dernière Procédure</h3>
+               <button onClick={() => setShowHistoryModal(true)} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-4 py-2 bg-indigo-50 rounded-lg">Historique</button>
+             </div>
+             {recentProcedures.slice(0, 1).map((proc) => (
+                <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer group transition-all">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white border border-slate-100 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                        <i className="fa-solid fa-file-pdf text-xl"></i>
+                      </div>
+                      <div>
+                         <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors leading-tight mb-1">{proc.title}</h4>
+                         <div className="flex gap-3">
+                            <span className="text-[8px] text-slate-400 font-black tracking-widest uppercase">{proc.category}</span>
+                            <span className="text-[8px] text-indigo-400 font-black tracking-widest uppercase flex items-center gap-1">
+                               <i className="fa-solid fa-clock text-[7px]"></i>
+                               {formatDate(proc.createdAt)}
                             </span>
-                          </div>
-                          
-                          {/* Tooltip Badge Custom */}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-4 bg-slate-900 text-white rounded-2xl text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-2xl">
-                             <p className="font-black text-indigo-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
-                             <p className="text-slate-300 font-medium leading-relaxed mb-3">{ub.badges.description}</p>
-                             <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                               <span className="text-[8px] font-bold text-white/40 uppercase">Obtenu le</span>
-                               <span className="text-[8px] font-black text-emerald-400 uppercase">{new Date(ub.awarded_at).toLocaleDateString('fr-FR')}</span>
-                             </div>
-                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900"></div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="w-full py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <i className="fa-solid fa-lock text-slate-200 text-2xl mb-2"></i>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Aucun badge débloqué</p>
+                         </div>
                       </div>
-                    )}
-                  </div>
+                   </div>
+                   <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i>
                 </div>
-
-                <div className="w-px h-32 bg-slate-100 hidden md:block"></div>
-
-                <div className="flex-1 space-y-4">
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                      <i className="fa-solid fa-circle-nodes"></i>
-                    </div>
-                    <h3 className="font-black text-slate-900 text-xl tracking-tight">Cercle de Maîtrise</h3>
-                  </div>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Visualise l'évolution de ton expertise. Plus tu consultes de procédures dans une catégorie, plus ta zone de maîtrise s'étend.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 pt-4">
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
-                      <span className="text-lg font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Niveau Suivant</span>
-                      <span className="text-lg font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full md:w-[300px] h-[300px] flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-4">
-                  {personalStats.mastery.length > 2 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
-                        <PolarGrid stroke="#e2e8f0" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
-                        <Radar
-                          name="Maîtrise"
-                          dataKey="A"
-                          stroke="#4f46e5"
-                          fill="#4f46e5"
-                          fillOpacity={0.6}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="text-center p-8 space-y-3">
-                      <i className="fa-solid fa-chart-pie text-3xl text-slate-200"></i>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Continue tes consultations pour générer ton radar de compétences !</p>
-                    </div>
-                  )}
-                </div>
-                </section>
-                )}
-
-                {/* Missions d'Équipe (Compact row for Technicians) */}
-                {user.role === UserRole.TECHNICIAN && (
-                  <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-8">
-                     <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-xl shadow-indigo-100">
-                          <i className="fa-solid fa-compass"></i>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-2">Missions d'Équipe</h3>
-                          <p className="text-sm font-medium text-slate-500">Découvre les challenges prioritaires et gagne de l'XP bonus.</p>
-                        </div>
-                     </div>
-                     
-                     <div className="flex-1 flex gap-4 overflow-x-auto pb-2 scrollbar-hide max-w-full lg:max-w-[600px]">
-                        {loadingMissions ? (
-                           <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 rounded-2xl animate-pulse">
-                              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recherche...</span>
-                           </div>
-                        ) : activeMissions.length > 0 ? (
-                           activeMissions.slice(0, 3).map((mission) => (
-                             <div 
-                               key={mission.id}
-                               onClick={() => onNavigate?.('missions')}
-                               className="shrink-0 w-[240px] p-5 bg-slate-50 border border-slate-100 rounded-2xl hover:border-indigo-200 hover:bg-white transition-all cursor-pointer group/tm"
-                             >
-                                <div className="flex justify-between mb-3">
-                                   <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">{mission.urgency}</span>
-                                   <span className="text-[10px] font-black text-amber-600">{mission.xp_reward} XP</span>
-                                </div>
-                                <h4 className="text-xs font-black text-slate-800 group-hover/tm:text-indigo-600 transition-colors line-clamp-1">{mission.title}</h4>
-                             </div>
-                           ))
-                        ) : (
-                           <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 rounded-2xl text-slate-400">
-                              <i className="fa-solid fa-mug-hot text-xl"></i>
-                              <span className="text-[10px] font-black uppercase tracking-widest">Aucune mission</span>
-                           </div>
-                        )}
-                     </div>
-
-                     <button 
-                        onClick={() => onNavigate?.('missions')}
-                        className="px-8 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95 shrink-0"
-                     >
-                        Toutes les missions
-                     </button>
-                  </div>
-                )}
-              </div>
-          ) : null }
+             ))}
+          </div>
         </div>
-      </div>
+      )}
 
           {/* Manager Team View */}
           {user.role === UserRole.MANAGER && viewMode === "team" && (
