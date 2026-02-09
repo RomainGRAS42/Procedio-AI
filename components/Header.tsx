@@ -417,21 +417,6 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  // DEBUGGING NOTIFICATIONS
-  useEffect(() => {
-    if (showNotifications) {
-      console.log('--- NOTIFICATIONS DEBUG ---');
-      console.log('User Role:', user.role);
-      console.log('Total Notifs:', totalNotifs);
-      console.log('Pending Suggestions:', pendingSuggestions.length, pendingSuggestions);
-      console.log('Read Logs:', readLogs.length, readLogs);
-      console.log('Suggestion Responses:', suggestionResponses.length, suggestionResponses);
-      console.log('Flash Note Notifs:', flashNoteNotifications.length, flashNoteNotifications);
-      console.log('System Notifs:', systemNotifications.length, systemNotifications);
-      console.log('---------------------------');
-    }
-  }, [showNotifications, user.role, totalNotifs, pendingSuggestions, readLogs, suggestionResponses, flashNoteNotifications, systemNotifications]);
-
   return (
     <>
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40">
@@ -785,52 +770,52 @@ const Header: React.FC<HeaderProps> = ({
                         </p>
                       </div>
                     ))}
-
-                    {/* System & Mission Notifications */}
-                    {systemNotifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={async () => {
-                          // Mark as read
-                          await supabase
-                            .from('notifications')
-                            .update({ read: true })
-                            .eq('id', notif.id);
-                          
-                          setSystemNotifications(prev => prev.filter(n => n.id !== notif.id));
-                          setShowNotifications(false);
-                          
-                          if (notif.link) {
-                            // Special case for missions: check if we are already on missions view or use onNavigate
-                            if (notif.link === '/missions') {
-                              onNavigate('missions');
-                            } else {
-                              // Generic navigation if needed
-                              console.log("Navigating to:", notif.link);
-                            }
-                          }
-                        }}
-                        className="p-3 bg-white rounded-xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <i className={`fa-solid ${notif.type === 'mission' ? 'fa-thumbtack text-indigo-600' : 'fa-circle-info text-slate-400'} text-[10px]`}></i>
-                          <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest">
-                            {notif.title}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-700 font-bold leading-relaxed line-clamp-2">
-                          {notif.content}
-                        </p>
-                        <span className="text-[9px] text-slate-400 font-bold block mt-1">
-                          {new Date(notif.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                    ))}
                   </>
                 )}
+
+                {/* System & Mission Notifications (ALL ROLES) */}
+                {systemNotifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    onClick={async () => {
+                      // Mark as read
+                      await supabase
+                        .from('notifications')
+                        .update({ read: true })
+                        .eq('id', notif.id);
+                      
+                      setSystemNotifications(prev => prev.filter(n => n.id !== notif.id));
+                      setShowNotifications(false);
+                      
+                      if (notif.link) {
+                        // Special case for missions: check if we are already on missions view or use onNavigate
+                        if (notif.link === '/missions') {
+                          onNavigate('missions');
+                        } else {
+                          // Generic navigation if needed
+                          console.log("Navigating to:", notif.link);
+                        }
+                      }
+                    }}
+                    className="p-3 bg-white rounded-xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <i className={`fa-solid ${notif.type === 'mission' ? 'fa-thumbtack text-indigo-600' : 'fa-circle-info text-slate-400'} text-[10px]`}></i>
+                      <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest">
+                        {notif.title}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 font-bold leading-relaxed line-clamp-2">
+                      {notif.content}
+                    </p>
+                    <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                      {new Date(notif.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                ))}
 
                 {totalNotifs === 0 && (
                   <div className="text-center py-12 px-6 flex flex-col items-center gap-4 animate-fade-in">
