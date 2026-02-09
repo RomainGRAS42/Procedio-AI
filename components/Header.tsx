@@ -417,6 +417,21 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  // DEBUGGING NOTIFICATIONS
+  useEffect(() => {
+    if (showNotifications) {
+      console.log('--- NOTIFICATIONS DEBUG ---');
+      console.log('User Role:', user.role);
+      console.log('Total Notifs:', totalNotifs);
+      console.log('Pending Suggestions:', pendingSuggestions.length, pendingSuggestions);
+      console.log('Read Logs:', readLogs.length, readLogs);
+      console.log('Suggestion Responses:', suggestionResponses.length, suggestionResponses);
+      console.log('Flash Note Notifs:', flashNoteNotifications.length, flashNoteNotifications);
+      console.log('System Notifs:', systemNotifications.length, systemNotifications);
+      console.log('---------------------------');
+    }
+  }, [showNotifications, user.role, totalNotifs, pendingSuggestions, readLogs, suggestionResponses, flashNoteNotifications, systemNotifications]);
+
   return (
     <>
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40">
