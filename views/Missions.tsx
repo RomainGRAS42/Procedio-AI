@@ -40,16 +40,24 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
 
   const fetchTechnicians = async () => {
     try {
-      // On cherche 'technicien' (valeur DB) ou 'TECHNICIAN' (valeur Enum) para sécurité
+      // On récupère tout et on filtre côté JS pour éviter les erreurs 400 
+      // si un type ENUM Postgres ne reconnaît pas une valeur (ex: technicien vs TECHNICIAN)
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id, email, first_name, last_name, role')
-        .or(`role.eq.TECHNICIAN,role.eq.technicien`);
+        .select('id, email, first_name, last_name, role');
       
-      if (error) throw error;
+      if (error) {
+        console.error("DEBUG: Erreur Supabase fetchTechnicians:", error);
+        throw error;
+      }
+
       if (data) {
-        console.log("DEBUG: Techniciens trouvés:", data);
-        setTechnicians(data);
+        // Filtrage flexible (ignore la casse)
+        const techList = data.filter(u => 
+          u.role && (u.role.toLowerCase() === 'technicien' || u.role.toLowerCase() === 'technician')
+        );
+        console.log("DEBUG: Techniciens filtrés:", techList);
+        setTechnicians(techList);
       }
     } catch (err) {
       console.error("Error fetching technicians:", err);
