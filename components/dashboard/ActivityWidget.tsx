@@ -1,0 +1,57 @@
+import React from 'react';
+import InfoTooltip from '../InfoTooltip';
+
+interface ActivityItem {
+  id: string;
+  content: string;
+  created_at: string;
+}
+
+interface ActivityWidgetProps {
+  activities: ActivityItem[];
+  loadingActivities: boolean;
+  onRefresh: () => void;
+}
+
+const ActivityWidget: React.FC<ActivityWidgetProps> = ({
+  activities,
+  loadingActivities,
+  onRefresh
+}) => {
+  return (
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+            Activité Récente
+            <InfoTooltip text="Surveillez les dernières actions de l'équipe en temps réel." />
+          </h3>
+        </div>
+        <button onClick={onRefresh} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none">
+          <i className="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+      <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
+        {activities.slice(0, 10).map((act) => (
+          <div key={act.id} className="flex gap-3 items-start p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+            <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform"></div>
+            <div>
+              <p className="text-xs font-bold text-slate-700 leading-tight">{act.content}</p>
+              <p className="text-[10px] font-bold text-slate-400 mt-1 group-hover:text-indigo-400 transition-colors">
+                {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+        ))}
+        {activities.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-400 opacity-50">
+            <i className="fa-solid fa-ghost text-4xl mb-3"></i>
+            <p className="text-xs font-bold uppercase tracking-widest">Le calme plat...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ActivityWidget;
