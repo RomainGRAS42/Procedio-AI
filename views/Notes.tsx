@@ -563,7 +563,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   const modalContent = getModalContent();
 
   return (
-    <div className="space-y-8 animate-slide-up relative">
+    <div className="space-y-8 animate-slide-up relative pt-6">
       {/* Barre de recherche et Action globale */}
       <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
         <div className="relative flex-1 w-full max-w-2xl">

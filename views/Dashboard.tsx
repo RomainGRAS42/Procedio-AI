@@ -1742,63 +1742,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
 
-      <section className="bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-        <div className="px-10 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
-            DERNIÈRE PROCÉDURE EN LIGNE
-            <InfoTooltip text="Le dernier document partagé avec l'équipe." />
-          </h3>
-          <button
-            onClick={() => setShowHistoryModal(true)}
-            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
-            Historique
-          </button>
-        </div>
-        <div className="divide-y divide-slate-50">
-          {loadingProcedures ? (
-            <LoadingState message="Récupération des documents récents..." />
-          ) : recentProcedures.length > 0 ? (
-            recentProcedures.slice(0, 1).map((proc) => (
-              <a
-                key={proc.id}
-                href={`/procedure/${proc.id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onSelectProcedure(proc);
-                }}
-                className="p-8 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-all group">
-                <div className="flex items-center gap-6">
-                  <div className="w-12 h-12 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center group-hover:text-indigo-600 group-hover:border-indigo-100 transition-all">
-                    <i className="fa-solid fa-file-pdf text-xl"></i>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors leading-tight">
-                      {proc.title}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase bg-slate-100 px-2 py-0.5 rounded-lg">
-                        {proc.category}
-                      </span>
-                      <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase bg-indigo-50 px-2 py-0.5 rounded-lg flex items-center gap-2">
-                        <i className="fa-solid fa-calendar-check text-[8px]"></i>
-                        {formatDate(proc.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-2 transition-all"></i>
-              </a>
-            ))
-          ) : (
-            <div className="p-10 text-center text-slate-300 flex flex-col items-center gap-2">
-              <i className="fa-solid fa-folder-open text-2xl opacity-20"></i>
-              <p className="text-[10px] font-black uppercase tracking-widest">
-                Aucune activité récente détectée
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+
 
 
       {/* MODAL REVIEW SUGGESTION */}
