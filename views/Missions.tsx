@@ -40,13 +40,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
 
   const fetchTechnicians = async () => {
     try {
+      // On cherche 'technicien' (valeur DB) ou 'TECHNICIAN' (valeur Enum) para sécurité
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id, email, first_name, last_name')
-        .eq('role', UserRole.TECHNICIAN);
+        .select('id, email, first_name, last_name, role')
+        .or(`role.eq.TECHNICIAN,role.eq.technicien`);
       
       if (error) throw error;
-      if (data) setTechnicians(data);
+      if (data) {
+        console.log("DEBUG: Techniciens trouvés:", data);
+        setTechnicians(data);
+      }
     } catch (err) {
       console.error("Error fetching technicians:", err);
     }
