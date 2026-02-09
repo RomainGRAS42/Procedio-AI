@@ -276,37 +276,85 @@ const Procedures: React.FC<ProceduresProps> = ({
           ) : (
             <div className="space-y-12">
               {currentFolder === null && (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-                  {(folders as any[]).map((folder: any) => {
-                    const folderName = typeof folder === 'string' ? folder : folder.name;
-                    const folderCount = typeof folder === 'string' ? 0 : folder.count;
-                    
-                    return (
-                      <div 
-                        key={folderName}
-                        onClick={() => setCurrentFolder(folderName)}
-                        className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up group"
-                      >
-                        <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
-                          <i className="fa-solid fa-folder"></i>
-                        </div>
-                        <div className="flex flex-col items-center gap-2 mt-2">
-                          <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
-                            {folderName}
-                          </span>
-                          <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
-                            <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
-                              {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
+                viewType === 'grid' ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                    {(folders as any[]).map((folder: any) => {
+                      const folderName = typeof folder === 'string' ? folder : folder.name;
+                      const folderCount = typeof folder === 'string' ? 0 : folder.count;
+                      
+                      return (
+                        <div 
+                          key={folderName}
+                          onClick={() => setCurrentFolder(folderName)}
+                          className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up"
+                        >
+                          <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
+                            <i className="fa-solid fa-folder"></i>
+                          </div>
+                          <div className="flex flex-col items-center gap-2 mt-2">
+                            <span className="font-black text-slate-900 text-[12px] uppercase tracking-widest text-center leading-tight">
+                              {folderName}
                             </span>
+                            <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200/50 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
+                              <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 whitespace-nowrap">
+                                {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
+                            <i className="fa-solid fa-arrow-right"></i>
                           </div>
                         </div>
-                        <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all scale-0 group-hover:scale-100">
-                          <i className="fa-solid fa-arrow-right"></i>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="animate-slide-up">
+                    <div className="w-full bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50/50 border-b border-slate-100">
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Dossier</th>
+                            <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right pr-10">Fichiers</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {(folders as any[]).map((folder: any) => {
+                            const folderName = typeof folder === 'string' ? folder : folder.name;
+                            const folderCount = typeof folder === 'string' ? 0 : folder.count;
+                            
+                            return (
+                              <tr 
+                                key={folderName}
+                                onClick={() => setCurrentFolder(folderName)}
+                                className="group hover:bg-slate-50/80 cursor-pointer transition-colors"
+                              >
+                                <td className="px-8 py-6">
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-slate-50 text-indigo-100 flex items-center justify-center text-lg group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
+                                      <i className="fa-solid fa-folder"></i>
+                                    </div>
+                                    <span className="font-bold text-slate-700 text-sm group-hover:text-indigo-600 transition-colors uppercase tracking-widest">
+                                      {folderName}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-5 text-right pr-10">
+                                  <div className="flex items-center justify-end gap-3">
+                                    <span className="text-[11px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                      {folderCount || 0} {folderCount > 1 ? 'fichiers' : 'fichier'}
+                                    </span>
+                                    <i className="fa-solid fa-chevron-right text-[10px] text-slate-200 group-hover:text-indigo-500 transition-all group-hover:translate-x-1"></i>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
               )}
 
               {/* FICHIERS (GRID OR LIST) */}
