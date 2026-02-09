@@ -23,6 +23,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     description: '',
     xp_reward: 50,
     urgency: 'medium' as MissionUrgency,
+    targetType: 'team' as 'team' | 'individual',
+    targetEmail: '',
+    hasDeadline: false,
+    deadline: '',
   });
 
   useEffect(() => {
@@ -60,19 +64,49 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
   const handleCreateMission = async () => {
     if (!newMission.title.trim()) return;
     try {
+      let assigned_to = null;
+
+      if (newMission.targetType === 'individual' && newMission.targetEmail) {
+        const { data: userData, error: userError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('email', newMission.targetEmail)
+          .single();
+        
+        if (userError || !userData) {
+          setToast({ message: "Utilisateur introuvable avec cet email.", type: "error" });
+          return;
+        }
+        assigned_to = userData.id;
+      }
+
       const { error } = await supabase
         .from('missions')
         .insert([{
-          ...newMission,
+          title: newMission.title,
+          description: newMission.description,
+          xp_reward: newMission.xp_reward,
+          urgency: newMission.urgency,
+          deadline: newMission.hasDeadline ? newMission.deadline : null,
+          assigned_to: assigned_to,
           created_by: user.id,
-          status: 'open'
+          status: assigned_to ? 'assigned' : 'open'
         }]);
 
       if (error) throw error;
 
       setToast({ message: "Mission stratégique crée !", type: "success" });
       setShowCreateModal(false);
-      setNewMission({ title: '', description: '', xp_reward: 50, urgency: 'medium' });
+      setNewMission({ 
+        title: '', 
+        description: '', 
+        xp_reward: 50, 
+        urgency: 'medium',
+        targetType: 'team',
+        targetEmail: '',
+        hasDeadline: false,
+        deadline: ''
+      });
       fetchMissions();
     } catch (err) {
       setToast({ message: "Erreur lors de la création.", type: "error" });
@@ -242,13 +276,20 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                     )}
                   </div>
 
+                  {mission.deadline && (
+                    <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100 w-fit">
+                      <i className="fa-solid fa-calendar-day"></i>
+                      À rendre avant : {new Date(mission.deadline).toLocaleDateString('fr-FR')}
+                    </div>
+                  )}
+
                   {mission.assignee_name && (
                     <div className="mt-6 pt-4 border-t border-slate-50 flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
                         {mission.assignee_name.substring(0, 2)}
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        En cours par <span className="text-slate-700">{mission.assignee_name}</span>
+                        {mission.status === 'completed' ? 'Complété par' : 'En cours par'} <span className="text-slate-700">{mission.assignee_name}</span>
                       </p>
                     </div>
                   )}
@@ -346,6 +387,54 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                     value={newMission.description}
                     onChange={(e) => setNewMission({...newMission, description: e.target.value})}
                   />
+               </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Echéance</label>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          id="noDeadline"
+                          className="w-5 h-5 accent-indigo-600 rounded-lg cursor-pointer"
+                          checked={!newMission.hasDeadline}
+                          onChange={(e) => setNewMission({...newMission, hasDeadline: !e.target.checked})}
+                        />
+                        <label htmlFor="noDeadline" className="text-xs font-bold text-slate-600 cursor-pointer">Pas de délai</label>
+                      </div>
+                      {newMission.hasDeadline && (
+                        <input 
+                          type="date"
+                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-slate-700"
+                          value={newMission.deadline}
+                          onChange={(e) => setNewMission({...newMission, deadline: e.target.value})}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destinataire</label>
+                    <div className="flex flex-col gap-3">
+                      <select 
+                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-slate-700 appearance-none cursor-pointer"
+                        value={newMission.targetType}
+                        onChange={(e) => setNewMission({...newMission, targetType: e.target.value as 'team' | 'individual'})}
+                      >
+                         <option value="team">Toute l'équipe</option>
+                         <option value="individual">Individu spécifique</option>
+                      </select>
+                      {newMission.targetType === 'individual' && (
+                        <input 
+                          type="email" 
+                          placeholder="Email du destinataire"
+                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700"
+                          value={newMission.targetEmail}
+                          onChange={(e) => setNewMission({...newMission, targetEmail: e.target.value})}
+                        />
+                      )}
+                    </div>
+                  </div>
                </div>
 
                <div className="grid grid-cols-2 gap-6">
