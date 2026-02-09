@@ -506,19 +506,23 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
 
           {/* Right Sidebar - Info & Stats */}
           <div className="space-y-8">
-             <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-500/20">
-                <h3 className="text-xl font-black tracking-tight mb-4">Pourquoi les Missions ?</h3>
-                <p className="text-indigo-100 text-sm font-medium leading-relaxed opacity-90">
-                  Les missions permettent de cibler les manques de connaissances identifiés par notre IA. En les relevant, vous participez directement à l'excellence opérationnelle de l'équipe.
-                </p>
-                <div className="mt-8 grid grid-cols-2 gap-4">
-                   <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-                      <span className="block text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Total XP</span>
-                      <span className="text-2xl font-black">{missions.reduce((acc, m) => acc + (m.status === 'completed' ? m.xp_reward : 0), 0)}</span>
+             <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                   <h3 className="text-sm font-black tracking-tight uppercase">Performance Missions</h3>
+                   <div className="hidden xl:flex items-center gap-2 text-[10px] font-bold text-indigo-200 bg-indigo-900/30 px-3 py-1 rounded-full border border-white/5">
+                      <i className="fa-solid fa-chart-line"></i>
+                      <span>Live</span>
                    </div>
-                   <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-                      <span className="block text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Missions OK</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
+                      <span className="text-2xl font-black">{missions.reduce((acc, m) => acc + (m.status === 'completed' ? m.xp_reward : 0), 0)}</span>
+                      <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest leading-tight mt-1">XP Gagné</span>
+                   </div>
+                   <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
                       <span className="text-2xl font-black">{missions.filter(m => m.status === 'completed').length}</span>
+                      <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest leading-tight mt-1">Complétées</span>
                    </div>
                 </div>
              </section>
