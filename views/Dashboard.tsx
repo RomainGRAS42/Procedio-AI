@@ -1150,81 +1150,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       </section>
       </div>
 
-      {/* Missions Widget */}
-      <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden relative group">
-        <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
-          <i className="fa-solid fa-compass text-[12rem] rotate-12"></i>
-        </div>
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-200">
-              <i className="fa-solid fa-map-location-dot"></i>
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Tableau de Chasse</h2>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Missions & Défis actifs</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => onNavigate?.('missions')}
-            className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 shadow-xl shadow-slate-200 transition-all flex items-center gap-3 w-fit"
-          >
-            Voir le tableau complet
-            <i className="fa-solid fa-arrow-right"></i>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
-          {loadingMissions ? (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center gap-4 text-slate-400">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">Recherche de missions...</span>
-            </div>
-          ) : activeMissions.length > 0 ? (
-            activeMissions.slice(0, 3).map((mission) => (
-              <div 
-                key={mission.id}
-                onClick={() => onNavigate?.('missions')}
-                className="bg-slate-50/50 hover:bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 transition-all cursor-pointer group/card flex flex-col"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
-                    mission.urgency === 'critical' ? 'bg-rose-50 border-rose-100 text-rose-600' :
-                    mission.urgency === 'high' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                    'bg-emerald-50 border-emerald-100 text-emerald-600'
-                  }`}>
-                    {mission.urgency}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-indigo-600 font-black text-xs">
-                    <i className="fa-solid fa-bolt-lightning text-[10px]"></i>
-                    {mission.xp_reward} XP
-                  </div>
-                </div>
-                <h4 className="font-bold text-slate-900 text-sm mb-2 group-hover/card:text-indigo-600 transition-colors line-clamp-2 leading-tight">
-                  {mission.title}
-                </h4>
-                <div className="mt-auto pt-4 border-t border-slate-100/50 flex items-center justify-between">
-                   <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px]">
-                        <i className="fa-solid fa-user-ninja"></i>
-                      </div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-                        {mission.assigned_to ? 'Assignée' : 'Disponible'}
-                      </span>
-                   </div>
-                   <i className="fa-solid fa-chevron-right text-slate-200 group-hover/card:text-indigo-400 group-hover/card:translate-x-1 transition-all text-[10px]"></i>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full py-12 text-center bg-slate-50/30 rounded-[2rem] border border-dashed border-slate-200">
-               <i className="fa-solid fa-mug-hot text-3xl text-slate-200 mb-3"></i>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aucune mission pour le moment. Repose-toi !</p>
-            </div>
-          )}
-        </div>
-      </section>
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
@@ -1383,9 +1308,59 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                   )}
                 </div>
-              </section>
-              )}
-            </div>
+                </section>
+                )}
+
+                {/* Missions d'Équipe (Compact row for Technicians) */}
+                {user.role === UserRole.TECHNICIAN && (
+                  <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-8">
+                     <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-xl shadow-indigo-100">
+                          <i className="fa-solid fa-compass"></i>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-2">Missions d'Équipe</h3>
+                          <p className="text-sm font-medium text-slate-500">Découvre les challenges prioritaires et gagne de l'XP bonus.</p>
+                        </div>
+                     </div>
+                     
+                     <div className="flex-1 flex gap-4 overflow-x-auto pb-2 scrollbar-hide max-w-full lg:max-w-[600px]">
+                        {loadingMissions ? (
+                           <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 rounded-2xl animate-pulse">
+                              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recherche...</span>
+                           </div>
+                        ) : activeMissions.length > 0 ? (
+                           activeMissions.slice(0, 3).map((mission) => (
+                             <div 
+                               key={mission.id}
+                               onClick={() => onNavigate?.('missions')}
+                               className="shrink-0 w-[240px] p-5 bg-slate-50 border border-slate-100 rounded-2xl hover:border-indigo-200 hover:bg-white transition-all cursor-pointer group/tm"
+                             >
+                                <div className="flex justify-between mb-3">
+                                   <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">{mission.urgency}</span>
+                                   <span className="text-[10px] font-black text-amber-600">{mission.xp_reward} XP</span>
+                                </div>
+                                <h4 className="text-xs font-black text-slate-800 group-hover/tm:text-indigo-600 transition-colors line-clamp-1">{mission.title}</h4>
+                             </div>
+                           ))
+                        ) : (
+                           <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 rounded-2xl text-slate-400">
+                              <i className="fa-solid fa-mug-hot text-xl"></i>
+                              <span className="text-[10px] font-black uppercase tracking-widest">Aucune mission</span>
+                           </div>
+                        )}
+                     </div>
+
+                     <button 
+                        onClick={() => onNavigate?.('missions')}
+                        className="px-8 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95 shrink-0"
+                     >
+                        Toutes les missions
+                     </button>
+                  </div>
+                )}
+              </div>
           ) : null }
         </div>
       </div>
@@ -1412,8 +1387,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 ))}
               </div>
 
-              {/* ZONE 2: Centre de Révision & Activité */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* ZONE 2: Centre de Révision, Missions & Activité */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                  
                  {/* COL 1: Centre de Révision */}
                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
@@ -1431,7 +1406,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                          {pendingSuggestions.length} en attente
                        </span>
                      </div>
- 
+
                      <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
                         {/* Mastery Claims Prompt */}
                         {masteryClaims.length > 0 && (
@@ -1447,7 +1422,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <i className="fa-solid fa-arrow-right text-amber-500 text-xs"></i>
                            </div>
                         )}
- 
+
                         {pendingSuggestions.slice(0, 10).map((sugg) => (
                            <div key={sugg.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedSuggestion(sugg); setShowSuggestionModal(true); }}>
                               <div className="flex items-center gap-3">
@@ -1468,8 +1443,66 @@ const Dashboard: React.FC<DashboardProps> = ({
                         )}
                      </div>
                  </div>
- 
-                 {/* COL 2: Activité Récente */}
+
+                 {/* COL 2: Missions d'Équipe */}
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                            <i className="fa-solid fa-map-location-dot"></i>
+                           </div>
+                           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                              Missions d'Équipe
+                              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." />
+                           </h3>
+                        </div>
+                        <button 
+                          onClick={() => onNavigate?.('missions')}
+                          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                        >
+                          Tout voir
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+                         {loadingMissions ? (
+                           <div className="h-full flex flex-col items-center justify-center py-10 gap-2">
+                             <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recherche...</span>
+                           </div>
+                         ) : activeMissions.length > 0 ? (
+                           activeMissions.slice(0, 5).map((mission) => (
+                             <div 
+                               key={mission.id} 
+                               className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-transparent hover:border-indigo-100 hover:bg-white transition-all cursor-pointer group/m"
+                               onClick={() => onNavigate?.('missions')}
+                             >
+                                <div className="min-w-0">
+                                   <div className="flex items-center gap-2 mb-1">
+                                      <span className={`text-[8px] font-black uppercase tracking-widest ${
+                                        mission.urgency === 'critical' ? 'text-rose-500' :
+                                        mission.urgency === 'high' ? 'text-orange-500' : 'text-indigo-500'
+                                      }`}>
+                                        {mission.urgency}
+                                      </span>
+                                   </div>
+                                   <p className="text-xs font-bold text-slate-800 truncate group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                   <p className="text-[10px] font-black text-indigo-600">{mission.xp_reward} XP</p>
+                                </div>
+                             </div>
+                           ))
+                         ) : (
+                           <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-300 opacity-50">
+                               <i className="fa-solid fa-mug-hot text-4xl mb-3"></i>
+                               <p className="text-xs font-bold uppercase tracking-widest">Repos total</p>
+                           </div>
+                         )}
+                      </div>
+                  </div>
+
+                 {/* COL 3: Activité Récente */}
                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
                     <div className="flex items-center justify-between mb-4">
                        <div className="flex items-center gap-3">
