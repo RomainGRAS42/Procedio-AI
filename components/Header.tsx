@@ -558,7 +558,6 @@ const Header: React.FC<HeaderProps> = ({
                   <>
                     {/* Logs de lecture */}
                     {readLogs
-                      .filter(log => new Date(log.created_at || log.updated_at) > new Date(lastClearedNotifs))
                       .map((log) => {
                       const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
                       const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
