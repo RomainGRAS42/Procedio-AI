@@ -161,7 +161,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
           </h1>
           <p className="text-slate-500 font-medium text-lg max-w-2xl">
             {user.role === UserRole.MANAGER 
-              ? "Pilotez le flux de connaissances en assignant des quêtes stratégiques à votre équipe."
+              ? "Pilotez le flux de connaissances en assignant des missions stratégiques à votre équipe."
               : "Relevez des défis, complétez votre savoir et gagnez de l'XP pour monter en grade."}
           </p>
         </div>
@@ -178,7 +178,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       </div>
 
       {loading ? (
-        <LoadingState message="Préparation du tableau des quêtes..." />
+        <LoadingState message="Préparation du tableau des missions..." />
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           

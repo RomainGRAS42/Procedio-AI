@@ -1150,7 +1150,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </section>
       </div>
 
-      {/* Missions & Quêtes Widget */}
+      {/* Missions Widget */}
       <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden relative group">
         <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
           <i className="fa-solid fa-compass text-[12rem] rotate-12"></i>

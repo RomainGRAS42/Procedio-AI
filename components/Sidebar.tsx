@@ -48,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: "missions",
-      label: "Quêtes",
+      label: "Missions",
       icon: "fa-compass",
       roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
     },
