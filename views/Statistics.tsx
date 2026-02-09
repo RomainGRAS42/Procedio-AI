@@ -461,10 +461,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                   {skillMapData.slice(0, 4).map((skill, idx) => (
                     <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 transition-all hover:border-indigo-100">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{skill.subject}</span>
-                          <InfoTooltip text="Moyenne de maîtrise de l'équipe (basée sur les lectures et contributions)." />
-                        </div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{skill.subject}</span>
                         <span className="text-xs font-black text-indigo-600">{skill.A}%</span>
                       </div>
                       <div className="flex items-center justify-between">
