@@ -821,23 +821,32 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const isInProgress = assignedMission.status === 'in_progress';
 
-    // Calculate time remaining for deadline
-    const getTimeRemaining = (deadline?: string) => {
-      if (!deadline) return null;
+    const getDeadlineStatus = (deadline?: string, createdAt?: string) => {
+      if (!deadline) return { label: "Pas de délai fixe", percent: 0, color: "bg-slate-200" };
+      
       const now = new Date();
       const end = new Date(deadline);
-      const diff = end.getTime() - now.getTime();
+      const start = createdAt ? new Date(createdAt) : new Date(now.getTime() - 1000 * 60 * 60 * 24); // Fallback 1 day ago
       
-      if (diff <= 0) return "Échu";
+      const total = end.getTime() - start.getTime();
+      const elapsed = now.getTime() - start.getTime();
+      const percent = Math.min(Math.max((elapsed / total) * 100, 0), 100);
+      
+      const diff = end.getTime() - now.getTime();
+      if (diff <= 0) return { label: "Échu", percent: 100, color: "bg-rose-500" };
       
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      if (days > 0) return `${days}j restants`;
-      
       const hours = Math.floor(diff / (1000 * 60 * 60));
-      return `${hours}h restantes`;
+      
+      let label = days > 0 ? `${days}j restants` : `${hours}h restantes`;
+      let color = "bg-indigo-600";
+      if (percent > 80) color = "bg-rose-500";
+      else if (percent > 50) color = "bg-amber-500";
+      
+      return { label, percent, color };
     };
 
-    const timeRemaining = getTimeRemaining(assignedMission.deadline);
+    const dlStatus = getDeadlineStatus(assignedMission.deadline, assignedMission.created_at);
 
     return (
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[340px] hover:border-slate-200 hover:shadow-xl hover:shadow-slate-500/5">
@@ -848,13 +857,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 ${
+             <div className="flex items-center gap-4">
+               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-500 ${
                  isInProgress 
-                  ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 border border-slate-800' 
-                  : 'bg-slate-50 text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100'
+                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
+                  : 'bg-slate-50 text-slate-400 group-hover:text-slate-900'
                }`}>
-                 <i className={`fa-solid ${isInProgress ? 'fa-thumbtack' : 'fa-bolt-lightning'}`}></i>
+                 <i className={`fa-solid ${isInProgress ? 'fa-scroll' : 'fa-thumbtack'}`}></i>
                </div>
                <div>
                  <div className="flex items-center gap-2 mb-1">
@@ -873,16 +882,14 @@ const Dashboard: React.FC<DashboardProps> = ({
             
             <div className="flex flex-col items-end gap-2">
               <div className="flex items-center gap-2">
-                {timeRemaining && (
-                  <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
-                    timeRemaining === "Échu" 
-                      ? "bg-rose-50 border-rose-100 text-rose-500" 
-                      : "bg-slate-100 border-slate-200 text-slate-600"
-                  }`}>
-                    <i className="fa-regular fa-clock mr-1"></i>
-                    {timeRemaining}
-                  </span>
-                )}
+                <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg border ${
+                  dlStatus.label === "Échu" 
+                    ? "bg-rose-50 border-rose-100 text-rose-500" 
+                    : "bg-slate-50 border-slate-100 text-slate-500"
+                }`}>
+                  <i className="fa-regular fa-calendar-clock mr-1.5"></i>
+                  {dlStatus.label}
+                </span>
                 <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
                   isInProgress ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'
                 }`}>
@@ -890,11 +897,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </span>
               </div>
               
-              <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-sm shadow-amber-100/50">
-                <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[10px]">
-                  <i className="fa-solid fa-star"></i>
+              <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-2xl flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[10px]">
+                  <i className="fa-solid fa-cube"></i>
                 </div>
-                <span className="text-amber-800 text-[11px] font-black tracking-tighter">
+                <span className="text-slate-800 text-[11px] font-black tracking-tighter">
                   {assignedMission.xp_reward} XP
                 </span>
               </div>
@@ -904,9 +911,23 @@ const Dashboard: React.FC<DashboardProps> = ({
           <h3 className="text-2xl font-black text-slate-900 tracking-tighter mb-3 line-clamp-2 leading-tight">
             {assignedMission.title}
           </h3>
-          <p className="text-slate-500 text-sm font-medium line-clamp-3 leading-relaxed opacity-80">
+          <p className="text-slate-500 text-sm font-medium line-clamp-3 leading-relaxed opacity-80 mb-6">
             {assignedMission.description}
           </p>
+
+          {/* Deadline Progress Bar - Stricter look */}
+          <div className="space-y-2 mt-auto">
+             <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <span>Progression Temps</span>
+                <span className={dlStatus.percent > 80 ? 'text-rose-500' : 'text-slate-600'}>{Math.round(dlStatus.percent)}%</span>
+             </div>
+             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
+                <div 
+                  className={`h-full transition-all duration-1000 ${dlStatus.color}`}
+                  style={{ width: `${dlStatus.percent}%` }}
+                ></div>
+             </div>
+          </div>
         </div>
 
         <div className="relative z-10 mt-8 flex items-center justify-between">

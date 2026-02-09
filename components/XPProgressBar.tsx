@@ -28,9 +28,10 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
   const nextTitle = getLevelTitle(currentLevel + 1);
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mb-6 relative overflow-hidden group hover:border-indigo-100 transition-all">
-      {/* Decorative background - Very subtle */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 blur-[100px] rounded-full -z-10 translate-x-1/2 -translate-y-1/2"></div>
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 mb-6 relative overflow-hidden group hover:border-indigo-200 transition-all duration-500">
+      {/* Decorative background - Vibrant & Dynamic */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent blur-[80px] rounded-full -z-10 translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-700"></div>
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full -z-10"></div>
       
       {/* Info Tooltip */}
       <div className="absolute top-6 right-8 z-10">
@@ -71,9 +72,9 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
       
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-[1.25rem] bg-slate-900 text-white flex items-center justify-center text-2xl font-black shadow-xl shadow-slate-200 border border-slate-800 relative">
+          <div className="w-16 h-16 rounded-[1.25rem] bg-slate-900 text-white flex items-center justify-center text-2xl font-black shadow-2xl shadow-indigo-200 border border-slate-800 relative group-hover:scale-105 transition-transform">
             {currentLevel}
-            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-indigo-600 text-[10px] flex items-center justify-center border-2 border-white">
+            <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-[10px] flex items-center justify-center border-2 border-white shadow-lg animate-pulse">
               <i className="fa-solid fa-bolt"></i>
             </div>
           </div>
@@ -104,15 +105,15 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
 
       {/* Progress bar */}
       <div className="relative">
-        <div className="h-4 bg-slate-100 rounded-full overflow-hidden p-1 border border-slate-200/50">
+        <div className="h-5 bg-slate-100 rounded-full overflow-hidden p-1 border border-slate-200 shadow-inner">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+            className="h-full bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden shadow-[0_0_20px_rgba(99,102,241,0.4)]"
             style={{ width: `${Math.min(progressPercentage, 100)}%` }}
           >
-            {/* Glossy overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
-            {/* Animated shine */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-full animate-shimmer scale-y-150"></div>
+            {/* Animated shine - More visible */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full animate-shimmer"></div>
+            {/* Glossy top layer */}
+            <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/10"></div>
           </div>
         </div>
         
