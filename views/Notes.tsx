@@ -288,6 +288,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     setSearchTerm("");
   };
 
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "Date inconnue";
+    try {
+      return new Date(dateString).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleCloseNote();
@@ -1027,77 +1040,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         )}
 
       {/* MODALE LECTURE FOCUS PLEIN ÉCRAN */}
-      {viewingNote &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[2000] bg-white flex flex-col animate-slide-up"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="note-title">
-            <header className="h-20 border-b border-slate-100 px-6 md:px-12 flex items-center justify-between bg-white sticky top-0 shrink-0">
-              <div className="flex items-center gap-4">
-                <button
-                  ref={backBtnRef}
-                  onClick={handleCloseNote}
-                  className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  aria-label="Fermer la lecture et revenir à la liste">
-                  <i className="fa-solid fa-arrow-left text-lg"></i>
-                </button>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest max-w-[200px] truncate">
-                    {viewingNote.title}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                      {viewingNote.updatedAt}
-                    </span>
-                    {viewingNote.is_protected && (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-                        <i className="fa-solid fa-lock mr-1"></i>Privé
-                      </span>
-                    )}
-                    {viewingNote.status === "suggestion" && (
-                       <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md animate-pulse">
-                        Suggestion
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {/* MANAGER VALIDATION BUTTONS */}
-                {viewingNote.status === "suggestion" && user?.role === UserRole.MANAGER && (
-                   <div className="flex items-center gap-2 mr-4 border-r border-slate-100 pr-4">
-                      <button
-                         onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmModal({
-                              title: "Valider cette Flash Note ?",
-                              message: "Cette note sera publiée et visible par toute l'équipe.",
-                              confirmText: "Valider",
-                              type: 'success',
-                              onConfirm: async () => {
-                                try {
-                                  const { error } = await supabase.from('notes').update({ status: 'public' }).eq('id', viewingNote.id);
-                                  if(error) throw error;
-                                  
-                                  // Create notification for Technician
-                                  await supabase.from("notes").insert([{
-                                    title: `FLASH_NOTE_VALIDATED`,
-                                    content: `Votre Flash Note "${viewingNote.title}" a été validée par ${user.firstName} ${user.lastName || ""} et est maintenant visible par toute l'équipe !`,
-                                    is_protected: false,
-                                    user_id: viewingNote.user_id,
-                                    is_flash_note: false
-                                  }]);
-
-                                  setSuccessModal({
-                                    title: "Flash Note Validée !",
-                                    message: "La note est maintenant visible par toute l'équipe.",
-                                    icon: "fa-check-circle"
-                                  });
-                                  handleCloseNote();
-                                  fetchNotes();
-        viewingNote && createPortal(
+      {viewingNote && createPortal(
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9990] flex items-center justify-center p-4 md:p-10 animate-fade-in" onClick={handleCloseNote}>
             <div 
               onClick={(e) => e.stopPropagation()}
@@ -1121,7 +1064,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   <div className="flex flex-col">
                     <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">Lecture de Note</span>
                     <div className="flex items-center gap-2">
-                       <span className="text-[9px] font-bold text-slate-400 uppercase">{formatDate(viewDraft?.created_at || viewingNote.created_at)}</span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase">{formatDate(viewingNote.createdAt)}</span>
                        {viewingNote.is_protected && <span className="text-[8px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 uppercase font-bold"><i className="fa-solid fa-lock mr-1"></i>Privé</span>}
                     </div>
                   </div>
