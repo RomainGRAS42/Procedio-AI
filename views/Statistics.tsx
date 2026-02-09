@@ -461,13 +461,19 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                   {skillMapData.slice(0, 4).map((skill, idx) => (
                     <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 transition-all hover:border-indigo-100">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{skill.subject}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{skill.subject}</span>
+                          <InfoTooltip text="Moyenne de maîtrise de l'équipe (basée sur les lectures et contributions)." />
+                        </div>
                         <span className="text-xs font-black text-indigo-600">{skill.A}%</span>
                       </div>
-                      <p className="text-xs font-black text-slate-700 truncate">
-                        <i className="fa-solid fa-crown text-amber-400 mr-2"></i>
-                        {skill.champion || 'N/A'}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-slate-700 truncate">
+                          <i className="fa-solid fa-crown text-amber-400 mr-2"></i>
+                          {skill.champion || 'N/A'}
+                        </p>
+                        <InfoTooltip text="Référent ayant le plus haut score d'activité sur ce sujet." align="right" />
+                      </div>
                     </div>
                   ))}
                 </div>
