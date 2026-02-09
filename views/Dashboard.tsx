@@ -5,6 +5,7 @@ import CustomToast from "../components/CustomToast";
 // MissionSpotlight is defined locally at line 372 so no import needed, remove line 5
 import TeamPodium from '../components/TeamPodium';
 import XPProgressBar from '../components/XPProgressBar';
+import RSSWidget from "../components/RSSWidget";
 import MasteryProgress from '../components/MasteryProgress';
 import LevelUpModal from '../components/LevelUpModal';
 import BadgeUnlockedModal from '../components/BadgeUnlockedModal';
@@ -1688,6 +1689,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           )}
 
+          <div className={`${isReferent && pendingReviews.length > 0 ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
+            <RSSWidget user={user} />
+          </div>
+
           <div className={`${isReferent && pendingReviews.length > 0 ? '' : 'lg:col-span-3'} bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm`}>
              <div className="flex justify-between items-center mb-6">
                <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Dernière Procédure</h3>
@@ -1886,8 +1891,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                  </div>
 
-              
-                 {/* COL 4: Dernière Procédure (Full Width) */}
+                  {/* COL 4: Veille RSS */}
+                  <div className="lg:col-span-3">
+                    <RSSWidget user={user} />
+                  </div>
+
+                  {/* COL 5: Dernière Procédure (Full Width) */}
                  <div className="lg:col-span-3 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Dernière Procédure en Ligne</h3>
