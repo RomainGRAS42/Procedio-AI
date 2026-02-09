@@ -33,43 +33,6 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
       <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent blur-[80px] rounded-full -z-10 translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-700"></div>
       <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full -z-10"></div>
       
-      {/* Info Tooltip */}
-      <div className="absolute top-6 right-8 z-10">
-        <div className="relative group/tooltip">
-          <button className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center text-[10px] hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-100">
-            <i className="fa-solid fa-question"></i>
-          </button>
-          
-          {/* Tooltip Content */}
-          <div className="absolute top-full right-0 mt-3 w-72 bg-slate-900/95 backdrop-blur-md text-white rounded-3xl p-6 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all shadow-2xl z-50 border border-white/10">
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Comment gagner de l'XP ?</p>
-            <ul className="space-y-3 text-[11px] leading-relaxed font-medium">
-              <li className="flex items-center justify-between">
-                <span className="text-slate-400 uppercase text-[9px] font-bold">Action</span>
-                <span className="text-slate-400 uppercase text-[9px] font-bold text-right">Gain</span>
-              </li>
-              <li className="flex items-center justify-between pt-1 border-t border-white/5">
-                <span className="text-slate-200">Lecture procédure</span>
-                <span className="text-emerald-400 font-black">+5 XP</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="text-slate-200">Lecture flash note</span>
-                <span className="text-emerald-400 font-black">+5 XP</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="text-slate-200">Suggestion approuvée</span>
-                <span className="text-amber-400 font-black">+50 XP</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="text-slate-200">Mission accomplie</span>
-                <span className="text-purple-400 font-black text-right">Variable</span>
-              </li>
-            </ul>
-            <div className="absolute bottom-full right-6 border-8 border-transparent border-b-slate-900/95"></div>
-          </div>
-        </div>
-      </div>
-      
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-5">
           <div className="w-16 h-16 rounded-[1.25rem] bg-slate-900 text-white flex items-center justify-center text-2xl font-black shadow-2xl shadow-indigo-200 border border-slate-800 relative group-hover:scale-105 transition-transform">

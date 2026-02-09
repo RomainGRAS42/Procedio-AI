@@ -9,9 +9,18 @@ interface ProtectedNote extends Note {
   is_protected: boolean;
   user_id?: string;
   author_role?: UserRole; // To track if author was technician/manager
-  author_name?: string;
   createdAt?: string;
-  is_flash_note?: boolean; // To identify Flash Notes (read-only once proposed/validated)
+  is_flash_note?: boolean; 
+  folder_id?: string;
+  author_name?: string;
+}
+
+interface NoteFolder {
+  id: string;
+  name: string;
+  icon: string;
+  mode: "personal" | "flash";
+  count?: number;
 }
 
 interface NotesProps {
@@ -24,8 +33,10 @@ interface NotesProps {
 const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, mode = "personal", user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState<ProtectedNote[]>([]);
+  const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [isManagingFolders, setIsManagingFolders] = useState(false);
 
   // États pour l'édition/création (Mode Plein Écran)
   const [isEditing, setIsEditing] = useState(false);
@@ -34,11 +45,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     title: string;
     content: string;
     is_protected: boolean;
+    folder_id?: string;
   }>({
     title: "",
     content: "",
     is_protected: false,
+    folder_id: "",
   });
+
+  const [folderForm, setFolderForm] = useState<{
+    id?: string;
+    name: string;
+    icon: string;
+  } | null>(null);
 
   // États pour la visualisation (Mode Plein Écran Focus)
   const [viewingNote, setViewingNote] = useState<ProtectedNote | null>(null);
@@ -74,6 +93,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
   useEffect(() => {
     fetchNotes();
+    fetchFolders();
   }, []);
 
   useEffect(() => {
@@ -184,6 +204,76 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       setLoading(false);
     }
   };
+
+  const fetchFolders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("note_folders")
+        .select("*")
+        .eq("mode", mode)
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      if (data) setFolders(data);
+    } catch (err) {
+      console.error("Erreur de récupération des dossiers:", err);
+    }
+  };
+
+  const handleSaveFolder = async () => {
+    if (!folderForm || !folderForm.name.trim()) return;
+    setSaving(true);
+    try {
+      const payload = {
+        name: folderForm.name.trim(),
+        icon: folderForm.icon || "fa-folder",
+        user_id: user?.id,
+        mode: mode
+      };
+
+      let result;
+      if (folderForm.id) {
+        result = await supabase.from("note_folders").update(payload).eq("id", folderForm.id);
+      } else {
+        result = await supabase.from("note_folders").insert([payload]);
+      }
+
+      if (result.error) throw result.error;
+
+      setToast({ message: folderForm.id ? "Dossier renommé !" : "Dossier créé !", type: "success" });
+      setFolderForm(null);
+      fetchFolders();
+    } catch (err) {
+      console.error("Erreur action dossier:", err);
+      setToast({ message: "Échec de l'action sur le dossier", type: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFolder = (folderId: string) => {
+    setConfirmModal({
+      title: "Supprimer le dossier ?",
+      message: "Les notes à l'intérieur ne seront pas supprimées mais deviendront 'Sans Dossier'.",
+      confirmText: "Supprimer",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from("note_folders").delete().eq("id", folderId);
+          if (error) throw error;
+          
+          setToast({ message: "Dossier supprimé", type: "success" });
+          setConfirmModal(null);
+          setCurrentFolderId(null);
+          fetchFolders();
+          fetchNotes();
+        } catch (err) {
+          console.error("Erreur suppression dossier:", err);
+          setToast({ message: "Échec de la suppression", type: "error" });
+        }
+      }
+    });
+  };
   const handleCloseNote = () => {
     if (viewingNote?.is_protected) {
       setUnlockedNotes((prev) => {
@@ -265,7 +355,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   };
 
   const handleAddNew = () => {
-    setActiveNote({ title: "", content: "", is_protected: false });
+    setActiveNote({ title: "", content: "", is_protected: false, folder_id: currentFolderId || "" });
     setIsEditing(true);
   };
 
@@ -275,6 +365,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       title: note.title,
       content: note.content,
       is_protected: note.is_protected,
+      folder_id: note.folder_id || "",
     });
     setIsEditing(true);
   };
@@ -342,8 +433,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         content: activeNote.content,
         is_protected: activeNote.is_protected,
         user_id: user.id,
+        folder_id: activeNote.folder_id || null,
         updated_at: new Date().toISOString(),
-        status: mode === "flash" ? "suggestion" : "private", // Default status logic
+        status: mode === "flash" ? "suggestion" : "private", 
         category: "general"
       };
 
@@ -622,14 +714,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         </div>
         <div className="h-4 w-px bg-slate-200"></div>
           <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
-            {currentFolder ? `${currentFolder} - ${notes.length} éléments` : 'Dossiers'}
+            {currentFolderId ? `${folders.find(f => f.id === currentFolderId)?.name || 'Dossier'} - ${notes.filter(n => n.folder_id === currentFolderId).length} éléments` : 'Dossiers'}
           </span>
       </div>
 
       <div className="flex-1 space-y-10">
-        {!searchTerm && currentFolder !== null && (
+        {!searchTerm && currentFolderId !== null && (
           <button 
-            onClick={() => setCurrentFolder(null)} 
+            onClick={() => setCurrentFolderId(null)} 
             className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
           >
             <i className="fa-solid fa-arrow-left"></i> 
@@ -649,59 +741,45 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                 ))
               }
             </div>
-          ) : currentFolder === null ? (
+          ) : currentFolderId === null ? (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-              {/* VIRTUAL FOLDERS */}
-              {mode === "personal" ? (
-                <>
-                  <FolderCard 
-                    name="TOUTES LES NOTES" 
-                    icon="fa-note-sticky" 
-                    count={notes.length} 
-                    onClick={() => setCurrentFolder("TOUTES LES NOTES")} 
-                  />
-                  <FolderCard 
-                    name="PROTÉGÉES" 
-                    icon="fa-lock" 
-                    count={notes.filter(n => n.is_protected).length} 
-                    onClick={() => setCurrentFolder("PROTÉGÉES")} 
-                  />
-                  <FolderCard 
-                    name="FLASH PROPOSÉES" 
-                    icon="fa-bolt" 
-                    count={notes.filter(n => n.is_flash_note).length} 
-                    onClick={() => setCurrentFolder("FLASH PROPOSÉES")} 
-                  />
-                </>
-              ) : (
-                <>
-                  <FolderCard 
-                    name="FLASH VALIDÉES" 
-                    icon="fa-check-double" 
-                    count={notes.filter(n => n.status === 'public').length} 
-                    onClick={() => setCurrentFolder("FLASH VALIDÉES")} 
-                  />
-                  {user?.role === UserRole.MANAGER && (
-                    <FolderCard 
-                      name="SUGGESTIONS" 
-                      icon="fa-lightbulb" 
-                      count={notes.filter(n => n.status === 'suggestion').length} 
-                      onClick={() => setCurrentFolder("SUGGESTIONS")} 
-                    />
-                  )}
-                </>
+              {/* VIRTUAL FOLDERS - Fallback if no dynamic folders yet */}
+              {folders.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                  <i className="fa-solid fa-folder-open text-4xl text-slate-200 mb-4"></i>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Aucun dossier créé</p>
+                  <button onClick={() => setFolderForm({ name: "", icon: "fa-folder" })} className="mt-4 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Créer le premier dossier</button>
+                </div>
               )}
+              
+              {folders.map(folder => (
+                <FolderCard 
+                  key={folder.id}
+                  name={folder.name} 
+                  icon={folder.icon} 
+                  count={notes.filter(n => n.folder_id === folder.id).length} 
+                  onClick={() => setCurrentFolderId(folder.id)} 
+                  onEdit={() => setFolderForm({ id: folder.id, name: folder.name, icon: folder.icon })}
+                  onDelete={() => handleDeleteFolder(folder.id)}
+                />
+              ))}
+
+              <div 
+                onClick={() => setFolderForm({ name: "", icon: "fa-folder" })}
+                className="group flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:bg-indigo-50 border-2 border-dashed border-slate-200 hover:border-indigo-300 animate-slide-up"
+              >
+                <div className="text-5xl mb-4 text-slate-200 group-hover:text-indigo-400">
+                  <i className="fa-solid fa-folder-plus"></i>
+                </div>
+                <span className="font-black text-slate-300 text-[10px] uppercase tracking-widest group-hover:text-indigo-500">Nouveau Dossier</span>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-               {(currentFolder === "TOUTES LES NOTES" ? notes : 
-                 currentFolder === "PROTÉGÉES" ? notes.filter(n => n.is_protected) :
-                 currentFolder === "FLASH PROPOSÉES" ? notes.filter(n => n.is_flash_note) :
-                 currentFolder === "FLASH VALIDÉES" ? notes.filter(n => n.status === 'public') :
-                 currentFolder === "SUGGESTIONS" ? notes.filter(n => n.status === 'suggestion') : 
-                 []
-               ).map(note => (
-                 <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+               {notes
+                 .filter(n => n.folder_id === currentFolderId)
+                 .map(note => (
+                  <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
                ))}
             </div>
           )}
@@ -737,6 +815,20 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     className={`fa-solid ${activeNote.is_protected ? "fa-lock" : "fa-lock-open"}`}></i>
                   {activeNote.is_protected ? "Protégée" : "Publique"}
                 </button>
+
+                <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                   <i className="fa-solid fa-folder text-slate-400 text-[10px]"></i>
+                   <select 
+                     value={activeNote.folder_id || ""}
+                     onChange={(e) => setActiveNote({...activeNote, folder_id: e.target.value})}
+                     className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
+                   >
+                     <option value="">Sans Dossier</option>
+                     {folders.map(f => (
+                       <option key={f.id} value={f.id}>{f.name}</option>
+                     ))}
+                   </select>
+                </div>
 
                 {/* PROPOSE AS FLASH NOTE BUTTON (Technician + Personal Mode) */}
                 {mode === "personal" && user?.role === UserRole.TECHNICIAN && (
@@ -1005,231 +1097,230 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                                   });
                                   handleCloseNote();
                                   fetchNotes();
-                                } catch (err) {
-                                  console.error("Error validating flash note:", err);
-                                  setSuccessModal({
-                                    title: "Erreur",
-                                    message: "Impossible de valider la note. Veuillez réessayer.",
-                                    icon: "fa-triangle-exclamation"
-                                  });
-                                }
-                                setConfirmModal(null);
-                              }
-                            });
-                         }}
-                         className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
-                      >
-                         <i className="fa-solid fa-check"></i> Valider
-                      </button>
-                      <button
-                         onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmModal({
-                              title: "Refuser cette suggestion ?",
-                              message: "La note redeviendra privée pour l'auteur.",
-                              confirmText: "Refuser",
-                              cancelText: "Annuler",
-                              type: 'danger',
-                              onConfirm: async () => {
-                                try {
-                                  const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
-                                  if(error) throw error;
-                                  
-                                  // Create notification for Technician
-                                  await supabase.from("notes").insert([{
-                                    title: `FLASH_NOTE_REJECTED`,
-                                    content: `Votre suggestion de Flash Note "${viewingNote.title}" a été refusée par ${user.firstName} ${user.lastName || ""}. Elle reste privée.`,
-                                    is_protected: false,
-                                    user_id: viewingNote.user_id,
-                                    is_flash_note: false
-                                  }]);
+        viewingNote && createPortal(
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9990] flex items-center justify-center p-4 md:p-10 animate-fade-in" onClick={handleCloseNote}>
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] w-full max-w-4xl h-full max-h-[85vh] flex flex-col relative overflow-hidden animate-scale-up border border-slate-100"
+            >
+              {/* Notepad Binding Simulation */}
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-slate-50 border-r border-slate-100/50 flex flex-col items-center py-10 gap-6 z-20 overflow-hidden">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div key={i} className="w-3 h-3 rounded-full bg-slate-200 border border-slate-300/50 shrink-0 shadow-inner"></div>
+                ))}
+              </div>
 
-                                  setSuccessModal({
-                                    title: "Suggestion Refusée",
-                                    message: "La note est redevenue privée.",
-                                    icon: "fa-times-circle"
-                                  });
-                                  handleCloseNote();
-                                  fetchNotes();
-                                } catch (err) {
-                                  console.error("Error refusing flash note:", err);
-                                  setSuccessModal({
-                                    title: "Erreur",
-                                    message: "Impossible de refuser la note. Veuillez réessayer.",
-                                    icon: "fa-triangle-exclamation"
-                                  });
-                                }
-                                setConfirmModal(null);
-                              }
-                            });
-                         }}
-                         className="px-4 py-2 bg-white text-rose-500 border border-rose-100 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
-                      >
-                         Refuser
-                      </button>
-                   </div>
-                )}
-                {/* Lock protection is only for Personal Notes (mode === "personal" AND not a Flash Note) */}
-                {mode === "personal" && !viewingNote.is_flash_note && viewingNote.status !== "suggestion" && (
+              <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 py-5 flex items-center justify-between ml-8">
+                <div className="flex items-center gap-4">
                   <button
-                    onClick={toggleLockStatus}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
-                      viewingNote.is_protected
-                        ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
-                        : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                    }`}
-                    title={
-                      viewingNote.is_protected ? "Retirer la protection" : "Protéger cette note"
-                    }>
-                    <i
-                      className={`fa-solid ${
-                        viewingNote.is_protected ? "fa-lock" : "fa-lock-open"
-                      }`}></i>
+                    onClick={handleCloseNote}
+                    className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    title="Fermer">
+                    <i className="fa-solid fa-arrow-left"></i>
                   </button>
-                )}
-                
-                {/* Hide delete button for Technicians in Flash mode */}
-                {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
-                  <button
-                    onClick={(e) => handleDelete(e as any, viewingNote.id)}
-                    className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-                    title="Supprimer">
-                    <i className="fa-solid fa-trash-can"></i>
-                  </button>
-                )}
-                {viewingEdit ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={saveInlineEdit}
-                      disabled={saving || !viewDraft?.title.trim()}
-                      className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
-                      title="Enregistrer">
-                      <i className="fa-solid fa-cloud-arrow-up"></i> Enregistrer
-                    </button>
-                    <button
-                      onClick={cancelInlineEdit}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all font-bold text-[10px] uppercase tracking-widest focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                      title="Annuler l'édition">
-                      Annuler
-                    </button>
-                  </div>
-                ) : (
-                  // Hide edit button for Flash Notes (they are read-only once proposed/validated)
-                  !viewingNote.is_flash_note && (
-                    <button
-                      onClick={startInlineEdit}
-                      className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                      title="Modifier">
-                      <i className="fa-solid fa-pen-to-square"></i> Modifier
-                    </button>
-                  )
-                )}
-              </div>
-            </header>
-            <main className="flex-1 overflow-y-auto p-6 md:p-20 w-full">
-              <div className="max-w-5xl mx-auto w-full space-y-6">
-                {viewingEdit ? (
-                  <>
-                    <input
-                      type="text"
-                      value={viewDraft?.title || ""}
-                      onChange={(e) =>
-                        setViewDraft((prev) => (prev ? { ...prev, title: e.target.value } : prev))
-                      }
-                      className="w-full text-4xl md:text-6xl font-black text-slate-900 border-none outline-none bg-transparent"
-                      aria-label="Titre de la note"
-                    />
-                    <div className="flex flex-wrap items-center gap-2 bg-white sticky top-20 z-10 p-2 rounded-xl border border-slate-100 shadow-sm">
-                      <button
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("bold"); }}
-                        title="Gras">
-                        <i className="fa-solid fa-bold"></i>
-                      </button>
-                      <button
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("italic"); }}
-                        title="Italique">
-                        <i className="fa-solid fa-italic"></i>
-                      </button>
-                      <button
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("underline"); }}
-                        title="Souligné">
-                        <i className="fa-solid fa-underline"></i>
-                      </button>
-                      <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                      <button
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("insertUnorderedList"); }}
-                        title="Liste à puces">
-                        <i className="fa-solid fa-list-ul"></i>
-                      </button>
-                      <button
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition-colors flex items-center justify-center"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("insertOrderedList"); }}
-                        title="Liste numérotée">
-                        <i className="fa-solid fa-list-ol"></i>
-                      </button>
-                      <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                      <button
-                        className="px-3 py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 font-bold text-xs transition-colors"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("formatBlock", "H1"); }}
-                        title="Grand titre">
-                        H1
-                      </button>
-                      <button
-                        className="px-3 py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-blue-600 font-bold text-xs transition-colors"
-                        onMouseDown={(e) => { e.preventDefault(); applyFormat("formatBlock", "H2"); }}
-                        title="Sous-titre">
-                        H2
-                      </button>
-                      <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                      <div className="flex items-center gap-1">
-                        {["#fff59d", "#bbdefb", "#c8e6c9", "#ffe0b2"].map((c) => (
-                          <button
-                            key={c}
-                            className="w-6 h-6 rounded-md border border-slate-200 hover:scale-110 transition-transform shadow-sm"
-                            style={{ backgroundColor: c }}
-                            aria-label={`Surlignage ${c}`}
-                            onMouseDown={(e) => { e.preventDefault(); applyBgColor(c); }}
-                          />
-                        ))}
-                      </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">Lecture de Note</span>
+                    <div className="flex items-center gap-2">
+                       <span className="text-[9px] font-bold text-slate-400 uppercase">{formatDate(viewDraft?.created_at || viewingNote.created_at)}</span>
+                       {viewingNote.is_protected && <span className="text-[8px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 uppercase font-bold"><i className="fa-solid fa-lock mr-1"></i>Privé</span>}
                     </div>
-                    <div
-                      ref={editorRef}
-                      contentEditable
-                      suppressContentEditableWarning
-                      className="min-h-[50vh] text-lg md:text-2xl text-slate-800 leading-loose outline-none"
-                      onInput={() =>
-                        setViewDraft((prev) =>
-                          prev ? { ...prev, content: editorRef.current?.innerHTML || "" } : prev
-                        )
-                      }
-                      onPaste={handlePasteSanitized}
-                      aria-label="Contenu de la note"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <h1
-                      id="note-title"
-                      className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-6">
-                      {viewingNote.title}
-                    </h1>
-                    <div
-                      className="prose prose-xl prose-slate max-w-none text-slate-800 font-medium leading-loose"
-                      dangerouslySetInnerHTML={{ __html: viewingNote.content }}
-                    />
-                  </>
-                )}
-              </div>
-            </main>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Approval buttons for Managers on suggestion flash notes */}
+                  {user?.role === UserRole.MANAGER && mode === "flash" && viewingNote.status === "suggestion" && (
+                    <div className="flex items-center gap-2 mr-2 pr-4 border-r border-slate-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmModal({
+                            title: "Valider cette Flash Note ?",
+                            message: "Elle sera visible par toute l'équipe immédiatement.",
+                            confirmText: "Valider",
+                            cancelText: "Annuler",
+                            type: 'success',
+                            onConfirm: async () => {
+                              try {
+                                const { error } = await supabase.from('notes').update({ status: 'validated', is_flash_note: true }).eq('id', viewingNote.id);
+                                if(error) throw error;
+                                fetchNotes();
+                                handleCloseNote();
+                                setSuccessModal({
+                                  title: "Flash Note Validée !",
+                                  message: "Elle est maintenant disponible pour toute l'équipe.",
+                                  icon: "fa-certificate"
+                                });
+                              } catch (err) {
+                                console.error("Error validating flash note:", err);
+                                setSuccessModal({
+                                  title: "Erreur",
+                                  message: "Impossible de valider la note. Veuillez réessayer.",
+                                  icon: "fa-triangle-exclamation"
+                                });
+                              }
+                              setConfirmModal(null);
+                            }
+                          });
+                        }}
+                        className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
+                      >
+                        <i className="fa-solid fa-check"></i> Valider
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmModal({
+                            title: "Refuser cette suggestion ?",
+                            message: "La note redeviendra privée pour l'auteur.",
+                            confirmText: "Refuser",
+                            cancelText: "Annuler",
+                            type: 'danger',
+                            onConfirm: async () => {
+                              try {
+                                const { error } = await supabase.from('notes').update({ status: 'private' }).eq('id', viewingNote.id);
+                                if(error) throw error;
+                                await supabase.from("notes").insert([{
+                                  title: `FLASH_NOTE_REJECTED`,
+                                  content: `Votre suggestion de Flash Note "${viewingNote.title}" a été refusée par ${user.firstName} ${user.lastName || ""}. Elle reste privée.`,
+                                  is_protected: false,
+                                  user_id: viewingNote.user_id,
+                                  is_flash_note: false
+                                }]);
+                                setSuccessModal({
+                                  title: "Suggestion Refusée",
+                                  message: "La note est redevenue privée.",
+                                  icon: "fa-times-circle"
+                                });
+                                handleCloseNote();
+                                fetchNotes();
+                              } catch (err) {
+                                console.error("Error refusing flash note:", err);
+                                setSuccessModal({
+                                  title: "Erreur",
+                                  message: "Impossible de refuser la note. Veuillez réessayer.",
+                                  icon: "fa-triangle-exclamation"
+                                });
+                              }
+                              setConfirmModal(null);
+                            }
+                          });
+                        }}
+                        className="px-4 py-2 bg-white text-rose-500 border border-rose-100 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
+                      >
+                        Refuser
+                      </button>
+                    </div>
+                  )}
+
+                  {mode === "personal" && !viewingNote.is_flash_note && viewingNote.status !== "suggestion" && (
+                    <button
+                      onClick={toggleLockStatus}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                        viewingNote.is_protected ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      }`}
+                      title={viewingNote.is_protected ? "Retirer la protection" : "Protéger cette note"}>
+                      <i className={`fa-solid ${viewingNote.is_protected ? "fa-lock" : "fa-lock-open"}`}></i>
+                    </button>
+                  )}
+                  
+                  {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
+                    <button
+                      onClick={(e) => handleDelete(e as any, viewingNote.id)}
+                      className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                      title="Supprimer">
+                      <i className="fa-solid fa-trash-can"></i>
+                    </button>
+                  )}
+
+                  {viewingEdit ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={saveInlineEdit}
+                        disabled={saving || !viewDraft?.title.trim()}
+                        className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
+                        title="Enregistrer">
+                        <i className="fa-solid fa-cloud-arrow-up"></i>
+                        <span className="hidden sm:inline ml-2">Enregistrer</span>
+                      </button>
+                    </div>
+                  ) : (
+                    !viewingNote.is_flash_note && (
+                      <button
+                        onClick={startInlineEdit}
+                        className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        title="Modifier">
+                        <i className="fa-solid fa-pen-to-square"></i>
+                        <span className="hidden sm:inline ml-2">Modifier</span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </header>
+
+              <main className="flex-1 overflow-y-auto px-8 md:px-16 py-10 w-full ml-8 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+                <div className="max-w-3xl mx-auto w-full space-y-8">
+                  {viewingEdit ? (
+                    <>
+                      <input
+                        type="text"
+                        value={viewDraft?.title || ""}
+                        onChange={(e) => setViewDraft((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
+                        className="w-full text-3xl md:text-5xl font-black text-slate-900 border-none outline-none bg-transparent placeholder-slate-200"
+                        aria-label="Titre de la note"
+                        placeholder="Titre..."
+                      />
+                      <div className="flex flex-wrap items-center gap-1.5 bg-white/95 backdrop-blur-sm sticky top-0 z-40 p-2 rounded-2xl border border-slate-100 shadow-xl shadow-indigo-500/5">
+                        <button className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors flex items-center justify-center" onMouseDown={(e) => { e.preventDefault(); applyFormat("bold"); }} title="Gras">
+                          <i className="fa-solid fa-bold text-xs"></i>
+                        </button>
+                        <button className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors flex items-center justify-center" onMouseDown={(e) => { e.preventDefault(); applyFormat("italic"); }} title="Italique">
+                          <i className="fa-solid fa-italic text-xs"></i>
+                        </button>
+                        <div className="w-px h-5 bg-slate-100 mx-1"></div>
+                        <button className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors flex items-center justify-center" onMouseDown={(e) => { e.preventDefault(); applyFormat("insertUnorderedList"); }} title="Liste à puces">
+                          <i className="fa-solid fa-list-ul text-xs"></i>
+                        </button>
+                        <div className="w-px h-5 bg-slate-100 mx-1"></div>
+                        <div className="flex items-center gap-1">
+                          {["#fff59d", "#bbdefb", "#c8e6c9", "#ffe0b2"].map((c) => (
+                            <button
+                              key={c}
+                              className="w-5 h-5 rounded-md border border-slate-200 hover:scale-110 transition-transform shadow-sm"
+                              style={{ backgroundColor: c }}
+                              aria-label={`Surlignage ${c}`}
+                              onMouseDown={(e) => { e.preventDefault(); applyBgColor(c); }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div
+                        ref={editorRef}
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="min-h-[40vh] text-base md:text-xl text-slate-800 leading-relaxed outline-none"
+                        onInput={() => setViewDraft((prev) => prev ? { ...prev, content: editorRef.current?.innerHTML || "" } : prev)}
+                        onPaste={handlePasteSanitized}
+                        aria-label="Contenu de la note"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <h1 id="note-title" className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-8">
+                        {viewingNote.title}
+                      </h1>
+                      <div
+                        className="prose prose-lg prose-slate max-w-none text-slate-800 font-medium leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: viewingNote.content }}
+                      />
+                    </>
+                  )}
+                </div>
+              </main>
+            </div>
           </div>,
           document.body
         )}
-
 
       {/* CONFIRMATION MODAL (PREMIUM) */}
       {confirmModal && createPortal(
@@ -1274,15 +1365,101 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         />
       )}
 
+      {/* MODAL FOLDER FORM */}
+      {folderForm && createPortal(
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-10 animate-scale-up border border-slate-100">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                <i className={`fa-solid ${folderForm.id ? 'fa-pen-to-square' : 'fa-folder-plus'}`}></i>
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">
+                  {folderForm.id ? 'Renommer le dossier' : 'Nouveau Dossier'}
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-6 mb-8">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Nom du dossier</label>
+                <input 
+                  type="text"
+                  value={folderForm.name}
+                  onChange={(e) => setFolderForm({...folderForm, name: e.target.value})}
+                  placeholder="Ex: Factures, Important..."
+                  autoFocus
+                  className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Icone</label>
+                <div className="grid grid-cols-5 gap-3">
+                   {['fa-folder', 'fa-star', 'fa-heart', 'fa-briefcase', 'fa-book', 'fa-shield-halved', 'fa-bolt', 'fa-cloud', 'fa-lock', 'fa-tag'].map(icon => (
+                     <button
+                       key={icon}
+                       onClick={() => setFolderForm({...folderForm, icon})}
+                       className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${folderForm.icon === icon ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 border-transparent hover:bg-slate-100'}`}
+                     >
+                       <i className={`fa-solid ${icon} text-sm`}></i>
+                     </button>
+                   ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setFolderForm(null)}
+                className="flex-1 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveFolder}
+                disabled={saving || !folderForm.name.trim()}
+                className="flex-1 px-6 py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+              >
+                {saving ? <i className="fa-solid fa-circle-notch fa-spin"></i> : folderForm.id ? 'Enregistrer' : 'Créer'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
 
-const FolderCard: React.FC<{ name: string; icon: string; count: number; onClick: () => void }> = ({ name, icon, count, onClick }) => (
+const FolderCard: React.FC<{ 
+  name: string; 
+  icon: string; 
+  count: number; 
+  onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}> = ({ name, icon, count, onClick, onEdit, onDelete }) => (
   <div 
     onClick={onClick}
-    className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up"
+    className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up h-full min-h-[220px]"
   >
+    {/* Folder Actions */}
+    <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+      <button 
+        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+        className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white flex items-center justify-center border border-slate-100 shadow-sm"
+      >
+        <i className="fa-solid fa-pen text-[10px]"></i>
+      </button>
+      <button 
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-white flex items-center justify-center border border-slate-100 shadow-sm"
+      >
+        <i className="fa-solid fa-trash-can text-[10px]"></i>
+      </button>
+    </div>
+
     <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
       <i className={`fa-solid ${icon}`}></i>
     </div>

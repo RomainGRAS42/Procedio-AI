@@ -1326,7 +1326,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-slide-up pb-12">
+    <div className="space-y-10 pb-10 px-4 md:px-10 animate-fade-in relative z-10 w-full overflow-x-hidden">
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-end gap-6">
         {/* Titre & Toggle de vue */}
@@ -1522,6 +1522,33 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <i className="fa-solid fa-trophy"></i>
                   </div>
                   <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
+                  <div className="relative group/xp-info">
+                    <button className="w-5 h-5 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center text-[8px] hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-100">
+                      <i className="fa-solid fa-question"></i>
+                    </button>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none">
+                      <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] pb-1 border-b border-white/5 opacity-50 font-black">
+                          <span>ACTION</span>
+                          <span>GAIN</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>Lecture procédure</span>
+                          <span className="text-emerald-400">+5 XP</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>Lecture flash note</span>
+                          <span className="text-emerald-400">+5 XP</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>Suggestion approuvée</span>
+                          <span className="text-amber-400">+50 XP</span>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-900"></div>
+                    </div>
+                  </div>
                 </div>
                 <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
                   {earnedBadges.length} Obtenus
