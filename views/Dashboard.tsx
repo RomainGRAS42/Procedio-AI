@@ -5,6 +5,8 @@ import CustomToast from "../components/CustomToast";
 // MissionSpotlight is defined locally at line 372 so no import needed, remove line 5
 import TeamPodium from '../components/TeamPodium';
 import XPProgressBar from '../components/XPProgressBar';
+import LevelUpModal from '../components/LevelUpModal';
+import BadgeUnlockedModal from '../components/BadgeUnlockedModal';
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
@@ -97,6 +99,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [earnedBadges, setEarnedBadges] = useState<any[]>(cacheStore.get('dash_earned_badges') || []);
   const [loadingBadges, setLoadingBadges] = useState(!cacheStore.has('dash_earned_badges'));
 
+  // Gamification Celebrations
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpData, setLevelUpData] = useState<{ level: number; title: string } | null>(null);
+  const [showBadgeUnlockedModal, setShowBadgeUnlockedModal] = useState(false);
+  const [unlockedBadgeData, setUnlockedBadgeData] = useState<any | null>(null);
+
 
 
 
@@ -134,6 +142,43 @@ const Dashboard: React.FC<DashboardProps> = ({
     usage: 0,
     redZone: 0
   });
+
+  const prevLevelRef = React.useRef<number>(personalStats.level);
+  const prevBadgeCountRef = React.useRef<number>(earnedBadges.length);
+
+  const getLevelTitle = (level: number) => {
+    if (level >= 10) return "Légende Vivante";
+    if (level >= 7) return "Maître Expert";
+    if (level >= 5) return "Expert Senior";
+    if (level >= 3) return "Pilote Confirmé";
+    if (level >= 2) return "Apprenti Actif";
+    return "Débutant";
+  };
+
+  // Detection Level Up & Badges
+  useEffect(() => {
+    if (user.role !== UserRole.TECHNICIAN) return;
+
+    // 1. Check Level Up
+    if (personalStats.level > prevLevelRef.current && prevLevelRef.current !== 0) {
+      setLevelUpData({ 
+        level: personalStats.level, 
+        title: getLevelTitle(personalStats.level) 
+      });
+      setShowLevelUpModal(true);
+    }
+    prevLevelRef.current = personalStats.level;
+
+    // 2. Check Badge Unlocked
+    if (earnedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
+      const newBadge = earnedBadges[earnedBadges.length - 1]?.badges;
+      if (newBadge) {
+        setUnlockedBadgeData(newBadge);
+        setShowBadgeUnlockedModal(true);
+      }
+    }
+    prevBadgeCountRef.current = earnedBadges.length;
+  }, [personalStats.level, earnedBadges.length]);
   
   // Cockpit Widgets State (Manager)
   // Cockpit Widgets State (Manager)
@@ -775,8 +820,26 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const isInProgress = assignedMission.status === 'in_progress';
 
+    // Calculate time remaining for deadline
+    const getTimeRemaining = (deadline?: string) => {
+      if (!deadline) return null;
+      const now = new Date();
+      const end = new Date(deadline);
+      const diff = end.getTime() - now.getTime();
+      
+      if (diff <= 0) return "Échu";
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (days > 0) return `${days}j restants`;
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      return `${hours}h restantes`;
+    };
+
+    const timeRemaining = getTimeRemaining(assignedMission.deadline);
+
     return (
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[320px]">
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[340px] hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5">
         {/* Background decoration - Lighter */}
         <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
           isInProgress ? 'bg-indigo-100/50' : 'bg-indigo-50/50 group-hover:bg-indigo-100/50'
@@ -785,70 +848,90 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all duration-500 ${
-                 isInProgress ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
+               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 ${
+                 isInProgress 
+                  ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-200' 
+                  : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
                }`}>
                  <i className={`fa-solid ${isInProgress ? 'fa-thumbtack' : 'fa-bolt-lightning'}`}></i>
                </div>
                <div>
-                 <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
-                   {isInProgress ? 'Mission en cours' : 'Ordre de Mission'}
-                 </h3>
-                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mt-1">
-                   {isInProgress ? 'Objectif actif' : 'Assignée par le manager'}
+                 <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
+                      {isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
+                    </h3>
+                    {assignedMission.urgency === 'high' || assignedMission.urgency === 'critical' && (
+                      <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
+                    )}
+                 </div>
+                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">
+                   {isInProgress ? 'Objectif stratégique' : 'Assigné par le manager'}
                  </p>
                </div>
             </div>
             
-            <div className="flex flex-col items-end">
-              <span className={`px-2 py-1 text-[7px] font-black uppercase tracking-widest rounded-md mb-1 ${
-                isInProgress ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
-              }`}>
-                {isInProgress ? 'En cours' : 'Priorité'}
-              </span>
-              <span className="text-indigo-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                <i className="fa-solid fa-star"></i>
-                {assignedMission.xp_reward} XP
-              </span>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                {timeRemaining && (
+                  <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
+                    timeRemaining === "Échu" 
+                      ? "bg-rose-50 border-rose-100 text-rose-500" 
+                      : "bg-slate-50 border-slate-100 text-slate-500"
+                  }`}>
+                    <i className="fa-regular fa-clock mr-1"></i>
+                    {timeRemaining}
+                  </span>
+                )}
+                <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg ${
+                  isInProgress ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-50 text-slate-500 border border-slate-100'
+                }`}>
+                  {isInProgress ? 'Actif' : 'Prioritaire'}
+                </span>
+              </div>
+              
+              <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-sm shadow-amber-100/50">
+                <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[10px]">
+                  <i className="fa-solid fa-star"></i>
+                </div>
+                <span className="text-amber-700 text-[11px] font-black tracking-tighter">
+                  {assignedMission.xp_reward} XP
+                </span>
+              </div>
             </div>
           </div>
           
-          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2 line-clamp-2">
+          <h3 className="text-2xl font-black text-slate-900 tracking-tighter mb-3 line-clamp-2 leading-tight">
             {assignedMission.title}
           </h3>
-          <p className="text-slate-500 text-xs font-medium line-clamp-3 leading-relaxed">
+          <p className="text-slate-500 text-sm font-medium line-clamp-3 leading-relaxed opacity-80">
             {assignedMission.description}
           </p>
         </div>
 
-        <div className="relative z-10 mt-8 flex items-center justify-end gap-3">
+        <div className="relative z-10 mt-8 flex items-center justify-between">
           <button 
             onClick={() => onNavigate?.('missions')}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100 hover:bg-white hover:border-indigo-100 hover:text-indigo-600 hover:scale-105 transition-all active:scale-95 shadow-sm"
-            title="Détails de la mission"
+            className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors group/link"
           >
-            <i className="fa-solid fa-arrow-right -rotate-45 text-xs"></i>
+            Détails de la mission
+            <i className="fa-solid fa-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
           </button>
 
           {!isInProgress ? (
             <button 
               onClick={() => handleStartMission(assignedMission.id)}
-              className="pl-4 pr-5 py-2.5 bg-slate-900 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95 flex items-center gap-2 group/btn"
+              className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 hover:-translate-y-1 transition-all shadow-xl active:scale-95 flex items-center gap-3 group/btn"
             >
-              <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center group-hover/btn:scale-110 transition-transform">
-                <i className="fa-solid fa-play text-[8px] ml-0.5"></i>
-              </span>
-              Démarrer
+               <i className="fa-solid fa-play text-[9px]"></i>
+               C'est parti !
             </button>
           ) : (
             <button 
               onClick={() => setCompletingMission(assignedMission)}
-              className="pl-4 pr-5 py-2.5 bg-emerald-500 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2 group/btn"
+              className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:from-emerald-600 hover:to-teal-700 hover:-translate-y-1 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center gap-3 group/btn"
             >
-              <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform">
-                <i className="fa-solid fa-check text-[10px]"></i>
-              </span>
-              Terminer
+               <i className="fa-solid fa-check text-[11px]"></i>
+               Mission accomplie
             </button>
           )}
         </div>
@@ -2018,6 +2101,24 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         </div>,
+        document.body
+      )}
+
+      {/* GAMIFICATION CELEBRATIONS */}
+      {showLevelUpModal && levelUpData && createPortal(
+        <LevelUpModal 
+          level={levelUpData.level} 
+          title={levelUpData.title} 
+          onClose={() => setShowLevelUpModal(false)} 
+        />,
+        document.body
+      )}
+
+      {showBadgeUnlockedModal && unlockedBadgeData && createPortal(
+        <BadgeUnlockedModal 
+          badge={unlockedBadgeData} 
+          onClose={() => setShowBadgeUnlockedModal(false)} 
+        />,
         document.body
       )}
 
