@@ -43,31 +43,33 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
         
         return (
           <div key={idx} className="group cursor-default">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 border border-slate-100">
                   <i className={`fa-solid ${icon}`}></i>
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-black text-slate-700 uppercase tracking-wider leading-none">
+                  <h4 className="text-[12px] font-black text-slate-900 uppercase tracking-tight leading-none mb-1">
                     {item.subject}
                   </h4>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">
-                    Niveau {Math.floor(item.A / 10) + 1}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
+                      Niveau {Math.floor(item.A / 10) + 1}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xs font-black text-slate-900 leading-none">
+                <span className="text-sm font-black text-slate-900 tracking-tighter">
                   {percentage}%
                 </span>
-                <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mt-1">Maîtrise</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Maîtrise</p>
               </div>
             </div>
             
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden relative">
+            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden relative p-0.5 border border-slate-200/50">
               <div 
-                className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                 style={{ width: `${percentage}%` }}
               >
                 {/* Subtle animated shine */}

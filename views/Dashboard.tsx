@@ -840,10 +840,10 @@ const Dashboard: React.FC<DashboardProps> = ({
     const timeRemaining = getTimeRemaining(assignedMission.deadline);
 
     return (
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[340px] hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5">
-        {/* Background decoration - Lighter */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[340px] hover:border-slate-200 hover:shadow-xl hover:shadow-slate-500/5">
+        {/* Background decoration - Distinctive */}
         <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
-          isInProgress ? 'bg-indigo-100/50' : 'bg-indigo-50/50 group-hover:bg-indigo-100/50'
+          isInProgress ? 'bg-emerald-50/50' : 'bg-slate-50/50 group-hover:bg-slate-100/50'
         }`}></div>
         
         <div className="relative z-10">
@@ -851,8 +851,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center gap-4">
                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 ${
                  isInProgress 
-                  ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-200' 
-                  : 'bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50'
+                  ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 border border-slate-800' 
+                  : 'bg-slate-50 text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100'
                }`}>
                  <i className={`fa-solid ${isInProgress ? 'fa-thumbtack' : 'fa-bolt-lightning'}`}></i>
                </div>
@@ -861,11 +861,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
                       {isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
                     </h3>
-                    {assignedMission.urgency === 'high' || assignedMission.urgency === 'critical' && (
+                    {(assignedMission.urgency === 'high' || assignedMission.urgency === 'critical') && (
                       <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
                     )}
                  </div>
-                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">
+                 <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">
                    {isInProgress ? 'Objectif stratégique' : 'Assigné par le manager'}
                  </p>
                </div>
@@ -877,14 +877,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
                     timeRemaining === "Échu" 
                       ? "bg-rose-50 border-rose-100 text-rose-500" 
-                      : "bg-slate-50 border-slate-100 text-slate-500"
+                      : "bg-slate-100 border-slate-200 text-slate-600"
                   }`}>
                     <i className="fa-regular fa-clock mr-1"></i>
                     {timeRemaining}
                   </span>
                 )}
-                <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg ${
-                  isInProgress ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-50 text-slate-500 border border-slate-100'
+                <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
+                  isInProgress ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'
                 }`}>
                   {isInProgress ? 'Actif' : 'Prioritaire'}
                 </span>
@@ -894,7 +894,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[10px]">
                   <i className="fa-solid fa-star"></i>
                 </div>
-                <span className="text-amber-700 text-[11px] font-black tracking-tighter">
+                <span className="text-amber-800 text-[11px] font-black tracking-tighter">
                   {assignedMission.xp_reward} XP
                 </span>
               </div>
@@ -1494,15 +1494,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* ZONE 2: Expertise & Badges */}
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-indigo-100 transition-all">
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-orange-100 transition-all">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg border border-orange-100">
                     <i className="fa-solid fa-trophy"></i>
                   </div>
                   <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
                 </div>
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
                   {earnedBadges.length} Obtenus
                 </span>
              </div>
@@ -1514,15 +1514,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                     {earnedBadges.length > 0 ? (
                       earnedBadges.map((ub) => (
                         <div key={ub.id} className="group relative">
-                          <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-indigo-200 hover:bg-white transition-all cursor-help transform hover:-translate-y-1">
-                            <i className={`fa-solid ${ub.badges.icon} text-lg text-indigo-600`}></i>
+                          <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-orange-200 hover:bg-white transition-all cursor-help transform hover:-translate-y-1">
+                            <i className={`fa-solid ${ub.badges.icon} text-lg text-orange-600`}></i>
                             <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter truncate w-10 text-center">
                               {ub.badges.name}
                             </span>
                           </div>
                           {/* Improved Tooltip */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
-                             <p className="font-black text-indigo-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
+                             <p className="font-black text-orange-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
                              <p className="text-slate-300 leading-relaxed">{ub.badges.description}</p>
                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
                           </div>
@@ -1536,7 +1536,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-50">
+                <div className="pt-6 border-t border-slate-100">
                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Prochain Défi</p>
                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
                       <div className="flex items-center gap-3">
