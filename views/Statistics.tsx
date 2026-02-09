@@ -280,7 +280,20 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     try {
       const { data } = await supabase
         .from('user_profiles')
-        .select('first_name, last_name, avatar_url, role, level, current_xp')
+        .select(`
+          first_name, 
+          last_name, 
+          avatar_url, 
+          role, 
+          level, 
+          current_xp,
+          user_badges (
+            badges (
+              icon,
+              name
+            )
+          )
+        `)
         .order('current_xp', { ascending: false })
         .limit(5);
 
@@ -592,6 +605,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                             {member.role === UserRole.MANAGER ? 'Manager Expert' : 'Technicien Senior'}
                           </p>
+                          <div className="flex gap-1.5 mt-2">
+                             {(member as any).user_badges?.slice(0, 3).map((ub: any, bIdx: number) => (
+                               <div key={bIdx} className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center border border-indigo-100/50" title={ub.badges.name}>
+                                 <i className={`fa-solid ${ub.badges.icon} text-[8px] text-indigo-500`}></i>
+                               </div>
+                             ))}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">

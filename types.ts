@@ -111,4 +111,26 @@ export type ViewType =
   | "team"
   | "team"
   | "search-results"
-  | "flash-notes";
+  | "flash-notes"
+  | "missions";
+
+export type MissionStatus = 'open' | 'assigned' | 'in_review' | 'completed' | 'cancelled';
+export type MissionUrgency = 'low' | 'medium' | 'high' | 'critical';
+
+export interface Mission {
+  id: string;
+  created_at: string;
+  title: string;
+  description: string;
+  xp_reward: number;
+  urgency: MissionUrgency;
+  deadline?: string;
+  status: MissionStatus;
+  created_by: string;
+  assigned_to?: string;
+  opportunity_id?: string;
+  procedure_id?: string;
+  // Joins
+  assignee_name?: string;
+  creator_name?: string;
+}

@@ -18,6 +18,7 @@ import MouseTrailEffect from "./components/MouseTrailEffect";
 import ChatAssistant from "./components/ChatAssistant";
 import LoadingState from "./components/LoadingState";
 import SearchResults from "./views/SearchResults";
+import Missions from "./views/Missions";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -417,6 +418,7 @@ const AppContent: React.FC<any> = ({
                   onViewComplianceHistory={() => navigate("/dashboard")}
                   targetAction={pendingAction}
                   onActionHandled={() => setPendingAction(null)}
+                  onNavigate={(v) => navigate(`/${v}`)}
                 />
               } />
               <Route path="/procedures" element={
@@ -462,11 +464,13 @@ const AppContent: React.FC<any> = ({
                 />
               } />
               <Route path="/team" element={<Team user={user} />} />
+              <Route path="/missions" element={<Missions user={user} />} />
               <Route path="/account" element={<Account user={user} onGoToReset={() => {}} />} />
 
               <Route path="/upload" element={
                 <UploadProcedure
                   onBack={() => navigate("/procedures")}
+                  user={user}
                   activeTransfer={activeTransfer}
                   setActiveTransfer={setActiveTransfer}
                 />

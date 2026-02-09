@@ -46,6 +46,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: "fa-bolt", // Lightning icon for "Flash" / "Instant"
       roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
     },
+    {
+      id: "missions",
+      label: "Quêtes",
+      icon: "fa-compass",
+      roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
+    },
     { id: "statistics", label: "Analyses", icon: "fa-chart-pie", roles: [UserRole.MANAGER] },
     {
       id: "team",

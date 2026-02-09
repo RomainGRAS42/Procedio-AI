@@ -4,11 +4,12 @@ import { ActiveTransfer } from '../App';
 
 interface UploadProcedureProps {
   onBack: () => void;
+  user: { id: string };
   activeTransfer: ActiveTransfer | null;
   setActiveTransfer: (transfer: ActiveTransfer | null) => void;
 }
 
-const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfer, setActiveTransfer }) => {
+const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeTransfer, setActiveTransfer }) => {
   const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const [folders] = useState(['LOGICIEL', 'UTILISATEUR', 'MATERIEL', 'INFRASTRUCTURE']);
@@ -54,6 +55,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, activeTransfe
       formData.append('file_id', fileId);
       formData.append('upload_date', uploadDate);
       formData.append('category', selectedFolder);
+      formData.append('author_id', user.id);
 
       console.log('📤 Envoi vers Supabase Edge Function (process-pdf):', {
         file_id: fileId,

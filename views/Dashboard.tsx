@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { User, Procedure, Suggestion, UserRole } from "../types";
+import { User, Procedure, Suggestion, UserRole, Mission } from "../types";
 import CustomToast from "../components/CustomToast";
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
@@ -16,6 +16,7 @@ interface DashboardProps {
   targetAction?: { type: 'suggestion' | 'read', id: string } | null;
   onActionHandled?: () => void;
   onUploadClick: () => void;
+  onNavigate?: (view: string) => void;
 }
 
 interface Announcement {
@@ -36,6 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   targetAction,
   onActionHandled,
   onUploadClick,
+  onNavigate,
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
@@ -60,6 +62,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [activities, setActivities] = useState<any[]>(cacheStore.get('dash_activities') || []);
   const [loadingActivities, setLoadingActivities] = useState(!cacheStore.has('dash_activities'));
 
+  // Missions
+  const [activeMissions, setActiveMissions] = useState<Mission[]>(cacheStore.get('dash_active_missions') || []);
+  const [loadingMissions, setLoadingMissions] = useState(!cacheStore.has('dash_active_missions'));
+
 
 
   // Toast Notification State
@@ -78,6 +84,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Mastery Claims (Manager Only)
   const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
   const [loadingClaims, setLoadingClaims] = useState(false);
+
+  // Badges (Personal View)
+  const [earnedBadges, setEarnedBadges] = useState<any[]>(cacheStore.get('dash_earned_badges') || []);
+  const [loadingBadges, setLoadingBadges] = useState(!cacheStore.has('dash_earned_badges'));
 
 
 
@@ -236,6 +246,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       fetchPersonalStats();
       fetchTrendProcedure();
       fetchLatestAnnouncement();
+      fetchActiveMissions();
 
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
@@ -320,8 +331,27 @@ const Dashboard: React.FC<DashboardProps> = ({
       cacheStore.set('dash_weekly_xp', weeklyXpVal);
 
       // Fetch badges for personal view
-
-
+      setLoadingBadges(true);
+      const { data: userBadges, error: badgeError } = await supabase
+        .from('user_badges')
+        .select(`
+          id,
+          awarded_at,
+          badges (
+            id,
+            name,
+            description,
+            icon,
+            category
+          )
+        `)
+        .eq('user_id', user.id);
+      
+      if (!badgeError && userBadges) {
+        setEarnedBadges(userBadges);
+        cacheStore.set('dash_earned_badges', userBadges);
+      }
+      setLoadingBadges(false);
     } catch (err) {
       console.error("Erreur stats personnelles:", err);
     }
@@ -558,6 +588,28 @@ const Dashboard: React.FC<DashboardProps> = ({
       console.error(err);
     } finally {
       setLoadingActivities(false);
+    }
+  };
+
+  const fetchActiveMissions = async () => {
+    setLoadingMissions(true);
+    try {
+      const { data } = await supabase
+        .from('missions')
+        .select('*')
+        .or(`status.eq.open,assigned_to.eq.${user.id}`)
+        .not('status', 'eq', 'completed')
+        .order('urgency', { ascending: false })
+        .limit(5);
+
+      if (data) {
+        setActiveMissions(data as Mission[]);
+        cacheStore.set('dash_active_missions', data);
+      }
+    } catch (err) {
+      console.error("Error fetching active missions:", err);
+    } finally {
+      setLoadingMissions(false);
     }
   };
 
@@ -1098,6 +1150,82 @@ const Dashboard: React.FC<DashboardProps> = ({
       </section>
       </div>
 
+      {/* Missions & Quêtes Widget */}
+      <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden relative group">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
+          <i className="fa-solid fa-compass text-[12rem] rotate-12"></i>
+        </div>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-200">
+              <i className="fa-solid fa-map-location-dot"></i>
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Tableau de Chasse</h2>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Missions & Défis actifs</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => onNavigate?.('missions')}
+            className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 shadow-xl shadow-slate-200 transition-all flex items-center gap-3 w-fit"
+          >
+            Voir le tableau complet
+            <i className="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+          {loadingMissions ? (
+            <div className="col-span-full py-12 flex flex-col items-center justify-center gap-4 text-slate-400">
+              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">Recherche de missions...</span>
+            </div>
+          ) : activeMissions.length > 0 ? (
+            activeMissions.slice(0, 3).map((mission) => (
+              <div 
+                key={mission.id}
+                onClick={() => onNavigate?.('missions')}
+                className="bg-slate-50/50 hover:bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 transition-all cursor-pointer group/card flex flex-col"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                    mission.urgency === 'critical' ? 'bg-rose-50 border-rose-100 text-rose-600' :
+                    mission.urgency === 'high' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                    'bg-emerald-50 border-emerald-100 text-emerald-600'
+                  }`}>
+                    {mission.urgency}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-indigo-600 font-black text-xs">
+                    <i className="fa-solid fa-bolt-lightning text-[10px]"></i>
+                    {mission.xp_reward} XP
+                  </div>
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-2 group-hover/card:text-indigo-600 transition-colors line-clamp-2 leading-tight">
+                  {mission.title}
+                </h4>
+                <div className="mt-auto pt-4 border-t border-slate-100/50 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px]">
+                        <i className="fa-solid fa-user-ninja"></i>
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
+                        {mission.assigned_to ? 'Assignée' : 'Disponible'}
+                      </span>
+                   </div>
+                   <i className="fa-solid fa-chevron-right text-slate-200 group-hover/card:text-indigo-400 group-hover/card:translate-x-1 transition-all text-[10px]"></i>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full py-12 text-center bg-slate-50/30 rounded-[2rem] border border-dashed border-slate-200">
+               <i className="fa-solid fa-mug-hot text-3xl text-slate-200 mb-3"></i>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aucune mission pour le moment. Repose-toi !</p>
+            </div>
+          )}
+        </div>
+      </section>
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Colonne Gauche : Mastery Circle (ou Team Stats) */}
         <div className="flex-1 space-y-8">
@@ -1161,60 +1289,101 @@ const Dashboard: React.FC<DashboardProps> = ({
               {/* Cercle de Maîtrise - Reservé aux techniciens */}
               {user.role === UserRole.TECHNICIAN && (
                 <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-10">
-
-              <div className="flex-1 space-y-4">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                    <i className="fa-solid fa-circle-nodes"></i>
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
+                      <i className="fa-solid fa-trophy"></i>
+                    </div>
+                    <h3 className="font-black text-slate-900 text-xl tracking-tight">Mes Badges</h3>
                   </div>
-                  <h3 className="font-black text-slate-900 text-xl tracking-tight">Cercle de Maîtrise</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Tes succès et certifications. Décroche des badges en accomplissant des missions et en partageant ton savoir.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-4 pt-4">
+                    {loadingBadges ? (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Récupération des trophées...</span>
+                      </div>
+                    ) : earnedBadges.length > 0 ? (
+                      earnedBadges.map((ub) => (
+                        <div key={ub.id} className="group relative">
+                          <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-indigo-200 hover:bg-white transition-all cursor-help shadow-sm hover:shadow-indigo-100">
+                            <i className={`fa-solid ${ub.badges.icon} text-xl text-indigo-600 group-hover:scale-110 transition-transform`}></i>
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter truncate w-12 text-center">
+                              {ub.badges.name}
+                            </span>
+                          </div>
+                          
+                          {/* Tooltip Badge Custom */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-4 bg-slate-900 text-white rounded-2xl text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-2xl">
+                             <p className="font-black text-indigo-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
+                             <p className="text-slate-300 font-medium leading-relaxed mb-3">{ub.badges.description}</p>
+                             <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                               <span className="text-[8px] font-bold text-white/40 uppercase">Obtenu le</span>
+                               <span className="text-[8px] font-black text-emerald-400 uppercase">{new Date(ub.awarded_at).toLocaleDateString('fr-FR')}</span>
+                             </div>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900"></div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="w-full py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i className="fa-solid fa-lock text-slate-200 text-2xl mb-2"></i>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Aucun badge débloqué</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Visualise l'évolution de ton expertise. Plus tu consultes de procédures dans une catégorie, plus ta zone de maîtrise s'étend.
-                </p>
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
-                    <span className="text-lg font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
+
+                <div className="w-px h-32 bg-slate-100 hidden md:block"></div>
+
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                      <i className="fa-solid fa-circle-nodes"></i>
+                    </div>
+                    <h3 className="font-black text-slate-900 text-xl tracking-tight">Cercle de Maîtrise</h3>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Niveau Suivant</span>
-                    <span className="text-lg font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Visualise l'évolution de ton expertise. Plus tu consultes de procédures dans une catégorie, plus ta zone de maîtrise s'étend.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 pt-4">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
+                      <span className="text-lg font-bold text-indigo-600">{(personalStats.level * 100) - personalStats.xp} pts</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Niveau Suivant</span>
+                      <span className="text-lg font-bold text-slate-700">Niv. {personalStats.level + 1}</span>
+                    </div>
                   </div>
                 </div>
-                
-                <button 
-                  onClick={() => setToast({ message: "Fonctionnalité de réclamation à venir : Contactez votre manager pour valider une maîtrise !", type: "info" })}
-                  className="w-full mt-6 py-4 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-3 group"
-                >
-                  <i className="fa-solid fa-medal group-hover:rotate-12 transition-transform"></i>
-                  Réclamer une Maîtrise
-                </button>
-              </div>
 
-              <div className="w-full md:w-[300px] h-[300px] flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-4">
-                {personalStats.mastery.length > 2 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
-                      <Radar
-                        name="Maîtrise"
-                        dataKey="A"
-                        stroke="#4f46e5"
-                        fill="#4f46e5"
-                        fillOpacity={0.6}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center p-8 space-y-3">
-                    <i className="fa-solid fa-chart-pie text-3xl text-slate-200"></i>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Continue tes consultations pour générer ton radar de compétences !</p>
-                  </div>
-                )}
-              </div>
-            </section>
+                <div className="w-full md:w-[300px] h-[300px] flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-4">
+                  {personalStats.mastery.length > 2 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={personalStats.mastery}>
+                        <PolarGrid stroke="#e2e8f0" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
+                        <Radar
+                          name="Maîtrise"
+                          dataKey="A"
+                          stroke="#4f46e5"
+                          fill="#4f46e5"
+                          fillOpacity={0.6}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="text-center p-8 space-y-3">
+                      <i className="fa-solid fa-chart-pie text-3xl text-slate-200"></i>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Continue tes consultations pour générer ton radar de compétences !</p>
+                    </div>
+                  )}
+                </div>
+              </section>
               )}
             </div>
           ) : null }
