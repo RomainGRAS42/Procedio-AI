@@ -24,14 +24,33 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     xp_reward: 50,
     urgency: 'medium' as MissionUrgency,
     targetType: 'team' as 'team' | 'individual',
-    targetEmail: '',
+    assigned_to: '',
     hasDeadline: false,
     deadline: '',
   });
 
+  const [technicians, setTechnicians] = useState<{id: string, email: string, first_name: string, last_name: string}[]>([]);
+
   useEffect(() => {
     fetchMissions();
+    if (user.role === UserRole.MANAGER) {
+      fetchTechnicians();
+    }
   }, [user]);
+
+  const fetchTechnicians = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, email, first_name, last_name')
+        .eq('role', UserRole.TECHNICIAN);
+      
+      if (error) throw error;
+      if (data) setTechnicians(data);
+    } catch (err) {
+      console.error("Error fetching technicians:", err);
+    }
+  };
 
   const fetchMissions = async () => {
     setLoading(true);
@@ -66,18 +85,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     try {
       let assigned_to = null;
 
-      if (newMission.targetType === 'individual' && newMission.targetEmail) {
-        const { data: userData, error: userError } = await supabase
-          .from('user_profiles')
-          .select('id')
-          .eq('email', newMission.targetEmail)
-          .single();
-        
-        if (userError || !userData) {
-          setToast({ message: "Utilisateur introuvable avec cet email.", type: "error" });
-          return;
-        }
-        assigned_to = userData.id;
+      if (newMission.targetType === 'individual' && newMission.assigned_to) {
+        assigned_to = newMission.assigned_to;
       }
 
       const { error } = await supabase
@@ -103,7 +112,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         xp_reward: 50, 
         urgency: 'medium',
         targetType: 'team',
-        targetEmail: '',
+        assigned_to: '',
         hasDeadline: false,
         deadline: ''
       });
@@ -425,13 +434,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                          <option value="individual">Individu spécifique</option>
                       </select>
                       {newMission.targetType === 'individual' && (
-                        <input 
-                          type="email" 
-                          placeholder="Email du destinataire"
-                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700"
-                          value={newMission.targetEmail}
-                          onChange={(e) => setNewMission({...newMission, targetEmail: e.target.value})}
-                        />
+                        <select 
+                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer"
+                          value={newMission.assigned_to}
+                          onChange={(e) => setNewMission({...newMission, assigned_to: e.target.value})}
+                        >
+                           <option value="">Sélectionner un technicien</option>
+                           {technicians.map(tech => (
+                             <option key={tech.id} value={tech.id}>
+                               {tech.first_name} {tech.last_name} ({tech.email})
+                             </option>
+                           ))}
+                        </select>
                       )}
                     </div>
                   </div>
