@@ -391,21 +391,36 @@ const Header: React.FC<HeaderProps> = ({
     } else {
       // Manager: Mark all as viewed in DB
       const now = new Date().toISOString();
-      
-      // Update local state immediately
       setLastClearedNotifs(now);
-      setReadLogs([]);
-      // We don't clear pending suggestions from the list, only from the count (they are still pending tasks)
-      // But user asked for "Clear All" to remove them from view? 
-      // User said: "si je clique sur supprimertoutes les notification [...] elle réapparaisse"
-      
-      // Let's mark all currently visible logs as viewed
+
+      // 1. Mark logs as viewed
       const unviewedLogIds = readLogs.map(l => l.id);
       if (unviewedLogIds.length > 0) {
         await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
       }
+      setReadLogs([]);
+
+      // 2. Mark pending suggestions as viewed
+      const unviewedSuggestionIds = pendingSuggestions.map(s => s.id);
+      if (unviewedSuggestionIds.length > 0) {
+        await supabase.from("procedure_suggestions").update({ viewed: true }).in("id", unviewedSuggestionIds);
+      }
+      setPendingSuggestions([]);
+
+      // 3. Mark system notifications as read
+      const systemNotifIds = systemNotifications.map(n => n.id);
+      if (systemNotifIds.length > 0) {
+        await supabase.from("notifications").update({ read: true }).in("id", systemNotifIds);
+      }
+      setSystemNotifications([]);
+
+      // 4. Delete Flash Note notifications
+      const flashNotifIds = flashNoteNotifications.map(n => n.id);
+      if (flashNotifIds.length > 0) {
+        await supabase.from("notes").delete().in("id", flashNotifIds);
+      }
+      setFlashNoteNotifications([]);
     }
-    // We don't "clear" pending suggestions as they are tasks to do
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
