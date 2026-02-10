@@ -50,12 +50,12 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
           </p>
         </div>
 
-        <div className="relative z-10 mt-auto flex justify-center">
+        <div className="relative z-10 mt-auto flex justify-end">
           <button 
             onClick={() => onNavigate?.('missions')}
-            className="px-10 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 hover:-translate-y-1 transition-all shadow-lg active:scale-95 flex items-center gap-3"
+            className="px-6 py-3 bg-slate-50 text-slate-400 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:-translate-y-1 transition-all shadow-sm active:scale-95 flex items-center gap-3 group/btn"
           >
-             <i className="fa-solid fa-compass text-[12px]"></i>
+             <i className="fa-solid fa-compass text-[10px]"></i>
              Explorer les missions
           </button>
         </div>
