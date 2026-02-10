@@ -496,8 +496,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       setIsEditing(false);
       setSearchTerm("");
       onEditorClose?.();
+      setToast({ message: "Note enregistrée avec succès !", type: "success" });
       // On rafraîchit quand même en fond pour être sûr
-      fetchNotes();
+      fetchNotes(true);
     } catch (err) {
       console.error(err);
       setToast({ message: "Erreur lors de la synchronisation avec Supabase.", type: "error" });
@@ -667,6 +668,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
       setViewingEdit(false);
       setViewDraft(null);
+      setToast({ message: "Modifications enregistrées !", type: "success" });
       fetchNotes(true); // Rafraîchissement silencieux
     } catch {
       setToast({ message: "Erreur lors de la synchronisation avec Supabase.", type: "error" });
@@ -804,46 +806,76 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               }
             </div>
           ) : currentFolderId === null ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-              {/* VIRTUAL FOLDERS - Fallback if no dynamic folders yet */}
-              {folders.length === 0 && (
-                <div className="col-span-full py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-                  <i className="fa-solid fa-folder-open text-4xl text-slate-200 mb-4"></i>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Aucun dossier créé</p>
-                  <button onClick={() => setFolderForm({ name: "", icon: "fa-folder" })} className="mt-4 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Créer le premier dossier</button>
+            <div className="space-y-16">
+              {/* RECENT NOTES SECTION */}
+              {notes.length > 0 && (
+                <div className="space-y-6 px-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Activités Récentes</h3>
+                    </div>
+                    <div className="h-px flex-1 bg-slate-100 mx-8"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {notes.slice(0, 4).map(note => (
+                      <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+                    ))}
+                  </div>
                 </div>
               )}
-              
-              {folders.map(folder => (
-                <FolderCard 
-                  key={folder.id}
-                  name={folder.name} 
-                  icon={folder.icon} 
-                  count={notes.filter(n => n.folder_id === folder.id).length} 
-                  onClick={() => setCurrentFolderId(folder.id)} 
-                  onEdit={() => setFolderForm({ id: folder.id, name: folder.name, icon: folder.icon })}
-                  onDelete={() => handleDeleteFolder(folder.id)}
-                />
-              ))}
 
-              <div 
-                onClick={() => setFolderForm({ name: "", icon: "fa-folder" })}
-                className="group flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:bg-indigo-50 border-2 border-dashed border-slate-200 hover:border-indigo-300 animate-slide-up"
-              >
-                <div className="text-5xl mb-4 text-slate-200 group-hover:text-indigo-400">
-                  <i className="fa-solid fa-folder-plus"></i>
+              {/* FOLDERS SECTION */}
+              <div className="space-y-8 px-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-1.5 h-6 bg-slate-400 rounded-full"></div>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Mes Dossiers</h3>
+                  </div>
+                  <div className="h-px flex-1 bg-slate-100 mx-8"></div>
                 </div>
-                <span className="font-black text-slate-300 text-[10px] uppercase tracking-widest group-hover:text-indigo-500">Nouveau Dossier</span>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                  {/* VIRTUAL FOLDER: UNCLASSIFIED/GENERAL */}
+                  <FolderCard 
+                    name="Général" 
+                    icon="fa-box-archive" 
+                    count={notes.filter(n => !n.folder_id).length} 
+                    onClick={() => setCurrentFolderId("unclassified")} 
+                  />
+
+                  {folders.map(folder => (
+                    <FolderCard 
+                      key={folder.id}
+                      name={folder.name} 
+                      icon={folder.icon} 
+                      count={notes.filter(n => n.folder_id === folder.id).length} 
+                      onClick={() => setCurrentFolderId(folder.id)} 
+                      onEdit={() => setFolderForm({ id: folder.id, name: folder.name, icon: folder.icon })}
+                      onDelete={() => handleDeleteFolder(folder.id)}
+                    />
+                  ))}
+
+                  <div 
+                    onClick={() => setFolderForm({ name: "", icon: "fa-folder" })}
+                    className="group flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-300 animate-slide-up"
+                  >
+                    <div className="text-4xl mb-3 text-slate-200 group-hover:text-indigo-400 transition-colors">
+                      <i className="fa-solid fa-folder-plus"></i>
+                    </div>
+                    <span className="font-black text-slate-300 text-[9px] uppercase tracking-widest group-hover:text-indigo-500">Nouveau Dossier</span>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-               {notes
-                 .filter(n => n.folder_id === currentFolderId)
-                 .map(note => (
-                  <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
-               ))}
-            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {notes
+                  .filter(n => currentFolderId === "unclassified" ? !n.folder_id : n.folder_id === currentFolderId)
+                  .map(note => (
+                   <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+                ))}
+             </div>
           )}
         </div>
       </div>
@@ -1476,28 +1508,34 @@ const FolderCard: React.FC<{
   icon: string; 
   count: number; 
   onClick: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }> = ({ name, icon, count, onClick, onEdit, onDelete }) => (
   <div 
     onClick={onClick}
     className="group relative flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:shadow-2xl hover:border-indigo-400 bg-white border border-slate-100 animate-slide-up h-full min-h-[220px]"
   >
-    {/* Folder Actions */}
-    <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-      <button 
-        onClick={(e) => { e.stopPropagation(); onEdit(); }}
-        className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white flex items-center justify-center border border-slate-100 shadow-sm"
-      >
-        <i className="fa-solid fa-pen text-[10px]"></i>
-      </button>
-      <button 
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-white flex items-center justify-center border border-slate-100 shadow-sm"
-      >
-        <i className="fa-solid fa-trash-can text-[10px]"></i>
-      </button>
-    </div>
+    {/* Folder Actions - Only show if handlers are provided */}
+    {(onEdit || onDelete) && (
+      <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+        {onEdit && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white flex items-center justify-center border border-slate-100 shadow-sm"
+          >
+            <i className="fa-solid fa-pen text-[10px]"></i>
+          </button>
+        )}
+        {onDelete && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-white flex items-center justify-center border border-slate-100 shadow-sm"
+          >
+            <i className="fa-solid fa-trash-can text-[10px]"></i>
+          </button>
+        )}
+      </div>
+    )}
 
     <div className="text-6xl mb-6 text-indigo-50 transition-all group-hover:scale-110 group-hover:text-indigo-600">
       <i className={`fa-solid ${icon}`}></i>
