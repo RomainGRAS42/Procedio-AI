@@ -46,7 +46,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
               <div className="relative group/xp-info">
                 <button className="w-5 h-5 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center text-[8px] hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-100">
-                  <i className="fa-solid fa-question"></i>
+                  <i className="fa-solid fa-circle-info"></i>
                 </button>
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none text-left">
                   <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>

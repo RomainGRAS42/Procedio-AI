@@ -43,6 +43,13 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
                 </span>
               </div>
             </div>
+            <button 
+              onClick={() => onNavigate?.('missions')}
+              className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 flex items-center gap-2 group/btn"
+            >
+              Explorer
+              <i className="fa-solid fa-chevron-right text-[8px] group-hover:translate-x-0.5 transition-transform"></i>
+            </button>
           </div>
           
           <h3 className="text-2xl font-black text-slate-300 tracking-tighter mb-4 leading-tight group-hover:text-slate-400 transition-colors">
@@ -51,16 +58,6 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
           <p className="text-slate-400 text-sm font-medium leading-relaxed opacity-80 mb-6">
             Tout est sous contrôle ! C'est le moment idéal pour parcourir la base de connaissances ou perfectionner tes compétences sur les dernières procédures.
           </p>
-        </div>
-
-        <div className="relative z-10 mt-auto flex justify-end">
-          <button 
-            onClick={() => onNavigate?.('missions')}
-            className="px-6 py-3 bg-slate-50 text-slate-400 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:-translate-y-1 transition-all shadow-sm active:scale-95 flex items-center gap-3 group/btn"
-          >
-             <i className="fa-solid fa-compass text-[10px]"></i>
-             Explorer les missions
-          </button>
         </div>
       </div>
     );
