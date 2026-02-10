@@ -3,9 +3,16 @@ import React, { useState } from 'react';
 interface InfoTooltipProps {
   text: string;
   align?: 'left' | 'center' | 'right';
+  className?: string; // Container style
+  iconClassName?: string; // Icon style override
 }
 
-const InfoTooltip: React.FC<InfoTooltipProps> = ({ text, align = 'center' }) => {
+const InfoTooltip: React.FC<InfoTooltipProps> = ({ 
+  text, 
+  align = 'center', 
+  className = "ml-2", // Default margin for backward compat
+  iconClassName = "text-slate-300 hover:text-indigo-500 text-[0.8rem]" // Default icon style
+}) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const getAlignClasses = () => {
@@ -26,11 +33,11 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({ text, align = 'center' }) => 
 
   return (
     <div 
-      className="relative inline-block ml-2 group"
+      className={`relative inline-block group ${className}`}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >
-      <i className="fa-solid fa-circle-info text-slate-300 hover:text-indigo-500 transition-colors cursor-help text-[0.8rem]"></i>
+      <i className={`fa-solid fa-circle-info transition-colors cursor-help ${iconClassName}`}></i>
       
       {isVisible && (
         <div className={`absolute bottom-full mb-3 w-64 bg-slate-800 text-white text-xs p-4 rounded-xl shadow-2xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>

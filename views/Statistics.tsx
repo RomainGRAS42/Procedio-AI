@@ -746,6 +746,7 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick 
         }
       `}
     >
+      {/* Interactive Badge */}
       {isInteractive && (
         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
            <div className="bg-rose-500 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg">
@@ -754,11 +755,22 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick 
         </div>
       )}
 
+      {/* Info Tooltip (Absolute for stability) */}
+      {!isInteractive && tooltip && (
+        <div className="absolute top-3 right-3 z-20">
+          <InfoTooltip 
+            text={tooltip} 
+            align="right"
+            className="ml-0"
+            iconClassName="text-slate-300 hover:text-indigo-500 text-sm bg-slate-50 hover:bg-indigo-50 w-6 h-6 rounded-full flex items-center justify-center transition-all"
+          />
+        </div>
+      )}
+
       <div className="flex items-start justify-between mb-3">
         <div className={`w-12 h-12 rounded-2xl ${bg} ${color} flex items-center justify-center text-xl transition-transform group-hover:scale-110 duration-300`}>
           <i className={`fa-solid ${icon}`}></i>
         </div>
-        {!isInteractive && <InfoTooltip text={tooltip} align={align} />}
       </div>
       <div className="space-y-1 relative z-10">
         <div className="flex items-baseline gap-1">
