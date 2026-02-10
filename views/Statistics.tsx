@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import InfoTooltip from '../components/InfoTooltip';
 import LoadingState from '../components/LoadingState';
+import CustomToast from '../components/CustomToast';
 import { cacheStore } from '../lib/CacheStore';
 
 interface StatisticsProps {
@@ -31,12 +32,14 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   const [skillMapData, setSkillMapData] = useState(cacheStore.get('stats_skill_map') || []);
   const [activityData, setActivityData] = useState(cacheStore.get('stats_activity') || []);
   const [teamLeaderboard, setTeamLeaderboard] = useState(cacheStore.get('stats_leaderboard') || []);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   
   const [globalKPIs, setGlobalKPIs] = useState(cacheStore.get('stats_global_kpis') || {
     searchSuccess: 0,
     teamIntensity: 0,
     healthPct: 0,
-    contributionPulse: 0
+    contributionPulse: 0,
+    redZone: 0
   });
 
   useEffect(() => {
@@ -73,7 +76,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     try {
       const { data: procs } = await supabase
         .from('procedures')
-        .select('updated_at, created_at, views');
+        .select('updated_at, created_at, views, Referent');
 
       if (!procs) return;
 
@@ -86,16 +89,23 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       let fresh = 0;
       let aging = 0;
       let old = 0;
+      let redZoneCount = 0;
 
-      procs.forEach(p => {
+      procs.forEach((p: any) => {
         const date = new Date(p.updated_at || p.created_at);
         if (date > sixMonthsAgo) fresh++;
         else if (date > oneYearAgo) aging++;
         else old++;
+
+        if (!p.Referent) redZoneCount++;
       });
 
       const total = procs.length;
-      setGlobalKPIs(prev => ({ ...prev, healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0 }));
+      setGlobalKPIs(prev => ({ 
+        ...prev, 
+        healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0,
+        redZone: redZoneCount
+      }));
 
       const health = [
         { name: 'Frais (< 6 mois)', value: fresh, color: '#10b981' }, 
@@ -105,7 +115,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
       setHealthData(health);
       cacheStore.set('stats_health', health);
-      cacheStore.set('stats_global_kpis', { ...globalKPIs, healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0 });
+      cacheStore.set('stats_global_kpis', { 
+        ...globalKPIs, 
+        healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0,
+        redZone: redZoneCount
+      });
     } catch (err) {
       console.error("Error fetching health data:", err);
     }
@@ -315,6 +329,35 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
   };
 
+  const handleCreateRedZoneMission = async () => {
+    if (globalKPIs.redZone === 0) {
+      setToast({ message: "Aucune procédure en Zone Rouge ! Excellent travail.", type: "info" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('missions')
+        .insert([{
+          title: "Action Requise : Attribution de Référents",
+          description: `Afin de maintenir l'excellence et la jour de notre base de connaissances, ${globalKPIs.redZone} procédures nécessitent l'assignation d'un référent expert. Merci de régulariser la situation.`,
+          xp_reward: 100,
+          urgency: 'high',
+          assigned_to: null, // Open to team
+          created_by: user.id,
+          status: 'open',
+          targetType: 'team'
+        }]);
+
+      if (error) throw error;
+
+      setToast({ message: "Mission de fiabilisation lancée avec succès !", type: "success" });
+    } catch (err) {
+      console.error("Error creating mission:", err);
+      setToast({ message: "Impossible de créer la mission.", type: "error" });
+    }
+  };
+
   if (user.role !== UserRole.MANAGER) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-400">
@@ -342,7 +385,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         </div>
 
         {/* TOP KPI ROW */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           <KPICard 
             label="Succès Recherche" 
             value={`${globalKPIs.searchSuccess}%`} 
@@ -360,6 +403,15 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             tooltip="Proportion de procédures mises à jour il y a moins de 6 mois."
           />
           <KPICard 
+            label="Zone Rouge" 
+            value={`${globalKPIs.redZone}`} 
+            icon="fa-triangle-exclamation" 
+            color="text-rose-600"
+            bg="bg-rose-50"
+            tooltip="Procédures sans référent assigné. Cliquez pour créer une mission de régularisation immédiate."
+            onClick={handleCreateRedZoneMission}
+          />
+          <KPICard 
             label="Intensité Team" 
             value={`${globalKPIs.teamIntensity}%`} 
             icon="fa-bolt-lightning" 
@@ -372,8 +424,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             value={`${globalKPIs.contributionPulse}`} 
             unit="docs/j"
             icon="fa-seedling" 
-            color="text-rose-600"
-            bg="bg-rose-50"
+            color="text-teal-600"
+            bg="bg-teal-50"
             tooltip="Vitesse de création/mise à jour de nouvelles connaissances par jour sur les 30 derniers jours."
             align="right"
           />
@@ -663,13 +715,27 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           </div>
         </div>
       )}
+      
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <CustomToast 
+            message={toast.message} 
+            type={toast.type} 
+            visible={true}
+            onClose={() => setToast(null)} 
+          />
+        </div>
+      )}
     </div>
   );
 };
 
 // Sub-component for KPI Cards
-const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align }: any) => (
-  <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick }: any) => (
+  <div 
+    onClick={onClick}
+    className={`bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
+  >
     <div className="flex items-start justify-between mb-3">
       <div className={`w-12 h-12 rounded-2xl ${bg} ${color} flex items-center justify-center text-xl`}>
         <i className={`fa-solid ${icon}`}></i>
@@ -687,4 +753,3 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align }: any) =
 );
 
 export default Statistics;
-
