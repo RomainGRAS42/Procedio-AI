@@ -1643,24 +1643,35 @@ const NoteCard: React.FC<{
       </div>
 
       <div className="mt-auto flex items-center justify-between border-t border-slate-100/50 pt-4">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            {mode === 'personal' ? (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[7px] font-black uppercase tracking-widest border border-slate-200">
+                <i className="fa-solid fa-file-lines text-[6px]"></i>
+                Note
+              </span>
+            ) : (
+              note.status === 'suggestion' ? (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[7px] font-black uppercase tracking-widest border border-amber-200">
+                  <i className="fa-solid fa-lightbulb text-[6px]"></i>
+                  Proposition
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-600 text-white rounded-md text-[7px] font-black uppercase tracking-widest shadow-sm">
+                  <i className="fa-solid fa-bolt text-[6px]"></i>
+                  Flash Note
+                </span>
+              )
+            )}
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-60">
               {note.updatedAt || note.createdAt}
             </span>
-            {note.status === 'suggestion' && (
-              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[7px] font-black uppercase tracking-tighter border border-amber-200">
-                Proposition
-              </span>
-            )}
-            {note.status === 'public' && mode === 'flash' && (
-              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[7px] font-black uppercase tracking-tighter border border-indigo-200">
-                Flash Note
-              </span>
-            )}
           </div>
           {note.author_name && (
-            <span className="text-[8px] font-bold text-slate-500 uppercase">{note.author_name}</span>
+            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tight flex items-center gap-1">
+              <i className="fa-solid fa-user text-[6px]"></i>
+              {note.author_name}
+            </span>
           )}
         </div>
         
