@@ -920,7 +920,10 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                            setSaving(false);
                         }
                      }}
-                     className="bg-amber-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all flex items-center gap-2 shadow-xl shadow-amber-100">
+                     className="bg-amber-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all flex items-center gap-2 shadow-xl shadow-amber-100"
+                     data-tooltip="Proposer comme Flash Note"
+                     aria-label="Proposer comme Flash Note"
+                   >
                      <i className="fa-solid fa-lightbulb"></i> Proposer
                    </button>
                 )}
