@@ -169,7 +169,13 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       if (data) {
         const userNotes = data
           .filter(
-            (n) => n.title && !n.title.startsWith("LOG_") && !n.title.startsWith("CONSULTATION_") && !n.title.startsWith("SUGGESTION_") && !n.title.startsWith("FLASH_NOTE_")
+            (n) => n.title && 
+                   !n.title.startsWith("LOG_") && 
+                   !n.title.startsWith("CONSULTATION_") && 
+                   !n.title.startsWith("SUGGESTION_") && 
+                   !n.title.startsWith("FLASH_NOTE_") &&
+                   !n.title.startsWith("NOUVEAU_") &&
+                   n.title !== "expert_synthesis"
           )
           .map((n) => ({
             id: n.id,
