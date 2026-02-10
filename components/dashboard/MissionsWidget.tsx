@@ -34,9 +34,10 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
           </div>
           <button 
             onClick={() => onNavigate?.('missions')}
-            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors"
+            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center group/action"
           >
             Tout voir
+            <i className="fa-solid fa-chevron-right ml-2 text-[8px] group-hover:translate-x-0.5 transition-transform"></i>
           </button>
         </div>
 
