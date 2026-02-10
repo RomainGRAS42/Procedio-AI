@@ -739,7 +739,7 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick 
     <div 
       onClick={onClick}
       className={`
-        relative overflow-hidden p-6 rounded-3xl border transition-all duration-300 group
+        relative p-6 rounded-3xl border transition-all duration-300 group
         ${isInteractive 
           ? 'bg-white border-rose-100 hover:border-rose-400 hover:bg-rose-50/10 cursor-pointer active:scale-95 shadow-md shadow-rose-100/50 hover:shadow-xl hover:shadow-rose-200/50' 
           : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
