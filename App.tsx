@@ -334,6 +334,8 @@ const App: React.FC = () => {
         setAutoOpenNoteEditor={setAutoOpenNoteEditor}
         lastFolder={lastFolder}
         setLastFolder={setLastFolder}
+        pendingFlashNotesCount={pendingFlashNotesCount}
+        setPendingFlashNotesCount={setPendingFlashNotesCount}
       />
     </BrowserRouter>
   );
@@ -344,7 +346,8 @@ const App: React.FC = () => {
 const AppContent: React.FC<any> = ({ 
   user, handleLogout, isSidebarOpen, setIsSidebarOpen, activeTransfer, setActiveTransfer,
   connectionStatus, globalSearchTerm, setGlobalSearchTerm, pendingAction, setPendingAction,
-  autoOpenNoteEditor, setAutoOpenNoteEditor, lastFolder, setLastFolder
+  autoOpenNoteEditor, setAutoOpenNoteEditor, lastFolder, setLastFolder,
+  pendingFlashNotesCount, setPendingFlashNotesCount
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
