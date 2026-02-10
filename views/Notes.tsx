@@ -94,7 +94,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   useEffect(() => {
     fetchNotes();
     fetchFolders();
-  }, []);
+  }, [mode, user]);
 
   useEffect(() => {
     if (initialIsAdding) {
