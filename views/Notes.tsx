@@ -799,11 +799,28 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         </div>
       </div>
 
-      {/* MODALE ÉDITEUR PLEIN ÉCRAN */}
-      {isEditing &&
-        createPortal(
-          <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-slide-up">
-            <header className="h-20 border-b border-slate-100 px-6 md:px-12 flex items-center justify-between bg-white sticky top-0">
+      {/* MODALE ÉDITEUR DRAWER (1/3 ÉCRAN) */}
+      {isEditing && createPortal(
+        <>
+          {/* Overlay de fond */}
+          <div 
+            className="fixed inset-0 z-[9980] bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+            onClick={() => {
+              setIsEditing(false);
+              setSearchTerm("");
+              onEditorClose?.();
+            }}
+          />
+          
+          <div className="fixed inset-y-0 right-0 z-[9990] w-full md:w-[550px] lg:w-[35vw] bg-white flex flex-col shadow-2xl animate-slide-left border-l border-slate-100">
+            {/* Notepad Binding Simulation (Gauche du drawer) */}
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-slate-50 border-r border-slate-100/50 flex flex-col items-center py-10 gap-6 z-20 overflow-hidden">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="w-3 h-3 rounded-full bg-slate-200 border border-slate-300/50 shrink-0 shadow-inner"></div>
+              ))}
+            </div>
+
+            <header className="h-24 border-b border-slate-50 px-8 py-4 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 ml-8 z-30">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => {
@@ -915,25 +932,29 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                 </button>
               </div>
             </header>
-            <main className="flex-1 overflow-y-auto p-6 md:p-20 max-w-5xl mx-auto w-full space-y-12">
-              <input
-                type="text"
-                placeholder="Titre de la note..."
-                className="w-full text-4xl md:text-6xl font-black text-slate-900 border-none outline-none placeholder:text-slate-200 tracking-tighter bg-transparent"
-                value={activeNote.title}
-                onChange={(e) => setActiveNote({ ...activeNote, title: e.target.value })}
-                autoFocus
-              />
-              <textarea
-                placeholder="Commencez à documenter ici..."
-                className="w-full h-[60vh] text-lg md:text-2xl text-slate-600 border-none outline-none resize-none leading-relaxed placeholder:text-slate-200 font-medium bg-transparent"
-                value={activeNote.content}
-                onChange={(e) => setActiveNote({ ...activeNote, content: e.target.value })}
-              />
+            <main className="flex-1 overflow-y-auto p-8 md:p-12 ml-8 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] z-10">
+              <div className="max-w-xl mx-auto space-y-10">
+                <input
+                  type="text"
+                  placeholder="Titre de la note..."
+                  className="w-full text-3xl md:text-4xl font-black text-slate-900 border-none outline-none placeholder:text-slate-200 tracking-tighter bg-transparent leading-tight"
+                  value={activeNote.title}
+                  onChange={(e) => setActiveNote({ ...activeNote, title: e.target.value })}
+                  autoFocus
+                />
+                <textarea
+                  placeholder="Commencez à documenter ici..."
+                  className="w-full h-[60vh] text-base md:text-lg text-slate-600 border-none outline-none resize-none leading-relaxed placeholder:text-slate-200 font-medium bg-transparent"
+                  value={activeNote.content}
+                  onChange={(e) => setActiveNote({ ...activeNote, content: e.target.value })}
+                />
+              </div>
             </main>
-          </div>,
-          document.body
-        )}
+          </div>
+        </>,
+        document.body
+      )}
+      {/* Fin de l'éditeur */}
 
       {/* POPUP DÉVERROUILLAGE (MODALE CENTRÉE) */}
       {passwordVerify &&
@@ -1039,12 +1060,18 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           document.body
         )}
 
-      {/* MODALE LECTURE FOCUS PLEIN ÉCRAN */}
+      {/* DRAWER LECTURE FOCUS (1/3 ÉCRAN) */}
       {viewingNote && createPortal(
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9990] flex items-center justify-center p-4 md:p-10 animate-fade-in" onClick={handleCloseNote}>
+          <>
+            {/* Overlay de fond */}
+            <div 
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9980] animate-fade-in" 
+              onClick={handleCloseNote}
+            />
+
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] w-full max-w-4xl h-full max-h-[85vh] flex flex-col relative overflow-hidden animate-scale-up border border-slate-100"
+              className="fixed inset-y-0 right-0 z-[9990] w-full md:w-[550px] lg:w-[35vw] bg-white shadow-2xl flex flex-col border-l border-slate-100 animate-slide-left"
             >
               {/* Notepad Binding Simulation */}
               <div className="absolute left-0 top-0 bottom-0 w-8 bg-slate-50 border-r border-slate-100/50 flex flex-col items-center py-10 gap-6 z-20 overflow-hidden">
@@ -1178,14 +1205,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
                   {viewingEdit ? (
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={saveInlineEdit}
-                        disabled={saving || !viewDraft?.title.trim()}
-                        className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
-                        title="Enregistrer">
-                        <i className="fa-solid fa-cloud-arrow-up"></i>
-                        <span className="hidden sm:inline ml-2">Enregistrer</span>
-                      </button>
+                       <button
+                         onClick={saveInlineEdit}
+                         disabled={saving || !viewDraft?.title.trim()}
+                         className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
+                         title="Enregistrer">
+                         <i className="fa-solid fa-cloud-arrow-up"></i>
+                         <span className="hidden sm:inline ml-2">Enregistrer</span>
+                       </button>
                     </div>
                   ) : (
                     !viewingNote.is_flash_note && (
@@ -1249,11 +1276,11 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     </>
                   ) : (
                     <>
-                      <h1 id="note-title" className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-8">
+                      <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight mb-8">
                         {viewingNote.title}
                       </h1>
                       <div
-                        className="prose prose-lg prose-slate max-w-none text-slate-800 font-medium leading-relaxed"
+                        className="prose prose-slate max-w-none text-slate-800 font-medium leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: viewingNote.content }}
                       />
                     </>
@@ -1261,7 +1288,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                 </div>
               </main>
             </div>
-          </div>,
+          </>,
           document.body
         )}
 
