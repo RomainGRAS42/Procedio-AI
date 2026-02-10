@@ -55,7 +55,7 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
             onClick={() => onNavigate?.('missions')}
             className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors group/link"
           >
-            Voir les archives
+            Toutes les missions
             <i className="fa-solid fa-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
           </button>
 
@@ -63,8 +63,8 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
             onClick={() => onNavigate?.('missions')}
             className="px-6 py-3 bg-slate-50 text-slate-400 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:-translate-y-1 transition-all shadow-sm active:scale-95 flex items-center gap-3 group/btn"
           >
-             <i className="fa-solid fa-list-check text-[10px]"></i>
-             Missions suivantes
+             <i className="fa-solid fa-compass text-[10px]"></i>
+             Explorer les missions
           </button>
         </div>
       </div>

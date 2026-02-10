@@ -62,6 +62,18 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                   <span className="text-emerald-400">+5 XP</span>
                 </div>
                 <div className="flex justify-between text-[10px] font-bold">
+                  <span>Mission acceptée</span>
+                  <span className="text-indigo-400">+10 XP</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-bold">
+                  <span>Rendu de mission</span>
+                  <span className="text-indigo-400">+10 XP</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-bold border-t border-white/5 pt-1">
+                  <span>Mission accomplie</span>
+                  <span className="text-emerald-400">+50 XP</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-bold">
                   <span>Suggestion approuvée</span>
                   <span className="text-amber-400">+50 XP</span>
                 </div>

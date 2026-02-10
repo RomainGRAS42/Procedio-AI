@@ -20,7 +20,7 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
         </div>
-        <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." />
+        <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." align="right" />
       </div>
       
       <div className="flex-1">
