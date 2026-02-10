@@ -14,6 +14,7 @@ import { cacheStore } from "../lib/CacheStore";
 
 // Widgets
 import StatsSummaryWidget from '../components/dashboard/StatsSummaryWidget';
+import TeamSynergyWidget from '../components/dashboard/TeamSynergyWidget';
 import ActiveMissionWidget from '../components/dashboard/ActiveMissionWidget';
 import MissionsWidget from '../components/dashboard/MissionsWidget';
 import BadgesWidget from '../components/dashboard/BadgesWidget';
@@ -1437,6 +1438,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {/* ZONE 1: KPIs Flash */}
                 <div className="">
                    <StatsSummaryWidget stats={stats} />
+                </div>
+
+                {/* ZONE 1.5: Synergie d'Équipe */}
+                <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                   <TeamSynergyWidget />
                 </div>
 
               {/* ZONE 2: Centre de Révision, Missions & Activité */}
