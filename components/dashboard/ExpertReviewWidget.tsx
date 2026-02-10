@@ -32,7 +32,6 @@ const ExpertReviewWidget: React.FC<ExpertReviewWidgetProps> = ({
                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{proc.category}</p>
             </div>
           ))}
-        </div>
       </div>
     </div>
   );
