@@ -812,7 +812,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
             }}
           />
           
-          <div className="fixed inset-y-0 right-0 z-[9990] w-full md:w-[550px] lg:w-[35vw] bg-white flex flex-col shadow-2xl animate-slide-left border-l border-slate-100">
+          <div className="fixed inset-y-0 right-0 z-[9990] w-full md:w-[800px] lg:w-[50vw] bg-white flex flex-col shadow-2xl animate-slide-left border-l border-slate-100">
             {/* Notepad Binding Simulation (Gauche du drawer) */}
             <div className="absolute left-0 top-0 bottom-0 w-8 bg-slate-50 border-r border-slate-100/50 flex flex-col items-center py-10 gap-6 z-20 overflow-hidden">
               {Array.from({ length: 15 }).map((_, i) => (
@@ -828,7 +828,10 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     setSearchTerm("");
                     onEditorClose?.();
                   }}
-                  className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500">
+                  className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"
+                  data-tooltip="Fermer l'éditeur"
+                  aria-label="Fermer l'éditeur"
+                >
                   <i className="fa-solid fa-xmark text-xl"></i>
                 </button>
                 <h3 className="font-bold text-slate-400 uppercase tracking-[0.2em] text-[10px]">
@@ -840,7 +843,10 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   onClick={() =>
                     setActiveNote({ ...activeNote, is_protected: !activeNote.is_protected })
                   }
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeNote.is_protected ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-slate-50 text-slate-400 border border-slate-200"}`}>
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeNote.is_protected ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-slate-50 text-slate-400 border border-slate-200"}`}
+                  data-tooltip={activeNote.is_protected ? "Rendre publique (visible par l'équipe)" : "Rendre privée (visible uniquement par vous)"}
+                  aria-label={activeNote.is_protected ? "Rendre publique" : "Rendre privée"}
+                >
                   <i
                     className={`fa-solid ${activeNote.is_protected ? "fa-lock" : "fa-lock-open"}`}></i>
                   {activeNote.is_protected ? "Protégée" : "Publique"}
@@ -922,11 +928,14 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                 <button
                   onClick={saveNote}
                   disabled={saving || !activeNote.title.trim()}
-                  className="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2 disabled:opacity-50 shadow-xl shadow-indigo-100">
+                  className="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2 disabled:opacity-50 shadow-xl shadow-indigo-100"
+                  data-tooltip="Enregistrer les modifications"
+                  aria-label="Enregistrer la note"
+                >
                   {saving ? (
                     <i className="fa-solid fa-circle-notch animate-spin"></i>
                   ) : (
-                    <i className="fa-solid fa-floppy-disk"></i> // Changed icon for clarity
+                    <i className="fa-solid fa-floppy-disk"></i>
                   )}
                   Enregistrer
                 </button>
@@ -1071,7 +1080,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="fixed inset-y-0 right-0 z-[9990] w-full md:w-[550px] lg:w-[35vw] bg-white shadow-2xl flex flex-col border-l border-slate-100 animate-slide-left"
+              className="fixed inset-y-0 right-0 z-[9990] w-full md:w-[800px] lg:w-[50vw] bg-white shadow-2xl flex flex-col border-l border-slate-100 animate-slide-left"
             >
               {/* Notepad Binding Simulation */}
               <div className="absolute left-0 top-0 bottom-0 w-8 bg-slate-50 border-r border-slate-100/50 flex flex-col items-center py-10 gap-6 z-20 overflow-hidden">
@@ -1085,7 +1094,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   <button
                     onClick={handleCloseNote}
                     className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                    title="Fermer">
+                    data-tooltip="Retour aux notes"
+                    aria-label="Retour aux notes"
+                  >
                     <i className="fa-solid fa-arrow-left"></i>
                   </button>
                   <div className="flex flex-col">
@@ -1198,7 +1209,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     <button
                       onClick={(e) => handleDelete(e as any, viewingNote.id)}
                       className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-                      title="Supprimer">
+                      data-tooltip="Supprimer définitivement"
+                      aria-label="Supprimer la note"
+                    >
                       <i className="fa-solid fa-trash-can"></i>
                     </button>
                   )}
@@ -1209,7 +1222,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                          onClick={saveInlineEdit}
                          disabled={saving || !viewDraft?.title.trim()}
                          className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
-                         title="Enregistrer">
+                         data-tooltip="Enregistrer les modifications"
+                         aria-label="Enregistrer les modifications"
+                       >
                          <i className="fa-solid fa-cloud-arrow-up"></i>
                          <span className="hidden sm:inline ml-2">Enregistrer</span>
                        </button>
@@ -1219,7 +1234,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       <button
                         onClick={startInlineEdit}
                         className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-slate-900 transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                        title="Modifier">
+                        data-tooltip="Modifier le contenu"
+                        aria-label="Modifier la note"
+                      >
                         <i className="fa-solid fa-pen-to-square"></i>
                         <span className="hidden sm:inline ml-2">Modifier</span>
                       </button>
