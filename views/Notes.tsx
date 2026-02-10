@@ -843,29 +843,6 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               {/* SPECIAL SECTIONS FOR FLASH MODE */}
               {mode === 'flash' && (
                 <div className="space-y-16">
-                  {/* PENDING PROPOSALS SECTION (Only if suggestions exist) */}
-                  {notes.filter(n => n.status === 'suggestion').length > 0 && (
-                    <div className="space-y-6 px-2">
-                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
-                          <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">
-                            {user?.role === UserRole.MANAGER ? "Propositions à valider" : "Mes propositions en attente"}
-                          </h3>
-                        </div>
-                        <div className="h-px flex-1 bg-amber-100 mx-8"></div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {notes
-                          .filter(n => n.status === 'suggestion')
-                          .map(note => (
-                            <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
-                          ))
-                        }
-                      </div>
-                    </div>
-                  )}
-
                   {/* OFFICIAL CANAL SECTION */}
                   <div className="space-y-6 px-2">
                      <div className="flex items-center justify-between">
@@ -890,6 +867,29 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       )}
                     </div>
                   </div>
+
+                  {/* PENDING PROPOSALS SECTION (Only if suggestions exist) */}
+                  {notes.filter(n => n.status === 'suggestion').length > 0 && (
+                    <div className="space-y-6 px-2">
+                       <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
+                          <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                            {user?.role === UserRole.MANAGER ? "Propositions à valider" : "Mes propositions en attente"}
+                          </h3>
+                        </div>
+                        <div className="h-px flex-1 bg-amber-100 mx-8"></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {notes
+                          .filter(n => n.status === 'suggestion')
+                          .map(note => (
+                            <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
