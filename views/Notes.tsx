@@ -885,7 +885,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                       count={notes.filter(n => n.folder_id === folder.id).length} 
                       onClick={() => setCurrentFolderId(folder.id)} 
                       onEdit={() => setFolderForm({ id: folder.id, name: folder.name, icon: folder.icon })}
-                      onDelete={() => handleDeleteFolder(folder.id)}
+                      onDelete={user?.role !== UserRole.TECHNICIAN ? () => handleDeleteFolder(folder.id) : undefined}
                     />
                   ))}
 
@@ -1322,7 +1322,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     </button>
                   )}
                   
-                  {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
+                  {user?.role !== UserRole.TECHNICIAN && (
                     <button
                       onClick={(e) => handleDelete(e as any, viewingNote.id)}
                       className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
@@ -1679,7 +1679,7 @@ const NoteCard: React.FC<{
             </button>
           )}
 
-          {!(mode === "flash" && user?.role === UserRole.TECHNICIAN && note.status === 'public') && (
+          {user?.role !== UserRole.TECHNICIAN && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
