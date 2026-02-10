@@ -141,23 +141,20 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         `)
         .order("created_at", { ascending: false }); // Changé en created_at pour que la nouvelle reste en haut
 
-      // Si un utilisateur est connecté, on filtre explicitement par son ID
+      // STRIKINGLY STRICT FILTERING
       if (currentUserId) {
         if (mode === "flash") {
-          // FLASH MODE: Only show notes where is_flash_note = true
-          // Managers see ALL flash notes (public + suggestions)
-          // Technicians see public flash notes + their own suggestions
-          
+          // FLASH MODE: Everything IS a Flash Note (public or suggestion)
           if (user?.role === UserRole.MANAGER) {
-             // Managers see ALL flash notes (public + suggestions)
+             // Managers see ALL flash notes
              query = query.eq('is_flash_note', true);
           } else {
-             // Technicians: See Public Flash Notes + My Suggestions
-             // Use .or() at the top level to combine conditions
-             query = query.or(`and(is_flash_note.eq.true,status.eq.public),and(is_flash_note.eq.true,status.eq.suggestion,user_id.eq.${currentUserId})`);
+             // Technicians: Public Flash Notes + My Suggestions
+             query = query.eq('is_flash_note', true)
+                          .or(`status.eq.public,and(status.eq.suggestion,user_id.eq.${currentUserId})`);
           }
         } else {
-          // PERSONAL MODE: Only show MY notes where is_flash_note = false
+          // PERSONAL MODE: Only MY notes that are NOT flash notes
           query = query.eq("user_id", currentUserId).eq('is_flash_note', false);
         }
       }
@@ -438,10 +435,33 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     });
   };
 
+  const handlePublish = async (noteId: string) => {
+    try {
+      const { error } = await supabase
+        .from("notes")
+        .update({ status: 'public', updated_at: new Date().toISOString() })
+        .eq("id", noteId);
+
+      if (error) throw error;
+      setToast({ message: "Flash Note publiée à toute l'équipe !", type: "success" });
+      fetchNotes(true);
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Erreur lors de la publication.", type: "error" });
+    }
+  };
+
   const saveNote = async () => {
     if (!activeNote.title.trim()) return;
     setSaving(true);
     try {
+      // SECURITY CHECK: Technicians cannot create or edit Flash Notes directly
+      if (mode === "flash" && user?.role === UserRole.TECHNICIAN) {
+        setToast({ message: "Seul un manager peut créer ou modifier une Flash Note.", type: "error" });
+        setSaving(false);
+        return;
+      }
+
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
@@ -454,7 +474,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         user_id: authUser.id,
         folder_id: activeNote.folder_id || null,
         updated_at: new Date().toISOString(),
-        status: mode === "flash" ? "suggestion" : "private", 
+        status: mode === "flash" ? (user?.role === UserRole.MANAGER ? "public" : "suggestion") : "private", 
         category: "general",
         is_flash_note: mode === "flash" // FIX: Assure que la note reste dans le filtre Flash
       };
@@ -637,6 +657,13 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
 
   const saveInlineEdit = async () => {
     if (!viewingNote || !viewDraft) return;
+
+    // SECURITY CHECK: Technicians cannot modify Public Flash Notes
+    if (mode === "flash" && user?.role === UserRole.TECHNICIAN && viewingNote.status === 'public') {
+      setToast({ message: "Seul un manager peut modifier une Flash Note publique.", type: "error" });
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -807,7 +834,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               {notes
                 .filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()) || n.content.toLowerCase().includes(searchTerm.toLowerCase()))
                 .map(note => (
-                  <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+                  <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
                 ))
               }
             </div>
@@ -825,7 +852,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {notes.slice(0, 4).map(note => (
-                      <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+                      <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
                     ))}
                   </div>
                 </div>
@@ -879,7 +906,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                 {notes
                   .filter(n => currentFolderId === "unclassified" ? !n.folder_id : n.folder_id === currentFolderId)
                   .map(note => (
-                   <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} />
+                   <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
                 ))}
              </div>
           )}
@@ -1570,7 +1597,8 @@ const NoteCard: React.FC<{
   onOpen: () => void;
   unlockedNotes: Set<string>;
   setPasswordVerify: (pv: any) => void;
-}> = ({ note, mode, user, onDelete, onOpen, unlockedNotes, setPasswordVerify }) => {
+  onPublish?: (id: string) => void;
+}> = ({ note, mode, user, onDelete, onOpen, unlockedNotes, setPasswordVerify, onPublish }) => {
   const isProtected = note.is_protected && !unlockedNotes.has(note.id);
   const colors = ["bg-sky-100", "bg-emerald-100", "bg-violet-100", "bg-amber-100", "bg-rose-100"];
   const colorIndex = note.id.charCodeAt(0) % colors.length;
@@ -1616,25 +1644,53 @@ const NoteCard: React.FC<{
 
       <div className="mt-auto flex items-center justify-between border-t border-slate-100/50 pt-4">
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-            {note.updatedAt || note.createdAt}
-          </span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              {note.updatedAt || note.createdAt}
+            </span>
+            {note.status === 'suggestion' && (
+              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[7px] font-black uppercase tracking-tighter border border-amber-200">
+                Proposition
+              </span>
+            )}
+            {note.status === 'public' && mode === 'flash' && (
+              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[7px] font-black uppercase tracking-tighter border border-indigo-200">
+                Flash Note
+              </span>
+            )}
+          </div>
           {note.author_name && (
             <span className="text-[8px] font-bold text-slate-500 uppercase">{note.author_name}</span>
           )}
         </div>
         
-        {!(mode === "flash" && user?.role === UserRole.TECHNICIAN) && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(e, note.id);
-            }}
-            className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
-            title="Supprimer">
-            <i className="fa-solid fa-trash-can text-xs"></i>
-          </button>
-        )}
+        <div className="flex gap-2">
+          {/* Publish Button for Managers on Suggestions */}
+          {mode === "flash" && user?.role === UserRole.MANAGER && note.status === 'suggestion' && onPublish && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPublish(note.id);
+              }}
+              className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center shadow-sm"
+              title="Publier pour toute l'équipe"
+            >
+              <i className="fa-solid fa-share-nodes text-xs"></i>
+            </button>
+          )}
+
+          {!(mode === "flash" && user?.role === UserRole.TECHNICIAN && note.status === 'public') && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(e, note.id);
+              }}
+              className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center z-10"
+              title="Supprimer">
+              <i className="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
