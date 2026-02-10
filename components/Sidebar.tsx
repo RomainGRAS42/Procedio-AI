@@ -10,6 +10,7 @@ interface SidebarProps {
   isOpen: boolean;
   activeTransfer: ActiveTransfer | null;
   onCancelTransfer: () => void;
+  pendingFlashNotesCount?: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -20,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   activeTransfer,
   onCancelTransfer,
+  pendingFlashNotesCount,
 }) => {
   const menuItems = [
     {
@@ -121,6 +123,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
               {item.id === "procedures" && activeTransfer && (
                 <div className="ml-auto w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-lg shadow-indigo-500/50"></div>
+              )}
+
+              {item.id === "flash-notes" && userRole === UserRole.MANAGER && (pendingFlashNotesCount || 0) > 0 && (
+                <div className="ml-auto min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 border border-white">
+                  <span className="text-[9px] font-black text-white">{pendingFlashNotesCount}</span>
+                </div>
               )}
             </a>
 

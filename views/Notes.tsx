@@ -840,66 +840,124 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
             </div>
           ) : currentFolderId === null ? (
             <div className="space-y-16">
-              {/* RECENT NOTES SECTION */}
-              {notes.length > 0 && (
-                <div className="space-y-6 px-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
-                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Activités Récentes</h3>
+              {/* SPECIAL SECTIONS FOR FLASH MODE */}
+              {mode === 'flash' && (
+                <div className="space-y-16">
+                  {/* PENDING PROPOSALS SECTION (Only if suggestions exist) */}
+                  {notes.filter(n => n.status === 'suggestion').length > 0 && (
+                    <div className="space-y-6 px-2">
+                       <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
+                          <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                            {user?.role === UserRole.MANAGER ? "Propositions à valider" : "Mes propositions en attente"}
+                          </h3>
+                        </div>
+                        <div className="h-px flex-1 bg-amber-100 mx-8"></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {notes
+                          .filter(n => n.status === 'suggestion')
+                          .map(note => (
+                            <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
+                          ))
+                        }
+                      </div>
                     </div>
-                    <div className="h-px flex-1 bg-slate-100 mx-8"></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {notes.slice(0, 4).map(note => (
-                      <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
-                    ))}
+                  )}
+
+                  {/* OFFICIAL CANAL SECTION */}
+                  <div className="space-y-6 px-2">
+                     <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-6 bg-indigo-600 rounded-full"></div>
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest text-indigo-600">Canal Officiel</h3>
+                      </div>
+                      <div className="h-px flex-1 bg-indigo-50 mx-8"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {notes
+                        .filter(n => n.status === 'public')
+                        .map(note => (
+                          <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
+                        ))
+                      }
+                      {notes.filter(n => n.status === 'public').length === 0 && (
+                        <div className="col-span-full py-10 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+                           <i className="fa-solid fa-bolt-slash text-2xl mb-2"></i>
+                           <p className="text-[10px] font-bold uppercase tracking-widest">Aucune Flash Note officielle</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* FOLDERS SECTION */}
-              <div className="space-y-8 px-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-1.5 h-6 bg-slate-400 rounded-full"></div>
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Mes Dossiers</h3>
-                  </div>
-                  <div className="h-px flex-1 bg-slate-100 mx-8"></div>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-                  {/* VIRTUAL FOLDER: UNCLASSIFIED/GENERAL */}
-                  <FolderCard 
-                    name="Général" 
-                    icon="fa-box-archive" 
-                    count={notes.filter(n => !n.folder_id).length} 
-                    onClick={() => setCurrentFolderId("unclassified")} 
-                  />
-
-                  {folders.map(folder => (
-                    <FolderCard 
-                      key={folder.id}
-                      name={folder.name} 
-                      icon={folder.icon} 
-                      count={notes.filter(n => n.folder_id === folder.id).length} 
-                      onClick={() => setCurrentFolderId(folder.id)} 
-                      onEdit={() => setFolderForm({ id: folder.id, name: folder.name, icon: folder.icon })}
-                      onDelete={user?.role !== UserRole.TECHNICIAN ? () => handleDeleteFolder(folder.id) : undefined}
-                    />
-                  ))}
-
-                  <div 
-                    onClick={() => setFolderForm({ name: "", icon: "fa-folder" })}
-                    className="group flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-300 animate-slide-up"
-                  >
-                    <div className="text-4xl mb-3 text-slate-200 group-hover:text-indigo-400 transition-colors">
-                      <i className="fa-solid fa-folder-plus"></i>
+              {/* STANDARD VIEW (PERSONAL MODE OR FOLDERS) */}
+              {mode !== 'flash' && (
+                <>
+                  {/* RECENT NOTES SECTION */}
+                  {notes.length > 0 && (
+                    <div className="space-y-6 px-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+                          <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Activités Récentes</h3>
+                        </div>
+                        <div className="h-px flex-1 bg-slate-100 mx-8"></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {notes.slice(0, 4).map(note => (
+                          <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
+                        ))}
+                      </div>
                     </div>
-                    <span className="font-black text-slate-300 text-[9px] uppercase tracking-widest group-hover:text-indigo-500">Nouveau Dossier</span>
+                  )}
+
+                  {/* FOLDERS SECTION */}
+                  <div className="space-y-8 px-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-6 bg-slate-400 rounded-full"></div>
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Mes Dossiers</h3>
+                      </div>
+                      <div className="h-px flex-1 bg-slate-100 mx-8"></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                      {/* VIRTUAL FOLDER: UNCLASSIFIED/GENERAL */}
+                      <FolderCard 
+                        name="Général" 
+                        icon="fa-box-archive" 
+                        count={notes.filter(n => !n.folder_id).length} 
+                        onClick={() => setCurrentFolderId("unclassified")} 
+                      />
+
+                      {folders.map(folder => (
+                        <FolderCard 
+                          key={folder.id}
+                          name={folder.name} 
+                          icon={folder.icon} 
+                          count={notes.filter(n => n.folder_id === folder.id).length} 
+                          onClick={() => setCurrentFolderId(folder.id)} 
+                          onEdit={() => setFolderForm({ id: folder.id, name: folder.name, icon: folder.icon })}
+                          onDelete={user?.role !== UserRole.TECHNICIAN ? () => handleDeleteFolder(folder.id) : undefined}
+                        />
+                      ))}
+
+                      <div 
+                        onClick={() => setFolderForm({ name: "", icon: "fa-folder" })}
+                        className="group flex flex-col items-center justify-center rounded-[2.5rem] p-10 cursor-pointer transition-all hover:bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-300 animate-slide-up"
+                      >
+                        <div className="text-4xl mb-3 text-slate-200 group-hover:text-indigo-400 transition-colors">
+                          <i className="fa-solid fa-folder-plus"></i>
+                        </div>
+                        <span className="font-black text-slate-300 text-[9px] uppercase tracking-widest group-hover:text-indigo-500">Nouveau Dossier</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           ) : (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

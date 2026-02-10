@@ -34,6 +34,7 @@ interface DashboardProps {
   onActionHandled?: () => void;
   onUploadClick: () => void;
   onNavigate?: (view: string) => void;
+  onFlashCountChange?: (count: number) => void;
 }
 
 interface Announcement {
@@ -55,6 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onActionHandled,
   onUploadClick,
   onNavigate,
+  onFlashCountChange,
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
@@ -74,6 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [loadingSuggestions, setLoadingSuggestions] = useState(!cacheStore.has('dash_suggestions') && user.role === UserRole.MANAGER);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [pendingFlashNotesCount, setPendingFlashNotesCount] = useState(0);
 
   // Activities
   const [activities, setActivities] = useState<any[]>(cacheStore.get('dash_activities') || []);
@@ -347,6 +350,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         fetchSuggestions();
         fetchManagerKPIs();
         fetchMasteryClaims();
+        fetchPendingFlashNotes();
       }
       
       // Always check for referent workload (anyone can be a referent)
@@ -595,6 +599,21 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
 
+
+  const fetchPendingFlashNotes = async () => {
+    if (user.role !== UserRole.MANAGER) return;
+    try {
+      const { count } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_flash_note', true)
+        .eq('status', 'suggestion');
+      setPendingFlashNotesCount(count || 0);
+      onFlashCountChange?.(count || 0);
+    } catch (err) {
+      console.error("Error fetching pending flash notes count:", err);
+    }
+  };
 
   const openSuggestionById = async (id: string) => {
     console.log("🔍 Dashboard: Opening suggestion detail for ID:", id);
@@ -1221,6 +1240,33 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-10 pb-10 px-4 md:px-10 animate-fade-in relative z-10 w-full overflow-x-hidden">
+      {/* RAPPEL MANAGER: SUGGESTIONS FLASH NOTES */}
+      {user.role === UserRole.MANAGER && pendingFlashNotesCount > 0 && (
+        <div className="animate-slide-up">
+          <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-[2rem] p-6 text-white shadow-xl shadow-amber-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+                <i className="fa-solid fa-lightbulb"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-black tracking-tight leading-none italic">
+                  Hey, {user.firstName} !
+                </h3>
+                <p className="text-white/80 text-sm mt-1 font-bold">
+                  Tu as <span className="text-white font-black underline decoration-2 underline-offset-4">{pendingFlashNotesCount} proposition(s)</span> de Flash Notes en attente de validation.
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => onNavigate?.('flash-notes')}
+              className="px-8 py-4 bg-white text-amber-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-slate-50 transition-all active:scale-95 shrink-0"
+            >
+              Consulter maintenant
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-end gap-6">
         {/* Titre & Toggle de vue */}

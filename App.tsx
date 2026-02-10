@@ -45,6 +45,7 @@ const App: React.FC = () => {
   );
   const [initError, setInitError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<{type: 'suggestion' | 'read', id: string} | null>(null);
+  const [pendingFlashNotesCount, setPendingFlashNotesCount] = useState(0);
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
@@ -377,6 +378,7 @@ const AppContent: React.FC<any> = ({
           isOpen={isSidebarOpen}
           activeTransfer={activeTransfer}
           onCancelTransfer={() => setActiveTransfer(null)}
+          pendingFlashNotesCount={pendingFlashNotesCount}
         />
       )}
 
@@ -420,6 +422,7 @@ const AppContent: React.FC<any> = ({
                   targetAction={pendingAction}
                   onActionHandled={() => setPendingAction(null)}
                   onNavigate={(v) => navigate(`/${v}`)}
+                  onFlashCountChange={setPendingFlashNotesCount}
                 />
               } />
               <Route path="/procedures" element={
