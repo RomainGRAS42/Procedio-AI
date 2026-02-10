@@ -6,22 +6,45 @@ interface XPProgressBarProps {
 }
 
 const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }) => {
-  // Calculate XP for current level and next level
-  const xpForCurrentLevel = (currentLevel - 1) * 100;
-  const xpForNextLevel = currentLevel * 100;
+  // Hardcore Curve Thresholds
+  const getMinXPForLevel = (level: number) => {
+    if (level <= 1) return 0;
+    if (level === 2) return 200;
+    if (level === 3) return 800;
+    if (level === 4) return 2400;
+    if (level === 5) return 6000;
+    if (level === 6) return 15000; // THE WALL
+    if (level === 7) return 30000;
+    if (level === 8) return 60000;
+    if (level === 9) return 120000;
+    if (level >= 10) return 250000;
+    return 0;
+  };
+
+  const xpForCurrentLevel = getMinXPForLevel(currentLevel);
+  // If max level, next level is infinity or capped
+  const xpForNextLevel = currentLevel >= 10 ? getMinXPForLevel(10) * 1.5 : getMinXPForLevel(currentLevel + 1);
+  
   const xpInCurrentLevel = currentXP - xpForCurrentLevel;
   const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevel;
-  const progressPercentage = (xpInCurrentLevel / xpNeededForNextLevel) * 100;
+  const progressPercentage = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNextLevel) * 100));
   const xpRemaining = xpForNextLevel - currentXP;
 
-  // Level titles based on XP
+  // Level titles based on XP (Hardcore 10 Levels)
   const getLevelTitle = (level: number): string => {
-    if (level <= 1) return 'Débutant';
-    if (level <= 3) return 'Apprenti';
-    if (level <= 5) return 'Pilote';
-    if (level <= 8) return 'Expert';
-    if (level <= 12) return 'Maître';
-    return 'Légende';
+    switch(level) {
+      case 1: return "Vagabond";
+      case 2: return "Explorateur";
+      case 3: return "Initié";
+      case 4: return "Adepte";
+      case 5: return "Praticien";
+      case 6: return "Expert";
+      case 7: return "Virtuose";
+      case 8: return "Maître";
+      case 9: return "Grand Maître";
+      case 10: return "Légende Vivante";
+      default: return level > 10 ? "Divinité" : "Vagabond";
+    }
   };
 
   const currentTitle = getLevelTitle(currentLevel);

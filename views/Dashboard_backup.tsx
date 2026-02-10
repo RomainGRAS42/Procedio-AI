@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { User, Procedure, Suggestion, UserRole, Mission } from "../types";
 import CustomToast from "../components/CustomToast";
+// MissionSpotlight is defined locally at line 372 so no import needed, remove line 5
 import TeamPodium from '../components/TeamPodium';
 import XPProgressBar from '../components/XPProgressBar';
+import MasteryProgress from '../components/MasteryProgress';
 import LevelUpModal from '../components/LevelUpModal';
 import BadgeUnlockedModal from '../components/BadgeUnlockedModal';
 import InfoTooltip from "../components/InfoTooltip";
@@ -11,19 +13,6 @@ import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
 import LoadingState from '../components/LoadingState';
 import { cacheStore } from "../lib/CacheStore";
-
-// Widgets
-import StatsSummaryWidget from '../components/dashboard/StatsSummaryWidget';
-import ActiveMissionWidget from '../components/dashboard/ActiveMissionWidget';
-import MissionsWidget from '../components/dashboard/MissionsWidget';
-import BadgesWidget from '../components/dashboard/BadgesWidget';
-import MasteryWidget from '../components/dashboard/MasteryWidget';
-import RecentProceduresWidget from '../components/dashboard/RecentProceduresWidget';
-import AnnouncementWidget from '../components/dashboard/AnnouncementWidget';
-import ActivityWidget from '../components/dashboard/ActivityWidget';
-import ReviewCenterWidget from '../components/dashboard/ReviewCenterWidget';
-import ExpertReviewWidget from '../components/dashboard/ExpertReviewWidget';
-import RSSWidget from "../components/RSSWidget";
 
 interface DashboardProps {
   user: User;
@@ -103,7 +92,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [pendingReviews, setPendingReviews] = useState<Procedure[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
 
-
   // Mastery Claims (Manager Only)
   const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
   const [loadingClaims, setLoadingClaims] = useState(false);
@@ -160,19 +148,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   const prevBadgeCountRef = React.useRef<number>(earnedBadges.length);
 
   const getLevelTitle = (level: number) => {
-    switch(level) {
-      case 1: return "Vagabond";
-      case 2: return "Explorateur";
-      case 3: return "Initié";
-      case 4: return "Adepte";
-      case 5: return "Praticien";
-      case 6: return "Expert"; // LE MUR
-      case 7: return "Virtuose";
-      case 8: return "Maître";
-      case 9: return "Grand Maître";
-      case 10: return "Légende Vivante";
-      default: return level > 10 ? "Dieu de la Machine" : "Vagabond";
-    }
+    if (level >= 10) return "Légende Vivante";
+    if (level >= 7) return "Maître Expert";
+    if (level >= 5) return "Expert Senior";
+    if (level >= 3) return "Pilote Confirmé";
+    if (level >= 2) return "Apprenti Actif";
+    return "Débutant";
   };
 
   // Detection Level Up & Badges
@@ -829,7 +810,156 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const MissionSpotlight = () => {
+    // Priority: 'in_progress' first, then 'assigned'
+    const assignedMission = activeMissions.find(m => 
+      m.assigned_to === user.id && 
+      (m.status === 'in_progress' || m.status === 'assigned')
+    );
+    
+    if (!assignedMission) return null;
 
+    const isInProgress = assignedMission.status === 'in_progress';
+
+    const getDeadlineStatus = (deadline?: string, createdAt?: string) => {
+      if (!deadline) return { label: "Pas de délai fixe", percent: 0, color: "bg-slate-200" };
+      
+      const now = new Date();
+      const end = new Date(deadline);
+      const start = createdAt ? new Date(createdAt) : new Date(now.getTime() - 1000 * 60 * 60 * 24); // Fallback 1 day ago
+      
+      const total = end.getTime() - start.getTime();
+      const elapsed = now.getTime() - start.getTime();
+      const percent = Math.min(Math.max((elapsed / total) * 100, 0), 100);
+      
+      const diff = end.getTime() - now.getTime();
+      if (diff <= 0) return { label: "Échu", percent: 100, color: "bg-rose-500" };
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      
+      let label = days > 0 ? `${days}j restants` : `${hours}h restantes`;
+      let color = "bg-indigo-600";
+      if (percent > 80) color = "bg-rose-500";
+      else if (percent > 50) color = "bg-amber-500";
+      
+      return { label, percent, color };
+    };
+
+    const dlStatus = getDeadlineStatus(assignedMission.deadline, assignedMission.created_at);
+
+    return (
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[340px] hover:border-slate-200 hover:shadow-xl hover:shadow-slate-500/5">
+        {/* Background decoration - Distinctive */}
+        <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full transition-all duration-700 ${
+          isInProgress ? 'bg-emerald-50/50' : 'bg-slate-50/50 group-hover:bg-slate-100/50'
+        }`}></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+             <div className="flex items-center gap-4">
+               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-500 ${
+                 isInProgress 
+                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
+                  : 'bg-slate-50 text-slate-400 group-hover:text-slate-900'
+               }`}>
+                 <i className={`fa-solid ${isInProgress ? 'fa-scroll' : 'fa-thumbtack'}`}></i>
+               </div>
+               <div>
+                 <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
+                      {isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
+                    </h3>
+                    {(assignedMission.urgency === 'high' || assignedMission.urgency === 'critical') && (
+                      <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
+                    )}
+                 </div>
+                 <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">
+                   {isInProgress ? 'Objectif stratégique' : 'Assigné par le manager'}
+                 </p>
+               </div>
+            </div>
+            
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg border ${
+                  dlStatus.label === "Échu" 
+                    ? "bg-rose-50 border-rose-100 text-rose-500" 
+                    : "bg-slate-50 border-slate-100 text-slate-500"
+                }`}>
+                  <i className="fa-regular fa-calendar-clock mr-1.5"></i>
+                  {dlStatus.label}
+                </span>
+                <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
+                  isInProgress ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'
+                }`}>
+                  {isInProgress ? 'Actif' : 'Prioritaire'}
+                </span>
+              </div>
+              
+              <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-2xl flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[10px]">
+                  <i className="fa-solid fa-cube"></i>
+                </div>
+                <span className="text-slate-800 text-[11px] font-black tracking-tighter">
+                  {assignedMission.xp_reward} XP
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <h3 className="text-2xl font-black text-slate-900 tracking-tighter mb-3 line-clamp-2 leading-tight">
+            {assignedMission.title}
+          </h3>
+          <p className="text-slate-500 text-sm font-medium line-clamp-3 leading-relaxed opacity-80 mb-6">
+            {assignedMission.description}
+          </p>
+
+          {/* Deadline Progress Bar - Stricter look */}
+          <div className="space-y-2 mt-auto">
+             <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <span>Progression Temps</span>
+                <span className={dlStatus.percent > 80 ? 'text-rose-500' : 'text-slate-600'}>{Math.round(dlStatus.percent)}%</span>
+             </div>
+             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
+                <div 
+                  className={`h-full transition-all duration-1000 ${dlStatus.color}`}
+                  style={{ width: `${dlStatus.percent}%` }}
+                ></div>
+             </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-8 flex items-center justify-between">
+          <button 
+            onClick={() => onNavigate?.('missions')}
+            className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors group/link"
+          >
+            Détails de la mission
+            <i className="fa-solid fa-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
+          </button>
+
+          {!isInProgress ? (
+            <button 
+              onClick={() => handleStartMission(assignedMission.id)}
+              className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 hover:-translate-y-1 transition-all shadow-xl active:scale-95 flex items-center gap-3 group/btn"
+            >
+               <i className="fa-solid fa-play text-[9px]"></i>
+               C'est parti !
+            </button>
+          ) : (
+            <button 
+              onClick={() => setCompletingMission(assignedMission)}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:from-emerald-600 hover:to-teal-700 hover:-translate-y-1 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center gap-3 group/btn"
+            >
+               <i className="fa-solid fa-check text-[11px]"></i>
+               Mission accomplie
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const fetchSuggestions = async () => {
 
@@ -1118,8 +1248,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-
-
   const handleMarkAsRead = async () => {
     if (!announcement) return;
     setIsRead(true);
@@ -1264,24 +1392,92 @@ const Dashboard: React.FC<DashboardProps> = ({
       </section>
 
       {/* Message du Manager */}
-      <div className="mt-8">
-           <AnnouncementWidget 
-             user={user}
-             announcement={announcement}
-             loadingAnnouncement={loadingAnnouncement}
-             isEditing={isEditing}
-             editContent={editContent}
-             saving={saving}
-             requiresConfirmation={requiresConfirmation}
-             isRead={isRead}
-             setIsEditing={setIsEditing}
-             setEditContent={setEditContent}
-             setRequiresConfirmation={setRequiresConfirmation}
-             handleSaveAnnouncement={handleSaveAnnouncement}
-             handleMarkAsRead={handleMarkAsRead}
-             formatDate={formatDate}
-           />
-      </div>
+      <section className={`bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col gap-4 animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100 shadow-indigo-50"}`}>
+        {loadingAnnouncement ? (
+          <div className="flex items-center justify-center gap-4 py-2">
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement de l'annonce...</span>
+          </div>
+        ) : isEditing ? (
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                  Édition du message manager
+                </h4>
+                <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-rose-500">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div className="flex gap-4">
+                <textarea
+                    className="flex-1 h-20 p-4 bg-slate-50 border border-indigo-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="Message..."
+                />
+                <div className="flex flex-col gap-2 justify-between">
+                     <button
+                        onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${requiresConfirmation ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-white border-slate-100 text-slate-300"}`}
+                        title="Demander confirmation de lecture"
+                     >
+                        <i className={`fa-solid ${requiresConfirmation ? "fa-bell" : "fa-bell-slash"}`}></i>
+                     </button>
+                     <button
+                        onClick={handleSaveAnnouncement}
+                        disabled={saving || !editContent.trim()}
+                        className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-slate-900 transition-all disabled:opacity-50"
+                     >
+                        <i className="fa-solid fa-paper-plane"></i>
+                     </button>
+                </div>
+              </div>
+            </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+             <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-lg border border-indigo-100 shadow-sm shadow-indigo-100/50">
+                  {announcement?.author_initials || "??"}
+                </div>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-1">
+                       <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                         {user.role === UserRole.MANAGER ? "Message à l'équipe" : "Message du manager"}
+                       </span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+                       <span className="text-xs font-bold text-slate-400 uppercase">
+                         {announcement ? new Date(announcement.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
+                       </span>
+                    </div>
+                    <p className="text-xl font-black text-slate-900 leading-tight tracking-tight">"{announcement?.content}"</p>
+                </div>
+             </div>
+             
+             <div className="flex items-center justify-end gap-3">
+                {user.role === UserRole.MANAGER && (
+                    <button onClick={() => setIsEditing(true)} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center">
+                        <i className="fa-solid fa-pen text-xs"></i>
+                    </button>
+                )}
+                
+                {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
+                    <button
+                      onClick={handleMarkAsRead}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-indigo-100 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="hidden sm:inline">Lu et compris</span>
+                      <i className="fa-solid fa-check"></i>
+                    </button>
+                )}
+                {isRead && (
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center" title={`Lu le ${formatDate(new Date().toISOString())}`}>
+                        <i className="fa-solid fa-check-double text-xs"></i>
+                    </div>
+                )}
+             </div>
+          </div>
+        )}
+      </section>
       </div>
 
       {/* XP Progress Bar - Only for Technicians */}
@@ -1295,59 +1491,228 @@ const Dashboard: React.FC<DashboardProps> = ({
       {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
           
-          {/* ZONE 1: Missions & Centre d'Action */}
+          {/* ZONE 1: Missions & Activité */}
           <div className="lg:col-span-2">
-             <ActiveMissionWidget 
-               user={user}
-               activeMissions={activeMissions}
-               onNavigate={onNavigate}
-               onStartMission={handleStartMission}
-               onCompleteMission={setCompletingMission}
-             />
+             <MissionSpotlight />
           </div>
 
-          <MissionsWidget 
-            activeMissions={activeMissions}
-            userRole={user.role}
-            viewMode={viewMode}
-            onNavigate={onNavigate}
-            loading={loadingMissions}
-          />
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full min-h-[320px]">
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="font-black text-slate-900 text-lg tracking-tight">Activité Équipe</h3>
+                <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors"><i className="fa-solid fa-rotate-right"></i></button>
+             </div>
+             <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
+                {activities.slice(0, 5).map((act) => (
+                   <div key={act.id} className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-xl transition-colors group">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+                      <div>
+                          <p className="text-[11px] font-bold text-slate-700 leading-tight">{act.content}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-0.5">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                       </div>
+                   </div>
+                ))}
+             </div>
+          </div>
 
           {/* ZONE 2: Expertise & Badges */}
-          <div className="lg:col-span-1">
-             <BadgesWidget 
-               earnedBadges={earnedBadges}
-             />
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-orange-100 transition-all">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg border border-orange-100">
+                    <i className="fa-solid fa-trophy"></i>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
+                  <div className="relative group/xp-info">
+                    <button className="w-5 h-5 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center text-[8px] hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-100">
+                      <i className="fa-solid fa-question"></i>
+                    </button>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none">
+                      <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] pb-1 border-b border-white/5 opacity-50 font-black">
+                          <span>ACTION</span>
+                          <span>GAIN</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>Lecture procédure</span>
+                          <span className="text-emerald-400">+5 XP</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>Lecture flash note</span>
+                          <span className="text-emerald-400">+5 XP</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>Suggestion approuvée</span>
+                          <span className="text-amber-400">+50 XP</span>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-900"></div>
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
+                  {earnedBadges.length} Obtenus
+                </span>
+             </div>
+
+             <div className="flex-1 space-y-6">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Collection active</p>
+                  <div className="flex flex-wrap gap-3">
+                    {earnedBadges.length > 0 ? (
+                      earnedBadges.map((ub) => (
+                        <div key={ub.id} className="group relative">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-1 hover:border-orange-200 hover:bg-white transition-all cursor-help transform hover:-translate-y-1">
+                            <i className={`fa-solid ${ub.badges.icon} text-lg text-orange-600`}></i>
+                            <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter truncate w-10 text-center">
+                              {ub.badges.name}
+                            </span>
+                          </div>
+                          {/* Improved Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
+                             <p className="font-black text-orange-400 uppercase tracking-widest mb-1">{ub.badges.name}</p>
+                             <p className="text-slate-300 leading-relaxed">{ub.badges.description}</p>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="w-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Aucun badge débloqué</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-100">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Prochain Défi</p>
+                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-300 flex items-center justify-center text-sm group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500 transition-colors">
+                          <i className="fa-solid fa-book-bookmark"></i>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-700 uppercase leading-none mb-1">Lecteur Assidu</p>
+                          <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                            <div className="h-full bg-amber-400 w-3/4 animate-pulse"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">75%</span>
+                   </div>
+                </div>
+             </div>
           </div>
 
-          <div className="lg:col-span-2">
-             <MasteryWidget personalStats={personalStats} />
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full hover:border-indigo-100 transition-all">
+             <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                    <i className="fa-solid fa-graduation-cap"></i>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
+                </div>
+                <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." />
+             </div>
+             
+             <div className="flex-1">
+                <MasteryProgress data={personalStats.mastery} />
+             </div>
+
+             <div className="mt-8 pt-6 border-t border-slate-50 grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">XP Restant</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-black text-indigo-600">{(personalStats.level * 100) - personalStats.xp}</span>
+                    <span className="text-[10px] font-bold text-slate-300 uppercase">Points</span>
+                  </div>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cible Suivante</span>
+                  <span className="text-xs font-black text-slate-700 uppercase">Rang {personalStats.level + 1}</span>
+                </div>
+             </div>
           </div>
 
-          {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure & RSS */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
+             <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                     <i className="fa-solid fa-compass"></i>
+                   </div>
+                   <h3 className="font-black text-slate-900 text-lg tracking-tight">Missions</h3>
+                </div>
+                <button onClick={() => onNavigate?.('missions')} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Voir tout</button>
+             </div>
+             <div className="space-y-3 flex-1">
+                {activeMissions.slice(0, 3).map((mission) => (
+                  <div key={mission.id} onClick={() => onNavigate?.('missions')} className="p-4 bg-slate-50 border border-transparent hover:border-indigo-100 hover:bg-white rounded-2xl transition-all cursor-pointer group/m">
+                     <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[7px] font-black uppercase tracking-widest ${mission.urgency === 'critical' ? 'text-rose-500' : 'text-indigo-500'}`}>{mission.urgency}</span>
+                        <span className="text-[9px] font-black text-indigo-600">{mission.xp_reward} XP</span>
+                     </div>
+                     <p className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>
+                  </div>
+                ))}
+                {activeMissions.length === 0 && (
+                   <div className="h-full flex flex-col items-center justify-center py-6 text-slate-300">
+                      <i className="fa-solid fa-mug-hot text-2xl mb-2"></i>
+                      <p className="text-[8px] font-black uppercase tracking-widest">Aucune mission</p>
+                   </div>
+                )}
+             </div>
+          </div>
+
+          {/* ZONE 3: Expert Reviews (Only if referent) & Last Procedure */}
           {isReferent && pendingReviews.length > 0 && (
-            <div className="lg:col-span-2">
-               <ExpertReviewWidget 
-                 pendingReviews={pendingReviews} 
-                 onSelectProcedure={onSelectProcedure} 
-               />
+            <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
+               <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                  <div className="flex items-center gap-5">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-xl text-indigo-600">
+                      <i className="fa-solid fa-microscope"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">Revues d'Expert</h3>
+                      <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mt-1">{pendingReviews.length} en attente</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto max-w-full pb-1 scrollbar-hide">
+                    {pendingReviews.slice(0, 2).map((proc) => (
+                      <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="shrink-0 w-48 bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all cursor-pointer group/card">
+                         <h4 className="font-bold text-slate-800 text-[10px] mb-1 truncate group-hover/card:text-indigo-600 transition-colors">{proc.title}</h4>
+                         <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{proc.category}</p>
+                      </div>
+                    ))}
+                  </div>
+               </div>
             </div>
           )}
 
-          <div className={`${isReferent && pendingReviews.length > 0 ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
-            <RSSWidget user={user} />
-          </div>
-
-          <div className={`${isReferent && pendingReviews.length > 0 ? '' : 'lg:col-span-3'}`}>
-            <RecentProceduresWidget
-              recentProcedures={recentProcedures}
-              userRole={user.role}
-              viewMode={viewMode}
-              onSelectProcedure={onSelectProcedure}
-              onShowHistory={() => setShowHistoryModal(true)}
-              formatDate={formatDate}
-            />
+          <div className={`${isReferent && pendingReviews.length > 0 ? '' : 'lg:col-span-3'} bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm`}>
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Dernière Procédure</h3>
+               <button onClick={() => setShowHistoryModal(true)} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-4 py-2 bg-indigo-50 rounded-lg">Historique</button>
+             </div>
+             {recentProcedures.slice(0, 1).map((proc) => (
+                <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer group transition-all">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white border border-slate-100 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                        <i className="fa-solid fa-file-pdf text-xl"></i>
+                      </div>
+                      <div>
+                         <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors leading-tight mb-1">{proc.title}</h4>
+                         <div className="flex gap-3">
+                            <span className="text-[8px] text-slate-400 font-black tracking-widest uppercase">{proc.category}</span>
+                            <span className="text-[8px] text-indigo-400 font-black tracking-widest uppercase flex items-center gap-1">
+                               <i className="fa-solid fa-clock text-[7px]"></i>
+                               {formatDate(proc.createdAt)}
+                            </span>
+                         </div>
+                      </div>
+                   </div>
+                   <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i>
+                </div>
+             ))}
           </div>
         </div>
       )}
@@ -1358,58 +1723,209 @@ const Dashboard: React.FC<DashboardProps> = ({
               
                 {/* ZONE 1: KPIs Flash */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                   <StatsSummaryWidget stats={stats} />
-                </div>
+                  {stats.map((stat, idx) => (
+                    <div key={idx} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all group relative">
+                      <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-xl`}>
+                        <i className={`fa-solid ${stat.icon}`}></i>
+                      </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
+                        <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {/* ZONE 2: Centre de Révision, Missions & Activité */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                  
                  {/* COL 1: Centre de Révision */}
-                 <div className="h-full">
-                    <ReviewCenterWidget 
-                      pendingSuggestions={pendingSuggestions}
-                      masteryClaims={masteryClaims}
-                      onSelectSuggestion={(s) => { setSelectedSuggestion(s); setShowSuggestionModal(true); }}
-                    />
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
+                     <div className="flex items-center justify-between mb-6">
+                       <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
+                           <i className="fa-solid fa-list-check"></i>
+                          </div>
+                          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                             Centre de Révision
+                             <InfoTooltip text="Validez les suggestions et revendications de votre équipe." />
+                          </h3>
+                       </div>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                         {pendingSuggestions.length} en attente
+                       </span>
+                     </div>
+
+                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+                        {/* Mastery Claims Prompt */}
+                        {masteryClaims.length > 0 && (
+                           <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center justify-between animate-pulse cursor-pointer hover:bg-amber-100 transition-colors"
+                                onClick={() => {
+                                  // Navigate to Statistics or handle claim
+                                }}
+                           >
+                              <div className="flex items-center gap-2">
+                                 <i className="fa-solid fa-medal text-amber-500"></i>
+                                 <span className="text-xs font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
+                              </div>
+                              <i className="fa-solid fa-arrow-right text-amber-500 text-xs"></i>
+                           </div>
+                        )}
+
+                        {pendingSuggestions.slice(0, 10).map((sugg) => (
+                           <div key={sugg.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => { setSelectedSuggestion(sugg); setShowSuggestionModal(true); }}>
+                              <div className="flex items-center gap-3">
+                                 <div className={`w-2 h-2 rounded-full shrink-0 ${sugg.priority === 'high' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
+                                 <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 truncate">{sugg.procedureTitle}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 truncate">{sugg.userName} • {sugg.type}</p>
+                                 </div>
+                              </div>
+                              <i className="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+                           </div>
+                        ))}
+                        {pendingSuggestions.length === 0 && (
+                           <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-400 opacity-50">
+                               <i className="fa-solid fa-clipboard-check text-4xl mb-3"></i>
+                               <p className="text-xs font-bold uppercase tracking-widest">Tout est à jour</p>
+                           </div>
+                        )}
+                     </div>
                  </div>
 
                  {/* COL 2: Missions d'Équipe & Team Podium */}
                  <div className="flex flex-col gap-6 h-full">
                      <TeamPodium />
-                     <MissionsWidget 
-                       activeMissions={activeMissions}
-                       userRole={user.role}
-                       viewMode={viewMode}
-                       onNavigate={onNavigate}
-                       loading={loadingMissions}
-                     />
+                     
+                     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative flex-1 min-h-[300px]">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+                                <i className="fa-solid fa-map-location-dot"></i>
+                               </div>
+                               <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                                  Missions d'Équipe
+                                  <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." />
+                               </h3>
+                            </div>
+                            <button 
+                              onClick={() => onNavigate?.('missions')}
+                              className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                            >
+                              Tout voir
+                            </button>
+                          </div>
+
+                          <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+                             {loadingMissions ? (
+                               <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                  <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Analyse en cours...</span>
+                               </div>
+                             ) : activeMissions.filter(m => m.status === 'open' || m.status === 'in_progress').length > 0 ? (
+                               activeMissions
+                                 .filter(m => m.status === 'open' || m.status === 'in_progress')
+                                 .slice(0, 5)
+                                 .map((mission) => (
+                                 <div key={mission.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => onNavigate?.('missions')}>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                                          mission.urgency === 'high' ? 'bg-rose-100 text-rose-600' : 
+                                          mission.urgency === 'medium' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500'
+                                        }`}>
+                                          {mission.urgency === 'high' ? 'Urgent' : mission.urgency === 'medium' ? 'Important' : 'Normal'}
+                                        </span>
+                                        <span className="text-[8px] font-bold text-indigo-400 flex items-center gap-1">
+                                          <i className="fa-solid fa-star text-[7px]"></i> {mission.xp_reward} XP
+                                        </span>
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 text-xs leading-tight mb-0.5 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</h4>
+                                    <p className="text-[9px] text-slate-400 line-clamp-1">{mission.description}</p>
+                                 </div>
+                               ))
+                             ) : (
+                               <div className="flex flex-col items-center justify-center py-12 px-6 text-center opacity-50">
+                                  <i className="fa-solid fa-flag-checkered text-3xl text-slate-300 mb-2"></i>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aucune mission en cours</p>
+                               </div>
+                             )}
+                          </div>
+                     </div>
                  </div>
 
                  {/* COL 3: Activité Récente */}
-                 <div className="h-full">
-                    <ActivityWidget 
-                      activities={activities}
-                      loadingActivities={loadingActivities}
-                      onRefresh={fetchActivities}
-                    />
+                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
+                    <div className="flex items-center justify-between mb-4">
+                       <div className="flex items-center gap-3">
+                        <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
+                           Activité Récente
+                           <InfoTooltip text="Surveillez les dernières actions de l'équipe en temps réel." />
+                        </h3>
+                       </div>
+                        <button onClick={fetchActivities} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none"><i className="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                    <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
+                       {activities.slice(0, 10).map((act) => (
+                          <div key={act.id} className="flex gap-3 items-start p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+                             <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform"></div>
+                             <div>
+                                 <p className="text-xs font-bold text-slate-700 leading-tight">{act.content}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 mt-1 group-hover:text-indigo-400 transition-colors">{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              </div>
+                          </div>
+                       ))}
+                       {activities.length === 0 && (
+                          <div className="h-full flex flex-col items-center justify-center py-10 text-center text-slate-400 opacity-50">
+                             <i className="fa-solid fa-ghost text-4xl mb-3"></i>
+                             <p className="text-xs font-bold uppercase tracking-widest">Le calme plat...</p>
+                          </div>
+                       )}
+                    </div>
                  </div>
 
-                  {/* COL 4: Veille RSS */}
-                  <div className="lg:col-span-3">
-                    <RSSWidget user={user} />
-                  </div>
-
-                  {/* COL 5: Dernière Procédure (Full Width) */}
-                  <div className="lg:col-span-3">
-                    <RecentProceduresWidget
-                      recentProcedures={recentProcedures}
-                      userRole={user.role}
-                      viewMode={viewMode}
-                      onSelectProcedure={onSelectProcedure}
-                      onShowHistory={() => setShowHistoryModal(true)}
-                      formatDate={formatDate}
-                    />
-                  </div>
+              
+                 {/* COL 4: Dernière Procédure (Full Width) */}
+                 <div className="lg:col-span-3 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Dernière Procédure en Ligne</h3>
+                      <button onClick={() => setShowHistoryModal(true)} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-4 py-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                        Historique
+                      </button>
+                    </div>
+                    {recentProcedures.slice(0, 1).map((proc) => (
+                       <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer group transition-all border border-transparent hover:border-indigo-100">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 group-hover:scale-110 transition-transform">
+                               <i className="fa-solid fa-file-pdf text-xl"></i>
+                             </div>
+                             <div>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors leading-tight mb-1">{proc.title}</h4>
+                                <div className="flex gap-3">
+                                   <span className="text-[8px] text-slate-400 font-black tracking-widest uppercase">{proc.category}</span>
+                                   <span className="text-[8px] text-indigo-400 font-black tracking-widest uppercase flex items-center gap-1">
+                                      <i className="fa-solid fa-clock text-[7px]"></i>
+                                      {formatDate(proc.createdAt)}
+                                   </span>
+                                </div>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-lg border border-slate-100">
+                                <div className="flex -space-x-2">
+                                  {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="w-5 h-5 rounded-full bg-slate-200 border border-white"></div>
+                                  ))}
+                                </div>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">3 vus</span>
+                              </div>
+                              <i className="fa-solid fa-arrow-right text-slate-200 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i>
+                          </div>
+                       </div>
+                    ))}
+                 </div>
               </div>
 
             </div>

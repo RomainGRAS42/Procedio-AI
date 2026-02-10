@@ -22,7 +22,54 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
     (m.status === 'in_progress' || m.status === 'assigned')
   );
   
-  if (!assignedMission) return null;
+  if (!assignedMission) {
+    return (
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group transition-all duration-500 flex flex-col justify-between h-full min-h-[340px] hover:border-slate-200 hover:shadow-xl hover:shadow-slate-500/5">
+        <div className="absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full bg-slate-50/30 group-hover:bg-indigo-50/30 transition-all duration-700"></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center text-xl group-hover:text-indigo-400 group-hover:bg-indigo-50 transition-all duration-500">
+              <i className="fa-solid fa-mug-hot"></i>
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
+                Mission en cours
+              </h3>
+              <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mt-1">
+                Quartier calme
+              </p>
+            </div>
+          </div>
+          
+          <h3 className="text-2xl font-black text-slate-300 tracking-tighter mb-4 leading-tight group-hover:text-slate-400 transition-colors">
+            Pas de mission actuellement
+          </h3>
+          <p className="text-slate-400 text-sm font-medium leading-relaxed opacity-80 mb-6">
+            Tout est sous contrôle ! C'est le moment idéal pour parcourir la base de connaissances ou perfectionner tes compétences sur les dernières procédures.
+          </p>
+        </div>
+
+        <div className="relative z-10 mt-auto flex items-center justify-between">
+          <button 
+            onClick={() => onNavigate?.('missions')}
+            className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors group/link"
+          >
+            Voir les archives
+            <i className="fa-solid fa-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
+          </button>
+
+          <button 
+            onClick={() => onNavigate?.('missions')}
+            className="px-6 py-3 bg-slate-50 text-slate-400 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:-translate-y-1 transition-all shadow-sm active:scale-95 flex items-center gap-3 group/btn"
+          >
+             <i className="fa-solid fa-list-check text-[10px]"></i>
+             Missions suivantes
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const isInProgress = assignedMission.status === 'in_progress';
 
