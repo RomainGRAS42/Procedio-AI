@@ -746,23 +746,23 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick 
         }
       `}
     >
-      {/* Interactive Badge */}
+      {/* Interactive Badge - Moved to bottom right */}
       {isInteractive && (
-        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 z-20">
            <div className="bg-rose-500 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg">
              Agir <i className="fa-solid fa-bolt"></i>
            </div>
         </div>
       )}
 
-      {/* Info Tooltip (Absolute for stability) */}
-      {!isInteractive && tooltip && (
+      {/* Info Tooltip (Absolute for stability) - Always shown if tooltip exists */}
+      {tooltip && (
         <div className="absolute top-3 right-3 z-20">
           <InfoTooltip 
             text={tooltip} 
             align="right"
             className="ml-0"
-            iconClassName="text-slate-300 hover:text-indigo-500 text-sm bg-slate-50 hover:bg-indigo-50 w-6 h-6 rounded-full flex items-center justify-center transition-all"
+            iconClassName="text-slate-300 hover:text-indigo-500 text-sm bg-slate-50 hover:bg-indigo-50 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-sm"
           />
         </div>
       )}
@@ -779,7 +779,6 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick 
         </div>
         <h4 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isInteractive ? 'text-rose-400' : 'text-slate-400'}`}>
           {label}
-          {isInteractive && <i className="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>}
         </h4>
       </div>
     </div>
