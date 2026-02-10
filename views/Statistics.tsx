@@ -731,25 +731,47 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 };
 
 // Sub-component for KPI Cards
-const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick }: any) => (
-  <div 
-    onClick={onClick}
-    className={`bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
-  >
-    <div className="flex items-start justify-between mb-3">
-      <div className={`w-12 h-12 rounded-2xl ${bg} ${color} flex items-center justify-center text-xl`}>
-        <i className={`fa-solid ${icon}`}></i>
+// Sub-component for KPI Cards
+const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick }: any) => {
+  const isInteractive = !!onClick;
+
+  return (
+    <div 
+      onClick={onClick}
+      className={`
+        relative overflow-hidden p-6 rounded-3xl border transition-all duration-300 group
+        ${isInteractive 
+          ? 'bg-white border-rose-100 hover:border-rose-400 hover:bg-rose-50/10 cursor-pointer active:scale-95 shadow-md shadow-rose-100/50 hover:shadow-xl hover:shadow-rose-200/50' 
+          : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
+        }
+      `}
+    >
+      {isInteractive && (
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+           <div className="bg-rose-500 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg">
+             Agir <i className="fa-solid fa-bolt"></i>
+           </div>
+        </div>
+      )}
+
+      <div className="flex items-start justify-between mb-3">
+        <div className={`w-12 h-12 rounded-2xl ${bg} ${color} flex items-center justify-center text-xl transition-transform group-hover:scale-110 duration-300`}>
+          <i className={`fa-solid ${icon}`}></i>
+        </div>
+        {!isInteractive && <InfoTooltip text={tooltip} align={align} />}
       </div>
-      <InfoTooltip text={tooltip} align={align} />
-    </div>
-    <div className="space-y-1">
-      <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-black text-slate-900">{value}</span>
-        {unit && <span className="text-xs font-bold text-slate-400">{unit}</span>}
+      <div className="space-y-1 relative z-10">
+        <div className="flex items-baseline gap-1">
+          <span className={`text-3xl font-black ${isInteractive ? 'text-rose-600' : 'text-slate-900'}`}>{value}</span>
+          {unit && <span className="text-xs font-bold text-slate-400">{unit}</span>}
+        </div>
+        <h4 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isInteractive ? 'text-rose-400' : 'text-slate-400'}`}>
+          {label}
+          {isInteractive && <i className="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>}
+        </h4>
       </div>
-      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</h4>
     </div>
-  </div>
-);
+  );
+};
 
 export default Statistics;
