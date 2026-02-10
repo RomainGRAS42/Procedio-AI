@@ -263,6 +263,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       desc: "Lectures période",
       tooltipTitle: "Croissance d'Usage",
       tooltipDesc: "Volume de consultations sur la période en cours."
+    },
+    {
+      label: "Zone Rouge",
+      value: `${managerKPIs.redZone}`,
+      icon: "fa-skull-crossbones",
+      color: "text-slate-600",
+      bg: "bg-slate-50",
+      desc: "Sans référent",
+      tooltipTitle: "Risque de Perte",
+      tooltipDesc: "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour)."
     }
   ] : user.role === UserRole.MANAGER && viewMode === "personal" ? [
     {
@@ -1239,7 +1249,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="space-y-10 pb-10 px-4 md:px-10 animate-fade-in relative z-10 w-full overflow-x-hidden">
+    <div className="space-y-10 pb-10 pt-8 px-4 md:px-10 animate-fade-in relative z-10 w-full overflow-x-hidden">
       {/* RAPPEL MANAGER: SUGGESTIONS FLASH NOTES */}
       {user.role === UserRole.MANAGER && pendingFlashNotesCount > 0 && (
         <div className="animate-slide-up">
@@ -1267,8 +1277,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-end gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
+      <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-6">
         {/* Titre & Toggle de vue */}
         <div className="flex-1">
             <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
@@ -1332,7 +1342,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </section>
 
       {/* Message du Manager */}
-      <div className="mt-8">
+      <div className="">
            <AnnouncementWidget 
              user={user}
              announcement={announcement}
@@ -1425,7 +1435,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="space-y-6 animate-fade-in">
               
                 {/* ZONE 1: KPIs Flash */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="">
                    <StatsSummaryWidget stats={stats} />
                 </div>
 
