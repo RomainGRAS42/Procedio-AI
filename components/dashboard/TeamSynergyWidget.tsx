@@ -35,7 +35,8 @@ const TeamSynergyWidget: React.FC = () => {
         const { data, error } = await supabase
           .from('user_profiles')
           .select('id, first_name, last_name, avatar_url, xp_points, level')
-          .eq('role', 'technician')
+          // Correction: le rôle en DB est 'technicien' (français) et non 'technician'
+          .eq('role', 'technicien')
           .order('xp_points', { ascending: false });
 
         if (error) throw error;
