@@ -267,9 +267,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     {
       label: "Zone Rouge",
       value: `${managerKPIs.redZone}`,
-      icon: "fa-skull-crossbones",
-      color: "text-slate-600",
-      bg: "bg-slate-50",
+      icon: "fa-triangle-exclamation",
+      color: "text-rose-600",
+      bg: "bg-rose-50",
       desc: "Sans référent",
       tooltipTitle: "Risque de Perte",
       tooltipDesc: "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour)."
