@@ -37,9 +37,10 @@ const RecentProceduresWidget: React.FC<RecentProceduresWidgetProps> = ({
         </div>
         <button 
           onClick={onShowHistory} 
-          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all"
+          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center group/action"
         >
           Historique
+          <i className="fa-solid fa-chevron-right ml-2 text-[8px] group-hover:translate-x-0.5 transition-transform"></i>
         </button>
       </div>
       {recentProcedures.slice(0, 1).map((proc) => (

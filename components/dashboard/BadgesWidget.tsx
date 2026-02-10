@@ -41,51 +41,53 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
           <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg border border-orange-100">
             <i className="fa-solid fa-trophy"></i>
           </div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
-            <div className="relative group/xp-info">
-              <button className="w-5 h-5 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center text-[8px] hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-100">
-                <i className="fa-solid fa-question"></i>
-              </button>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none">
-                <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] pb-1 border-b border-white/5 opacity-50 font-black">
-                    <span>ACTION</span>
-                    <span>GAIN</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
+              <div className="relative group/xp-info">
+                <button className="w-5 h-5 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center text-[8px] hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-100">
+                  <i className="fa-solid fa-question"></i>
+                </button>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none text-left">
+                  <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] pb-1 border-b border-white/5 opacity-50 font-black">
+                      <span>ACTION</span>
+                      <span>GAIN</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span>Lecture procédure</span>
+                      <span className="text-emerald-400">+5 XP</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span>Lecture flash note</span>
+                      <span className="text-emerald-400">+5 XP</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span>Mission acceptée</span>
+                      <span className="text-indigo-400">+10 XP</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span>Rendu de mission</span>
+                      <span className="text-indigo-400">+10 XP</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold border-t border-white/5 pt-1">
+                      <span>Mission accomplie</span>
+                      <span className="text-emerald-400">+50 XP</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span>Suggestion approuvée</span>
+                      <span className="text-amber-400">+50 XP</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span>Lecture procédure</span>
-                    <span className="text-emerald-400">+5 XP</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span>Lecture flash note</span>
-                    <span className="text-emerald-400">+5 XP</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span>Mission acceptée</span>
-                    <span className="text-indigo-400">+10 XP</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span>Rendu de mission</span>
-                    <span className="text-indigo-400">+10 XP</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold border-t border-white/5 pt-1">
-                    <span>Mission accomplie</span>
-                    <span className="text-emerald-400">+50 XP</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span>Suggestion approuvée</span>
-                    <span className="text-amber-400">+50 XP</span>
-                  </div>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-900"></div>
                 </div>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-900"></div>
               </div>
             </div>
+            <div className="inline-flex mt-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[8px] font-black uppercase tracking-widest">
+              {earnedBadges.length} Obtenus
+            </div>
           </div>
-        </div>
-        <div className="px-3 py-1 bg-orange-50 text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-orange-100">
-          {earnedBadges.length} Obtenus
         </div>
       </div>
 

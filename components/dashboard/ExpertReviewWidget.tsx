@@ -17,12 +17,14 @@ const ExpertReviewWidget: React.FC<ExpertReviewWidgetProps> = ({
           <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-lg text-indigo-600">
             <i className="fa-solid fa-microscope"></i>
           </div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">Revues d'Expert</h3>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">Revues d'Expert</h3>
+            </div>
+            <div className="inline-flex mt-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[8px] font-black uppercase tracking-widest">
+              {pendingReviews.length} en attente
+            </div>
           </div>
-        </div>
-        <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
-          {pendingReviews.length} en attente
         </div>
       </div>
         <div className="flex gap-3 overflow-x-auto max-w-full pb-1 scrollbar-hide">

@@ -90,8 +90,12 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
             <InfoTooltip text="Missions recommandées basées sur votre profil." />
           </div>
         </div>
-        <button onClick={() => onNavigate?.('missions')} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
+        <button 
+          onClick={() => onNavigate?.('missions')} 
+          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center group/action"
+        >
           Voir tout
+          <i className="fa-solid fa-chevron-right ml-2 text-[8px] group-hover:translate-x-0.5 transition-transform"></i>
         </button>
       </div>
       

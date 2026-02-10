@@ -36,13 +36,18 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
             <i className="fa-solid fa-graduation-cap"></i>
           </div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
-            <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." />
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
+              <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." />
+            </div>
+            <div className="inline-flex mt-1 px-2 py-0.5 bg-slate-50 text-slate-400 rounded-full text-[8px] font-black uppercase tracking-widest border border-slate-100/50">
+              Progression par paliers
+            </div>
           </div>
         </div>
-        <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
-          Progression
+        <div className="flex items-center gap-2">
+          {/* Slot d'action vide ou pour bouton futur */}
         </div>
       </div>
       
