@@ -85,9 +85,14 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
             <i className="fa-solid fa-layer-group"></i>
           </div>
-          <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Missions Suivantes</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Missions Suivantes</h3>
+            <InfoTooltip text="Missions recommandées basées sur votre profil." />
+          </div>
         </div>
-        <button onClick={() => onNavigate?.('missions')} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">Voir tout</button>
+        <button onClick={() => onNavigate?.('missions')} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
+          Voir tout
+        </button>
       </div>
       
       <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">

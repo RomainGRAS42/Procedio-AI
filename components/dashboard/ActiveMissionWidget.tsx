@@ -1,5 +1,6 @@
 import React from 'react';
 import { Mission, User } from '../../types';
+import InfoTooltip from '../InfoTooltip';
 
 interface ActiveMissionWidgetProps {
   user: User;
@@ -28,17 +29,19 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
         <div className="absolute -top-24 -right-24 w-64 h-64 blur-[100px] rounded-full bg-slate-50/30 group-hover:bg-indigo-50/30 transition-all duration-700"></div>
         
         <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center text-xl group-hover:text-indigo-400 group-hover:bg-indigo-50 transition-all duration-500">
-              <i className="fa-solid fa-mug-hot"></i>
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
-                Mission en cours
-              </h3>
-              <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mt-1">
-                Quartier calme
-              </p>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center text-lg group-hover:text-indigo-400 group-hover:bg-indigo-50 transition-all duration-500">
+                <i className="fa-solid fa-mug-hot"></i>
+              </div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
+                  Mission en cours
+                </h3>
+                <span className="text-slate-400 text-[9px] font-black uppercase tracking-widest">
+                  - Quartier calme
+                </span>
+              </div>
             </div>
           </div>
           
@@ -102,25 +105,21 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">
            <div className="flex items-center gap-4">
-             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-500 ${
+             <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all duration-500 ${
                isInProgress 
                 ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
                 : 'bg-slate-50 text-slate-400 group-hover:text-slate-900'
              }`}>
                <i className={`fa-solid ${isInProgress ? 'fa-scroll' : 'fa-thumbtack'}`}></i>
              </div>
-             <div>
-               <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
-                    {isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
-                  </h3>
-                  {(assignedMission.urgency === 'high' || assignedMission.urgency === 'critical') && (
-                    <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
-                  )}
-               </div>
-               <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">
-                 {isInProgress ? 'Objectif stratégique' : 'Assigné par le manager'}
-               </p>
+             <div className="flex items-center gap-2">
+                <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
+                  {isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
+                </h3>
+                <InfoTooltip text={isInProgress ? 'Objectif stratégique' : 'Assigné par le manager'} />
+                {(assignedMission.urgency === 'high' || assignedMission.urgency === 'critical') && (
+                  <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
+                )}
              </div>
           </div>
           

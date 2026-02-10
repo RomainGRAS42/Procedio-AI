@@ -1,5 +1,6 @@
 import React from 'react';
 import { Procedure, UserRole } from '../../types';
+import InfoTooltip from '../InfoTooltip';
 
 interface RecentProceduresWidgetProps {
   recentProcedures: Procedure[];
@@ -23,10 +24,21 @@ const RecentProceduresWidget: React.FC<RecentProceduresWidgetProps> = ({
   return (
     <div className={`${isTeamView ? 'lg:col-span-3' : 'lg:col-span-3'} bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col`}>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">
-          {isTeamView ? "Dernière Procédure en Ligne" : "Dernière Procédure"}
-        </h3>
-        <button onClick={onShowHistory} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-4 py-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-lg shadow-lg">
+            <i className="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <div className="flex items-center gap-2">
+            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">
+              {isTeamView ? "Dernière Procédure en Ligne" : "Dernière Procédure"}
+            </h3>
+            <InfoTooltip text="Dernières procédures publiées dans la base." />
+          </div>
+        </div>
+        <button 
+          onClick={onShowHistory} 
+          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all"
+        >
           Historique
         </button>
       </div>

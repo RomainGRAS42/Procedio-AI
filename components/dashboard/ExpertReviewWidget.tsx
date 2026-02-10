@@ -12,16 +12,19 @@ const ExpertReviewWidget: React.FC<ExpertReviewWidgetProps> = ({
 }) => {
   return (
     <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
-      <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-xl text-indigo-600">
+      <div className="relative z-10 flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-lg text-indigo-600">
             <i className="fa-solid fa-microscope"></i>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">Revues d'Expert</h3>
-            <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mt-1">{pendingReviews.length} en attente</p>
           </div>
         </div>
+        <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+          {pendingReviews.length} en attente
+        </div>
+      </div>
         <div className="flex gap-3 overflow-x-auto max-w-full pb-1 scrollbar-hide">
           {pendingReviews.slice(0, 2).map((proc) => (
             <div key={proc.id} onClick={() => onSelectProcedure(proc)} className="shrink-0 w-48 bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all cursor-pointer group/card">

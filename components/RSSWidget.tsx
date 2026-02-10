@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, UserRole } from '../types';
+import InfoTooltip from './InfoTooltip';
 
 interface RSSItem {
   title: string;
@@ -157,17 +158,17 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
           <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg border border-orange-100 shadow-sm">
             <i className="fa-solid fa-rss"></i>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Veille Info</h3>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Actualités & Tech</p>
+            <InfoTooltip text="Actualités & articles de veille technologique." />
           </div>
         </div>
         <button 
           onClick={() => setShowManageModal(true)}
-          className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white border border-slate-100 transition-all flex items-center justify-center"
+          className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white border border-slate-100 transition-all flex items-center justify-center group/gear"
           title="Gérer les flux"
         >
-          <i className="fa-solid fa-gear text-xs"></i>
+          <i className="fa-solid fa-gear text-xs group-hover/gear:rotate-90 transition-transform duration-500"></i>
         </button>
       </div>
 
