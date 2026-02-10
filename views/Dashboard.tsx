@@ -156,8 +156,22 @@ const Dashboard: React.FC<DashboardProps> = ({
     redZone: 0
   });
 
-  const prevLevelRef = React.useRef<number>(personalStats.level);
-  const prevBadgeCountRef = React.useRef<number>(earnedBadges.length);
+  const prevLevelRef = React.useRef<number>(0);
+  const prevBadgeCountRef = React.useRef<number>(0);
+
+  // Initialize refs and localStorage on mount/user change
+  useEffect(() => {
+    if (user?.id) {
+      const storedLevel = localStorage.getItem(`procedio_seen_level_${user.id}`);
+      const storedBadges = localStorage.getItem(`procedio_seen_badges_${user.id}`);
+      
+      if (storedLevel) prevLevelRef.current = parseInt(storedLevel);
+      else prevLevelRef.current = personalStats.level;
+
+      if (storedBadges) prevBadgeCountRef.current = parseInt(storedBadges);
+      else prevBadgeCountRef.current = earnedBadges.length;
+    }
+  }, [user?.id]);
 
   const getLevelTitle = (level: number) => {
     switch(level) {
@@ -177,7 +191,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Detection Level Up & Badges
   useEffect(() => {
-    if (user.role !== UserRole.TECHNICIAN) return;
+    if (user.role !== UserRole.TECHNICIAN || !user.id) return;
 
     // 1. Check Level Up
     if (personalStats.level > prevLevelRef.current && prevLevelRef.current !== 0) {
@@ -186,6 +200,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         title: getLevelTitle(personalStats.level) 
       });
       setShowLevelUpModal(true);
+      localStorage.setItem(`procedio_seen_level_${user.id}`, personalStats.level.toString());
+    } else if (prevLevelRef.current === 0 && personalStats.level > 0) {
+      // First sync if not in localStorage
+      localStorage.setItem(`procedio_seen_level_${user.id}`, personalStats.level.toString());
     }
     prevLevelRef.current = personalStats.level;
 
@@ -195,10 +213,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (newBadge) {
         setUnlockedBadgeData(newBadge);
         setShowBadgeUnlockedModal(true);
+        localStorage.setItem(`procedio_seen_badges_${user.id}`, earnedBadges.length.toString());
       }
+    } else if (prevBadgeCountRef.current === 0 && earnedBadges.length > 0) {
+      // First sync if not in localStorage
+      localStorage.setItem(`procedio_seen_badges_${user.id}`, earnedBadges.length.toString());
     }
     prevBadgeCountRef.current = earnedBadges.length;
-  }, [personalStats.level, earnedBadges.length]);
+  }, [personalStats.level, earnedBadges.length, user.id]);
   
   // Cockpit Widgets State (Manager)
   // Cockpit Widgets State (Manager)
