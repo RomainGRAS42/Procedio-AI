@@ -115,8 +115,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     }
   }, [isEditing]);
 
-  const fetchNotes = async () => {
-    setLoading(true);
+  const fetchNotes = async (silent = false) => {
+    if (!silent) setLoading(true);
 
     // Timeout pour éviter le chargement infini
     const timeoutId = setTimeout(() => {
@@ -139,7 +139,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           *,
           author:user_profiles!user_id(first_name, last_name)
         `)
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false }); // Changé en created_at pour que la nouvelle reste en haut
 
       // Si un utilisateur est connecté, on filtre explicitement par son ID
       if (currentUserId) {
@@ -437,35 +437,69 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     setSaving(true);
     try {
       const {
-        data: { user },
+        data: { user: authUser },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non autorisé");
+      if (!authUser) throw new Error("Non autorisé");
 
       const payload = {
         title: activeNote.title.trim(),
         content: activeNote.content,
         is_protected: activeNote.is_protected,
-        user_id: user.id,
+        user_id: authUser.id,
         folder_id: activeNote.folder_id || null,
         updated_at: new Date().toISOString(),
         status: mode === "flash" ? "suggestion" : "private", 
-        category: "general"
+        category: "general",
+        is_flash_note: mode === "flash" // FIX: Assure que la note reste dans le filtre Flash
       };
 
       let result;
       if (activeNote.id) {
-        result = await supabase.from("notes").update(payload).eq("id", activeNote.id);
+        result = await supabase.from("notes").update(payload).eq("id", activeNote.id).select(`
+          *,
+          author:user_profiles!user_id(first_name, last_name)
+        `);
       } else {
-        result = await supabase.from("notes").insert([payload]);
+        result = await supabase.from("notes").insert([payload]).select(`
+          *,
+          author:user_profiles!user_id(first_name, last_name)
+        `);
       }
 
       if (result.error) throw result.error;
 
+      // MISE À JOUR OPTIMISTE IMMÉDIATE
+      if (result.data && result.data[0]) {
+        const n = result.data[0];
+        const newNoteFormatted: ProtectedNote = {
+          id: n.id,
+          title: n.title,
+          content: n.content,
+          is_protected: n.is_protected || false,
+          is_flash_note: n.is_flash_note || false,
+          tags: n.tags || [],
+          updatedAt: new Date(n.updated_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }),
+          createdAt: new Date(n.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }),
+          user_id: n.user_id,
+          author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : (user ? `${user.firstName} ${user.lastName}` : "Moi"),
+          status: n.status || "private",
+          category: n.category || "general",
+          folder_id: n.folder_id
+        };
+
+        setNotes(prev => {
+          const filtered = prev.filter(item => item.id !== newNoteFormatted.id);
+          return [newNoteFormatted, ...filtered];
+        });
+      }
+
       setIsEditing(false);
-      setSearchTerm(""); // Réinitialiser la recherche pour voir la nouvelle note
+      setSearchTerm("");
       onEditorClose?.();
-      await fetchNotes();
+      // On rafraîchit quand même en fond pour être sûr
+      fetchNotes();
     } catch (err) {
+      console.error(err);
       setToast({ message: "Erreur lors de la synchronisation avec Supabase.", type: "error" });
     } finally {
       setSaving(false);
@@ -604,21 +638,36 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         is_protected: viewDraft.is_protected,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("notes").update(payload).eq("id", viewingNote.id);
+      
+      const { data, error } = await supabase.from("notes").update(payload).eq("id", viewingNote.id).select(`
+        *,
+        author:user_profiles!user_id(first_name, last_name)
+      `);
+
       if (error) throw error;
-      const updated: ProtectedNote = {
-        ...viewingNote,
-        ...payload,
-        updatedAt: new Date().toLocaleDateString("fr-FR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-      } as any;
-      setViewingNote(updated);
+      
+      if (data && data[0]) {
+        const n = data[0];
+        const updated: ProtectedNote = {
+          ...viewingNote,
+          ...payload,
+          updatedAt: new Date(n.updated_at).toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }),
+          author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : viewingNote.author_name
+        } as any;
+
+        setViewingNote(updated);
+        
+        // MISE À JOUR OPTIMISTE DE LA LISTE
+        setNotes(prev => prev.map(item => item.id === n.id ? updated : item));
+      }
+
       setViewingEdit(false);
       setViewDraft(null);
-      await fetchNotes();
+      fetchNotes(true); // Rafraîchissement silencieux
     } catch {
       setToast({ message: "Erreur lors de la synchronisation avec Supabase.", type: "error" });
     } finally {
