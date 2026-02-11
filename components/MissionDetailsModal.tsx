@@ -389,22 +389,26 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aperçu du document</p>
-                                                        <div className="flex items-center gap-4">
+                                                        <div className="flex items-center gap-6">
                                                             <a 
-                                                                href={attachmentUrl} 
+                                                                href={
+                                                                    attachmentUrl.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/)
+                                                                    ? `https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`
+                                                                    : attachmentUrl
+                                                                }
                                                                 target="_blank" 
                                                                 rel="noopener noreferrer"
-                                                                className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                                className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-2 group/link"
                                                             >
-                                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                                                <i className="fa-solid fa-arrow-up-right-from-square group-hover/link:scale-110 transition-transform"></i>
                                                                 Voir
                                                             </a>
                                                             <a 
                                                                 href={`${attachmentUrl}${attachmentUrl.includes('?') ? '&' : '?'}download=`}
                                                                 download
-                                                                className="text-[9px] font-black text-slate-900 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                                className="text-[9px] font-black text-slate-900 uppercase tracking-widest hover:underline flex items-center gap-2 group/link"
                                                             >
-                                                                <i className="fa-solid fa-download"></i>
+                                                                <i className="fa-solid fa-download group-hover/link:translate-y-0.5 transition-transform"></i>
                                                                 Télécharger
                                                             </a>
                                                         </div>
@@ -517,22 +521,26 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                 <div className="space-y-3 pt-2">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aperçu du travail</p>
-                                                        <div className="flex items-center gap-4">
+                                                        <div className="flex items-center gap-6">
                                                             <a 
-                                                                href={attachmentUrl} 
+                                                                href={
+                                                                    attachmentUrl.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/)
+                                                                    ? `https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`
+                                                                    : attachmentUrl
+                                                                }
                                                                 target="_blank" 
                                                                 rel="noopener noreferrer"
-                                                                className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                                className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-2 group/link"
                                                             >
-                                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                                                <i className="fa-solid fa-arrow-up-right-from-square group-hover/link:scale-110 transition-transform"></i>
                                                                 Voir
                                                             </a>
                                                             <a 
                                                                 href={`${attachmentUrl}${attachmentUrl.includes('?') ? '&' : '?'}download=`}
                                                                 download
-                                                                className="text-[9px] font-black text-slate-900 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                                className="text-[9px] font-black text-slate-900 uppercase tracking-widest hover:underline flex items-center gap-2 group/link"
                                                             >
-                                                                <i className="fa-solid fa-download"></i>
+                                                                <i className="fa-solid fa-download group-hover/link:translate-y-0.5 transition-transform"></i>
                                                                 Télécharger
                                                             </a>
                                                         </div>
@@ -582,9 +590,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                     </div>
                                                 )}
 
-                                                <div className="flex flex-col gap-3 pt-6 border-t border-slate-100">
+                                                <div className="flex flex-col gap-4 pt-6 border-t border-slate-100">
                                                     {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') ? (
-                                                        <div className="space-y-4">
+                                                        <div className="space-y-5">
                                                             <button 
                                                                 onClick={() => handleAction('complete')}
                                                                 className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-3"
@@ -603,7 +611,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                                 </button>
                                                             )}
 
-                                                            <div className="pt-2">
+                                                            <div className="pt-4">
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Zone de révision</p>
                                                                     {(!completionNotes.trim()) && (

@@ -413,8 +413,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                setCompletingMission(mission);
-                setReasonText(mission.completion_notes || "");
+                setSelectedMission(mission);
               }}
               className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2"
             >
@@ -847,22 +846,26 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                                 <p className="text-[9px] font-medium text-slate-400">Envoyé par le technicien</p>
                              </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-6">
                             <a 
-                              href={completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl}
+                              href={
+                                completingMission.attachment_url.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/)
+                                ? `https://docs.google.com/gview?url=${encodeURIComponent(completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl)}&embedded=true`
+                                : (completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl)
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 flex items-center gap-2"
+                              className="px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 flex items-center gap-3 shadow-sm"
                             >
-                              <i className="fa-solid fa-eye"></i>
+                              <i className="fa-solid fa-eye text-sm"></i>
                               Voir
                             </a>
                             <a 
                               href={`${completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl}${completingMission.attachment_url.includes('?') ? '&' : '?'}download=`}
                               download
-                              className="px-4 py-2 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2"
+                              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 shadow-lg"
                             >
-                              <i className="fa-solid fa-download"></i>
+                              <i className="fa-solid fa-download text-sm"></i>
                               Télécharger
                             </a>
                           </div>
@@ -924,7 +927,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                      />
                   </div>
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-6">
                      {user.role === UserRole.MANAGER && completingMission.status === 'awaiting_validation' && (
                        <button 
                          onClick={() => handleStatusUpdate(completingMission.id, 'in_progress', reasonText)}
