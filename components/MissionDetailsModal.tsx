@@ -310,6 +310,8 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         if (validateError) throw validateError;
 
         // 2. Create the procedure
+        // Note: The backend uses 'Type' (capitalized) for category in the procedures table
+        // We also added 'category' column recently but 'Type' is the source of truth for the views
         const { data: proc, error: procError } = await supabase
           .from("procedures")
           .insert({
@@ -317,7 +319,8 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
             content: mission.description,
             file_url: attachmentUrl,
             status: "published",
-            category: promoteCategory || "Missions / Transferts",
+            Type: promoteCategory || "Missions / Transferts", // Mapping to legacy column
+            category: promoteCategory || "Missions / Transferts", // Mapping to new column (redundancy safe)
           })
           .select()
           .single();
