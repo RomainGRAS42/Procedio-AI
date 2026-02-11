@@ -7,6 +7,8 @@ import CustomToast from '../components/CustomToast';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 
+import MissionDetailsModal from '../components/MissionDetailsModal';
+
 interface MissionsProps {
   user: User;
   onSelectProcedure?: (procedure: Procedure) => void;
@@ -16,6 +18,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
   const [loading, setLoading] = useState(true);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   // Form State
@@ -445,7 +448,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {missions.filter(m => user.role === UserRole.MANAGER ? true : (m.status === 'open' || m.assigned_to === user.id)).map((mission) => (
-                <div key={mission.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden">
+                <div 
+                  key={mission.id} 
+                  onClick={() => setSelectedMission(mission)}
+                  className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden cursor-pointer"
+                >
                   {/* Urgency accent border */}
                   <div className={`absolute top-0 left-0 w-2 h-full ${
                     mission.urgency === 'critical' ? 'bg-rose-500' :
@@ -480,7 +487,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
 
                     {mission.status === 'open' && user.role === UserRole.TECHNICIAN && (
                       <button 
-                        onClick={() => handleClaimMission(mission.id)}
+                        onClick={(e) => { e.stopPropagation(); handleClaimMission(mission.id); }}
                         className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
                       >
                         Réclamer
@@ -489,7 +496,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
 
                     {mission.status === 'awaiting_validation' && user.role === UserRole.MANAGER && (
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setCompletingMission(mission);
                           setReasonText(mission.completion_notes || "");
                         }}
@@ -523,7 +531,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                       <div className="flex gap-2">
                         {mission.status === 'assigned' && mission.assigned_to === user.id && (
                           <button 
-                            onClick={() => handleStartMission(mission.id)}
+                            onClick={(e) => { e.stopPropagation(); handleStartMission(mission.id); }}
                             className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all"
                           >
                             Démarrer
@@ -531,7 +539,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                         )}
                         {mission.status === 'in_progress' && mission.assigned_to === user.id && (
                           <button 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setCompletingMission(mission);
                               setReasonText("");
                             }}
@@ -542,7 +551,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                         )}
                         {(mission.status === 'assigned' || mission.status === 'in_progress') && user.role === UserRole.MANAGER && (
                           <button 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setCancellingMission(mission);
                               setReasonText("");
                             }}
@@ -628,6 +638,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
              </section>
           </div>
         </div>
+      )}
+
+      {/* MODAL DETAILS + CHAT */}
+      {selectedMission && (
+        <MissionDetailsModal 
+          mission={selectedMission}
+          user={user}
+          onClose={() => setSelectedMission(null)}
+          onUpdateStatus={handleStatusUpdate}
+        />
       )}
 
       {/* MODAL CREATION MISSION */}
