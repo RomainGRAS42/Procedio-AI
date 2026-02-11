@@ -208,7 +208,15 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
       } else if (action === 'start') {
           onUpdateStatus(mission.id, 'in_progress');
       } else if (action === 'cancel') {
-          onUpdateStatus(mission.id, 'cancelled', completionNotes); 
+          // Refusal: Back to in_progress so tech can work on it again
+          onUpdateStatus(mission.id, 'in_progress', completionNotes); 
+          
+          // Auto-send a chat message with the reason
+          await supabase.from('mission_messages').insert({
+            mission_id: mission.id,
+            user_id: user.id,
+            content: `❌ Mission refusée. Motif : ${completionNotes || "Merci de revoir votre copie."}`
+          });
       } else if (action === 'promote') {
           // 1. Create the procedure
           const { data: proc, error: procError } = await supabase
@@ -343,35 +351,57 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                 </h3>
                                 
                                 {mission.status === 'completed' ? (
-                                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                                        <p className="text-emerald-700 italic">{mission.completion_notes || "Aucune note de complétion."}</p>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                            <p className="text-emerald-700 italic">{mission.completion_notes || "Aucune note de complétion."}</p>
+                                        </div>
+                                        {attachmentUrl && (
+                                            <a 
+                                                href={attachmentUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-100 rounded-xl text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
+                                            >
+                                                <i className="fa-solid fa-file-pdf"></i>
+                                                Voir le document de mission
+                                            </a>
+                                        )}
                                     </div>
                                 ) : (
                                     (mission.status === 'in_progress' && mission.assigned_to === user.id) || 
                                     (mission.status === 'awaiting_validation' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) ? (
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-end">
-                                                    <label className="text-xs font-bold text-slate-700">
-                                                        {user.role === UserRole.MANAGER ? "Feedback de validation / refus" : "Notes de réalisation & Liens"}
-                                                    </label>
-                                                    {attachmentUrl && (
-                                                        <a 
-                                                            href={attachmentUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
-                                                        >
-                                                            <i className="fa-solid fa-file-lines"></i>
-                                                            Consulter le fichier
-                                                        </a>
-                                                    )}
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-end">
+                                                <label className="text-xs font-bold text-slate-700">
+                                                    {user.role === UserRole.MANAGER || (user.role as any) === 'manager' ? "Revue du travail & Feedback" : "Notes de réalisation & Liens"}
+                                                </label>
+                                                {attachmentUrl && (
+                                                    <a 
+                                                        href={attachmentUrl} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                    >
+                                                        <i className="fa-solid fa-external-link"></i>
+                                                        Ouvrir le document
+                                                    </a>
+                                                )}
+                                            </div>
+                                            
+                                            {/* For technical submission display tech's notes clearly */}
+                                            {mission.status === 'awaiting_validation' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
+                                                <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-2">
+                                                    <p className="text-xs font-bold text-indigo-900 mb-1 opacity-50 uppercase tracking-tighter">Notes du technicien :</p>
+                                                    <p className="text-sm text-indigo-800 italic">{mission.completion_notes || "Pas de notes fournies."}</p>
                                                 </div>
-                                                <textarea 
-                                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"
-                                                    placeholder={user.role === UserRole.MANAGER ? "Raison du refus ou commentaire..." : "Décrivez le travail réalisé, collez le lien de la procédure..."}
-                                                    value={completionNotes}
-                                                    onChange={(e) => setCompletionNotes(e.target.value)}
-                                                />
+                                            )}
+
+                                            <textarea 
+                                                className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"
+                                                placeholder={user.role === UserRole.MANAGER || (user.role as any) === 'manager' ? "Raison du refus ou commentaire de validation..." : "Décrivez le travail réalisé, collez le lien de la procédure..."}
+                                                value={completionNotes}
+                                                onChange={(e) => setCompletionNotes(e.target.value)}
+                                            />
 
                                                 {/* File Upload Zone for Technician */}
                                                 {user.role !== UserRole.MANAGER && (
@@ -407,9 +437,10 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                         <>
                                                             <button 
                                                                 onClick={() => handleAction('cancel')}
-                                                                className="px-6 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors"
+                                                                className="px-6 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors flex items-center gap-2"
                                                             >
-                                                                Demander Révision
+                                                                <i className="fa-solid fa-rotate-left"></i>
+                                                                Refuser / Révision
                                                             </button>
                                                             {attachmentUrl && (
                                                                 <button 
