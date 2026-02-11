@@ -33,7 +33,10 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
 
   // Status Actions State
   const [completionNotes, setCompletionNotes] = useState(mission.completion_notes || "");
+  const [attachmentUrl, setAttachmentUrl] = useState(mission.attachment_url || "");
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -161,20 +164,83 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
     }
   };
 
-  const handleAction = async (action: 'claim' | 'start' | 'complete' | 'cancel') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${mission.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('mission-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('mission-attachments')
+        .getPublicUrl(filePath);
+
+      setAttachmentUrl(publicUrl);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Erreur lors de l'envoi du fichier.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAction = async (action: 'claim' | 'start' | 'complete' | 'cancel' | 'promote') => {
     setIsSubmitting(true);
     
-    // Delegate to the parent prop mostly.
-    if (action === 'complete') {
-        onUpdateStatus(mission.id, 'completed', completionNotes);
-    } else if (action === 'start') {
-        onUpdateStatus(mission.id, 'in_progress');
-    } else if (action === 'cancel') {
-        onUpdateStatus(mission.id, 'cancelled', completionNotes); // Notes as reason
+    try {
+      if (action === 'complete') {
+          onUpdateStatus(mission.id, 'completed', completionNotes, attachmentUrl);
+      } else if (action === 'start') {
+          onUpdateStatus(mission.id, 'in_progress');
+      } else if (action === 'cancel') {
+          onUpdateStatus(mission.id, 'cancelled', completionNotes); 
+      } else if (action === 'promote') {
+          // 1. Create the procedure
+          const { data: proc, error: procError } = await supabase
+            .from('procedures')
+            .insert({
+              title: mission.title,
+              content: mission.description,
+              file_url: attachmentUrl,
+              status: 'published',
+              category: 'Missions / Transferts'
+            })
+            .select()
+            .single();
+
+          if (procError) throw procError;
+
+          // 2. Mark mission as completed (if not already) and link procedure
+          const { error: updateError } = await supabase
+            .from('missions')
+            .update({ 
+              status: 'completed', 
+              procedure_id: proc.id,
+              completion_notes: completionNotes || "Promu en procédure officielle."
+            })
+            .eq('id', mission.id);
+
+          if (updateError) throw updateError;
+          
+          alert("Procédure créée avec succès !");
+      }
+      
+      onClose(); 
+    } catch (err) {
+      console.error("Action error:", err);
+      alert("Une erreur est survenue.");
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    onClose(); 
-    setIsSubmitting(false);
   };
 
   // Helper for status badge
@@ -277,33 +343,88 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                 ) : (
                                     (mission.status === 'in_progress' && mission.assigned_to === user.id) || 
                                     (mission.status === 'awaiting_validation' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) ? (
-                                        <div className="space-y-4">
-                                            <label className="text-xs font-bold text-slate-700">
-                                                {user.role === UserRole.MANAGER ? "Feedback de validation / refus" : "Notes de réalisation & Liens"}
-                                            </label>
-                                            <textarea 
-                                                className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"
-                                                placeholder={user.role === UserRole.MANAGER ? "Raison du refus ou commentaire..." : "Décrivez le travail réalisé, collez le lien de la procédure..."}
-                                                value={completionNotes}
-                                                onChange={(e) => setCompletionNotes(e.target.value)}
-                                            />
-                                            <div className="flex justify-end gap-3">
-                                                {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
-                                                    <button 
-                                                        onClick={() => handleAction('cancel')} // Using cancel as "Refuse/Redo"
-                                                        className="px-6 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors"
-                                                    >
-                                                        Demander Révision
-                                                    </button>
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between items-end">
+                                                    <label className="text-xs font-bold text-slate-700">
+                                                        {user.role === UserRole.MANAGER ? "Feedback de validation / refus" : "Notes de réalisation & Liens"}
+                                                    </label>
+                                                    {attachmentUrl && (
+                                                        <a 
+                                                            href={attachmentUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                        >
+                                                            <i className="fa-solid fa-file-lines"></i>
+                                                            Consulter le fichier
+                                                        </a>
+                                                    )}
+                                                </div>
+                                                <textarea 
+                                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"
+                                                    placeholder={user.role === UserRole.MANAGER ? "Raison du refus ou commentaire..." : "Décrivez le travail réalisé, collez le lien de la procédure..."}
+                                                    value={completionNotes}
+                                                    onChange={(e) => setCompletionNotes(e.target.value)}
+                                                />
+
+                                                {/* File Upload Zone for Technician */}
+                                                {user.role !== UserRole.MANAGER && (
+                                                    <div className="flex flex-col gap-3">
+                                                        <input 
+                                                            type="file" 
+                                                            ref={fileInputRef}
+                                                            onChange={handleFileUpload}
+                                                            className="hidden"
+                                                            accept=".pdf,.doc,.docx,.jpg,.png"
+                                                        />
+                                                        <button 
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            disabled={isUploading}
+                                                            className={`flex items-center justify-center gap-3 p-4 border-2 border-dashed rounded-2xl transition-all ${
+                                                                attachmentUrl ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500'
+                                                            }`}
+                                                        >
+                                                            {isUploading ? (
+                                                                <i className="fa-solid fa-spinner fa-spin"></i>
+                                                            ) : (
+                                                                <i className={`fa-solid ${attachmentUrl ? 'fa-check-circle' : 'fa-cloud-arrow-up'}`}></i>
+                                                            )}
+                                                            <span className="text-xs font-bold font-black uppercase tracking-widest">
+                                                                {isUploading ? "Envoi en cours..." : attachmentUrl ? "Fichier ajouté (Changer)" : "Ajouter un fichier (PDF, Image...)"}
+                                                            </span>
+                                                        </button>
+                                                    </div>
                                                 )}
-                                                <button 
-                                                    onClick={() => handleAction('complete')}
-                                                    className="px-8 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
-                                                >
-                                                    {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') ? "Valider la Mission" : "Soumettre le Travail"}
-                                                </button>
+
+                                                <div className="flex justify-end gap-3 pt-4">
+                                                    {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => handleAction('cancel')}
+                                                                className="px-6 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors"
+                                                            >
+                                                                Demander Révision
+                                                            </button>
+                                                            {attachmentUrl && (
+                                                                <button 
+                                                                    onClick={() => handleAction('promote')}
+                                                                    className="px-6 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-2"
+                                                                >
+                                                                    <i className="fa-solid fa-star"></i>
+                                                                    Promouvoir en Procédure
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => handleAction('complete')}
+                                                        disabled={isUploading || isSubmitting}
+                                                        className="px-8 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
+                                                    >
+                                                        {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') ? "Valider la Mission" : "Soumettre le Travail"}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
                                     ) : (
                                         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
                                             <p className="text-sm text-slate-500">
