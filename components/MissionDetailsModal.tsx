@@ -36,7 +36,17 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
   const [attachmentUrl, setAttachmentUrl] = useState(mission.attachment_url || "");
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [iframeReady, setIframeReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delay iframe rendering to fix white screen issue on initial load (animation timing)
+  useEffect(() => {
+    if (activeTab === 'details') {
+        setIframeReady(false);
+        const timer = setTimeout(() => setIframeReady(true), 300);
+        return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
 
   // For managers on awaiting_validation, we want a fresh notes field for feedback
   useEffect(() => {
@@ -404,12 +414,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                         {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
                                                             <img src={attachmentUrl} alt="Preview" className="w-full h-full object-contain" />
                                                         ) : attachmentUrl.toLowerCase().endsWith('.pdf') ? (
-                                                            <iframe 
-                                                                key={attachmentUrl}
-                                                                src={`${attachmentUrl}#toolbar=0`} 
-                                                                className="w-full h-full border-none" 
-                                                                title="PDF Preview"
-                                                            ></iframe>
+                                                            iframeReady ? (
+                                                                <iframe 
+                                                                    key={attachmentUrl}
+                                                                    src={`${attachmentUrl}#toolbar=0`} 
+                                                                    className="w-full h-full border-none" 
+                                                                    title="PDF Preview"
+                                                                ></iframe>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                                                                    <i className="fa-solid fa-circle-notch fa-spin text-slate-300 text-2xl"></i>
+                                                                </div>
+                                                            )
                                                         ) : (
                                                             <iframe 
                                                                 src={`https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`} 
@@ -528,12 +544,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                         {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
                                                             <img src={attachmentUrl} alt="Preview" className="w-full h-full object-contain" />
                                                         ) : attachmentUrl.toLowerCase().endsWith('.pdf') ? (
-                                                            <iframe 
-                                                                key={attachmentUrl}
-                                                                src={`${attachmentUrl}#toolbar=0`} 
-                                                                className="w-full h-full border-none" 
-                                                                title="PDF Preview"
-                                                            ></iframe>
+                                                            iframeReady ? (
+                                                                <iframe 
+                                                                    key={attachmentUrl}
+                                                                    src={`${attachmentUrl}#toolbar=0`} 
+                                                                    className="w-full h-full border-none" 
+                                                                    title="PDF Preview"
+                                                                ></iframe>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                                                                    <i className="fa-solid fa-circle-notch fa-spin text-slate-300 text-2xl"></i>
+                                                                </div>
+                                                            )
                                                         ) : (
                                                             <iframe 
                                                                 src={`https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`} 
