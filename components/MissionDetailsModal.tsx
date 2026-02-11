@@ -10,9 +10,23 @@ interface MissionDetailsModalProps {
   onUpdateStatus: (missionId: string, status: MissionStatus, notes?: string, fileUrl?: string) => void;
 }
 
+interface MissionMessage {
+  id: string;
+  mission_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  tempId?: string;
+  user?: {
+    first_name: string;
+    last_name: string;
+    role: string;
+  };
+}
+
 const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user, onClose, onUpdateStatus }) => {
   const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<MissionMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -66,22 +80,20 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
             .eq('id', payload.new.user_id)
             .single();
           
-          const newMsg = { 
+          const newMsg: MissionMessage = { 
             ...payload.new, 
             user: userData || { first_name: 'Utilisateur', last_name: '', role: 'technicien' } 
-          };
+          } as MissionMessage;
 
           setMessages(prev => {
-            // Check if this message is already present (e.g., from optimistic update)
-            const exists = prev.find(m => 
+            const exists = prev.find((m: MissionMessage) => 
               m.id === newMsg.id || 
               (m.tempId && m.content === newMsg.content && m.user_id === newMsg.user_id)
             );
 
             if (exists) {
-              // If it exists and was an optimistic message, replace it with the real one
               if (exists.tempId && exists.id !== newMsg.id) {
-                return prev.map(m => m.tempId === exists.tempId ? newMsg : m);
+                return prev.map((m: MissionMessage) => m.tempId === exists.tempId ? newMsg : m);
               }
               return prev;
             }
@@ -114,7 +126,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
     const tempId = 'temp-' + Date.now();
     
     // Optimistic message
-    const optimisticMsg = {
+    const optimisticMsg: MissionMessage = {
       id: tempId,
       tempId: tempId,
       mission_id: mission.id,
