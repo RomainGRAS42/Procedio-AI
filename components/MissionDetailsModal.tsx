@@ -38,6 +38,13 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // For managers on awaiting_validation, we want a fresh notes field for feedback
+  useEffect(() => {
+    if (mission.status === 'awaiting_validation' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) {
+      setCompletionNotes("");
+    }
+  }, [mission.status, user.role]);
+
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -175,12 +182,17 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${mission.id}/${Date.now()}.${fileExt}`;
+      // Sanitize filename: remove spaces and special characters
+      const cleanName = file.name.split('.')[0].replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const fileName = `${mission.id}/${Date.now()}_${cleanName}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('mission-attachments')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          upsert: true,
+          cacheControl: '3600'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -189,9 +201,15 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
         .getPublicUrl(filePath);
 
       setAttachmentUrl(publicUrl);
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      alert("Erreur lors de l'envoi du fichier.");
+    } catch (error: any) {
+      console.error("Error uploading file (Full details):", {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      alert(`Erreur lors de l'envoi du fichier : ${error.message || "Erreur inconnue"}`);
     } finally {
       setIsUploading(false);
     }
@@ -216,11 +234,17 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
           onUpdateStatus(mission.id, 'in_progress', completionNotes); 
           
           // Auto-send a chat message with the reason
+          // If Manager provided a reason in the textarea, use it.
+          const refusalReason = completionNotes || "Merci de revoir votre copie.";
+          
           await supabase.from('mission_messages').insert({
             mission_id: mission.id,
             user_id: user.id,
-            content: `❌ Mission refusée. Motif : ${completionNotes || "Merci de revoir votre copie."}`
+            content: `❌ Mission refusée. Motif : ${refusalReason}`
           });
+          
+          // Clear notes after refusal to avoid confusion
+          setCompletionNotes("");
       } else if (action === 'promote') {
           // 1. Create the procedure
           const { data: proc, error: procError } = await supabase
