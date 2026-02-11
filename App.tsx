@@ -20,6 +20,7 @@ import LoadingState from "./components/LoadingState";
 import SearchResults from "./views/SearchResults";
 import Missions from "./views/Missions";
 import XPProgressBarTest from "./views/XPProgressBarTest";
+import { MissionsProvider } from "./contexts/MissionsContext";
 
 export interface ActiveTransfer {
   fileName: string;
@@ -410,81 +411,82 @@ const AppContent: React.FC<any> = ({
         )}
         <main className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="mx-auto w-full">
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={
-                <Dashboard
-                  user={user}
-                  onQuickNote={() => {
-                    setAutoOpenNoteEditor(true);
-                    navigate("/notes");
-                  }}
-                  onUploadClick={() => navigate("/upload")}
-                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
-                  onViewComplianceHistory={() => navigate("/dashboard")}
-                  targetAction={pendingAction}
-                  onActionHandled={() => setPendingAction(null)}
-                  onNavigate={(v) => navigate(`/${v}`)}
-                  onFlashCountChange={setPendingFlashNotesCount}
-                />
-              } />
-              <Route path="/procedures" element={
-                <Procedures
-                  user={user}
-                  onUploadClick={() => navigate("/upload")}
-                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
-                  onSearchClear={() => setGlobalSearchTerm("")}
-                  initialFolder={lastFolder}
-                  onFolderChange={setLastFolder}
-                />
-              } />
-              <Route path="/search" element={
-                <SearchResults
-                  user={user}
-                  searchTerm={globalSearchTerm}
-                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
-                  onBack={() => navigate(-1)}
-                />
-              } />
-              <Route path="/procedure/:id" element={<ProcedureDetailWrapper user={user} />} />
-              <Route path="/notes" element={
-                <Notes
-                  user={user}
-                  initialIsAdding={autoOpenNoteEditor}
-                  onEditorClose={() => setAutoOpenNoteEditor(false)}
-                />
-              } />
-              <Route path="/flash-notes" element={
-                // ⚡️ Flash Notes view: pass 'flash' mode to Notes component
-                <Notes 
-                  mode="flash" 
-                  user={user}
-                  initialIsAdding={autoOpenNoteEditor} 
-                  onEditorClose={() => setAutoOpenNoteEditor(false)} 
-                />
-              } />
-              <Route path="/statistics" element={
-                <Statistics 
-                  user={user!}
-                  onUploadClick={() => navigate("/upload")} 
-                  onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
-                />
-              } />
-              <Route path="/team" element={<Team user={user} />} />
-              <Route path="/missions" element={<Missions user={user} />} />
-              <Route path="/xp-test" element={<XPProgressBarTest />} />
-              <Route path="/account" element={<Account user={user} onGoToReset={() => {}} />} />
+            <MissionsProvider>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={
+                  <Dashboard
+                    user={user}
+                    onQuickNote={() => {
+                      setAutoOpenNoteEditor(true);
+                      navigate("/notes");
+                    }}
+                    onUploadClick={() => navigate("/upload")}
+                    onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                    onViewComplianceHistory={() => navigate("/dashboard")}
+                    targetAction={pendingAction}
+                    onActionHandled={() => setPendingAction(null)}
+                    onNavigate={(v) => navigate(`/${v}`)}
+                    onFlashCountChange={setPendingFlashNotesCount}
+                  />
+                } />
+                <Route path="/procedures" element={
+                  <Procedures
+                    user={user}
+                    onUploadClick={() => navigate("/upload")}
+                    onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                    onSearchClear={() => setGlobalSearchTerm("")}
+                    initialFolder={lastFolder}
+                    onFolderChange={setLastFolder}
+                  />
+                } />
+                <Route path="/search" element={
+                  <SearchResults
+                    user={user}
+                    searchTerm={globalSearchTerm}
+                    onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                    onBack={() => navigate(-1)}
+                  />
+                } />
+                <Route path="/procedure/:id" element={<ProcedureDetailWrapper user={user} />} />
+                <Route path="/notes" element={
+                  <Notes
+                    user={user}
+                    initialIsAdding={autoOpenNoteEditor}
+                    onEditorClose={() => setAutoOpenNoteEditor(false)}
+                  />
+                } />
+                <Route path="/flash-notes" element={
+                  <Notes 
+                    mode="flash" 
+                    user={user}
+                    initialIsAdding={autoOpenNoteEditor} 
+                    onEditorClose={() => setAutoOpenNoteEditor(false)} 
+                  />
+                } />
+                <Route path="/statistics" element={
+                  <Statistics 
+                    user={user!}
+                    onUploadClick={() => navigate("/upload")} 
+                    onSelectProcedure={(p) => navigate(`/procedure/${p.id}`)}
+                  />
+                } />
+                <Route path="/team" element={<Team user={user} />} />
+                <Route path="/missions" element={<Missions user={user} />} />
+                <Route path="/xp-test" element={<XPProgressBarTest />} />
+                <Route path="/account" element={<Account user={user} onGoToReset={() => {}} />} />
 
-              <Route path="/upload" element={
-                <UploadProcedure
-                  onBack={() => navigate("/procedures")}
-                  user={user}
-                  activeTransfer={activeTransfer}
-                  setActiveTransfer={setActiveTransfer}
-                />
-              } />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                <Route path="/upload" element={
+                  <UploadProcedure
+                    onBack={() => navigate("/procedures")}
+                    user={user}
+                    activeTransfer={activeTransfer}
+                    setActiveTransfer={setActiveTransfer}
+                  />
+                } />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </MissionsProvider>
           </div>
         </main>
       </div>

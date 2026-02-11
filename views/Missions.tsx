@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useMissions } from '../contexts/MissionsContext';
 import { supabase } from '../lib/supabase';
 import { User, UserRole, Mission, MissionStatus, MissionUrgency, Procedure } from '../types';
 import InfoTooltip from '../components/InfoTooltip';
@@ -15,8 +16,9 @@ interface MissionsProps {
 }
 
 const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
-  const [loading, setLoading] = useState(true);
-  const [missions, setMissions] = useState<Mission[]>([]);
+  const { missions, loading, refreshMissions } = useMissions();
+  // const [loading, setLoading] = useState(true); // From Context
+  // const [missions, setMissions] = useState<Mission[]>([]); // From Context
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -45,7 +47,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
   const [technicians, setTechnicians] = useState<{id: string, email: string, first_name: string, last_name: string}[]>([]);
 
   useEffect(() => {
-    fetchMissions();
+    // fetchMissions(); // Handled by Context
     if (user.role === UserRole.MANAGER) {
       fetchTechnicians();
     }
@@ -91,33 +93,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     }
   };
 
-  const fetchMissions = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('missions')
-        .select(`
-          *,
-          assignee:user_profiles!assigned_to(first_name, last_name),
-          creator:user_profiles!created_by(first_name, last_name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        setMissions(data.map(m => ({
-          ...m,
-          assignee_name: m.assignee ? `${m.assignee.first_name} ${m.assignee.last_name}` : undefined,
-          creator_name: m.creator ? `${m.creator.first_name} ${m.creator.last_name}` : undefined,
-        })));
-      }
-    } catch (err) {
-      console.error("Error fetching missions:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // fetchMissions removed - using Context
 
   const handleCreateMission = async () => {
     if (!newMission.title.trim()) return;
@@ -168,7 +144,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         deadline: '',
         needs_attachment: false
       });
-      fetchMissions();
+      // fetchMissions(); // Handled by Realtime in Context
     } catch (err) {
       setToast({ message: "Erreur lors de la création.", type: "error" });
     }
@@ -185,7 +161,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       if (error) throw error;
 
       setToast({ message: "Mission acceptée ! À vous de jouer.", type: "success" });
-      fetchMissions();
+      // fetchMissions();
     } catch (err) {
       setToast({ message: "Impossible de réclamer cette mission.", type: "error" });
     }
@@ -263,7 +239,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       setCancellingMission(null);
       setReasonText("");
       setSelectedFile(null);
-      fetchMissions();
+      // fetchMissions();
 
       // Lifecycle Notifications
       if (mission) {
@@ -309,34 +285,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
   };
 
   // Real-time Sync
-  useEffect(() => {
-    const channel = supabase
-      .channel('missions_view_sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'missions' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setMissions(prev => [payload.new as Mission, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            const newMission = payload.new as Mission;
-            setMissions(prev => prev.map(m => m.id === newMission.id ? { ...m, ...newMission } : m));
-          } else if (payload.eventType === 'DELETE') {
-            setMissions(prev => prev.filter(m => m.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  // Real-time Sync handled by Context
 
   const handleStartMission = async (missionId: string) => {
     // Optimistic Update
-    const previousMissions = [...missions];
-    setMissions(prev => prev.map(m => m.id === missionId ? { ...m, status: 'in_progress' } : m));
+    // Optimistic Update removed to rely on Context/Realtime consistency
+    // const previousMissions = [...missions];
+    // setMissions(prev => prev.map(m => m.id === missionId ? { ...m, status: 'in_progress' } : m));
     setToast({ message: "Mission démarrée !", type: "success" });
 
     try {
@@ -367,7 +322,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       }
     } catch (err) {
       // Revert
-      setMissions(previousMissions);
+      // setMissions(previousMissions);
       setToast({ message: "Erreur lors du démarrage.", type: "error" });
     }
   };
