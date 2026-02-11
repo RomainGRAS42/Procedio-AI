@@ -187,12 +187,10 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
       const fileName = `${mission.id}/${Date.now()}_${cleanName}.${fileExt}`;
       const filePath = `${fileName}`;
       
-      console.log("Attempting upload to:", filePath, "with file type:", file.type);
-      console.log("Bucket:", 'mission-attachments');
-
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('mission-attachments')
         .upload(filePath, file, {
+          upsert: true,
           cacheControl: '3600'
         });
 
