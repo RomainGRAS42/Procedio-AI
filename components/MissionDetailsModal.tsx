@@ -48,6 +48,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [iframeReady, setIframeReady] = useState(false);
   const [showPromoteConfirmation, setShowPromoteConfirmation] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // New state for custom success modal
 
   // Promote Form State
   const [promoteTitle, setPromoteTitle] = useState(mission.title);
@@ -375,9 +376,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
           console.warn("Could not find created procedure to link.");
         }
 
-        alert(
-          "Mission validée ! Le document est en cours d'analyse par l'IA et sera bientôt disponible dans les procédures."
-        );
+        setShowSuccessModal(true); // Show custom success modal
+        setIsSubmitting(false); // Stop loading state
+        return; // Stop here, do not close main modal yet
       }
 
       onClose();
@@ -958,6 +959,42 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-slate-800 border border-slate-700 w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden text-center">
+            <div className="relative z-10">
+              <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 border border-emerald-500/20 shadow-lg shadow-emerald-500/10 animate-bounce-subtle">
+                <i className="fa-solid fa-robot"></i>
+              </div>
+
+              <h3 className="text-white font-black text-2xl mb-4 tracking-tight">
+                Mission Validée !
+              </h3>
+
+              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700 mb-8">
+                <p className="text-slate-300 text-sm font-medium leading-relaxed">
+                  Le document est en cours d'analyse par{" "}
+                  <span className="text-indigo-400 font-bold">l'IA Procedio</span>.
+                  <br />
+                  Il sera bientôt disponible et interrogeable dans la base de connaissances.
+                </p>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="w-full py-4 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
+                Compris
+              </button>
+            </div>
+
+            {/* Decorative background glow */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
