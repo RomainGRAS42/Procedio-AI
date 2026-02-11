@@ -339,9 +339,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
       }
 
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Action error:", err);
-      alert("Une erreur est survenue.");
+      alert(`Une erreur est survenue : ${err.message || "Erreur inconnue"}`);
     } finally {
       setIsSubmitting(false);
     }
