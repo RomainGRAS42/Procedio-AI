@@ -20,7 +20,7 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
   // Priority: 'in_progress' first, then 'assigned'
   const assignedMission = activeMissions.find(m => 
     m.assigned_to === user.id && 
-    (m.status === 'in_progress' || m.status === 'assigned')
+    (m.status === 'in_progress' || m.status === 'assigned' || m.status === 'awaiting_validation')
   );
   
   if (!assignedMission) {
@@ -64,6 +64,7 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
   }
 
   const isInProgress = assignedMission.status === 'in_progress';
+  const isAwaitingValidation = assignedMission.status === 'awaiting_validation';
 
   const getDeadlineStatus = (deadline?: string, createdAt?: string) => {
     if (!deadline) return { label: "Pas de délai fixe", percent: 0, color: "bg-slate-200" };
@@ -111,7 +112,7 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
              </div>
              <div className="flex items-center gap-2">
                 <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase leading-none">
-                  {isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
+                  {isAwaitingValidation ? 'Examen en cours' : isInProgress ? 'Mission en cours' : 'Nouvel Ordre'}
                 </h3>
                 <InfoTooltip text={isInProgress ? 'Objectif stratégique' : 'Assigné par le manager'} />
                 {(assignedMission.urgency === 'high' || assignedMission.urgency === 'critical') && (
@@ -131,9 +132,13 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
                 {dlStatus.label}
               </span>
               <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${
-                isInProgress ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'
+                isAwaitingValidation 
+                  ? 'bg-amber-50 text-amber-700 border-amber-100' 
+                  : isInProgress 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                    : 'bg-slate-50 text-slate-500 border-slate-100'
               }`}>
-                {isInProgress ? 'Actif' : 'Prioritaire'}
+                {isAwaitingValidation ? 'En attente' : isInProgress ? 'Actif' : 'Prioritaire'}
               </span>
             </div>
             
@@ -179,7 +184,12 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
           <i className="fa-solid fa-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
         </button>
 
-        {!isInProgress ? (
+        {isAwaitingValidation ? (
+          <div className="px-6 py-3 bg-amber-50 text-amber-600 rounded-2xl font-black text-[11px] uppercase tracking-widest border border-amber-100 flex items-center gap-3">
+             <i className="fa-solid fa-hourglass-half animate-pulse"></i>
+             En attente de validation
+          </div>
+        ) : !isInProgress ? (
           <button 
             onClick={() => onStartMission(assignedMission.id)}
             className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 hover:-translate-y-1 transition-all shadow-xl active:scale-95 flex items-center gap-3 group/btn"
