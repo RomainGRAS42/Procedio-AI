@@ -111,9 +111,7 @@ const TeamPodium: React.FC = () => {
 
     return (
       <div className="flex-1 bg-white rounded-2xl border border-slate-100 p-4 flex flex-col items-center text-center hover:border-indigo-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden h-full min-h-[160px]">
-        {/* Badge Icon Background */}
-        <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full opacity-10 ${champion.badge_color === 'indigo' ? 'bg-indigo-500' : champion.badge_color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-
+        
         {/* Badge Title Pill */}
         <div className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest mb-3 border ${colorClasses[champion.badge_color]}`}>
           <i className={`fa-solid ${champion.badge_icon} mr-1.5`}></i>

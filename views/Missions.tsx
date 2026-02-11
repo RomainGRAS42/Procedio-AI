@@ -430,14 +430,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
           </div>
         )}
 
-        {mission.assignee_name && (
+        {(mission.assignee_name || (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) && (
           <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
-                {mission.assignee_name.substring(0, 2)}
+                {mission.assignee_name ? mission.assignee_name.substring(0, 2) : <i className="fa-solid fa-users text-[8px]"></i>}
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {mission.status === 'completed' ? 'Complétée par' : mission.status === 'cancelled' ? 'Assignée à' : 'En cours par'} <span className="text-slate-700">{mission.assignee_name}</span>
+                {mission.status === 'completed' ? 'Complétée par' : 
+                 mission.status === 'cancelled' ? 'Annulée' : 
+                 (mission.status === 'open' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) ? 'Disponible pour' : 
+                 'En cours par'} <span className="text-slate-700">{mission.assignee_name || "Toute l'équipe"}</span>
               </p>
             </div>
 
@@ -445,7 +448,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
               {mission.status === 'assigned' && mission.assigned_to === user.id && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleStartMission(mission.id); }}
-                  className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all"
+                  className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all font-black"
                 >
                   Démarrer
                 </button>
@@ -457,19 +460,19 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                      setCompletingMission(mission);
                      setReasonText("");
                    }}
-                   className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all"
+                   className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all font-black"
                 >
                    Terminer
                 </button>
               )}
-              {(mission.status === 'assigned' || mission.status === 'in_progress') && user.role === UserRole.MANAGER && (
+              {(mission.status === 'assigned' || mission.status === 'in_progress' || (mission.status === 'open' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager'))) && (user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
                 <button 
                    onClick={(e) => {
                      e.stopPropagation();
                      setCancellingMission(mission);
                      setReasonText("");
                    }}
-                   className="px-4 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all"
+                   className="px-4 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all font-black"
                 >
                    Annuler
                 </button>
