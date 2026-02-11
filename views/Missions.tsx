@@ -349,8 +349,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       open: { color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Disponible' },
       assigned: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'Assignée' },
       in_progress: { color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'En cours' },
-      awaiting_validation: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'À Valider' },
-      completed: { color: 'text-slate-400', bg: 'bg-slate-50', label: 'Terminée' },
+      awaiting_validation: { color: 'text-white', bg: 'bg-amber-500 shadow-sm', label: 'EN ATTENTE DE VALIDATION' },
+      completed: { color: 'text-slate-500', bg: 'bg-slate-100', label: 'TERMINEE' },
       cancelled: { color: 'text-rose-400', bg: 'bg-rose-50', label: 'Annulée' }
     }[status];
 

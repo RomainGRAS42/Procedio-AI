@@ -112,9 +112,13 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
     };
   };
 
+  // Fetch messages once on mount to get the count for the tab badge
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'chat') {
-      fetchMessages();
       const cleanup = subscribeToMessages();
       return () => {
         cleanup();
@@ -265,16 +269,16 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
         in_progress: "bg-indigo-50 text-indigo-600",
         completed: "bg-slate-50 text-slate-500",
         cancelled: "bg-rose-50 text-rose-500",
-        awaiting_validation: "bg-blue-50 text-blue-600"
+        awaiting_validation: "bg-amber-500 text-white shadow-lg shadow-amber-500/20"
      } as any;
      
      const labels = {
          open: "Disponible",
          assigned: "Assignée",
          in_progress: "En Cours",
-         completed: "Terminée",
+         completed: "TERMINEE",
          cancelled: "Annulée",
-         awaiting_validation: "À Valider"
+         awaiting_validation: "EN ATTENTE DE VALIDATION"
      } as any;
 
      return (
@@ -382,11 +386,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions de gestion</p>
                                                     <div className="flex gap-3">
                                                         <button 
+                                                            onClick={() => handleAction('complete')}
+                                                            className="flex-1 px-4 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs"
+                                                        >
+                                                            <i className="fa-solid fa-check"></i>
+                                                            Valider Mission
+                                                        </button>
+                                                        <button 
                                                             onClick={() => handleAction('cancel')}
                                                             className="flex-1 px-4 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors flex items-center justify-center gap-2 text-xs"
                                                         >
                                                             <i className="fa-solid fa-rotate-left"></i>
-                                                            Demander Révision
+                                                            Refuser / Révision
                                                         </button>
                                                         {attachmentUrl && (
                                                             <button 
