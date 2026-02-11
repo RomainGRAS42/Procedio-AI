@@ -406,32 +406,62 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
 
                                             {/* Manager retroactive actions */}
                                             {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
-                                                <div className="pt-4 border-t border-slate-100 space-y-4">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions de gestion</p>
-                                                    <div className="flex gap-3">
+                                                <div className="pt-6 border-t border-slate-100 space-y-6">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilotage de la mission</p>
+                                                        {(!completionNotes.trim()) && (
+                                                            <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest animate-pulse">
+                                                                Saisir un motif pour refuser
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-3 gap-4">
                                                         <button 
-                                                            onClick={() => handleAction('complete')}
-                                                            className="flex-1 px-4 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs"
+                                                            onClick={() => {
+                                                                if (!completionNotes.trim()) {
+                                                                    alert("Merci de saisir un motif de refus ou un feedback pour le technicien.");
+                                                                    return;
+                                                                }
+                                                                handleAction('cancel');
+                                                            }}
+                                                            className={`flex flex-col items-center justify-center gap-3 p-4 rounded-3xl transition-all group border-2 ${
+                                                                !completionNotes.trim() 
+                                                                ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed' 
+                                                                : 'bg-rose-50 border-rose-100 hover:bg-rose-100 hover:border-rose-200 active:scale-95'
+                                                            }`}
                                                         >
-                                                            <i className="fa-solid fa-check"></i>
-                                                            Valider Mission
+                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg transition-transform group-hover:-rotate-12 ${
+                                                                !completionNotes.trim() ? 'bg-slate-200 text-slate-400' : 'bg-white text-rose-500 shadow-sm'
+                                                            }`}>
+                                                                <i className="fa-solid fa-rotate-left"></i>
+                                                            </div>
+                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                                                !completionNotes.trim() ? 'text-slate-400' : 'text-rose-600'
+                                                            }`}>Refuser</span>
                                                         </button>
-                                                        <button 
-                                                            onClick={() => handleAction('cancel')}
-                                                            className="flex-1 px-4 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors flex items-center justify-center gap-2 text-xs"
-                                                        >
-                                                            <i className="fa-solid fa-rotate-left"></i>
-                                                            Refuser / Révision
-                                                        </button>
+
                                                         {attachmentUrl && (
                                                             <button 
                                                                 onClick={() => handleAction('promote')}
-                                                                className="flex-1 px-4 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs"
+                                                                className="flex flex-col items-center justify-center gap-3 p-4 bg-amber-50 border-2 border-amber-100 rounded-3xl transition-all group hover:bg-amber-100 hover:border-amber-200 active:scale-95 shadow-sm"
                                                             >
-                                                                <i className="fa-solid fa-star"></i>
-                                                                Promouvoir
+                                                                <div className="w-12 h-12 rounded-2xl bg-white text-amber-500 shadow-sm flex items-center justify-center text-lg transition-transform group-hover:scale-110">
+                                                                    <i className="fa-solid fa-star"></i>
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Promouvoir</span>
                                                             </button>
                                                         )}
+
+                                                        <button 
+                                                            onClick={() => handleAction('complete')}
+                                                            className="flex flex-col items-center justify-center gap-3 p-4 bg-emerald-50 border-2 border-emerald-100 rounded-3xl transition-all group hover:bg-emerald-100 hover:border-emerald-200 active:scale-95 shadow-sm"
+                                                        >
+                                                            <div className="w-12 h-12 rounded-2xl bg-white text-emerald-500 shadow-sm flex items-center justify-center text-lg transition-transform group-hover:rotate-12">
+                                                                <i className="fa-solid fa-check"></i>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Valider</span>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             )}
