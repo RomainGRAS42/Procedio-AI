@@ -120,7 +120,7 @@ const Procedures: React.FC<ProceduresProps> = ({
   }, [currentFolder, fetchStructure]);
 
   return (
-    <div className="space-y-12 h-full flex flex-col pb-10 px-4 md:px-10 animate-fade-in">
+    <div className="space-y-12 h-full flex flex-col pb-10 pt-8 px-4 md:px-10 animate-fade-in">
       {/* Expert IA Modal moved to App.tsx */}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">

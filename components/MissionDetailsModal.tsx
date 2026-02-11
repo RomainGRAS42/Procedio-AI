@@ -47,6 +47,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [iframeReady, setIframeReady] = useState(false);
+  const [showPromoteConfirmation, setShowPromoteConfirmation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Delay iframe rendering to fix white screen issue on initial load (animation timing)
@@ -594,15 +595,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                                 {/* Option 2: Promote (Validation + Procedure) - Only if attachment */}
                                 {attachmentUrl && (
                                   <button
-                                    onClick={() => {
-                                      if (
-                                        window.confirm(
-                                          "Cette action va valider la mission, verser l'XP au technicien et créer une nouvelle procédure publique. Continuer ?"
-                                        )
-                                      ) {
-                                        handleAction("promote");
-                                      }
-                                    }}
+                                    onClick={() => setShowPromoteConfirmation(true)}
                                     disabled={!completionNotes.trim()}
                                     className={`w-full py-4 bg-amber-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 ${
                                       !completionNotes.trim()
@@ -797,6 +790,44 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Confirmation Modal Overlay */}
+        {showPromoteConfirmation && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-slate-800 border border-slate-700 w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden text-center">
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6 border border-amber-500/20">
+                  <i className="fa-solid fa-star"></i>
+                </div>
+                <h3 className="text-white font-black text-xl mb-3">Confirmer la promotion</h3>
+                <p className="text-slate-300 text-sm font-medium leading-relaxed mb-8">
+                  Cette action va <strong className="text-white">valider la mission</strong> (XP
+                  versée) et{" "}
+                  <strong className="text-white">créer une nouvelle procédure publique</strong>{" "}
+                  visible par toute l'équipe.
+                </p>
+                <div className="flex gap-4 justify-center">
+                  <button
+                    onClick={() => setShowPromoteConfirmation(false)}
+                    className="flex-1 py-3 rounded-xl border border-slate-600 text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all">
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPromoteConfirmation(false);
+                      handleAction("promote");
+                    }}
+                    className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all">
+                    Confirmer
+                  </button>
+                </div>
+              </div>
+              {/* Decorative background glow */}
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body
