@@ -287,7 +287,15 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         // Clear notes after refusal to avoid confusion
         setCompletionNotes("");
       } else if (action === "promote") {
-        // 1. Create the procedure
+        // 1. Validate the mission first (XP + Status)
+        const { error: validateError } = await supabase.rpc("validate_mission_completion", {
+          mission_id: mission.id,
+          feedback: completionNotes || "Excellent travail, promu en procédure.",
+        });
+
+        if (validateError) throw validateError;
+
+        // 2. Create the procedure
         const { data: proc, error: procError } = await supabase
           .from("procedures")
           .insert({
@@ -302,19 +310,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
         if (procError) throw procError;
 
-        // 2. Mark mission as completed (if not already) and link procedure
+        // 3. Link procedure to mission
         const { error: updateError } = await supabase
           .from("missions")
           .update({
-            status: "completed",
             procedure_id: proc.id,
-            completion_notes: completionNotes || "Promu en procédure officielle.",
+            completion_notes: completionNotes || "Mission validée et promue en procédure.",
           })
           .eq("id", mission.id);
 
         if (updateError) throw updateError;
 
-        alert("Procédure créée avec succès !");
+        alert("Mission validée et procédure créée avec succès !");
       }
 
       onClose();
@@ -595,8 +602,19 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                               </div>
                               {attachmentUrl && (
                                 <button
-                                  onClick={() => handleAction("promote")}
-                                  className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2">
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        "Cette action va valider la mission, verser l'XP au technicien et créer une nouvelle procédure publique. Continuer ?"
+                                      )
+                                    ) {
+                                      handleAction("promote");
+                                    }
+                                  }}
+                                  disabled={!completionNotes.trim()}
+                                  className={`w-full py-3 bg-amber-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 ${
+                                    !completionNotes.trim() ? "opacity-50 cursor-not-allowed" : ""
+                                  }`}>
                                   <i className="fa-solid fa-star"></i> Promouvoir en Procédure
                                 </button>
                               )}
