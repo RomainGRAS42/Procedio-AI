@@ -21,22 +21,15 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
   const [completionNotes, setCompletionNotes] = useState(mission.completion_notes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      fetchMessages();
-      subscribeToMessages();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, activeTab]);
-
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, activeTab]);
 
   const fetchMessages = async () => {
     setLoadingMessages(true);
@@ -44,13 +37,15 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
       .from('mission_messages')
       .select(`
         *,
-        user:user_profiles!user_id(first_name, last_name, role)
+        user:user_profiles!mission_messages_user_id_fkey_profiles(first_name, last_name, role)
       `)
       .eq('mission_id', mission.id)
       .order('created_at', { ascending: true });
 
-    if (!error && data) {
-      setMessages(data);
+    if (error) {
+      console.error("Error fetching messages:", error);
+    } else {
+      setMessages(data || []);
     }
     setLoadingMessages(false);
   };
@@ -62,15 +57,37 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'mission_messages', filter: `mission_id=eq.${mission.id}` },
         async (payload) => {
-          // Fetch user details for the new message
+          console.log("New message payload:", payload);
+          
+          // Fetch user details for the new message to match the state structure
           const { data: userData } = await supabase
             .from('user_profiles')
             .select('first_name, last_name, role')
             .eq('id', payload.new.user_id)
             .single();
+          
+          const newMsg = { 
+            ...payload.new, 
+            user: userData || { first_name: 'Utilisateur', last_name: '', role: 'technicien' } 
+          };
 
-          const newMsg = { ...payload.new, user: userData };
-          setMessages(prev => [...prev, newMsg]);
+          setMessages(prev => {
+            // Check if this message is already present (e.g., from optimistic update)
+            const exists = prev.find(m => 
+              m.id === newMsg.id || 
+              (m.tempId && m.content === newMsg.content && m.user_id === newMsg.user_id)
+            );
+
+            if (exists) {
+              // If it exists and was an optimistic message, replace it with the real one
+              if (exists.tempId && exists.id !== newMsg.id) {
+                return prev.map(m => m.tempId === exists.tempId ? newMsg : m);
+              }
+              return prev;
+            }
+            
+            return [...prev, newMsg];
+          });
         }
       )
       .subscribe();
@@ -80,37 +97,62 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
     };
   };
 
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      fetchMessages();
+      const cleanup = subscribeToMessages();
+      return () => {
+        cleanup();
+      };
+    }
+  }, [activeTab]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
+    const messageContent = newMessage.trim();
+    const tempId = 'temp-' + Date.now();
+    
+    // Optimistic message
+    const optimisticMsg = {
+      id: tempId,
+      tempId: tempId,
+      mission_id: mission.id,
+      user_id: user.id,
+      content: messageContent,
+      created_at: new Date().toISOString(),
+      user: {
+        first_name: user.firstName || 'Moi',
+        last_name: user.lastName || '',
+        role: user.role
+      }
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setNewMessage("");
+
     try {
-      await supabase.from('mission_messages').insert({
+      const { data, error } = await supabase.from('mission_messages').insert({
         mission_id: mission.id,
         user_id: user.id,
-        content: newMessage.trim()
-      });
-      setNewMessage("");
+        content: messageContent
+      }).select().single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setMessages(prev => prev.map(m => m.tempId === tempId ? { ...data, user: optimisticMsg.user } : m));
+      }
     } catch (error) {
       console.error("Error sending message:", error);
+      setMessages(prev => prev.filter(m => m.tempId !== tempId));
     }
   };
 
   const handleAction = async (action: 'claim' | 'start' | 'complete' | 'cancel') => {
     setIsSubmitting(true);
-    if (action === 'claim') {
-        // Logic handled by parent but we simulate here for closing modal maybe? 
-        // No, parent expects updateStatus.
-        // But parent's handleClaimMission might need to be called differently or we adapt onUpdateStatus to handle 'assigned'
-        // Let's assume onUpdateStatus can handle 'assigned' for claim.
-        // Actually Missions.tsx handleClaimMission updates to 'assigned' and user.id.
-        // We might need a specific prop for claiming or update onUpdateStatus signature.
-        // For simplicity, let's trigger it directly if user is tech.
-        // The parent onUpdateStatus takes (id, status, notes).
-        // Let's rely on parent refreshing data.
-    }
     
-    // We'll delegate to the parent prop mostly.
-    // For 'complete', we pass the notes.
+    // Delegate to the parent prop mostly.
     if (action === 'complete') {
         onUpdateStatus(mission.id, 'completed', completionNotes);
     } else if (action === 'start') {
@@ -119,11 +161,6 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
         onUpdateStatus(mission.id, 'cancelled', completionNotes); // Notes as reason
     }
     
-    // If successful, the parent re-renders or we close.
-    // Ideally we wait for parent. But onUpdateStatus is void in prop.
-    // We can assume success or pass a callback.
-    // Let's just close modal on success actions like 'claim' (which is quick).
-    // For 'complete' usually we wait, but let's keep UI responsive.
     onClose(); 
     setIsSubmitting(false);
   };
@@ -137,7 +174,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
         completed: "bg-slate-50 text-slate-500",
         cancelled: "bg-rose-50 text-rose-500",
         awaiting_validation: "bg-blue-50 text-blue-600"
-     }[status] || "bg-gray-50 text-gray-500";
+     } as any;
      
      const labels = {
          open: "Disponible",
@@ -146,11 +183,11 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
          completed: "Terminée",
          cancelled: "Annulée",
          awaiting_validation: "À Valider"
-     }[status] || status;
+     } as any;
 
      return (
-         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${styles}`}>
-             {labels}
+         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${styles[status] || "bg-gray-50 text-gray-500"}`}>
+             {labels[status] || status}
          </span>
      );
   };
@@ -215,7 +252,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                         </div>
 
                         {/* Action Zone for Technician */}
-                        {(user.role === UserRole.TECHNICIAN || user.role === UserRole.MANAGER) && (
+                        {(user.role === UserRole.TECHNICIAN || user.role === UserRole.MANAGER || (user.role as any) === 'technicien') && (
                             <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
                                     {mission.status === 'completed' ? 'Rapport de Mission' : 'Espace de Travail'}
@@ -227,7 +264,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                     </div>
                                 ) : (
                                     (mission.status === 'in_progress' && mission.assigned_to === user.id) || 
-                                    (mission.status === 'awaiting_validation' && user.role === UserRole.MANAGER) ? (
+                                    (mission.status === 'awaiting_validation' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) ? (
                                         <div className="space-y-4">
                                             <label className="text-xs font-bold text-slate-700">
                                                 {user.role === UserRole.MANAGER ? "Feedback de validation / refus" : "Notes de réalisation & Liens"}
@@ -239,7 +276,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                 onChange={(e) => setCompletionNotes(e.target.value)}
                                             />
                                             <div className="flex justify-end gap-3">
-                                                {user.role === UserRole.MANAGER && (
+                                                {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
                                                     <button 
                                                         onClick={() => handleAction('cancel')} // Using cancel as "Refuse/Redo"
                                                         className="px-6 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors"
@@ -251,7 +288,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                     onClick={() => handleAction('complete')}
                                                     className="px-8 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
                                                 >
-                                                    {user.role === UserRole.MANAGER ? "Valider la Mission" : "Soumettre le Travail"}
+                                                    {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') ? "Valider la Mission" : "Soumettre le Travail"}
                                                 </button>
                                             </div>
                                         </div>
@@ -315,7 +352,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                 // Chat Tab
                 <div className="flex flex-col h-full bg-white">
                     <div className="flex-1 overflow-y-auto p-8 space-y-6" ref={chatContainerRef}>
-                        {messages.length === 0 ? (
+                        {messages.length === 0 && !loadingMessages ? (
                             <div className="text-center py-20 text-slate-300">
                                 <i className="fa-regular fa-comments text-4xl mb-4"></i>
                                 <p>Aucun message. Commencez la discussion !</p>
@@ -329,7 +366,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                             <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
                                             <div className="mt-2 flex items-center justify-between gap-4 opacity-70">
                                                 <span className="text-[10px] uppercase font-bold tracking-wider">
-                                                    {msg.user?.first_name}
+                                                    {msg.user?.first_name || 'Utilisateur'}
                                                 </span>
                                                 <span className="text-[10px]">
                                                     {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -339,6 +376,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                     </div>
                                 );
                             })
+                        )}
+                        {loadingMessages && (
+                             <div className="text-center py-10 text-slate-400 italic">Chargement...</div>
                         )}
                     </div>
                     <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-4">
