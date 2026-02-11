@@ -53,7 +53,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   useEffect(() => {
     if (activeTab === "details") {
       setIframeReady(false);
-      const timer = setTimeout(() => setIframeReady(true), 300);
+      const timer = setTimeout(() => setIframeReady(true), 500);
       return () => clearTimeout(timer);
     }
   }, [activeTab]);
@@ -429,10 +429,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 px-2">
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider text-right text-slate-400">
-                      Assigné
-                      <br />à
+                  <div className="flex items-center gap-3 px-4 border-l border-slate-100 pl-6 ml-2">
+                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                      Assigné à
                     </div>
                     {mission.assignee ? (
                       <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100">
@@ -677,9 +676,10 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                       ) : attachmentUrl.toLowerCase().endsWith(".pdf") ? (
                         iframeReady ? (
                           <iframe
-                            key={attachmentUrl}
+                            key={`${attachmentUrl}-${iframeReady}`}
                             src={`${attachmentUrl}#toolbar=0`}
-                            className="w-full h-full border-none"
+                            className="w-full h-full border-none block"
+                            allow="fullscreen"
                             title="PDF Preview"></iframe>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-slate-50">
