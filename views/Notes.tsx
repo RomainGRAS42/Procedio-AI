@@ -196,6 +196,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
             author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : "Inconnu",
             status: n.status || "private",
             category: n.category || "general",
+            folder_id: n.folder_id
           }));
 
         // Client-side filtering as double security & Organization
