@@ -361,6 +361,140 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
     );
   };
 
+  const renderMissionCard = (mission: Mission) => {
+    return (
+      <div 
+        key={mission.id} 
+        onClick={() => setSelectedMission(mission)}
+        className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden cursor-pointer"
+      >
+        {/* Urgency accent border */}
+        <div className={`absolute top-0 left-0 w-2 h-full ${
+          mission.urgency === 'critical' ? 'bg-rose-500' :
+          mission.urgency === 'high' ? 'bg-orange-500' :
+          mission.urgency === 'medium' ? 'bg-indigo-500' : 'bg-slate-200'
+        } opacity-20`}></div>
+
+        <div className="flex justify-between items-start mb-6">
+          <UrgencyBadge urgency={mission.urgency} />
+          <StatusBadge status={mission.status} />
+        </div>
+
+        <div className="space-y-4">
+          <h4 className="text-xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
+            {mission.title}
+          </h4>
+          <p className="text-sm text-slate-500 font-medium line-clamp-3 leading-relaxed">
+            {mission.description}
+          </p>
+        </div>
+
+        <div className="mt-8 flex items-end justify-between">
+          <div>
+            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Récompense</span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs border border-amber-100 font-black">
+                {mission.xp_reward}
+              </div>
+              <span className="text-xs font-black text-slate-600 uppercase tracking-tight">XP</span>
+            </div>
+          </div>
+
+          {mission.status === 'open' && user.role === UserRole.TECHNICIAN && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleClaimMission(mission.id); }}
+              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
+            >
+              Réclamer
+            </button>
+          )}
+
+          {mission.status === 'awaiting_validation' && user.role === UserRole.MANAGER && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCompletingMission(mission);
+                setReasonText(mission.completion_notes || "");
+              }}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2"
+            >
+              <i className="fa-solid fa-microscope"></i>
+              Réviser Livrable
+            </button>
+          )}
+        </div>
+
+        {mission.deadline && (
+          <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100 w-fit">
+            <i className="fa-solid fa-calendar-day"></i>
+            À rendre avant : {new Date(mission.deadline).toLocaleDateString('fr-FR')}
+          </div>
+        )}
+
+        {mission.assignee_name && (
+          <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
+                {mission.assignee_name.substring(0, 2)}
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {mission.status === 'completed' ? 'Complétée par' : mission.status === 'cancelled' ? 'Assignée à' : 'En cours par'} <span className="text-slate-700">{mission.assignee_name}</span>
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              {mission.status === 'assigned' && mission.assigned_to === user.id && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleStartMission(mission.id); }}
+                  className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all"
+                >
+                  Démarrer
+                </button>
+              )}
+              {mission.status === 'in_progress' && mission.assigned_to === user.id && (
+                <button 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     setCompletingMission(mission);
+                     setReasonText("");
+                   }}
+                   className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all"
+                >
+                   Terminer
+                </button>
+              )}
+              {(mission.status === 'assigned' || mission.status === 'in_progress') && user.role === UserRole.MANAGER && (
+                <button 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     setCancellingMission(mission);
+                     setReasonText("");
+                   }}
+                   className="px-4 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all"
+                >
+                   Annuler
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {mission.status === 'completed' && mission.completion_notes && (
+          <div className="mt-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+             <span className="block text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1 italic">Bilan d'expertise</span>
+             <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">{mission.completion_notes}</p>
+          </div>
+        )}
+        {mission.status === 'cancelled' && mission.cancellation_reason && (
+          <div className="mt-4 p-4 bg-rose-50/50 border border-rose-100 rounded-2xl">
+             <span className="block text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1 italic">Motif d'annulation</span>
+             <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">{mission.cancellation_reason}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-12 animate-fade-in pb-20">
       
@@ -397,153 +531,68 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           
           {/* Main Pipeline/List */}
-          <div className="xl:col-span-2 space-y-6">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">
-              {user.role === UserRole.MANAGER ? "Pipeline des Missions" : "Missions Disponibles"}
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {missions.filter(m => user.role === UserRole.MANAGER ? true : (m.status === 'open' || m.assigned_to === user.id)).map((mission) => (
-                <div 
-                  key={mission.id} 
-                  onClick={() => setSelectedMission(mission)}
-                  className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden cursor-pointer"
-                >
-                  {/* Urgency accent border */}
-                  <div className={`absolute top-0 left-0 w-2 h-full ${
-                    mission.urgency === 'critical' ? 'bg-rose-500' :
-                    mission.urgency === 'high' ? 'bg-orange-500' :
-                    mission.urgency === 'medium' ? 'bg-indigo-500' : 'bg-slate-200'
-                  } opacity-20`}></div>
-
-                  <div className="flex justify-between items-start mb-6">
-                    <UrgencyBadge urgency={mission.urgency} />
-                    <StatusBadge status={mission.status} />
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
-                      {mission.title}
-                    </h4>
-                    <p className="text-sm text-slate-500 font-medium line-clamp-3 leading-relaxed">
-                      {mission.description}
-                    </p>
-                  </div>
-
-                  <div className="mt-8 flex items-end justify-between">
-                    <div>
-                      <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Récompense</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs border border-amber-100 font-black">
-                          {mission.xp_reward}
-                        </div>
-                        <span className="text-xs font-black text-slate-600 uppercase tracking-tight">XP</span>
-                      </div>
+          <div className="xl:col-span-2 space-y-12">
+            {user.role === UserRole.MANAGER ? (
+              <div className="space-y-6">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">
+                  Pipeline des Missions
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {missions.map((mission) => renderMissionCard(mission))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Personal Missions Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs shadow-lg shadow-indigo-200">
+                      <i className="fa-solid fa-user-check"></i>
                     </div>
-
-                    {mission.status === 'open' && user.role === UserRole.TECHNICIAN && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleClaimMission(mission.id); }}
-                        className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
-                      >
-                        Réclamer
-                      </button>
-                    )}
-
-                    {mission.status === 'awaiting_validation' && user.role === UserRole.MANAGER && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCompletingMission(mission);
-                          setReasonText(mission.completion_notes || "");
-                        }}
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2"
-                      >
-                        <i className="fa-solid fa-microscope"></i>
-                        Réviser Livrable
-                      </button>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
+                      Mes Missions Personnelles
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {missions.filter(m => m.assigned_to === user.id).length > 0 ? (
+                      missions.filter(m => m.assigned_to === user.id).map((mission) => renderMissionCard(mission))
+                    ) : (
+                      <div className="md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucune mission personnelle en cours</p>
+                      </div>
                     )}
                   </div>
-
-                  {mission.deadline && (
-                    <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100 w-fit">
-                      <i className="fa-solid fa-calendar-day"></i>
-                      À rendre avant : {new Date(mission.deadline).toLocaleDateString('fr-FR')}
-                    </div>
-                  )}
-
-                  {mission.assignee_name && (
-                    <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
-                          {mission.assignee_name.substring(0, 2)}
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          {mission.status === 'completed' ? 'Complétée par' : mission.status === 'cancelled' ? 'Assignée à' : 'En cours par'} <span className="text-slate-700">{mission.assignee_name}</span>
-                        </p>
-                      </div>
-
-                      {/* Action Buttons for Lifecycle */}
-                      <div className="flex gap-2">
-                        {mission.status === 'assigned' && mission.assigned_to === user.id && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleStartMission(mission.id); }}
-                            className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all"
-                          >
-                            Démarrer
-                          </button>
-                        )}
-                        {mission.status === 'in_progress' && mission.assigned_to === user.id && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCompletingMission(mission);
-                              setReasonText("");
-                            }}
-                            className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all"
-                          >
-                            Terminer
-                          </button>
-                        )}
-                        {(mission.status === 'assigned' || mission.status === 'in_progress') && user.role === UserRole.MANAGER && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCancellingMission(mission);
-                              setReasonText("");
-                            }}
-                            className="px-4 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all"
-                          >
-                            Annuler
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Display Reasons */}
-                  {mission.status === 'completed' && mission.completion_notes && (
-                    <div className="mt-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                       <span className="block text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1 italic">Bilan d'expertise</span>
-                       <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">{mission.completion_notes}</p>
-                    </div>
-                  )}
-                  {mission.status === 'cancelled' && mission.cancellation_reason && (
-                    <div className="mt-4 p-4 bg-rose-50/50 border border-rose-100 rounded-2xl">
-                       <span className="block text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1 italic">Motif d'annulation</span>
-                       <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">{mission.cancellation_reason}</p>
-                    </div>
-                  )}
                 </div>
-              ))}
 
-              {missions.length === 0 && (
-                <div className="md:col-span-2 py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
-                  <i className="fa-solid fa-box-open text-4xl text-slate-300 mb-4 opacity-50"></i>
-                  <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Aucune mission pour le moment</p>
+                {/* Team Missions Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-4 pt-6 border-t border-slate-100">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs shadow-lg shadow-emerald-200">
+                      <i className="fa-solid fa-users"></i>
+                    </div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
+                      Missions d'Équipe
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {missions.filter(m => m.status === 'open').length > 0 ? (
+                      missions.filter(m => m.status === 'open').map((mission) => renderMissionCard(mission))
+                    ) : (
+                      <div className="md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucune mission d'équipe disponible</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
+
+            {missions.length === 0 && (
+              <div className="py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                <i className="fa-solid fa-box-open text-4xl text-slate-300 mb-4 opacity-50"></i>
+                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Aucune mission pour le moment</p>
+              </div>
+            )}
           </div>
 
           {/* Right Sidebar - Info & Stats */}
