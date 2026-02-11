@@ -517,14 +517,14 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-slate-700 ml-1">
                             {user.role === UserRole.MANAGER || (user.role as any) === "manager"
-                              ? "Feedback / Motif refus"
+                              ? "Feedback / Motif (Requis)"
                               : "Notes de réalisation"}
                           </label>
                           <textarea
                             className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none shadow-inner text-sm"
                             placeholder={
                               user.role === UserRole.MANAGER || (user.role as any) === "manager"
-                                ? "Raison du refus ou commentaire..."
+                                ? "Indiquez votre feedback pour valider ou la raison du refus..."
                                 : "Décrivez le travail réalisé..."
                             }
                             value={completionNotes}
@@ -574,19 +574,16 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
                                   onClick={() => handleAction("complete")}
-                                  className="py-4 bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
+                                  disabled={!completionNotes.trim()}
+                                  className={`py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                    !completionNotes.trim()
+                                      ? "bg-emerald-100 text-emerald-300 cursor-not-allowed shadow-none"
+                                      : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
+                                  }`}>
                                   <i className="fa-solid fa-check"></i> Valider
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    if (!completionNotes.trim()) {
-                                      alert(
-                                        "Merci de saisir un motif de refus ou un feedback pour le technicien."
-                                      );
-                                      return;
-                                    }
-                                    handleAction("cancel");
-                                  }}
+                                  onClick={() => handleAction("cancel")}
                                   disabled={!completionNotes.trim()}
                                   className={`py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${
                                     !completionNotes.trim()
@@ -603,6 +600,16 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                                   <i className="fa-solid fa-star"></i> Promouvoir en Procédure
                                 </button>
                               )}
+
+                              {/* Feedback required indicator */}
+                              <div className="flex justify-center">
+                                {!completionNotes.trim() && (
+                                  <span className="text-[9px] font-black text-slate-400 uppercase animate-pulse flex items-center gap-1">
+                                    <i className="fa-solid fa-circle-info text-indigo-400"></i>{" "}
+                                    Feedback requis pour valider ou refuser
+                                  </span>
+                                )}
+                              </div>
                             </>
                           ) : (
                             <button
