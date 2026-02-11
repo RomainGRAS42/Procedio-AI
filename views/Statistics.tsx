@@ -6,6 +6,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis,
   AreaChart, Area, XAxis, YAxis, CartesianGrid
 } from 'recharts';
+import KPIDetailsModal from '../components/KPIDetailsModal';
 import InfoTooltip from '../components/InfoTooltip';
 import LoadingState from '../components/LoadingState';
 import CustomToast from '../components/CustomToast';
@@ -44,6 +45,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     totalViews: 0
   });
 
+  // Modal State
+  const [modalConfig, setModalConfig] = useState<{ title: string; type: 'urgent' | 'redZone'; items: any[] } | null>(null);
+  const [redZoneList, setRedZoneList] = useState<any[]>([]);
+  const [urgentList, setUrgentList] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchAllStats = async () => {
       // Si on a déjà des données en cache, on ne montre pas le loader global
@@ -78,7 +84,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     try {
       const { data: procs } = await supabase
         .from('procedures')
-        .select('uuid, updated_at, created_at, views');
+        .select('uuid, title, updated_at, created_at, views');
 
       if (!procs) return;
 
@@ -96,6 +102,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       let old = 0;
       let redZoneCount = 0;
       let totalViews = 0;
+      const redZoneItems: any[] = [];
 
       procs.forEach((p: any) => {
         const date = new Date(p.updated_at || p.created_at);
@@ -103,9 +110,18 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         else if (date > oneYearAgo) aging++;
         else old++;
 
-        if (!referentSet.has(p.uuid)) redZoneCount++;
+        if (!referentSet.has(p.uuid)) {
+          redZoneCount++;
+          redZoneItems.push({
+            id: p.uuid,
+            label: p.title || "Procédure sans titre",
+            sublabel: "Aucun référent assigné"
+          });
+        }
         totalViews += (p.views || 0);
       });
+
+      setRedZoneList(redZoneItems);
 
       const total = procs.length;
       setGlobalKPIs(prev => ({ 
@@ -142,7 +158,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .select('term, search_count', { count: 'exact' })
         .eq('status', 'pending')
         .order('search_count', { ascending: false })
-        .limit(6);
+        .limit(20); // Limit to top 20 for the list
 
       // 2. Calculate Search Success based on all search logs vs failures
       const { count: failCount } = await supabase
@@ -162,13 +178,20 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       setGlobalKPIs(prev => ({ ...prev, searchSuccess: successPct, urgentCount: urgentCount || 0 }));
 
       if (opportunities) {
-        const mapped = opportunities.map((opp: any) => ({
+        const mapped = opportunities.slice(0, 6).map((opp: any) => ({
           term: opp.term,
           count: opp.search_count,
           trend: 'stable'
         }));
         setMissedOpportunities(mapped);
         cacheStore.set('stats_missed', mapped);
+
+        // Store full list for modal
+        setUrgentList(opportunities.map((opp: any) => ({
+          label: opp.term,
+          sublabel: `${opp.search_count} recherche(s) échouée(s)`,
+          count: opp.search_count
+        })));
       }
       
       cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccess: successPct, urgentCount: urgentCount || 0 });
@@ -336,34 +359,24 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
   };
 
-  const handleCreateRedZoneMission = async () => {
-    if (globalKPIs.redZone === 0) {
-      setToast({ message: "Aucune procédure en Zone Rouge ! Excellent travail.", type: "info" });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('missions')
-        .insert([{
-          title: "Action Requise : Attribution de Référents",
-          description: `Afin de maintenir l'excellence et la jour de notre base de connaissances, ${globalKPIs.redZone} procédures nécessitent l'assignation d'un référent expert. Merci de régulariser la situation.`,
-          xp_reward: 100,
-          urgency: 'high',
-          assigned_to: null, // Open to team
-          created_by: user.id,
-          status: 'open',
-          targetType: 'team'
-        }]);
-
-      if (error) throw error;
-
-      setToast({ message: "Mission de fiabilisation lancée avec succès !", type: "success" });
-    } catch (err) {
-      console.error("Error creating mission:", err);
-      setToast({ message: "Impossible de créer la mission.", type: "error" });
+  const handleKpiClick = (type: 'urgent' | 'redZone') => {
+    if (type === 'urgent') {
+      setModalConfig({
+        title: 'Recherches Critiques (Manquantes)',
+        type: 'urgent',
+        items: urgentList
+      });
+    } else {
+      setModalConfig({
+        title: 'Procédures Orphelines (Zone Rouge)',
+        type: 'redZone',
+        items: redZoneList
+      });
     }
   };
+
+
+  // ... (keep handleCreateRedZoneMission for backward compatibility or remove if fully replaced, but user asked for popup on click now)
 
   if (user.role !== UserRole.MANAGER) {
     return (
@@ -399,7 +412,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-triangle-exclamation" 
             color="text-rose-600"
             bg="bg-rose-50"
-            tooltip="Recherches échouées nécessitant une création de contenu immédiate (Alertes Critiques)."
+            tooltip="Recherches échouées nécessitant une création de contenu immédiate (Alertes Critiques). Cliquez pour voir."
+            onClick={() => handleKpiClick('urgent')}
           />
           <KPICard 
             label="Fiabilité" 
@@ -423,8 +437,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-triangle-exclamation" 
             color="text-rose-600"
             bg="bg-rose-50"
-            tooltip="Risque de Perte : Procédures sans référent assigné. Cliquez pour créer une mission de régularisation."
-            onClick={handleCreateRedZoneMission}
+            tooltip="Risque de Perte : Procédures sans référent assigné. Cliquez pour voir."
+            onClick={() => handleKpiClick('redZone')}
           />
           <KPICard 
             label="Intensité Team" 
@@ -437,6 +451,15 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           />
         </div>
       </div>
+
+      {modalConfig && (
+        <KPIDetailsModal 
+          title={modalConfig.title}
+          type={modalConfig.type}
+          items={modalConfig.items}
+          onClose={() => setModalConfig(null)}
+        />
+      )}
 
       {loading ? (
         <LoadingState message="Synthèse analytique de votre base..." />

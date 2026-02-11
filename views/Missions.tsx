@@ -5,6 +5,7 @@ import InfoTooltip from '../components/InfoTooltip';
 import LoadingState from '../components/LoadingState';
 import CustomToast from '../components/CustomToast';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 
 interface MissionsProps {
   user: User;
@@ -46,6 +47,20 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       fetchTechnicians();
     }
   }, [user]);
+
+  // Handle Redirection from Statistics
+  const location = useLocation();
+  useEffect(() => {
+    if (location.state && (location.state as any).createMission) {
+      const { initialData } = location.state as any;
+      if (initialData) {
+        setNewMission(prev => ({ ...prev, ...initialData }));
+        setShowCreateModal(true);
+      }
+      // Clean up state to prevent reopening on refresh (requires router replacement history usually, but simple check works for now)
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const fetchTechnicians = async () => {
     try {
