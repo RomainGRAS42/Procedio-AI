@@ -66,6 +66,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     title: string;
     content: string;
     is_protected: boolean;
+    folder_id?: string;
   } | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const activeEditorRef = useRef<HTMLDivElement | null>(null);
@@ -570,6 +571,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       title: viewingNote.title,
       content: viewingNote.content,
       is_protected: viewingNote.is_protected,
+      folder_id: viewingNote.folder_id
     });
     setTimeout(() => {
       editorRef.current?.focus();
@@ -670,6 +672,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         title: viewDraft.title.trim(),
         content: viewDraft.content,
         is_protected: viewDraft.is_protected,
+        folder_id: viewDraft.folder_id || null,
         updated_at: new Date().toISOString(),
       };
       
@@ -1392,7 +1395,21 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   )}
 
                   {viewingEdit ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
+                       <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+                          <i className="fa-solid fa-folder text-slate-400 text-[10px]"></i>
+                          <select 
+                            value={viewDraft?.folder_id || ""}
+                            onChange={(e) => setViewDraft(prev => prev ? {...prev, folder_id: e.target.value} : null)}
+                            className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer max-w-[100px] truncate"
+                          >
+                            <option value="">Sans Dossier</option>
+                            {folders.map(f => (
+                              <option key={f.id} value={f.id}>{f.name}</option>
+                            ))}
+                          </select>
+                       </div>
+
                        <button
                          onClick={saveInlineEdit}
                          disabled={saving || !viewDraft?.title.trim()}
