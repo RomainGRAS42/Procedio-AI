@@ -310,17 +310,26 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         if (validateError) throw validateError;
 
         // 2. Create the procedure
-        // Note: The backend uses 'Type' (capitalized) for category in the procedures table
-        // We also added 'category' column recently but 'Type' is the source of truth for the views
+        // ADAPTED TO CURRENT SCHEMA: uuid, title, Type, created_at, file_url, file_id, views, updated_at, is_trend
+        // Note: 'content' and 'status' columns are missing in the table, so we skip them.
+
+        const newProcedureId = crypto.randomUUID();
+        const now = new Date();
+        // Format created_at as "DD/MM/YYYY HH:mm:ss" to match existing data (text column)
+        const formattedDate = now.toLocaleString("fr-FR");
+
         const { data: proc, error: procError } = await supabase
           .from("procedures")
           .insert({
+            uuid: newProcedureId,
+            file_id: newProcedureId,
             title: promoteTitle || mission.title,
-            content: mission.description,
             file_url: attachmentUrl,
-            status: "published",
-            Type: promoteCategory || "Missions / Transferts", // Mapping to legacy column
-            category: promoteCategory || "Missions / Transferts", // Mapping to new column (redundancy safe)
+            Type: promoteCategory || "Missions / Transferts",
+            created_at: formattedDate,
+            updated_at: now.toISOString(),
+            views: 0,
+            is_trend: false,
           })
           .select()
           .single();
