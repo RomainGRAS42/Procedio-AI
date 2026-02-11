@@ -314,34 +314,56 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.pdf`;
         const file = new File([fileBlob], fileName, { type: "application/pdf" });
 
-        // 2. Prepare data for process-pdf Edge Function
-        // This function handles: Storage upload (to procedures bucket), DB insert, OCR, and RAG indexing
+        // 2. Prepare data
         const fileId = crypto.randomUUID();
+        const now = new Date();
+        const formattedDate = now.toLocaleString("fr-FR");
+
+        // 3. Insert Procedure Record IMMEDIATELY from Frontend
+        // This ensures the procedure is created even if the Edge Function has issues
+        const { data: insertedProc, error: insertError } = await supabase
+          .from("procedures")
+          .insert({
+            uuid: fileId,
+            file_id: fileId,
+            title: promoteTitle || mission.title,
+            file_url: attachmentUrl,
+            Type: promoteCategory || "Missions / Transferts",
+            created_at: formattedDate,
+            updated_at: now.toISOString(),
+            views: 0,
+            is_trend: false,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Erreur insertion procédure:", insertError);
+          throw new Error(`Erreur lors de la création de la procédure : ${insertError.message}`);
+        }
+
+        // 4. Call Edge Function for AI Indexing & Storage
         const formData = new FormData();
         formData.append("file", file);
         formData.append("title", promoteTitle);
         formData.append("file_id", fileId);
         formData.append("category", promoteCategory);
-        formData.append("upload_date", new Date().toLocaleString("fr-FR"));
+        formData.append("upload_date", formattedDate);
         formData.append("author_id", user.id);
 
-        // 3. Call the Edge Function
-        // We use a toast/alert to inform the user this might take a moment
         console.log("🚀 Lancement de l'indexation IA (process-pdf)...");
 
-        const { data: funcData, error: funcError } = await supabase.functions.invoke(
-          "process-pdf",
-          {
+        // Non-blocking call to Edge Function
+        supabase.functions
+          .invoke("process-pdf", {
             body: formData,
-          }
-        );
+          })
+          .then(({ data, error }) => {
+            if (error) console.error("Erreur silencieuse process-pdf:", error);
+            else console.log("Indexation IA lancée avec succès");
+          });
 
-        if (funcError) {
-          console.error("Erreur Edge Function:", funcError);
-          throw new Error(`Erreur lors de l'indexation IA : ${funcError.message}`);
-        }
-
-        // 4. Validate the mission (XP + Status)
+        // 5. Validate the mission (XP + Status)
         const { error: validateError } = await supabase.rpc("validate_mission_completion", {
           mission_id: mission.id,
           feedback: completionNotes || "Excellent travail, promu en procédure.",
@@ -349,32 +371,16 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
         if (validateError) throw validateError;
 
-        // 5. Link procedure to mission
-        // The process-pdf function inserted the procedure with uuid = fileId
-        // We need to link it. Note: we use fileId as procedure_id (assuming it matches the FK)
+        // 6. Link procedure to mission
+        const { error: updateError } = await supabase
+          .from("missions")
+          .update({
+            procedure_id: insertedProc?.id || null,
+            completion_notes: completionNotes || "Mission validée et promue en procédure.",
+          })
+          .eq("id", mission.id);
 
-        // Let's verify if we need to fetch the record first to be safe.
-        const { data: procRecord, error: fetchError } = await supabase
-          .from("procedures")
-          .select("id")
-          .eq("uuid", fileId)
-          .single();
-
-        if (!fetchError && procRecord) {
-          const { error: updateError } = await supabase
-            .from("missions")
-            .update({
-              procedure_id: procRecord.id, // Using the primary key ID
-              completion_notes: completionNotes || "Mission validée et promue en procédure.",
-            })
-            .eq("id", mission.id);
-
-          if (updateError)
-            console.error("Warning: Could not link procedure to mission", updateError);
-        } else {
-          // Fallback: just update notes
-          console.warn("Could not find created procedure to link.");
-        }
+        if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
 
         setShowSuccessModal(true); // Show custom success modal
         setIsSubmitting(false); // Stop loading state
