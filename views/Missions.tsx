@@ -847,14 +847,25 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
                                 <p className="text-[9px] font-medium text-slate-400">Envoyé par le technicien</p>
                              </div>
                           </div>
-                          <a 
-                            href={`${supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all"
-                          >
-                            Consulter
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a 
+                              href={completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 flex items-center gap-2"
+                            >
+                              <i className="fa-solid fa-eye"></i>
+                              Voir
+                            </a>
+                            <a 
+                              href={`${completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl}${completingMission.attachment_url.includes('?') ? '&' : '?'}download=`}
+                              download
+                              className="px-4 py-2 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2"
+                            >
+                              <i className="fa-solid fa-download"></i>
+                              Télécharger
+                            </a>
+                          </div>
                        </div>
                     </div>
                   )}

@@ -389,14 +389,25 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aperçu du document</p>
-                                                        <a 
-                                                            href={attachmentUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
-                                                        >
-                                                            Ouvrir plein écran <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
-                                                        </a>
+                                                        <div className="flex items-center gap-4">
+                                                            <a 
+                                                                href={attachmentUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                            >
+                                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                                                Voir
+                                                            </a>
+                                                            <a 
+                                                                href={`${attachmentUrl}${attachmentUrl.includes('?') ? '&' : '?'}download=`}
+                                                                download
+                                                                className="text-[9px] font-black text-slate-900 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                            >
+                                                                <i className="fa-solid fa-download"></i>
+                                                                Télécharger
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                     <div className="w-full h-[400px] rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner">
                                                         {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
@@ -506,14 +517,25 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                 <div className="space-y-3 pt-2">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aperçu du travail</p>
-                                                        <a 
-                                                            href={attachmentUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
-                                                        >
-                                                            Plein écran <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
-                                                        </a>
+                                                        <div className="flex items-center gap-4">
+                                                            <a 
+                                                                href={attachmentUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                            >
+                                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                                                Voir
+                                                            </a>
+                                                            <a 
+                                                                href={`${attachmentUrl}${attachmentUrl.includes('?') ? '&' : '?'}download=`}
+                                                                download
+                                                                className="text-[9px] font-black text-slate-900 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                                            >
+                                                                <i className="fa-solid fa-download"></i>
+                                                                Télécharger
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                     <div className="w-full h-[300px] rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner">
                                                         {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
