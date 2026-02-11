@@ -386,82 +386,84 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                         
                                         <div className="flex flex-col gap-4">
                                             {attachmentUrl && (
-                                                <div className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                                                            <i className="fa-solid fa-file-pdf"></i>
-                                                        </div>
-                                                        <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Pièce jointe de mission</p>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aperçu du document</p>
+                                                        <a 
+                                                            href={attachmentUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+                                                        >
+                                                            Ouvrir plein écran <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+                                                        </a>
                                                     </div>
-                                                    <a 
-                                                        href={attachmentUrl} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        className="px-4 py-2 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/10"
-                                                    >
-                                                        Consulter
-                                                    </a>
+                                                    <div className="w-full h-[400px] rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner">
+                                                        {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+                                                            <img src={attachmentUrl} alt="Preview" className="w-full h-full object-contain" />
+                                                        ) : attachmentUrl.toLowerCase().endsWith('.pdf') ? (
+                                                            <iframe src={`${attachmentUrl}#toolbar=0`} className="w-full h-full border-none" title="PDF Preview"></iframe>
+                                                        ) : (
+                                                            <iframe 
+                                                                src={`https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`} 
+                                                                className="w-full h-full border-none" 
+                                                                title="Office Preview"
+                                                            ></iframe>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {/* Manager retroactive actions */}
                                             {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
-                                                <div className="pt-6 border-t border-slate-100 space-y-6">
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilotage de la mission</p>
-                                                        {(!completionNotes.trim()) && (
-                                                            <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest animate-pulse">
-                                                                Saisir un motif pour refuser
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="grid grid-cols-3 gap-4">
+                                                <div className="pt-8 border-t border-slate-100 space-y-4">
+                                                    <div className="flex flex-col gap-3">
                                                         <button 
-                                                            onClick={() => {
-                                                                if (!completionNotes.trim()) {
-                                                                    alert("Merci de saisir un motif de refus ou un feedback pour le technicien.");
-                                                                    return;
-                                                                }
-                                                                handleAction('cancel');
-                                                            }}
-                                                            className={`flex flex-col items-center justify-center gap-3 p-4 rounded-3xl transition-all group border-2 ${
-                                                                !completionNotes.trim() 
-                                                                ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed' 
-                                                                : 'bg-rose-50 border-rose-100 hover:bg-rose-100 hover:border-rose-200 active:scale-95'
-                                                            }`}
+                                                            onClick={() => handleAction('complete')}
+                                                            className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-3"
                                                         >
-                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg transition-transform group-hover:-rotate-12 ${
-                                                                !completionNotes.trim() ? 'bg-slate-200 text-slate-400' : 'bg-white text-rose-500 shadow-sm'
-                                                            }`}>
-                                                                <i className="fa-solid fa-rotate-left"></i>
-                                                            </div>
-                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${
-                                                                !completionNotes.trim() ? 'text-slate-400' : 'text-rose-600'
-                                                            }`}>Refuser</span>
+                                                            <i className="fa-solid fa-check"></i>
+                                                            Valider la mission
                                                         </button>
 
                                                         {attachmentUrl && (
                                                             <button 
                                                                 onClick={() => handleAction('promote')}
-                                                                className="flex flex-col items-center justify-center gap-3 p-4 bg-amber-50 border-2 border-amber-100 rounded-3xl transition-all group hover:bg-amber-100 hover:border-amber-200 active:scale-95 shadow-sm"
+                                                                className="w-full py-4 bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98] flex items-center justify-center gap-3"
                                                             >
-                                                                <div className="w-12 h-12 rounded-2xl bg-white text-amber-500 shadow-sm flex items-center justify-center text-lg transition-transform group-hover:scale-110">
-                                                                    <i className="fa-solid fa-star"></i>
-                                                                </div>
-                                                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Promouvoir</span>
+                                                                <i className="fa-solid fa-star"></i>
+                                                                Promouvoir en Procédure
                                                             </button>
                                                         )}
 
-                                                        <button 
-                                                            onClick={() => handleAction('complete')}
-                                                            className="flex flex-col items-center justify-center gap-3 p-4 bg-emerald-50 border-2 border-emerald-100 rounded-3xl transition-all group hover:bg-emerald-100 hover:border-emerald-200 active:scale-95 shadow-sm"
-                                                        >
-                                                            <div className="w-12 h-12 rounded-2xl bg-white text-emerald-500 shadow-sm flex items-center justify-center text-lg transition-transform group-hover:rotate-12">
-                                                                <i className="fa-solid fa-check"></i>
+                                                        <div className="pt-2">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Zone de révision</p>
+                                                                {(!completionNotes.trim()) && (
+                                                                    <span className="text-[9px] font-black text-rose-400 uppercase animate-pulse">
+                                                                        Motif requis pour refuser
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Valider</span>
-                                                        </button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    if (!completionNotes.trim()) {
+                                                                        alert("Merci de saisir un motif de refus ou un feedback pour le technicien.");
+                                                                        return;
+                                                                    }
+                                                                    handleAction('cancel');
+                                                                }}
+                                                                disabled={!completionNotes.trim()}
+                                                                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                                                                    !completionNotes.trim()
+                                                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                                                    : 'bg-white text-rose-500 border border-rose-100 hover:bg-rose-50 hover:border-rose-200'
+                                                                }`}
+                                                            >
+                                                                <i className="fa-solid fa-rotate-left"></i>
+                                                                Refuser / Demander révision
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -476,15 +478,11 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                     {user.role === UserRole.MANAGER || (user.role as any) === 'manager' ? "Revue du travail & Feedback" : "Notes de réalisation & Liens"}
                                                 </label>
                                                 {attachmentUrl && (
-                                                    <a 
-                                                        href={attachmentUrl} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline flex items-center gap-1"
-                                                    >
-                                                        <i className="fa-solid fa-external-link"></i>
-                                                        Ouvrir le document
-                                                    </a>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] font-black uppercase tracking-widest rounded-md animate-pulse">
+                                                            Document prêt à la revue
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
                                             
@@ -497,11 +495,41 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                             )}
 
                                             <textarea 
-                                                className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"
+                                                className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none shadow-inner"
                                                 placeholder={user.role === UserRole.MANAGER || (user.role as any) === 'manager' ? "Raison du refus ou commentaire de validation..." : "Décrivez le travail réalisé, collez le lien de la procédure..."}
                                                 value={completionNotes}
                                                 onChange={(e) => setCompletionNotes(e.target.value)}
                                             />
+
+                                            {/* Preview Document in Validation View */}
+                                            {attachmentUrl && (user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
+                                                <div className="space-y-3 pt-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aperçu du travail</p>
+                                                        <a 
+                                                            href={attachmentUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+                                                        >
+                                                            Plein écran <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+                                                        </a>
+                                                    </div>
+                                                    <div className="w-full h-[300px] rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner">
+                                                        {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+                                                            <img src={attachmentUrl} alt="Preview" className="w-full h-full object-contain" />
+                                                        ) : attachmentUrl.toLowerCase().endsWith('.pdf') ? (
+                                                            <iframe src={`${attachmentUrl}#toolbar=0`} className="w-full h-full border-none" title="PDF Preview"></iframe>
+                                                        ) : (
+                                                            <iframe 
+                                                                src={`https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`} 
+                                                                className="w-full h-full border-none" 
+                                                                title="Office Preview"
+                                                            ></iframe>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
 
                                                 {/* File Upload Zone for Technician */}
                                                 {user.role !== UserRole.MANAGER && (
@@ -532,34 +560,66 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                                     </div>
                                                 )}
 
-                                                <div className="flex justify-end gap-3 pt-4">
-                                                    {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
-                                                        <>
+                                                <div className="flex flex-col gap-3 pt-6 border-t border-slate-100">
+                                                    {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') ? (
+                                                        <div className="space-y-4">
                                                             <button 
-                                                                onClick={() => handleAction('cancel')}
-                                                                className="px-6 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors flex items-center gap-2"
+                                                                onClick={() => handleAction('complete')}
+                                                                className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-3"
                                                             >
-                                                                <i className="fa-solid fa-rotate-left"></i>
-                                                                Refuser / Révision
+                                                                <i className="fa-solid fa-check text-sm"></i>
+                                                                Valider la mission
                                                             </button>
+
                                                             {attachmentUrl && (
                                                                 <button 
                                                                     onClick={() => handleAction('promote')}
-                                                                    className="px-6 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-2"
+                                                                    className="w-full py-4 bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98] flex items-center justify-center gap-3"
                                                                 >
-                                                                    <i className="fa-solid fa-star"></i>
+                                                                    <i className="fa-solid fa-star text-sm"></i>
                                                                     Promouvoir en Procédure
                                                                 </button>
                                                             )}
-                                                        </>
+
+                                                            <div className="pt-2">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Zone de révision</p>
+                                                                    {(!completionNotes.trim()) && (
+                                                                        <span className="text-[9px] font-black text-rose-400 uppercase animate-pulse">
+                                                                            Motif requis pour refuser
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        if (!completionNotes.trim()) {
+                                                                            alert("Merci de saisir un motif de refus ou un feedback pour le technicien.");
+                                                                            return;
+                                                                        }
+                                                                        handleAction('cancel');
+                                                                    }}
+                                                                    disabled={!completionNotes.trim()}
+                                                                    className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                                                                        !completionNotes.trim()
+                                                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                                                        : 'bg-white text-rose-500 border border-rose-100 hover:bg-rose-50 hover:border-rose-200 shadow-sm'
+                                                                    }`}
+                                                                >
+                                                                    <i className="fa-solid fa-rotate-left"></i>
+                                                                    Refuser / Demander révision
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => handleAction('complete')}
+                                                            disabled={!completionNotes.trim() && !attachmentUrl}
+                                                            className={`w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                        >
+                                                            <i className="fa-solid fa-paper-plane"></i>
+                                                            Soumettre mon travail
+                                                        </button>
                                                     )}
-                                                    <button 
-                                                        onClick={() => handleAction('complete')}
-                                                        disabled={isUploading || isSubmitting}
-                                                        className="px-8 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
-                                                    >
-                                                        {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') ? "Valider la Mission" : "Soumettre le Travail"}
-                                                    </button>
                                                 </div>
                                             </div>
                                     ) : (
