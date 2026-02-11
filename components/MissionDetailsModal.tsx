@@ -351,21 +351,56 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
                                 </h3>
                                 
                                 {mission.status === 'completed' ? (
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                                             <p className="text-emerald-700 italic">{mission.completion_notes || "Aucune note de complétion."}</p>
                                         </div>
-                                        {attachmentUrl && (
-                                            <a 
-                                                href={attachmentUrl} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-100 rounded-xl text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
-                                            >
-                                                <i className="fa-solid fa-file-pdf"></i>
-                                                Voir le document de mission
-                                            </a>
-                                        )}
+                                        
+                                        <div className="flex flex-col gap-4">
+                                            {attachmentUrl && (
+                                                <div className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                                            <i className="fa-solid fa-file-pdf"></i>
+                                                        </div>
+                                                        <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Pièce jointe de mission</p>
+                                                    </div>
+                                                    <a 
+                                                        href={attachmentUrl} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="px-4 py-2 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-900 transition-all shadow-lg shadow-indigo-500/10"
+                                                    >
+                                                        Consulter
+                                                    </a>
+                                                </div>
+                                            )}
+
+                                            {/* Manager retroactive actions */}
+                                            {(user.role === UserRole.MANAGER || (user.role as any) === 'manager') && (
+                                                <div className="pt-4 border-t border-slate-100 space-y-4">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions de gestion</p>
+                                                    <div className="flex gap-3">
+                                                        <button 
+                                                            onClick={() => handleAction('cancel')}
+                                                            className="flex-1 px-4 py-3 bg-rose-50 text-rose-500 font-bold rounded-xl hover:bg-rose-100 transition-colors flex items-center justify-center gap-2 text-xs"
+                                                        >
+                                                            <i className="fa-solid fa-rotate-left"></i>
+                                                            Demander Révision
+                                                        </button>
+                                                        {attachmentUrl && (
+                                                            <button 
+                                                                onClick={() => handleAction('promote')}
+                                                                className="flex-1 px-4 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs"
+                                                            >
+                                                                <i className="fa-solid fa-star"></i>
+                                                                Promouvoir
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : (
                                     (mission.status === 'in_progress' && mission.assigned_to === user.id) || 

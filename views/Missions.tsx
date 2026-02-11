@@ -209,7 +209,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
       // Standard flow (no attachment needed or manager manual update)
       else {
         const updateData: any = { status: newStatus };
-        if (newStatus === 'completed') updateData.completion_notes = notes;
+        if (notes) updateData.completion_notes = notes;
+        if (attachmentUrl) updateData.attachment_url = attachmentUrl;
         if (newStatus === 'cancelled') updateData.cancellation_reason = notes;
 
         const { error } = await supabase
