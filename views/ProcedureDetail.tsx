@@ -5,12 +5,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // 🚀 PDF.js Integration
-import { Viewer, Worker } from '@react-pdf-viewer/core';
-import { searchPlugin } from '@react-pdf-viewer/search';
-import { zoomPlugin } from '@react-pdf-viewer/zoom';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/search/lib/styles/index.css';
-import '@react-pdf-viewer/zoom/lib/styles/index.css';
+import { Viewer, Worker } from "@react-pdf-viewer/core";
+import { searchPlugin } from "@react-pdf-viewer/search";
+import { zoomPlugin } from "@react-pdf-viewer/zoom";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/search/lib/styles/index.css";
+import "@react-pdf-viewer/zoom/lib/styles/index.css";
 
 // 🎨 Custom Styles to hide unwanted "Whole words" option
 const hideWholeWordsStyles = `
@@ -47,7 +47,10 @@ interface SuggestionItem {
 }
 
 // 🛡️ ERROR BOUNDARY COMPONENT
-class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback?: React.ReactNode }, { hasError: boolean; error?: any }> {
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean; error?: any }
+> {
   constructor(props: any) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -65,17 +68,16 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallbac
     if (this.state.hasError) {
       return (
         <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-red-400 p-4 rounded-xl border border-red-900/50">
-           <i className="fa-solid fa-triangle-exclamation text-3xl mb-3"></i>
-           <h3 className="font-bold text-lg mb-2">Erreur du Lecteur PDF</h3>
-           <pre className="text-[10px] bg-black/50 p-3 rounded-lg max-w-full overflow-auto text-left font-mono">
-             {this.state.error?.toString() || "Erreur inconnue"}
-           </pre>
-           <button 
-             onClick={() => this.setState({ hasError: false })}
-             className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs transition-colors"
-           >
-             Réessayer
-           </button>
+          <i className="fa-solid fa-triangle-exclamation text-3xl mb-3"></i>
+          <h3 className="font-bold text-lg mb-2">Erreur du Lecteur PDF</h3>
+          <pre className="text-[10px] bg-black/50 p-3 rounded-lg max-w-full overflow-auto text-left font-mono">
+            {this.state.error?.toString() || "Erreur inconnue"}
+          </pre>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs transition-colors">
+            Réessayer
+          </button>
         </div>
       );
     }
@@ -93,8 +95,10 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
   // 🔎 PDF Zoom Plugin
   const zoomPluginInstance = zoomPlugin();
   const { ZoomIn, ZoomOut, Zoom } = zoomPluginInstance;
-  const plugins = useMemo(() => [searchPluginInstance, zoomPluginInstance], [searchPluginInstance, zoomPluginInstance]);
-
+  const plugins = useMemo(
+    () => [searchPluginInstance, zoomPluginInstance],
+    [searchPluginInstance, zoomPluginInstance]
+  );
 
   return (
     <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
@@ -104,7 +108,9 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
         <div className="flex items-center gap-1 pr-2 border-r border-white/10">
           <ZoomOut>
             {(props) => (
-              <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+              <button
+                onClick={props.onClick}
+                className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                 <i className="fa-solid fa-magnifying-glass-minus"></i>
               </button>
             )}
@@ -120,49 +126,55 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
           </div>
           <ZoomIn>
             {(props) => (
-              <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+              <button
+                onClick={props.onClick}
+                className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                 <i className="fa-solid fa-magnifying-glass-plus"></i>
               </button>
             )}
           </ZoomIn>
         </div>
-        
+
         <ShowSearchPopover>
           {(props) => (
-            <button onClick={props.onClick} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all" title="Rechercher dans le document">
+            <button
+              onClick={props.onClick}
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              title="Rechercher dans le document">
               <i className="fa-solid fa-search"></i>
             </button>
           )}
         </ShowSearchPopover>
       </div>
 
-      <div className="flex-1 overflow-hidden" style={{ filter: 'brightness(0.95) contrast(1.05)' }}>
-        <ErrorBoundary fallback={
-          <div className="flex items-center justify-center h-full text-slate-400">
-            <div className="text-center">
-              <i className="fa-solid fa-bug text-2xl mb-2"></i>
-              <p>Erreur du lecteur PDF</p>
+      <div className="flex-1 overflow-hidden" style={{ filter: "brightness(0.95) contrast(1.05)" }}>
+        <ErrorBoundary
+          fallback={
+            <div className="flex items-center justify-center h-full text-slate-400">
+              <div className="text-center">
+                <i className="fa-solid fa-bug text-2xl mb-2"></i>
+                <p>Erreur du lecteur PDF</p>
+              </div>
             </div>
-          </div>
-        }>
+          }>
           <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
             <div className="h-full w-full">
-              <Viewer 
-                fileUrl={fileUrl} 
+              <Viewer
+                fileUrl={fileUrl}
                 plugins={plugins}
                 theme="dark"
                 onDocumentLoad={(e) => {
                   try {
                     const hash = window.location.hash;
-                    if (hash && hash.startsWith('#search=')) {
-                      const parts = hash.split('=');
+                    if (hash && hash.startsWith("#search=")) {
+                      const parts = hash.split("=");
                       if (parts.length > 1) {
                         const rawTerm = parts[1];
-                        if (rawTerm && typeof rawTerm === 'string') {
+                        if (rawTerm && typeof rawTerm === "string") {
                           // Defensive coding: Ensure we are working with a string
-                          const safeTerm = String(rawTerm).replace(/"/g, '');
+                          const safeTerm = String(rawTerm).replace(/"/g, "");
                           const searchTerm = decodeURIComponent(safeTerm);
-                          
+
                           if (searchTerm && searchTerm.length > 2) {
                             console.log("🔦 Auto-highlighting (onLoad):", searchTerm);
                             highlight(searchTerm);
@@ -236,7 +248,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [history, setHistory] = useState<SuggestionItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
-  const [referentExpert, setReferentExpert] = useState<{ first_name: string; last_name: string } | null>(null);
+  const [referentExpert, setReferentExpert] = useState<{
+    first_name: string;
+    last_name: string;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -284,15 +299,19 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   }, [procedure?.id, procedure?.fileUrl]);
 
   const fetchReferent = async () => {
-    const targetUuid = procedure.db_id || (typeof procedure.id === "string" && procedure.id.includes('-') ? procedure.id : null);
+    const targetUuid =
+      procedure.db_id ||
+      (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
     if (!targetUuid) return;
 
     try {
       const { data, error } = await supabase
         .from("procedure_referents")
-        .select(`
+        .select(
+          `
           user:user_profiles (first_name, last_name)
-        `)
+        `
+        )
         .eq("procedure_id", targetUuid)
         .maybeSingle();
 
@@ -306,8 +325,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   const fetchHistory = async () => {
     // We prioritize UUID for consistency in joins
-    const targetUuid = procedure.db_id || (typeof procedure.id === "string" && procedure.id.includes('-') ? procedure.id : null);
-    
+    const targetUuid =
+      procedure.db_id ||
+      (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
+
     if (!targetUuid) {
       console.warn("⚠️ fetchHistory: No UUID found for procedure", procedure.id);
       return;
@@ -317,11 +338,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const { data, error } = await supabase
         .from("procedure_suggestions")
-        .select(`
+        .select(
+          `
           *,
           user:user_profiles!user_id(first_name, last_name),
           manager:user_profiles!manager_id(first_name)
-        `)
+        `
+        )
         .eq("procedure_id", targetUuid)
         .order("created_at", { ascending: false });
 
@@ -349,65 +372,67 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   useEffect(() => {
     fetchHistory();
-    
+
     // 🚀 AUTOMATISATION : Incrémentation des vues dès qu'on a l'ID réel
     if (realProcedureId && !hasIncrementedView.current) {
       const incrementViews = async () => {
         hasIncrementedView.current = true;
         console.log("📈 Tentative d'incrémentation des vues pour:", realProcedureId);
-        
-        try {
-          const isUUID = typeof realProcedureId === 'string' && realProcedureId.includes('-');
-          const rpcName = isUUID ? 'increment_procedure_views_uuid' : 'increment_procedure_views';
-          const paramName = isUUID ? 'row_uuid' : 'row_id';
 
-          const { error: viewError } = await supabase.rpc(rpcName, { 
-            [paramName]: realProcedureId 
+        try {
+          const isUUID = typeof realProcedureId === "string" && realProcedureId.includes("-");
+          const rpcName = isUUID ? "increment_procedure_views_uuid" : "increment_procedure_views";
+          const paramName = isUUID ? "row_uuid" : "row_id";
+
+          const { error: viewError } = await supabase.rpc(rpcName, {
+            [paramName]: realProcedureId,
           });
 
           if (viewError) {
-             console.warn("⚠️ RPC increment failed, trying manual update", viewError);
-             const { error: updateError } = await supabase
-               .from("procedures")
-               .update({ views: (procedure.views || 0) + 1 })
-               .eq(isUUID ? "uuid" : "id", realProcedureId);
-             
-             if (updateError) console.error("❌ Manual view update failed:", updateError);
+            console.warn("⚠️ RPC increment failed, trying manual update", viewError);
+            const { error: updateError } = await supabase
+              .from("procedures")
+              .update({ views: (procedure.views || 0) + 1 })
+              .eq(isUUID ? "uuid" : "id", realProcedureId);
+
+            if (updateError) console.error("❌ Manual view update failed:", updateError);
           }
 
           // Log de consultation
-          await supabase.from("notes").insert([{
-            user_id: user.id,
-            title: `CONSULTATION_${procedure.title.substring(0, 50)}`,
-            content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
-            procedure_id: isUUID ? realProcedureId : (procedure.db_id || procedure.uuid || null)
-          }]);
+          await supabase.from("notes").insert([
+            {
+              user_id: user.id,
+              title: `CONSULTATION_${procedure.title.substring(0, 50)}`,
+              content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
+              procedure_id: isUUID ? realProcedureId : procedure.db_id || procedure.uuid || null,
+            },
+          ]);
 
           // 🎮 GAMIFICATION : Gain d'XP (+5) et Stats par catégorie
           const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('xp_points, stats_by_category')
-            .eq('id', user.id)
+            .from("user_profiles")
+            .select("xp_points, stats_by_category")
+            .eq("id", user.id)
             .single();
 
           if (profile) {
             const currentXP = profile.xp_points || 0;
             const currentStats = profile.stats_by_category || {};
             const category = procedure.category || "GÉNÉRAL";
-            
+
             const newStats = {
               ...currentStats,
-              [category]: (currentStats[category] || 0) + 1
+              [category]: (currentStats[category] || 0) + 1,
             };
 
             await supabase
-              .from('user_profiles')
-              .update({ 
+              .from("user_profiles")
+              .update({
                 xp_points: currentXP + 5,
                 stats_by_category: newStats,
-                level: Math.floor((currentXP + 5) / 100) + 1 // Niveau = 1 + XP/100
+                level: Math.floor((currentXP + 5) / 100) + 1, // Niveau = 1 + XP/100
               })
-              .eq('id', user.id);
+              .eq("id", user.id);
           }
         } catch (err) {
           console.error("❌ Error in incrementViews:", err);
@@ -580,16 +605,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         sessionid: chatSessionId,
       });
 
-      const response = await fetch("https://pczlikyvfmrdauufgxai.supabase.co/functions/v1/chat-with-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: textToSend,
-          file_id: procedure.file_id || procedure.id,
-          userName: fullUserName,
-          referentName: referentExpert ? `${referentExpert.first_name} ${referentExpert.last_name}` : undefined,
-        }),
-      });
+      const response = await fetch(
+        "https://pczlikyvfmrdauufgxai.supabase.co/functions/v1/chat-with-pdf",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: textToSend,
+            file_id: procedure.file_id || procedure.id,
+            userName: fullUserName,
+            referentName: referentExpert
+              ? `${referentExpert.first_name} ${referentExpert.last_name}`
+              : undefined,
+          }),
+        }
+      );
 
       const responseText = await response.text();
       let data: any = {};
@@ -631,7 +661,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     setIsSubmittingSuggestion(true);
 
     // CRITICAL: We MUST use the UUID for the procedure_id foreign key
-    const targetUuid = procedure.db_id || (typeof procedure.id === "string" && procedure.id.includes('-') ? procedure.id : null);
+    const targetUuid =
+      procedure.db_id ||
+      (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
 
     if (!targetUuid) {
       console.error("❌ handleSubmitSuggestion: Missing procedure UUID", procedure.id);
@@ -687,7 +719,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative">
+    <div className="h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-6 animate-fade-in overflow-hidden relative pt-8 px-4 md:px-10 pb-6">
       {notification && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-slide-up">
           <div className="bg-indigo-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-4">
@@ -743,8 +775,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 }`}>
                 {msg.sender === "ai" ? (
                   <div className="procedio-markdown">
-                    <ErrorBoundary fallback={<p className="text-red-400 text-xs">Erreur d'affichage du message.</p>}>
-                      {typeof msg.text === 'string' ? (
+                    <ErrorBoundary
+                      fallback={
+                        <p className="text-red-400 text-xs">Erreur d'affichage du message.</p>
+                      }>
+                      {typeof msg.text === "string" ? (
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                       ) : (
                         <span>{String(msg.text)}</span>
@@ -847,12 +882,14 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             <button
               onClick={() => {
                 setNotification({ msg: "Réclamation envoyée au manager !", type: "success" });
-                supabase.from("notes").insert([{
-                  user_id: user.id,
-                  title: `CLAIM_MASTERY_${procedure.title.substring(0, 50)}`,
-                  content: `${user.firstName} réclame la maîtrise sur la procédure "${procedure.title}"`,
-                  procedure_id: procedure.db_id || procedure.uuid || null
-                }]);
+                supabase.from("notes").insert([
+                  {
+                    user_id: user.id,
+                    title: `CLAIM_MASTERY_${procedure.title.substring(0, 50)}`,
+                    content: `${user.firstName} réclame la maîtrise sur la procédure "${procedure.title}"`,
+                    procedure_id: procedure.db_id || procedure.uuid || null,
+                  },
+                ]);
               }}
               className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
               title="Réclamer la maîtrise sur cette procédure">
@@ -927,21 +964,36 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 ) : history.length > 0 ? (
                   history.map((item) => {
                     const typeLabels = {
-                      correction: { label: "Correction", color: "text-rose-600 bg-rose-50 border-rose-100", icon: "fa-bug" },
-                      update: { label: "Mise à jour", color: "text-indigo-600 bg-indigo-50 border-indigo-100", icon: "fa-pen-to-square" },
-                      add_step: { label: "Ajout", color: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: "fa-plus-circle" }
+                      correction: {
+                        label: "Correction",
+                        color: "text-rose-600 bg-rose-50 border-rose-100",
+                        icon: "fa-bug",
+                      },
+                      update: {
+                        label: "Mise à jour",
+                        color: "text-indigo-600 bg-indigo-50 border-indigo-100",
+                        icon: "fa-pen-to-square",
+                      },
+                      add_step: {
+                        label: "Ajout",
+                        color: "text-emerald-600 bg-emerald-50 border-emerald-100",
+                        icon: "fa-plus-circle",
+                      },
                     };
-                    const typeInfo = typeLabels[item.type as keyof typeof typeLabels] || typeLabels.update;
+                    const typeInfo =
+                      typeLabels[item.type as keyof typeof typeLabels] || typeLabels.update;
 
                     return (
                       <div key={item.id} className="relative z-10 pl-24 group">
                         {/* Timeline Node */}
                         <div className="absolute left-0 top-0 w-12 h-12 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center z-10 group-hover:scale-110 transition-transform hover:border-indigo-200 hover:shadow-md cursor-default">
                           <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 transition-colors">
-                            {item.user?.first_name ? item.user.first_name.substring(0,2).toUpperCase() : "??"}
+                            {item.user?.first_name
+                              ? item.user.first_name.substring(0, 2).toUpperCase()
+                              : "??"}
                           </span>
                         </div>
-                        
+
                         {/* Connector to Card */}
                         <div className="absolute left-12 top-6 w-12 h-0.5 bg-slate-100 group-hover:bg-indigo-50 transition-colors"></div>
 
@@ -949,31 +1001,52 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                         <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 group-hover:border-indigo-50/50">
                           {/* Card Header */}
                           <div className="flex flex-wrap items-center justify-between gap-4 mb-4 border-b border-slate-50 pb-4">
-                             <div className="flex items-center gap-3">
-                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center gap-2 ${typeInfo.color}`}>
-                                  <i className={`fa-solid ${typeInfo.icon}`}></i>
-                                  {typeInfo.label}
-                                </span>
-                                <span className="text-[10px] font-bold text-slate-400">
-                                   • {new Date(item.created_at).toLocaleDateString("fr-FR", { day: 'numeric', month: 'long', year: 'numeric' })}
-                                </span>
-                             </div>
-                             
-                             {(() => {
-                               const statusConfig = {
-                                 approved: { label: "Validé", color: "text-emerald-500", icon: "fa-circle-check" },
-                                 rejected: { label: "Refusé", color: "text-rose-500", icon: "fa-circle-xmark" },
-                                 pending: { label: "En attente", color: "text-amber-500", icon: "fa-clock animate-pulse" }
-                               };
-                               const config = statusConfig[item.status as keyof typeof statusConfig] || statusConfig.pending;
-                               
-                               return (
-                                 <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${config.color}`}>
-                                   <i className={`fa-solid ${config.icon}`}></i>
-                                   {config.label}
-                                 </div>
-                               );
-                             })()}
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center gap-2 ${typeInfo.color}`}>
+                                <i className={`fa-solid ${typeInfo.icon}`}></i>
+                                {typeInfo.label}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400">
+                                •{" "}
+                                {new Date(item.created_at).toLocaleDateString("fr-FR", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+
+                            {(() => {
+                              const statusConfig = {
+                                approved: {
+                                  label: "Validé",
+                                  color: "text-emerald-500",
+                                  icon: "fa-circle-check",
+                                },
+                                rejected: {
+                                  label: "Refusé",
+                                  color: "text-rose-500",
+                                  icon: "fa-circle-xmark",
+                                },
+                                pending: {
+                                  label: "En attente",
+                                  color: "text-amber-500",
+                                  icon: "fa-clock animate-pulse",
+                                },
+                              };
+                              const config =
+                                statusConfig[item.status as keyof typeof statusConfig] ||
+                                statusConfig.pending;
+
+                              return (
+                                <div
+                                  className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${config.color}`}>
+                                  <i className={`fa-solid ${config.icon}`}></i>
+                                  {config.label}
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Description */}
@@ -984,19 +1057,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
                           {/* Manager Response */}
                           {item.manager_response && (
-                             <div className="mt-6 pt-6 border-t border-slate-50 relative animate-fade-in">
-                                <div className="absolute left-6 -top-3 bg-white px-2">
-                                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-lg shadow-indigo-200">
-                                    <i className="fa-solid fa-user-shield"></i>
-                                  </div>
+                            <div className="mt-6 pt-6 border-t border-slate-50 relative animate-fade-in">
+                              <div className="absolute left-6 -top-3 bg-white px-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-lg shadow-indigo-200">
+                                  <i className="fa-solid fa-user-shield"></i>
                                 </div>
-                                <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50 ml-2">
-                                  <p className="text-xs font-medium text-slate-600 leading-relaxed">
-                                    <span className="font-black text-indigo-600 uppercase text-[9px] tracking-widest mr-2">Réponse :</span>
-                                    {item.manager_response}
-                                  </p>
-                                </div>
-                             </div>
+                              </div>
+                              <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50 ml-2">
+                                <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                                  <span className="font-black text-indigo-600 uppercase text-[9px] tracking-widest mr-2">
+                                    Réponse :
+                                  </span>
+                                  {item.manager_response}
+                                </p>
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1004,8 +1079,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   })
                 ) : (
                   <div className="py-20 text-center text-slate-300 flex flex-col items-center gap-4">
-                     <i className="fa-solid fa-clipboard-question text-4xl opacity-20"></i>
-                     <p className="text-[10px] font-black uppercase tracking-widest">Aucune suggestion pour l'instant</p>
+                    <i className="fa-solid fa-clipboard-question text-4xl opacity-20"></i>
+                    <p className="text-[10px] font-black uppercase tracking-widest">
+                      Aucune suggestion pour l'instant
+                    </p>
                   </div>
                 )}
               </div>

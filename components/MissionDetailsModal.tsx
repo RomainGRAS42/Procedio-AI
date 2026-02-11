@@ -48,7 +48,20 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [iframeReady, setIframeReady] = useState(false);
   const [showPromoteConfirmation, setShowPromoteConfirmation] = useState(false);
+
+  // Promote Form State
+  const [promoteTitle, setPromoteTitle] = useState(mission.title);
+  const [promoteCategory, setPromoteCategory] = useState("Missions / Transferts");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const PREDEFINED_CATEGORIES = [
+    "LOGICIEL",
+    "MATERIEL",
+    "UTILISATEUR",
+    "INFRASTRUCTURE",
+    "Missions / Transferts",
+  ];
 
   // Delay iframe rendering to fix white screen issue on initial load (animation timing)
   useEffect(() => {
@@ -300,11 +313,11 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         const { data: proc, error: procError } = await supabase
           .from("procedures")
           .insert({
-            title: mission.title,
+            title: promoteTitle || mission.title,
             content: mission.description,
             file_url: attachmentUrl,
             status: "published",
-            category: "Missions / Transferts",
+            category: promoteCategory || "Missions / Transferts",
           })
           .select()
           .single();
@@ -794,37 +807,119 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         {/* Confirmation Modal Overlay */}
         {showPromoteConfirmation && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-slate-800 border border-slate-700 w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden text-center">
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6 border border-amber-500/20">
+            <div className="bg-slate-800 border border-slate-700 w-full max-w-2xl p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="relative z-10 text-center mb-8">
+                <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-amber-500/20 shadow-lg shadow-amber-500/10">
                   <i className="fa-solid fa-star"></i>
                 </div>
-                <h3 className="text-white font-black text-xl mb-3">Confirmer la promotion</h3>
-                <p className="text-slate-300 text-sm font-medium leading-relaxed mb-8">
-                  Cette action va <strong className="text-white">valider la mission</strong> (XP
-                  versée) et{" "}
-                  <strong className="text-white">créer une nouvelle procédure publique</strong>{" "}
-                  visible par toute l'équipe.
+                <h3 className="text-white font-black text-2xl mb-2">Promouvoir en Procédure</h3>
+                <p className="text-slate-400 text-sm font-medium">
+                  Transformez cette mission validée en une procédure réutilisable pour toute
+                  l'équipe.
                 </p>
-                <div className="flex gap-4 justify-center">
-                  <button
-                    onClick={() => setShowPromoteConfirmation(false)}
-                    className="flex-1 py-3 rounded-xl border border-slate-600 text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all">
-                    Annuler
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowPromoteConfirmation(false);
-                      handleAction("promote");
-                    }}
-                    className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all">
-                    Confirmer
-                  </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar px-2 space-y-6">
+                {/* Title Input */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                    Titre de la procédure
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <i className="fa-solid fa-heading text-slate-500 group-focus-within:text-amber-500 transition-colors"></i>
+                    </div>
+                    <input
+                      type="text"
+                      value={promoteTitle}
+                      onChange={(e) => setPromoteTitle(e.target.value)}
+                      className="w-full bg-slate-900/50 border border-slate-600 text-white pl-12 pr-4 py-4 rounded-xl focus:border-amber-500 focus:bg-slate-900 outline-none transition-all font-bold shadow-inner"
+                      placeholder="Titre de la procédure..."
+                    />
+                  </div>
+                </div>
+
+                {/* Category Selection */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                    Dossier de destination
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {PREDEFINED_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setPromoteCategory(cat)}
+                        className={`p-4 rounded-xl border transition-all text-left relative overflow-hidden group ${
+                          promoteCategory === cat
+                            ? "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20"
+                            : "bg-slate-900/30 text-slate-400 border-slate-700 hover:border-slate-500 hover:bg-slate-800"
+                        }`}>
+                        <div className="relative z-10 flex flex-col gap-2">
+                          <i
+                            className={`fa-solid ${
+                              cat === "LOGICIEL"
+                                ? "fa-laptop-code"
+                                : cat === "MATERIEL"
+                                  ? "fa-microchip"
+                                  : cat === "UTILISATEUR"
+                                    ? "fa-users"
+                                    : cat === "INFRASTRUCTURE"
+                                      ? "fa-server"
+                                      : "fa-folder-open"
+                            } text-lg ${promoteCategory === cat ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}></i>
+                          <span className="text-[10px] font-black uppercase tracking-wider truncate">
+                            {cat}
+                          </span>
+                        </div>
+                        {promoteCategory === cat && (
+                          <div className="absolute top-2 right-2">
+                            <i className="fa-solid fa-check-circle text-white/50"></i>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex gap-3">
+                  <i className="fa-solid fa-circle-info text-indigo-400 mt-0.5"></i>
+                  <div className="text-xs text-indigo-200 leading-relaxed">
+                    <p>
+                      La procédure sera créée automatiquement, le fichier PDF attaché sera indexé
+                      par l'IA (RAG), et la mission sera marquée comme validée.
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Actions */}
+              <div className="relative z-10 pt-8 mt-4 border-t border-slate-700 flex gap-4">
+                <button
+                  onClick={() => setShowPromoteConfirmation(false)}
+                  className="flex-1 py-4 rounded-xl border border-slate-600 text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all">
+                  Annuler
+                </button>
+                <button
+                  onClick={() => {
+                    if (!promoteTitle.trim()) {
+                      alert("Le titre est obligatoire");
+                      return;
+                    }
+                    setShowPromoteConfirmation(false);
+                    handleAction("promote");
+                  }}
+                  disabled={!promoteTitle.trim()}
+                  className="flex-[2] py-4 rounded-xl bg-amber-500 text-white font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  <i className="fa-solid fa-wand-magic-sparkles"></i> Valider & Créer
+                </button>
+              </div>
+
               {/* Decorative background glow */}
-              <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-              <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -top-32 -right-32 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
             </div>
           </div>
         )}
