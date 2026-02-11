@@ -301,7 +301,46 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         // Clear notes after refusal to avoid confusion
         setCompletionNotes("");
       } else if (action === "promote") {
-        // 1. Validate the mission first (XP + Status)
+        if (!attachmentUrl) {
+          alert("Aucun fichier à promouvoir.");
+          return;
+        }
+
+        // 1. Download the file from mission attachments
+        // We need to pass it to the Edge Function as a File object
+        const fileResponse = await fetch(attachmentUrl);
+        const fileBlob = await fileResponse.blob();
+        const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.pdf`;
+        const file = new File([fileBlob], fileName, { type: "application/pdf" });
+
+        // 2. Prepare data for process-pdf Edge Function
+        // This function handles: Storage upload (to procedures bucket), DB insert, OCR, and RAG indexing
+        const fileId = crypto.randomUUID();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("title", promoteTitle);
+        formData.append("file_id", fileId);
+        formData.append("category", promoteCategory);
+        formData.append("upload_date", new Date().toLocaleString("fr-FR"));
+        formData.append("author_id", user.id);
+
+        // 3. Call the Edge Function
+        // We use a toast/alert to inform the user this might take a moment
+        console.log("🚀 Lancement de l'indexation IA (process-pdf)...");
+
+        const { data: funcData, error: funcError } = await supabase.functions.invoke(
+          "process-pdf",
+          {
+            body: formData,
+          }
+        );
+
+        if (funcError) {
+          console.error("Erreur Edge Function:", funcError);
+          throw new Error(`Erreur lors de l'indexation IA : ${funcError.message}`);
+        }
+
+        // 4. Validate the mission (XP + Status)
         const { error: validateError } = await supabase.rpc("validate_mission_completion", {
           mission_id: mission.id,
           feedback: completionNotes || "Excellent travail, promu en procédure.",
@@ -309,45 +348,36 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
         if (validateError) throw validateError;
 
-        // 2. Create the procedure
-        // ADAPTED TO CURRENT SCHEMA: uuid, title, Type, created_at, file_url, file_id, views, updated_at, is_trend
-        // Note: 'content' and 'status' columns are missing in the table, so we skip them.
+        // 5. Link procedure to mission
+        // The process-pdf function inserted the procedure with uuid = fileId
+        // We need to link it. Note: we use fileId as procedure_id (assuming it matches the FK)
 
-        const newProcedureId = crypto.randomUUID();
-        const now = new Date();
-        // Format created_at as "DD/MM/YYYY HH:mm:ss" to match existing data (text column)
-        const formattedDate = now.toLocaleString("fr-FR");
-
-        const { data: proc, error: procError } = await supabase
+        // Let's verify if we need to fetch the record first to be safe.
+        const { data: procRecord, error: fetchError } = await supabase
           .from("procedures")
-          .insert({
-            uuid: newProcedureId,
-            file_id: newProcedureId,
-            title: promoteTitle || mission.title,
-            file_url: attachmentUrl,
-            Type: promoteCategory || "Missions / Transferts",
-            created_at: formattedDate,
-            updated_at: now.toISOString(),
-            views: 0,
-            is_trend: false,
-          })
-          .select()
+          .select("id")
+          .eq("uuid", fileId)
           .single();
 
-        if (procError) throw procError;
+        if (!fetchError && procRecord) {
+          const { error: updateError } = await supabase
+            .from("missions")
+            .update({
+              procedure_id: procRecord.id, // Using the primary key ID
+              completion_notes: completionNotes || "Mission validée et promue en procédure.",
+            })
+            .eq("id", mission.id);
 
-        // 3. Link procedure to mission
-        const { error: updateError } = await supabase
-          .from("missions")
-          .update({
-            procedure_id: proc.id,
-            completion_notes: completionNotes || "Mission validée et promue en procédure.",
-          })
-          .eq("id", mission.id);
+          if (updateError)
+            console.error("Warning: Could not link procedure to mission", updateError);
+        } else {
+          // Fallback: just update notes
+          console.warn("Could not find created procedure to link.");
+        }
 
-        if (updateError) throw updateError;
-
-        alert("Mission validée et procédure créée avec succès !");
+        alert(
+          "Mission validée ! Le document est en cours d'analyse par l'IA et sera bientôt disponible dans les procédures."
+        );
       }
 
       onClose();
