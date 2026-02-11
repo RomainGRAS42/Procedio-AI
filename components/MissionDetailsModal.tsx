@@ -198,7 +198,13 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({ mission, user
     
     try {
       if (action === 'complete') {
-          onUpdateStatus(mission.id, 'completed', completionNotes, attachmentUrl);
+          // If technician is submitting, status goes to 'awaiting_validation'
+          // If manager is validating, status goes to 'completed'
+          const newStatus: MissionStatus = (user.role === UserRole.MANAGER || (user.role as any) === 'manager') 
+            ? 'completed' 
+            : 'awaiting_validation';
+            
+          onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl);
       } else if (action === 'start') {
           onUpdateStatus(mission.id, 'in_progress');
       } else if (action === 'cancel') {
