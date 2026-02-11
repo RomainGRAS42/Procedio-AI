@@ -575,56 +575,64 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                         )}
 
                         {/* Action Buttons */}
-                        <div className="pt-6 border-t border-slate-100 flex flex-col gap-3">
+                        <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
                           {user.role === UserRole.MANAGER || (user.role as any) === "manager" ? (
                             <>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-3">
+                                {/* Option 1: Simple Validation */}
                                 <button
                                   onClick={() => handleAction("complete")}
                                   disabled={!completionNotes.trim()}
-                                  className={`py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                  className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                                     !completionNotes.trim()
-                                      ? "bg-emerald-100 text-emerald-300 cursor-not-allowed shadow-none"
+                                      ? "bg-emerald-100 text-emerald-300 cursor-not-allowed"
                                       : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
                                   }`}>
-                                  <i className="fa-solid fa-check"></i> Valider
+                                  <i className="fa-solid fa-check"></i> Valider la mission
                                 </button>
-                                <button
-                                  onClick={() => handleAction("cancel")}
-                                  disabled={!completionNotes.trim()}
-                                  className={`py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${
-                                    !completionNotes.trim()
-                                      ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                                      : "bg-white text-rose-500 border-rose-200 hover:bg-rose-50"
-                                  }`}>
-                                  <i className="fa-solid fa-xmark"></i> Refuser
-                                </button>
+
+                                {/* Option 2: Promote (Validation + Procedure) - Only if attachment */}
+                                {attachmentUrl && (
+                                  <button
+                                    onClick={() => {
+                                      if (
+                                        window.confirm(
+                                          "Cette action va valider la mission, verser l'XP au technicien et créer une nouvelle procédure publique. Continuer ?"
+                                        )
+                                      ) {
+                                        handleAction("promote");
+                                      }
+                                    }}
+                                    disabled={!completionNotes.trim()}
+                                    className={`w-full py-4 bg-amber-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 ${
+                                      !completionNotes.trim()
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : "active:scale-[0.98]"
+                                    }`}>
+                                    <i className="fa-solid fa-star"></i> Valider & Créer une
+                                    Procédure
+                                  </button>
+                                )}
                               </div>
-                              {attachmentUrl && (
-                                <button
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        "Cette action va valider la mission, verser l'XP au technicien et créer une nouvelle procédure publique. Continuer ?"
-                                      )
-                                    ) {
-                                      handleAction("promote");
-                                    }
-                                  }}
-                                  disabled={!completionNotes.trim()}
-                                  className={`w-full py-3 bg-amber-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 ${
-                                    !completionNotes.trim() ? "opacity-50 cursor-not-allowed" : ""
-                                  }`}>
-                                  <i className="fa-solid fa-star"></i> Promouvoir en Procédure
-                                </button>
-                              )}
+
+                              {/* Option 3: Reject */}
+                              <button
+                                onClick={() => handleAction("cancel")}
+                                disabled={!completionNotes.trim()}
+                                className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${
+                                  !completionNotes.trim()
+                                    ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                                    : "bg-white text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+                                }`}>
+                                <i className="fa-solid fa-xmark"></i> Refuser / Demander correction
+                              </button>
 
                               {/* Feedback required indicator */}
                               <div className="flex justify-center">
                                 {!completionNotes.trim() && (
                                   <span className="text-[9px] font-black text-slate-400 uppercase animate-pulse flex items-center gap-1">
                                     <i className="fa-solid fa-circle-info text-indigo-400"></i>{" "}
-                                    Feedback requis pour valider ou refuser
+                                    Feedback requis pour toute action
                                   </span>
                                 )}
                               </div>
