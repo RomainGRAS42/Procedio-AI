@@ -900,23 +900,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               {/* STANDARD VIEW (PERSONAL MODE OR FOLDERS) */}
               {mode !== 'flash' && (
                 <>
-                  {/* RECENT NOTES SECTION */}
-                  {notes.length > 0 && (
-                    <div className="space-y-6 px-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
-                          <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Activités Récentes</h3>
-                        </div>
-                        <div className="h-px flex-1 bg-slate-100 mx-8"></div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {notes.slice(0, 4).map(note => (
-                          <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+
 
                   {/* FOLDERS SECTION */}
                   <div className="space-y-8 px-2">

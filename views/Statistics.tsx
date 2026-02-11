@@ -39,7 +39,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     teamIntensity: 0,
     healthPct: 0,
     contributionPulse: 0,
-    redZone: 0
+    redZone: 0,
+    urgentCount: 0,
+    totalViews: 0
   });
 
   useEffect(() => {
@@ -76,9 +78,12 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     try {
       const { data: procs } = await supabase
         .from('procedures')
-        .select('updated_at, created_at, views, Referent');
+        .select('uuid, updated_at, created_at, views');
 
       if (!procs) return;
+
+      const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
+      const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
 
       const now = new Date();
       const sixMonthsAgo = new Date();
@@ -90,6 +95,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       let aging = 0;
       let old = 0;
       let redZoneCount = 0;
+      let totalViews = 0;
 
       procs.forEach((p: any) => {
         const date = new Date(p.updated_at || p.created_at);
@@ -97,14 +103,16 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         else if (date > oneYearAgo) aging++;
         else old++;
 
-        if (!p.Referent) redZoneCount++;
+        if (!referentSet.has(p.uuid)) redZoneCount++;
+        totalViews += (p.views || 0);
       });
 
       const total = procs.length;
       setGlobalKPIs(prev => ({ 
         ...prev, 
         healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0,
-        redZone: redZoneCount
+        redZone: redZoneCount,
+        totalViews: totalViews
       }));
 
       const health = [
@@ -118,7 +126,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       cacheStore.set('stats_global_kpis', { 
         ...globalKPIs, 
         healthPct: total > 0 ? Math.round((fresh / total) * 100) : 0,
-        redZone: redZoneCount
+        redZone: redZoneCount,
+        totalViews: totalViews
       });
     } catch (err) {
       console.error("Error fetching health data:", err);
@@ -127,17 +136,15 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   const fetchMissedOpportunities = async () => {
     try {
-      // 1. Fetch pending opportunities from the new specialized table
-      const { data: opportunities } = await supabase
+      // 1. Fetch pending opportunities count for URGENT KPI
+      const { count: urgentCount, data: opportunities } = await supabase
         .from('search_opportunities')
-        .select('term, search_count')
+        .select('term, search_count', { count: 'exact' })
         .eq('status', 'pending')
         .order('search_count', { ascending: false })
         .limit(6);
 
       // 2. Calculate Search Success based on all search logs vs failures
-      // Note: We still use the 'notes' table for the global success % calculation 
-      // until a dedicated search_logs table is fully deployed.
       const { count: failCount } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
@@ -152,10 +159,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         ? Math.round(((totalSearch - (failCount || 0)) / totalSearch) * 100) 
         : 100;
       
-      setGlobalKPIs(prev => ({ ...prev, searchSuccess: successPct }));
+      setGlobalKPIs(prev => ({ ...prev, searchSuccess: successPct, urgentCount: urgentCount || 0 }));
 
       if (opportunities) {
-        const mapped = opportunities.map(opp => ({
+        const mapped = opportunities.map((opp: any) => ({
           term: opp.term,
           count: opp.search_count,
           trend: 'stable'
@@ -164,7 +171,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         cacheStore.set('stats_missed', mapped);
       }
       
-      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccess: successPct });
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccess: successPct, urgentCount: urgentCount || 0 });
     } catch (err) {
       console.error("Error fetching missed opportunities:", err);
     }
@@ -387,20 +394,28 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         {/* TOP KPI ROW */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           <KPICard 
-            label="Succès Recherche" 
-            value={`${globalKPIs.searchSuccess}%`} 
-            icon="fa-magnifying-glass-chart" 
-            color="text-indigo-600"
-            bg="bg-indigo-50"
-            tooltip="Pourcentage de recherches ayant abouti à un résultat. Un taux bas indique des lacunes documentaires."
+            label="Urgent" 
+            value={`${globalKPIs.urgentCount}`} 
+            icon="fa-triangle-exclamation" 
+            color="text-rose-600"
+            bg="bg-rose-50"
+            tooltip="Recherches échouées nécessitant une création de contenu immédiate (Alertes Critiques)."
           />
           <KPICard 
-            label="Fraîcheur Base" 
+            label="Fiabilité" 
             value={`${globalKPIs.healthPct}%`} 
-            icon="fa-leaf" 
+            icon="fa-shield-heart" 
             color="text-emerald-600"
             bg="bg-emerald-50"
-            tooltip="Proportion de procédures mises à jour il y a moins de 6 mois."
+            tooltip="Score de santé : Proportion de procédures mises à jour il y a moins de 6 mois."
+          />
+          <KPICard 
+            label="Dynamique" 
+            value={`+${globalKPIs.totalViews}`} 
+            icon="fa-arrow-trend-up" 
+            color="text-indigo-600"
+            bg="bg-indigo-50"
+            tooltip="Croissance d'Usage : Volume total de consultations sur la période."
           />
           <KPICard 
             label="Zone Rouge" 
@@ -408,7 +423,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-triangle-exclamation" 
             color="text-rose-600"
             bg="bg-rose-50"
-            tooltip="Procédures sans référent assigné. Cliquez pour créer une mission de régularisation immédiate."
+            tooltip="Risque de Perte : Procédures sans référent assigné. Cliquez pour créer une mission de régularisation."
             onClick={handleCreateRedZoneMission}
           />
           <KPICard 
@@ -418,15 +433,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             color="text-amber-600"
             bg="bg-amber-50"
             tooltip="Niveau d'activité global de l'équipe (consultations et contributions) par rapport aux objectifs."
-          />
-          <KPICard 
-            label="Pulse Savoir" 
-            value={`${globalKPIs.contributionPulse}`} 
-            unit="docs/j"
-            icon="fa-seedling" 
-            color="text-teal-600"
-            bg="bg-teal-50"
-            tooltip="Vitesse de création/mise à jour de nouvelles connaissances par jour sur les 30 derniers jours."
             align="right"
           />
         </div>
