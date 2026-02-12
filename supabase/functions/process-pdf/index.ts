@@ -8,6 +8,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey, x-supabase-client-platform, x-supabase-client-version",
 };
 
+const sanitize = (str: string) => {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-z0-9]/gi, "_") // Replace non-alphanumeric with _
+    .toLowerCase();
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -24,16 +32,22 @@ Deno.serve(async (req) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    console.log(`🔍 Traitement d'un fichier .${fileExtension} (ID: ${file_id})`);
+    
     const isPDF = fileExtension === 'pdf';
     const isWord = fileExtension === 'docx';
     const isImage = ['jpg', 'jpeg', 'png'].includes(fileExtension || '');
 
     let fullMarkdown = "";
-    let storagePath = file_id;
+    
+    // Path definition: CATEGORY / TITRE_SANI _ ID8 . EXT
+    const sanitizedTitle = sanitize(title);
+    const idSuffix = file_id.substring(0, 8);
+    let storagePath = `${category}/${sanitizedTitle}_${idSuffix}.${fileExtension}`;
 
     // 1. EXTRACTION DU CONTENU
     if (isPDF || isImage) {
-      // PDF ou Image -> On utilise Mistral OCR
+      console.log("📑 Extraction OCR Mistral...");
       const uploadFormData = new FormData();
       uploadFormData.append("file", file);
       uploadFormData.append("purpose", "ocr");
@@ -43,6 +57,8 @@ Deno.serve(async (req) => {
         headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` },
         body: uploadFormData,
       });
+      if (!uploadRes.ok) throw new Error(`Erreur upload Mistral: ${await uploadRes.text()}`);
+      
       const uploadData = await uploadRes.json();
       const mistralFileId = uploadData.id;
 
@@ -54,8 +70,11 @@ Deno.serve(async (req) => {
           document: { type: "file", file_id: mistralFileId },
         }),
       });
+      if (!ocrRes.ok) throw new Error(`Erreur OCR Mistral: ${await ocrRes.text()}`);
+      
       const ocrData = await ocrRes.json();
       fullMarkdown = ocrData.pages?.map((p: any) => p.markdown).join("\n\n") || "";
+      console.log(`✅ OCR terminé (${fullMarkdown.length} caractères)`);
 
       // Nettoyage Cloud
       fetch(`https://api.mistral.ai/v1/files/${mistralFileId}`, {
@@ -64,17 +83,22 @@ Deno.serve(async (req) => {
       }).catch(() => {});
 
     } else if (isWord) {
-      // Word -> Extraction texte brut avec Mammoth
+      console.log("📑 Extraction texte Word (Mammoth)...");
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      fullMarkdown = result.value;
+      try {
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        fullMarkdown = result.value;
+        console.log(`✅ Texte Word extrait (${fullMarkdown.length} caractères)`);
+      } catch (err: any) {
+        throw new Error(`Mammoth a échoué : ${err.message}`);
+      }
     } else {
       throw new Error(`Format de fichier non supporté : ${fileExtension}`);
     }
 
     // 2. RÉÉCRITURE IA (Si ce n'est pas un PDF d'origine, on veut un beau Markdown)
     if (!isPDF && fullMarkdown.trim()) {
-      console.log("🤖 Re-structuration du contenu par l'IA...");
+      console.log("🤖 Re-structuration du contenu par Mistral AI...");
       const chatRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
@@ -92,11 +116,20 @@ Deno.serve(async (req) => {
           ]
         }),
       });
-      const chatData = await chatRes.json();
-      fullMarkdown = chatData.choices[0].message.content;
+      
+      if (!chatRes.ok) {
+        console.warn("⚠️ Échec restructuration Mistral (fallback sur texte brut)");
+      } else {
+        const chatData = await chatRes.json();
+        const aiMarkdown = chatData.choices?.[0]?.message?.content;
+        if (aiMarkdown) {
+          fullMarkdown = aiMarkdown;
+          console.log("✅ Contenu restructuré avec succès");
+        }
+      }
       
       // On sauvegarde en .md
-      storagePath = `${file_id}.md`;
+      storagePath = `${category}/${sanitizedTitle}_${idSuffix}.md`;
     }
 
     // 3. ARCHIVAGE DANS STORAGE
@@ -119,7 +152,7 @@ Deno.serve(async (req) => {
       file_id: file_id,
       title: title,
       Type: category,
-      file_url: storagePath,
+      file_url: storagePath, // Stockage du chemin relatif (CATEGORY/FILE.ext)
       source_id: source_id || null,
       created_at: uploadDate || new Date().toLocaleString('fr-FR'),
       updated_at: new Date().toISOString()
@@ -128,6 +161,7 @@ Deno.serve(async (req) => {
     if (procError) throw procError;
 
     // 5. CHUNKING & EMBEDDINGS (Pour le Chat Assistant)
+    console.log("🧠 Génération des embeddings...");
     const chunks = fullMarkdown.match(/[\s\S]{1,2000}/g) || [fullMarkdown];
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
@@ -137,6 +171,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({ model: "mistral-embed", input: [chunk] }),
         });
         const embedData = await embedRes.json();
+        
         await supabase.from("documents").insert({
             content: chunk,
             embedding: embedData.data[0].embedding,
@@ -145,11 +180,12 @@ Deno.serve(async (req) => {
         });
     }
 
+    console.log("🚀 Succès total !");
     return new Response(JSON.stringify({ success: true, title, storagePath }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("🔥 ERREUR :", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
