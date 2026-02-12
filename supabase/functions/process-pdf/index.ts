@@ -29,6 +29,9 @@ Deno.serve(async (req) => {
     const source_id = formData.get("source_id") as string | null;
 
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
+    if (!MISTRAL_API_KEY) {
+      throw new Error("La clé API Mistral (MISTRAL_API_KEY) est manquante dans les secrets.");
+    }
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -45,91 +48,65 @@ Deno.serve(async (req) => {
     const idSuffix = file_id.substring(0, 8);
     let storagePath = `${category}/${sanitizedTitle}_${idSuffix}.${fileExtension}`;
 
-    // 1. EXTRACTION DU CONTENU
-    if (isPDF || isImage) {
-      console.log("📑 Extraction OCR Mistral...");
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", file);
-      uploadFormData.append("purpose", "ocr");
+    // 1. EXTRACTION DU CONTENU (Soft Fail)
+    try {
+      if (isPDF || isImage) {
+        console.log("📑 Extraction OCR Mistral...");
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
+        uploadFormData.append("purpose", "ocr");
 
-      const uploadRes = await fetch("https://api.mistral.ai/v1/files", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` },
-        body: uploadFormData,
-      });
-      if (!uploadRes.ok) throw new Error(`Erreur upload Mistral: ${await uploadRes.text()}`);
-      
-      const uploadData = await uploadRes.json();
-      const mistralFileId = uploadData.id;
+        // Timeout race for upload
+        const uploadRes = await fetch("https://api.mistral.ai/v1/files", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` },
+          body: uploadFormData,
+        });
 
-      const ocrRes = await fetch("https://api.mistral.ai/v1/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
-        body: JSON.stringify({
-          model: "mistral-ocr-latest",
-          document: { type: "file", file_id: mistralFileId },
-        }),
-      });
-      if (!ocrRes.ok) throw new Error(`Erreur OCR Mistral: ${await ocrRes.text()}`);
-      
-      const ocrData = await ocrRes.json();
-      fullMarkdown = ocrData.pages?.map((p: any) => p.markdown).join("\n\n") || "";
-      console.log(`✅ OCR terminé (${fullMarkdown.length} caractères)`);
+        if (uploadRes.ok) {
+           const uploadData = await uploadRes.json();
+           const mistralFileId = uploadData.id;
 
-      // Nettoyage Cloud
-      fetch(`https://api.mistral.ai/v1/files/${mistralFileId}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` }
-      }).catch(() => {});
+           const ocrRes = await fetch("https://api.mistral.ai/v1/ocr", {
+             method: "POST",
+             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
+             body: JSON.stringify({
+               model: "mistral-ocr-latest",
+               document: { type: "file", file_id: mistralFileId },
+             }),
+           });
+           
+           if (ocrRes.ok) {
+             const ocrData = await ocrRes.json();
+             fullMarkdown = ocrData.pages?.map((p: any) => p.markdown).join("\n\n") || "";
+             console.log(`✅ OCR terminé (${fullMarkdown.length} caractères)`);
+           } else {
+             console.warn(`⚠️ Erreur OCR Mistral: ${await ocrRes.text()}`);
+           }
 
-    } else if (isWord) {
-      console.log("📑 Extraction texte Word (Mammoth)...");
-      const arrayBuffer = await file.arrayBuffer();
-      try {
+           // Cleanup
+           fetch(`https://api.mistral.ai/v1/files/${mistralFileId}`, {
+               method: "DELETE",
+               headers: { "Authorization": `Bearer ${MISTRAL_API_KEY}` }
+           }).catch(() => {});
+        } else {
+           console.warn(`⚠️ Erreur Upload Mistral: ${await uploadRes.text()}`);
+        }
+
+      } else if (isWord) {
+        console.log("📑 Extraction texte Word (Mammoth)...");
+        const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         fullMarkdown = result.value;
-        console.log(`✅ Texte Word extrait (${fullMarkdown.length} caractères)`);
-      } catch (err: any) {
-        throw new Error(`Mammoth a échoué : ${err.message}`);
       }
-    } else {
-      throw new Error(`Format de fichier non supporté : ${fileExtension}`);
+    } catch (err) {
+      console.error("⚠️ Erreur non-bloquante lors de l'extraction AI:", err);
+      // On continue sans markdown, le fichier sera au moins stocké
     }
 
-    // 2. RÉÉCRITURE IA (Si ce n'est pas un PDF d'origine, on veut un beau Markdown)
+    // 2. RÉÉCRITURE IA (DESACTIVÉE)
     if (!isPDF && fullMarkdown.trim()) {
-      console.log("🤖 Re-structuration du contenu par Mistral AI...");
-      const chatRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
-        body: JSON.stringify({
-          model: "mistral-large-latest",
-          messages: [
-            {
-              role: "system",
-              content: "Tu es un expert en documentation technique. Ta mission est de transformer du texte brut extrait d'un document en une procédure Markdown structurée, professionnelle et facile à lire. Utilise des titres, des listes à puces et des blocs d'avertissement si nécessaire. Réponds uniquement avec le code Markdown."
-            },
-            {
-              role: "user",
-              content: `Voici le texte brut à transformer en procédure Markdown :\n\n${fullMarkdown}`
-            }
-          ]
-        }),
-      });
-      
-      if (!chatRes.ok) {
-        console.warn("⚠️ Échec restructuration Mistral (fallback sur texte brut)");
-      } else {
-        const chatData = await chatRes.json();
-        const aiMarkdown = chatData.choices?.[0]?.message?.content;
-        if (aiMarkdown) {
-          fullMarkdown = aiMarkdown;
-          console.log("✅ Contenu restructuré avec succès");
-        }
-      }
-      
-      // On sauvegarde en .md
-      storagePath = `${category}/${sanitizedTitle}_${idSuffix}.md`;
+        storagePath = `${category}/${sanitizedTitle}_${idSuffix}.md`;
     }
 
     // 3. ARCHIVAGE DANS STORAGE
