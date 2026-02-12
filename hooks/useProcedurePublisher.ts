@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { ActiveTransfer } from '../App';
+import { ActiveTransfer } from '../types';
 
 interface UseProcedurePublisherProps {
   user: { id: string };

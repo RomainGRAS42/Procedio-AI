@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from "react-router-dom";
-import { User, UserRole, ViewType, Procedure } from "./types";
+import { User, UserRole, ViewType, Procedure, ActiveTransfer } from "./types";
 import { supabase, checkSupabaseConnection } from "./lib/supabase";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -21,13 +21,6 @@ import SearchResults from "./views/SearchResults";
 import Missions from "./views/Missions";
 import XPProgressBarTest from "./views/XPProgressBarTest";
 import { MissionsProvider } from "./contexts/MissionsContext";
-
-export interface ActiveTransfer {
-  fileName: string;
-  step: string;
-  progress: number;
-  abortController: AbortController | null;
-}
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

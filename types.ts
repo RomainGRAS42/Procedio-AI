@@ -142,3 +142,10 @@ export interface Mission {
   assignee?: { first_name: string; last_name: string };
   creator?: { first_name: string; last_name: string };
 }
+
+export interface ActiveTransfer {
+  fileName: string;
+  step: string;
+  progress: number;
+  abortController: AbortController | null;
+}

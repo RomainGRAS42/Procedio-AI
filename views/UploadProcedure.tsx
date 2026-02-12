@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActiveTransfer } from '../App';
+import { ActiveTransfer } from '../types';
 import { useProcedurePublisher } from '../hooks/useProcedurePublisher';
 
 interface UploadProcedureProps {
