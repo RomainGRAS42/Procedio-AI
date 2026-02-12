@@ -1446,14 +1446,14 @@ const Dashboard: React.FC<DashboardProps> = ({
           {user.role === UserRole.MANAGER && viewMode === "team" && (
             <div className="space-y-6 animate-fade-in">
               
-                {/* ZONE 1: KPIs Flash */}
-                <div className="">
-                   <StatsSummaryWidget stats={stats} />
-                </div>
-
-                {/* ZONE 1.5: Synergie d'Équipe */}
+                {/* ZONE 1: Synergie d'Équipe (Maintenant au dessus des KPIs) */}
                 <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
                    <TeamSynergyWidget />
+                </div>
+
+                {/* ZONE 2: KPIs Flash */}
+                <div className="">
+                   <StatsSummaryWidget stats={stats} />
                 </div>
 
               {/* ZONE 2: Centre de Révision, Missions & Activité */}

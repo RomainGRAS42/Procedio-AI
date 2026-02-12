@@ -51,7 +51,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [iframeReady, setIframeReady] = useState(false);
   const [showPromoteConfirmation, setShowPromoteConfirmation] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // New state for custom success modal
+  const [showSuccessModal, setShowSuccessModal] = useState<"promote" | "submit" | false>(false);
 
   // Promote Form State
   const [promoteTitle, setPromoteTitle] = useState(mission.title);
@@ -88,7 +88,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
       if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
 
-      // Modal is already closed, background process finished.
+      setShowSuccessModal("promote");
+      
+      // Modal remains open but shows success state.
       console.log("Mission promoted and validated successfully in background.");
     }
   });
@@ -372,21 +374,13 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         onClose();
       }
       
-      // For 'complete', we might want to stay open to show a success state or just to let the refresh happen
       if (action === 'complete') {
-        // We'll let the parent handle the status update and refresh.
-        // If we want to stay open, we don't call onClose() here.
-        // But the user might prefer closing after a small delay or showing success.
-        // For now, let's keep it open if it's a technician submitting (awaiting_validation)
-        // and close if it's a manager validating (completed).
         const finalStatus = user.role === UserRole.MANAGER || (user.role as any) === "manager" ? "completed" : "awaiting_validation";
         if (finalStatus === "completed") {
           onClose();
         } else {
-          // If technician, maybe we show a success message in the modal?
-          // For now, let's keep it consistent with the user's request: "don't close unexpectedly"
-          // We can call onClose() but perhaps after a toast or transition.
-          // Or just don't call it and let the user click 'X'.
+          // Technician submission
+          setShowSuccessModal("submit");
         }
       }
     } catch (err: any) {
@@ -982,19 +976,29 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
           <div className="bg-slate-800 border border-slate-700 w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden text-center">
             <div className="relative z-10">
               <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 border border-emerald-500/20 shadow-lg shadow-emerald-500/10 animate-bounce-subtle">
-                <i className="fa-solid fa-robot"></i>
+                <i className={`fa-solid ${showSuccessModal === 'submit' ? 'fa-paper-plane' : 'fa-robot'}`}></i>
               </div>
 
               <h3 className="text-white font-black text-2xl mb-4 tracking-tight">
-                Mission Validée !
+                {showSuccessModal === 'submit' ? 'Mission Envoyée !' : 'Mission Validée !'}
               </h3>
 
               <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700 mb-8">
                 <p className="text-slate-300 text-sm font-medium leading-relaxed">
-                  Le document est en cours d'analyse par{" "}
-                  <span className="text-indigo-400 font-bold">l'IA Procedio</span>.
-                  <br />
-                  Il sera bientôt disponible et interrogeable dans la base de connaissances.
+                  {showSuccessModal === 'submit' ? (
+                    <>
+                      Votre travail a été transmis avec succès. 
+                      <br /> 
+                      <span className="text-indigo-400 font-bold">En attente de validation</span> par le manager.
+                    </>
+                  ) : (
+                    <>
+                      Le document est en cours d'analyse par{" "}
+                      <span className="text-indigo-400 font-bold">l'IA Procedio</span>.
+                      <br />
+                      Il sera bientôt disponible dans la base de connaissances.
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -1005,7 +1009,6 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
               </button>
             </div>
 
-            {/* Decorative background glow */}
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
           </div>
