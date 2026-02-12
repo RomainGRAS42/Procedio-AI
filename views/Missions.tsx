@@ -499,12 +499,9 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           </div>
 
           {mission.status === 'open' && user.role === UserRole.TECHNICIAN && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleClaimMission(mission.id); }}
-              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
-            >
-              Réclamer
-            </button>
+            <div className="px-6 py-3 bg-slate-50 text-slate-400 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-100 flex items-center gap-2">
+              <i className="fa-solid fa-eye"></i> Voir détails
+            </div>
           )}
 
           {mission.status === 'awaiting_validation' && user.role === UserRole.MANAGER && (
