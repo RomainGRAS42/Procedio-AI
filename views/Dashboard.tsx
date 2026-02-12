@@ -26,13 +26,14 @@ import ActivityWidget from '../components/dashboard/ActivityWidget';
 import ReviewCenterWidget from '../components/dashboard/ReviewCenterWidget';
 import ExpertReviewWidget from '../components/dashboard/ExpertReviewWidget';
 import RSSWidget from "../components/RSSWidget";
+import MasteryQuizModal from "../components/MasteryQuizModal";
 
 interface DashboardProps {
   user: User;
   onQuickNote: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
   onViewComplianceHistory: () => void;
-  targetAction?: { type: 'suggestion' | 'read', id: string } | null;
+  targetAction?: { type: 'suggestion' | 'read' | 'mastery', id: string } | null;
   onActionHandled?: () => void;
   onUploadClick: () => void;
   onNavigate?: (view: string) => void;
@@ -114,6 +115,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Mastery Claims (Manager Only)
   const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
   const [loadingClaims, setLoadingClaims] = useState(false);
+
+  // Approved Exams (Technician Only)
+  const [approvedExams, setApprovedExams] = useState<any[]>([]);
+  const [loadingExams, setLoadingExams] = useState(false);
+  const [activeQuizRequest, setActiveQuizRequest] = useState<any | null>(null);
+  const [showDashboardQuiz, setShowDashboardQuiz] = useState(false);
 
   // Badges (Personal View)
   const [earnedBadges, setEarnedBadges] = useState<any[]>(cacheStore.get('dash_earned_badges') || []);
@@ -375,6 +382,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         fetchManagerKPIs();
         fetchMasteryClaims();
         fetchPendingFlashNotes();
+      } else {
+        fetchApprovedExams();
       }
       
       // Always check for referent workload (anyone can be a referent)
@@ -382,6 +391,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     }
   }, [user?.id, user?.role]);
+
+  // Support for deep linking to suggestions or mastery exams
+  useEffect(() => {
+    if (targetAction && (pendingSuggestions.length > 0 || approvedExams.length > 0)) {
+      if (targetAction.type === 'suggestion') {
+        const sugg = pendingSuggestions.find(s => s.id === targetAction.id);
+        if (sugg) {
+          setSelectedSuggestion(sugg);
+          setShowSuggestionModal(true);
+          onActionHandled?.();
+        }
+      } else if (targetAction.type === 'mastery') {
+        const exam = approvedExams.find(e => e.id === targetAction.id);
+        if (exam) {
+          setActiveQuizRequest(exam);
+          setShowDashboardQuiz(true);
+          onActionHandled?.();
+        }
+      }
+    }
+  }, [targetAction, pendingSuggestions, approvedExams]);
 
 
 
@@ -624,6 +654,29 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const fetchApprovedExams = async () => {
+    if (user.role !== UserRole.TECHNICIAN) return;
+    setLoadingExams(true);
+    try {
+      const { data, error } = await supabase
+        .from('mastery_requests')
+        .select(`
+          *,
+          procedures:procedure_id (title, uuid, file_url, Type, views, status)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setApprovedExams(data);
+    } catch (err) {
+      console.error("Error fetching approved exams:", err);
+    } finally {
+      setLoadingExams(false);
+    }
+  };
+
   const handleApproveMastery = async (requestId: string) => {
     try {
       // 1. Fetch request details to get procedure_id
@@ -661,12 +714,21 @@ const Dashboard: React.FC<DashboardProps> = ({
       setToast({ message: "Examen approuvé et généré par l'IA !", type: "success" });
       fetchMasteryClaims();
       
-      // Activity Log
+      // Activity Log (For Activity Feed)
       await supabase.from("notes").insert({
         user_id: user.id,
-        title: `MASTERY_APPROVED_${requestId}`,
+        title: `LOG_MASTERY_APPROVED_${requestId}`,
         content: `Manager ${user.firstName} a approuvé la demande de maîtrise de ${request?.user_profiles?.first_name} sur "${request?.procedures?.title}". L'examen a été généré dynamiquement par l'IA.`,
         is_locked: false
+      });
+
+      // Notification for the Technician (The one that triggers the red badge and modal launch)
+      await supabase.from("notes").insert({
+        user_id: request.user_id, // TARGET THE TECHNICIAN
+        title: `MASTERY_APPROVED_${requestId}`,
+        content: `Bonne nouvelle ! Ton examen pour "${request?.procedures?.title}" est prêt. Clique pour le lancer !`,
+        is_locked: false,
+        viewed: false
       });
 
     } catch (err: any) {
@@ -753,15 +815,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     onActionHandled?.();
   };
 
-  useEffect(() => {
-    if (targetAction) {
-      if (targetAction.type === 'suggestion') {
-        openSuggestionById(targetAction.id);
-      } else {
-        onActionHandled?.();
-      }
-    }
-  }, [targetAction]);
 
   const fetchActivities = async () => {
     setLoadingActivities(true);
@@ -1344,33 +1397,37 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
-
-      {/* RAPPEL MANAGER: DEMANDES DE MAITRISE */}
-      {user.role === UserRole.MANAGER && (masteryClaims.length || 0) > 0 && (
+      {/* RAPPEL TECHNICIEN: EXAMEN DE MAITRISE PRÊT */}
+      {user.role === UserRole.TECHNICIAN && approvedExams.length > 0 && (
         <div className="animate-slide-up">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-[2rem] p-6 text-white shadow-xl shadow-orange-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
             <div className="flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
-                <i className="fa-solid fa-certificate"></i>
+                <i className="fa-solid fa-graduation-cap"></i>
               </div>
               <div>
                 <h3 className="text-xl font-black tracking-tight leading-none italic">
-                  Nouvelle Maîtrise !
+                  Examen Prêt !
                 </h3>
                 <p className="text-white/80 text-sm mt-1 font-bold">
-                  Il y a <span className="text-white font-black underline decoration-2 underline-offset-4">{masteryClaims.length} demande(s)</span> de maîtrise en attente d'examen.
+                  Le manager a validé ta demande pour <span className="text-white font-black underline decoration-2 underline-offset-4">{approvedExams[0]?.procedures?.title}</span>. L'examen est prêt.
                 </p>
               </div>
             </div>
             <button 
-              onClick={() => onNavigate?.('statistics')}
-              className="px-8 py-4 bg-white text-orange-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-slate-50 transition-all active:scale-95 shrink-0"
+              onClick={() => {
+                setActiveQuizRequest(approvedExams[0]);
+                setShowDashboardQuiz(true);
+              }}
+              className="px-8 py-4 bg-white text-indigo-700 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-slate-50 transition-all active:scale-95 shrink-0 flex items-center gap-2"
             >
-              Voir les demandes
+              <i className="fa-solid fa-play text-[10px]"></i>
+              Lancer l'Examen
             </button>
           </div>
         </div>
       )}
+
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
       <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -1857,6 +1914,31 @@ const Dashboard: React.FC<DashboardProps> = ({
         document.body
       )}
 
+      {/* Modal Quiz de Maîtrise */}
+      {showDashboardQuiz && activeQuizRequest && (
+        <MasteryQuizModal
+          isOpen={showDashboardQuiz}
+          onClose={() => {
+            setShowDashboardQuiz(false);
+            setActiveQuizRequest(null);
+            fetchApprovedExams();
+            fetchPersonalStats();
+          }}
+          procedure={{
+            ...activeQuizRequest.procedures,
+            id: activeQuizRequest.procedure_id,
+            db_id: activeQuizRequest.procedure_id
+          }}
+          user={user}
+          quizData={activeQuizRequest.quiz_data}
+          masteryRequestId={activeQuizRequest.id}
+          onSuccess={() => {
+            // Notification or celebration if needed
+            fetchApprovedExams();
+            fetchPersonalStats();
+          }}
+        />
+      )}
     </div>
   );
 };

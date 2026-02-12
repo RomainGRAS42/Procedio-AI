@@ -119,6 +119,28 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
             achieved_score: finalScore,
             last_tested_at: new Date().toISOString()
           });
+
+        // 3. Notify Manager (via a legacy note log)
+        await supabase.from("notes").insert([
+          {
+            title: `MASTERY_COMPLETED_${masteryRequestId}`,
+            content: `${user.firstName} a terminé l'examen de maîtrise sur "${procedure.title}" avec un score de ${finalScore}%. (Niveau ${level} atteint)`,
+            is_protected: false,
+            user_id: user.id,
+            tags: ["MASTERY", "COMPLETED"],
+            viewed: false
+          },
+        ]);
+
+        // 4. Grant XP Reward
+        if (finalScore >= 70) {
+          const xpReward = finalScore === 100 ? 100 : finalScore >= 85 ? 75 : 50;
+          await supabase.rpc('increment_user_xp', {
+            target_user_id: user.id,
+            xp_amount: xpReward,
+            reason: `Maîtrise validée : ${procedure.title} (${finalScore}%)`
+          });
+        }
       }
 
       onSuccess(finalScore, level);

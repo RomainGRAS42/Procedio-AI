@@ -17,7 +17,7 @@ interface HeaderProps {
   onSelectProcedure?: (procedure: any) => void; // New Prop for Direct Navigation
   onLogout: () => void;
   onNavigate: (view: any) => void;
-  onNotificationClick?: (type: 'suggestion' | 'read', id: string) => void;
+  onNotificationClick?: (type: 'suggestion' | 'read' | 'mastery', id: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -275,7 +275,10 @@ const Header: React.FC<HeaderProps> = ({
         .from("notes")
         .select("*")
         .eq("viewed", false) // Only fetch unviewed logs for badge
-        .or('title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%')
+        .or(user.role === UserRole.MANAGER 
+          ? 'title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%,title.ilike.CLAIM_MASTERY_%'
+          : 'title.ilike.MASTERY_APPROVED_%')
+        .eq('user_id', user.id) // Ensure user sees only their notifications
         .order("updated_at", { ascending: false })
         .limit(5);
 
@@ -575,6 +578,7 @@ const Header: React.FC<HeaderProps> = ({
                     {readLogs
                       .map((log) => {
                       const isSuggestion = log.title.startsWith("LOG_SUGGESTION_");
+                      const isMastery = log.title.startsWith("CLAIM_MASTERY_");
                       const priorityMatch = log.content.match(/\[Priorité: (.*?)\]/);
                       const priority = priorityMatch ? priorityMatch[1].toLowerCase() : null;
                       
@@ -582,17 +586,19 @@ const Header: React.FC<HeaderProps> = ({
                       
                       const borderColor = priority === 'high' ? 'border-rose-200' : 
                                         priority === 'medium' ? 'border-amber-200' : 
-                                        isSuggestion ? 'border-indigo-200' : 'border-indigo-100';
+                                        isSuggestion ? 'border-indigo-200' : 
+                                        isMastery ? 'border-orange-200' : 'border-indigo-100';
                                         
                       // Visually distinct: Unread = Colored Background, Read = White/Grayish
                       const bgColor = !isUnread ? 'bg-white opacity-60 grayscale-[0.5]' :
                                     priority === 'high' ? 'bg-rose-50/50' : 
                                     priority === 'medium' ? 'bg-amber-50/50' : 
-                                    isSuggestion ? 'bg-indigo-50/50' : 'bg-indigo-50/50';
+                                    isSuggestion ? 'bg-indigo-50/50' : 
+                                    isMastery ? 'bg-orange-50/50' : 'bg-indigo-50/50';
 
                       const textColor = priority === 'high' ? 'text-rose-600' : 
                                       priority === 'medium' ? 'text-amber-600' : 
-                                      'text-indigo-600';
+                                      isMastery ? 'text-orange-600' : 'text-indigo-600';
 
                       return (
                         <div
@@ -605,19 +611,23 @@ const Header: React.FC<HeaderProps> = ({
                             
                             if (isSuggestion) {
                               const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
-                              setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
                               onNotificationClick?.('suggestion', suggestionId);
+                            } else if (log.title.startsWith("CLAIM_MASTERY_")) {
+                               const requestId = log.title.replace("CLAIM_MASTERY_", "");
+                               onNotificationClick?.('mastery', requestId);
+                            } else if (log.title.startsWith("MASTERY_APPROVED_")) {
+                               const requestId = log.title.replace("MASTERY_APPROVED_", "");
+                               onNotificationClick?.('mastery', requestId);
                             } else {
-                              setViewedNotifIds(prev => new Set(prev).add(log.id)); // Mark as read locally
                               onNotificationClick?.('read', log.id);
                             }
                             setShowNotifications(false);
                           }}
                           className={`p-3 rounded-xl border ${borderColor} ${bgColor} cursor-pointer hover:scale-[1.02] transition-all active:scale-95 group`}>
                           <div className="flex items-center gap-2 mb-1">
-                            <i className={`fa-solid ${isSuggestion ? 'fa-lightbulb' : 'fa-circle-check'} ${textColor} text-[10px]`}></i>
+                            <i className={`fa-solid ${isSuggestion ? 'fa-lightbulb' : (isMastery || log.title.startsWith("MASTERY_APPROVED_")) ? 'fa-graduation-cap' : 'fa-circle-check'} ${textColor} text-[10px]`}></i>
                             <span className={`${textColor} text-[10px] font-black uppercase tracking-widest`}>
-                              {isSuggestion ? "Nouvelle Suggestion" : "Confirmation de lecture"}
+                              {isSuggestion ? "Nouvelle Suggestion" : (isMastery || log.title.startsWith("MASTERY_APPROVED_")) ? "Examen de Maîtrise" : "Confirmation de lecture"}
                             </span>
                             <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
                           </div>
