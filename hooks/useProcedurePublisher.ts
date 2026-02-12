@@ -69,7 +69,7 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
         formData.append('source_id', sourceId);
       }
 
-      const { data: supabaseData, error: supabaseError } = await supabase.functions.invoke('process-pdf', {
+      const { data: supabaseData, error: supabaseError } = await supabase.functions.invoke('process-pdf-v2', {
         body: formData,
       });
       

@@ -306,19 +306,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     
     const resolveDocUrl = async () => {
       let finalUrl = null;
-      if (procedure.fileUrl) {
-        if (procedure.fileUrl.startsWith("http")) {
-          finalUrl = procedure.fileUrl;
+      const path = procedure.fileUrl || (procedure as any).file_url;
+      
+      if (path) {
+        if (path.startsWith("http")) {
+          finalUrl = path;
         } else {
-          const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.fileUrl);
+          const { data } = supabase.storage.from("procedures").getPublicUrl(path);
           finalUrl = data?.publicUrl || null;
         }
-      } else if (procedure.id) {
-        try {
-          const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
+      } else {
+        // Fallback to ID at root
+        const fallbackId = procedure.id || procedure.uuid || (procedure as any).file_id;
+        if (fallbackId) {
+          const { data } = supabase.storage.from("procedures").getPublicUrl(fallbackId);
           finalUrl = data?.publicUrl || null;
-        } catch (err) {
-          console.error("Error getting public URL from id:", err);
         }
       }
       setDocUrl(finalUrl);
