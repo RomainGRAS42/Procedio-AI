@@ -76,18 +76,10 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         return;
       }
 
-      // 2. Link procedure to mission
-      // Fetch the procedure ID using the uuid (fileId from callback)
-      const { data: procRecord } = await supabase
-          .from("procedures")
-          .select("id")
-          .eq("uuid", fileId)
-          .single();
-
       const { error: updateError } = await supabase
         .from("missions")
         .update({
-          procedure_id: procRecord?.id || null, 
+          procedure_id: fileId, 
           completion_notes: completionNotes || "Mission validée et promue en procédure.",
         })
         .eq("id", mission.id);
@@ -359,7 +351,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
         // 2. Use the unified publisher hook
         // This will handle: Progress (ActiveTransfer), Insert, and Edge Function call
-        await publishFile(file, promoteTitle, promoteCategory);
+        await publishFile(file, promoteTitle, promoteCategory, mission.id);
         
         return; // Success handling is done in onSuccess callback of useProcedurePublisher
       }

@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
     const file_id = (formData.get("file_id") as string);
     const category = (formData.get("category") as string) || "AUTRE";
     const uploadDate = formData.get("upload_date");
+    const source_id = formData.get("source_id") as string | null;
 
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -49,6 +50,7 @@ Deno.serve(async (req) => {
       title: title,
       Type: category,
       file_url: storagePath,
+      source_id: source_id || null, // Ensure source_id is synced
       created_at: uploadDate || new Date().toLocaleString('fr-FR'),
       updated_at: new Date().toISOString()
     }, { onConflict: 'uuid' });

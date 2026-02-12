@@ -12,7 +12,7 @@ interface UseProcedurePublisherProps {
 export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: UseProcedurePublisherProps) => {
   const [errorMsg, setErrorMsg] = useState('');
 
-  const publishFile = async (file: File, title: string, category: string) => {
+  const publishFile = async (file: File, title: string, category: string, sourceId?: string) => {
     if (!title.trim() || !file) {
       setErrorMsg("Données manquantes pour la publication.");
       return;
@@ -41,20 +41,19 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
       // This ensures the procedure is created even if the Edge Function has issues
       // We use the schema we verified: uuid, title, Type, created_at (text), etc.
       // NOTE: We also add source_id to avoid trigger errors
-      // DEBUG ID: b9e4d1a2-3f8c-4a3b-9e1d-5b2c7f6a10d9
-      console.log("DEBUG: Testing publication - No source_id included. (b9e4d1a2)");
       const { error: insertError } = await supabase
         .from("procedures")
         .insert({
           uuid: fileId,
           file_id: fileId,
           title: title.trim(),
-          file_url: "", // Will be updated by Edge Function or we can guess it but safer to wait
+          file_url: "", // Will be updated by Edge Function
           "Type": category || "Missions / Transferts",
           created_at: uploadDate,
           updated_at: new Date().toISOString(),
           views: 0,
-          is_trend: false
+          is_trend: false,
+          source_id: sourceId || null
         });
 
       if (insertError) {
@@ -69,11 +68,15 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
       formData.append('upload_date', uploadDate);
       formData.append('category', category);
       formData.append('author_id', user.id);
+      if (sourceId) {
+        formData.append('source_id', sourceId);
+      }
 
       console.log('📤 Envoi vers Supabase Edge Function (process-pdf):', {
         file_id: fileId,
         title: title.trim(),
-        category: category
+        category: category,
+        source_id: sourceId
       });
 
       const { data: supabaseData, error: supabaseError } = await supabase.functions.invoke('process-pdf', {
