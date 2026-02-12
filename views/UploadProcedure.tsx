@@ -139,8 +139,10 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
               ) : (
                 <input 
                   type="file" 
-                  webkitdirectory="" 
-                  directory="" 
+                  {...({ 
+                    webkitdirectory: "", 
+                    directory: "" 
+                  } as any)}
                   multiple
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                   onChange={handleFolderChange} 
