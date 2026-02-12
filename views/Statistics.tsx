@@ -282,29 +282,32 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         supabase.from('procedures').select('created_at').gte('created_at', thirtyDaysAgo.toISOString())
       ]);
 
-      const days: Record<string, { views: number; contributions: number }> = {};
+      const days: Record<string, { display: string; views: number; contributions: number }> = {};
       
       // Initialize days
       for (let i = 0; i < 30; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const dateStr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        days[dateStr] = { views: 0, contributions: 0 };
+        // Robust key for matching: YYYY-MM-DD
+        const key = d.toISOString().split('T')[0];
+        const display = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        days[key] = { display, views: 0, contributions: 0 };
       }
 
       searches?.forEach(s => {
-        const dateStr = new Date(s.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        if (days[dateStr]) days[dateStr].views++;
+        const key = new Date(s.created_at).toISOString().split('T')[0];
+        if (days[key]) days[key].views++;
       });
 
       procs?.forEach(p => {
-        const dateStr = new Date(p.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        if (days[dateStr]) days[dateStr].contributions++;
+        const key = new Date(p.created_at).toISOString().split('T')[0];
+        if (days[key]) days[key].contributions++;
       });
 
-      const chartData = Object.entries(days).map(([date, vals]) => ({
-        date,
-        ...vals
+      const chartData = Object.entries(days).map(([key, vals]) => ({
+        date: vals.display,
+        views: vals.views,
+        contributions: vals.contributions
       })).reverse();
 
       setActivityData(chartData);

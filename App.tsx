@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<{type: 'suggestion' | 'read', id: string} | null>(null);
   const [pendingFlashNotesCount, setPendingFlashNotesCount] = useState(0);
+  const [pendingMasteryClaimsCount, setPendingMasteryClaimsCount] = useState(0);
 
   const syncUserProfile = useCallback(async (sbUser: any) => {
     try {
@@ -331,6 +332,8 @@ const App: React.FC = () => {
         setLastFolder={setLastFolder}
         pendingFlashNotesCount={pendingFlashNotesCount}
         setPendingFlashNotesCount={setPendingFlashNotesCount}
+        pendingMasteryClaimsCount={pendingMasteryClaimsCount}
+        setPendingMasteryClaimsCount={setPendingMasteryClaimsCount}
       />
     </BrowserRouter>
   );
@@ -342,7 +345,8 @@ const AppContent: React.FC<any> = ({
   user, handleLogout, isSidebarOpen, setIsSidebarOpen, activeTransfer, setActiveTransfer,
   connectionStatus, globalSearchTerm, setGlobalSearchTerm, pendingAction, setPendingAction,
   autoOpenNoteEditor, setAutoOpenNoteEditor, lastFolder, setLastFolder,
-  pendingFlashNotesCount, setPendingFlashNotesCount
+  pendingFlashNotesCount, setPendingFlashNotesCount,
+  pendingMasteryClaimsCount, setPendingMasteryClaimsCount
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -378,6 +382,7 @@ const AppContent: React.FC<any> = ({
           activeTransfer={activeTransfer}
           onCancelTransfer={() => setActiveTransfer(null)}
           pendingFlashNotesCount={pendingFlashNotesCount}
+          pendingMasteryClaimsCount={pendingMasteryClaimsCount}
         />
       )}
 
@@ -423,6 +428,7 @@ const AppContent: React.FC<any> = ({
                     onActionHandled={() => setPendingAction(null)}
                     onNavigate={(v) => navigate(`/${v}`)}
                     onFlashCountChange={setPendingFlashNotesCount}
+                    onMasteryCountChange={setPendingMasteryClaimsCount}
                   />
                 } />
                 <Route path="/procedures" element={

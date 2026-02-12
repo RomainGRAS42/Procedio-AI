@@ -37,6 +37,7 @@ interface DashboardProps {
   onUploadClick: () => void;
   onNavigate?: (view: string) => void;
   onFlashCountChange?: (count: number) => void;
+  onMasteryCountChange?: (count: number) => void;
 }
 
 interface Announcement {
@@ -59,6 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onUploadClick,
   onNavigate,
   onFlashCountChange,
+  onMasteryCountChange,
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
@@ -611,7 +613,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data) setMasteryClaims(data);
+      if (data) {
+        setMasteryClaims(data);
+        onMasteryCountChange?.(data.length);
+      }
     } catch (err) {
       console.error("Error fetching mastery claims:", err);
     } finally {
@@ -1284,6 +1289,33 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="px-8 py-4 bg-white text-amber-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-slate-50 transition-all active:scale-95 shrink-0"
             >
               Consulter maintenant
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* RAPPEL MANAGER: DEMANDES DE MAITRISE */}
+      {user.role === UserRole.MANAGER && (masteryClaims.length || 0) > 0 && (
+        <div className="animate-slide-up">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-[2rem] p-6 text-white shadow-xl shadow-orange-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+                <i className="fa-solid fa-certificate"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-black tracking-tight leading-none italic">
+                  Nouvelle Maîtrise !
+                </h3>
+                <p className="text-white/80 text-sm mt-1 font-bold">
+                  Il y a <span className="text-white font-black underline decoration-2 underline-offset-4">{masteryClaims.length} demande(s)</span> de maîtrise en attente d'examen.
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => onNavigate?.('statistics')}
+              className="px-8 py-4 bg-white text-orange-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-slate-50 transition-all active:scale-95 shrink-0"
+            >
+              Voir les demandes
             </button>
           </div>
         </div>
