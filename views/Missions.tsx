@@ -364,7 +364,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
              link: '/missions'
            });
         }
-      }
+
 
       // Optimistic Update
       const updatedMission = { ...mission, status: newStatus, assigned_to: newStatus === 'assigned' ? user.id : mission.assigned_to };
