@@ -90,11 +90,9 @@ const MarkdownViewer = React.memo(({ content }: { content: string }) => {
   return (
     <div className="flex-1 min-h-[400px] bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-y-auto p-8 md:p-12 relative group/markdown">
       <div className="procedure-reader">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {content}
-        </ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
-      
+
       {/* Decorative gradient corners */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-50/50 to-transparent pointer-events-none rounded-tr-[3rem]"></div>
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-50/50 to-transparent pointer-events-none rounded-bl-[3rem]"></div>
@@ -116,6 +114,28 @@ const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
     () => [searchPluginInstance, zoomPluginInstance],
     [searchPluginInstance, zoomPluginInstance]
   );
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash && hash.startsWith("#search=")) {
+        const parts = hash.split("=");
+        if (parts.length > 1) {
+          const rawTerm = parts[1];
+          if (rawTerm && typeof rawTerm === "string") {
+            const safeTerm = String(rawTerm).replace(/"/g, "");
+            const searchTerm = decodeURIComponent(safeTerm);
+            if (searchTerm && searchTerm.length > 2) {
+              highlight(searchTerm);
+            }
+          }
+        }
+      }
+    };
+
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, [highlight, fileUrl]);
 
   return (
     <div className="flex-1 min-h-[400px] bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl relative flex flex-col group/viewer">
@@ -303,11 +323,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   useEffect(() => {
     if (!procedure) return;
-    
+
     const resolveDocUrl = async () => {
       let finalUrl = null;
       const path = procedure.fileUrl || (procedure as any).file_url;
-      
+
       if (path) {
         if (path.startsWith("http")) {
           finalUrl = path;
@@ -326,10 +346,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       setDocUrl(finalUrl);
 
       // Check for Markdown (Defensive against query parameters)
-      const isMd = finalUrl && (
-        finalUrl.split('?')[0].toLowerCase().endsWith(".md") || 
-        procedure.fileUrl?.split('?')[0].toLowerCase().endsWith(".md")
-      );
+      const isMd =
+        finalUrl &&
+        (finalUrl.split("?")[0].toLowerCase().endsWith(".md") ||
+          procedure.fileUrl?.split("?")[0].toLowerCase().endsWith(".md"));
 
       if (isMd) {
         setIsMarkdownLoading(true);
@@ -978,7 +998,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             <div className="w-16 h-16 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-6">
               <i className="fa-solid fa-circle-notch text-2xl animate-spin"></i>
             </div>
-            <p className="text-slate-500 font-medium animate-pulse text-sm">Traitement IA du document...</p>
+            <p className="text-slate-500 font-medium animate-pulse text-sm">
+              Traitement IA du document...
+            </p>
           </div>
         ) : markdownContent ? (
           <MarkdownViewer content={markdownContent} />
@@ -989,7 +1011,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             <div className="w-16 h-16 rounded-3xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 mb-6 animate-pulse">
               <i className="fa-solid fa-file-pdf text-2xl"></i>
             </div>
-            <p className="text-slate-400 font-medium animate-pulse text-sm">Chargement de la procédure...</p>
+            <p className="text-slate-400 font-medium animate-pulse text-sm">
+              Chargement de la procédure...
+            </p>
           </div>
         )}
 

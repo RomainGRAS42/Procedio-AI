@@ -368,8 +368,26 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         return;
       }
 
-      if (action !== 'start') {
+      if (action !== 'start' && action !== 'complete') {
         onClose();
+      }
+      
+      // For 'complete', we might want to stay open to show a success state or just to let the refresh happen
+      if (action === 'complete') {
+        // We'll let the parent handle the status update and refresh.
+        // If we want to stay open, we don't call onClose() here.
+        // But the user might prefer closing after a small delay or showing success.
+        // For now, let's keep it open if it's a technician submitting (awaiting_validation)
+        // and close if it's a manager validating (completed).
+        const finalStatus = user.role === UserRole.MANAGER || (user.role as any) === "manager" ? "completed" : "awaiting_validation";
+        if (finalStatus === "completed") {
+          onClose();
+        } else {
+          // If technician, maybe we show a success message in the modal?
+          // For now, let's keep it consistent with the user's request: "don't close unexpectedly"
+          // We can call onClose() but perhaps after a toast or transition.
+          // Or just don't call it and let the user click 'X'.
+        }
       }
     } catch (err: any) {
       console.error("Action error:", err);
@@ -761,9 +779,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                         )
                       ) : (
                         <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(attachmentUrl)}`}
+                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(attachmentUrl)}&embedded=true`}
                           className="w-full h-full border-none"
-                          title="Office Preview"></iframe>
+                          onLoad={() => setIframeReady(true)}
+                          title="Document Preview"></iframe>
+                      )}
+                      {!iframeReady && !attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                          <div className="flex flex-col items-center gap-4">
+                            <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl"></i>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement de l'aperçu...</p>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
