@@ -8,6 +8,7 @@ interface MissionsContextType {
   error: string | null;
   refreshMissions: () => Promise<void>;
   updateMissionStatus: (id: string, status: MissionStatus, notes?: string) => Promise<void>;
+  setMissions: React.Dispatch<React.SetStateAction<Mission[]>>;
 }
 
 const MissionsContext = createContext<MissionsContextType | undefined>(undefined);
@@ -86,7 +87,7 @@ export const MissionsProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <MissionsContext.Provider value={{ missions, loading, error, refreshMissions: fetchMissions, updateMissionStatus }}>
+    <MissionsContext.Provider value={{ missions, setMissions, loading, error, refreshMissions: fetchMissions, updateMissionStatus }}>
       {children}
     </MissionsContext.Provider>
   );

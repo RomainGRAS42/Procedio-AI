@@ -64,7 +64,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 };
 
 const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveTransfer }) => {
-  const { missions, loading, refreshMissions } = useMissions();
+  const { missions, setMissions, loading, refreshMissions } = useMissions();
   // const [loading, setLoading] = useState(true); // From Context
   // const [missions, setMissions] = useState<Mission[]>([]); // From Context
   const [showCreateModal, setShowCreateModal] = useState(false);
