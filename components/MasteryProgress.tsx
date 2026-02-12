@@ -56,6 +56,9 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                     <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
                       Niveau {Math.floor(item.A / 10) + 1}
                     </span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                      • {item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}
+                    </span>
                   </div>
                 </div>
               </div>

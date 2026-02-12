@@ -35,23 +35,22 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     <div className="space-y-6">
        <div 
          onClick={() => onToggle(sectionKey)}
-         className="flex items-center gap-3 mb-4 cursor-pointer group select-none w-fit"
+         className="flex items-center justify-between mb-4 cursor-pointer group select-none w-full active:scale-[0.99] transition-transform duration-200"
        >
-          <div className="relative">
-             <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-lg transition-all ${!isOpen ? 'bg-slate-100 text-slate-400 shadow-none' : `${colorClass} text-white shadow-indigo-200`}`}>
-                {icon}
-             </div>
-             {!isOpen && count > 0 && (
-                <div className={`absolute -top-2 -right-2 ${colorClass} text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-scale-up`}>
-                   {count}
-                </div>
-             )}
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl ${colorClass} text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-200`}>
+               {icon}
+            </div>
+            <div className="bg-slate-100 rounded-lg px-2 py-0.5 text-[10px] font-black text-slate-500">
+               {count}
+            </div>
+            <h3 className={`text-sm font-black uppercase tracking-[0.2em] transition-colors ${!isOpen ? 'text-slate-400' : 'text-slate-900 group-hover:text-indigo-600'}`}>
+              {title}
+            </h3>
           </div>
-          <h3 className={`text-sm font-black uppercase tracking-[0.2em] transition-colors ${!isOpen ? 'text-slate-400' : 'text-slate-900 group-hover:text-indigo-600'}`}>
-            {title}
-          </h3>
-          <div className={`w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 transition-all duration-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 ${!isOpen ? '-rotate-90' : 'rotate-0'}`}>
-             <i className="fa-solid fa-chevron-down text-[10px]"></i>
+
+          <div className={`w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 transition-all duration-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 ${!isOpen ? '-rotate-90' : 'rotate-0'}`}>
+             <i className="fa-solid fa-chevron-down text-xs"></i>
           </div>
        </div>
        

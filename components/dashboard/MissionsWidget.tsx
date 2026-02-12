@@ -87,7 +87,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
             <i className="fa-solid fa-layer-group"></i>
           </div>
           <div className="flex items-center gap-2">
-            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Missions Suivantes</h3>
+            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Autres Missions Disponibles</h3>
             <InfoTooltip text="Missions recommandées basées sur votre profil." />
           </div>
         </div>
