@@ -1141,7 +1141,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                             <a 
                               href={
                                 completingMission.attachment_url.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/)
-                                ? `https://docs.google.com/gview?url=${encodeURIComponent(completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl)}&embedded=true`
+                                ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl)}`
                                 : (completingMission.attachment_url.startsWith('http') ? completingMission.attachment_url : supabase.storage.from('mission-attachments').getPublicUrl(completingMission.attachment_url).data.publicUrl)
                               }
                               target="_blank"

@@ -761,7 +761,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                         )
                       ) : (
                         <iframe
-                          src={`https://docs.google.com/gview?url=${encodeURIComponent(attachmentUrl)}&embedded=true`}
+                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(attachmentUrl)}`}
                           className="w-full h-full border-none"
                           title="Office Preview"></iframe>
                       )}
