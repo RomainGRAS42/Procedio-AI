@@ -364,6 +364,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
              link: '/missions'
            });
         }
+      }
+
+      // Optimistic Update
+      const updatedMission = { ...mission, status: newStatus, assigned_to: newStatus === 'assigned' ? user.id : mission.assigned_to };
+      setMissions(prev => prev.map(m => m.id === missionId ? { ...m, ...updatedMission } : m));
+      if (selectedMission && selectedMission.id === missionId) {
+        setSelectedMission({ ...selectedMission, ...updatedMission });
+      }
+
+      // fetchMissions(); // Still kept commented to rely on optimistic update first
         
         // 3. Technician finishes -> Notify manager
         if (newStatus === 'completed' && user.role === UserRole.TECHNICIAN && mission.created_by !== user.id) {
