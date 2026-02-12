@@ -36,6 +36,30 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
 
       setActiveTransfer({ ...initialTransfer, step: "Finalisation de l'indexation...", progress: 70 });
       
+      // 1. Insert Procedure Record IMMEDIATELY from Frontend
+      // This ensures the procedure is created even if the Edge Function has issues
+      // We use the schema we verified: uuid, title, Type, created_at (text), etc.
+      // NOTE: We also add source_id to avoid trigger errors
+      const { error: insertError } = await supabase
+        .from("procedures")
+        .insert({
+          uuid: fileId,
+          file_id: fileId,
+          source_id: fileId, // Required by internal trigger
+          title: title.trim(),
+          file_url: "", // Will be updated by Edge Function or we can guess it but safer to wait
+          "Type": category || "Missions / Transferts",
+          created_at: uploadDate,
+          updated_at: new Date().toISOString(),
+          views: 0,
+          is_trend: false
+        });
+
+      if (insertError) {
+        console.error("Erreur insertion procédure (Frontend):", insertError);
+        throw new Error(`Erreur lors de la création de la procédure : ${insertError.message}`);
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title.trim());
