@@ -368,7 +368,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         return;
       }
 
-      onClose();
+      if (action !== 'start') {
+        onClose();
+      }
     } catch (err: any) {
       console.error("Action error:", err);
       alert(`Une erreur est survenue : ${err.message || "Erreur inconnue"}`);
