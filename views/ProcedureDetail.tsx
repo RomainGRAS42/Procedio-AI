@@ -323,8 +323,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       }
       setDocUrl(finalUrl);
 
-      // Check for Markdown
-      if (finalUrl && (finalUrl.toLowerCase().endsWith(".md") || procedure.fileUrl?.endsWith(".md"))) {
+      // Check for Markdown (Defensive against query parameters)
+      const isMd = finalUrl && (
+        finalUrl.split('?')[0].toLowerCase().endsWith(".md") || 
+        procedure.fileUrl?.split('?')[0].toLowerCase().endsWith(".md")
+      );
+
+      if (isMd) {
         setIsMarkdownLoading(true);
         try {
           const res = await fetch(finalUrl);
@@ -660,7 +665,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             question: textToSend,
-            file_id: procedure.file_id || procedure.id,
+            file_id: finalPineconeId || procedure.file_id || procedure.id,
+            pinecone_document_id: finalPineconeId || procedure.file_id || procedure.id,
             userName: fullUserName,
             referentName: referentExpert
               ? `${referentExpert.first_name} ${referentExpert.last_name}`
