@@ -89,17 +89,32 @@ const Procedures: React.FC<ProceduresProps> = ({
       const countsMap: Record<string, number> = {};
       mappedProcs.forEach(p => {
         let cat = p.category.toUpperCase();
-        // Harmonisation : UTILISATEUR (DB) -> UTILISATEURS (UI)
+      // Harmonisation : UTILISATEUR (DB) -> UTILISATEURS (UI)
         if (cat === 'UTILISATEUR') cat = 'UTILISATEURS';
         countsMap[cat] = (countsMap[cat] || 0) + 1;
       });
 
-      // Build folder list dynamically from all unique categories
-      const uniqueCategories = Array.from(new Set(mappedProcs.map(p => p.category.toUpperCase())));
+      // Standard categories that should always appear
+      const PREDEFINED_CATEGORIES = [
+        "LOGICIEL",
+        "MATERIEL",
+        "UTILISATEURS",
+        "INFRASTRUCTURE",
+        "MISSIONS / TRANSFERTS"
+      ];
+
+      // Merge DB categories with Predefined ones
+      const allCategories = new Set([
+        ...PREDEFINED_CATEGORIES,
+        ...mappedProcs.map(p => {
+           let c = p.category.toUpperCase();
+           return c === 'UTILISATEUR' ? 'UTILISATEURS' : c;
+        })
+      ]);
       
-      const foldersWithCounts = uniqueCategories.map(folder => ({
+      const foldersWithCounts = Array.from(allCategories).map(folder => ({
         name: folder,
-        count: mappedProcs.filter(p => p.category.toUpperCase() === folder).length
+        count: countsMap[folder] || 0
       })).sort((a, b) => a.name.localeCompare(b.name));
       
       setFolders(foldersWithCounts as any);
