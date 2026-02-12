@@ -16,6 +16,52 @@ interface MissionsProps {
   setActiveTransfer?: (transfer: any | null) => void;
 }
 
+
+interface CollapsibleSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  count: number;
+  sectionKey: string;
+  isOpen: boolean;
+  onToggle: (key: string) => void;
+  children: React.ReactNode;
+  colorClass?: string;
+}
+
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
+  title, icon, count, sectionKey, isOpen, onToggle, children, colorClass = "bg-indigo-600" 
+}) => {
+  return (
+    <div className="space-y-6">
+       <div 
+         onClick={() => onToggle(sectionKey)}
+         className="flex items-center gap-3 mb-4 cursor-pointer group select-none w-fit"
+       >
+          <div className="relative">
+             <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-lg transition-all ${!isOpen ? 'bg-slate-100 text-slate-400 shadow-none' : `${colorClass} text-white shadow-indigo-200`}`}>
+                {icon}
+             </div>
+             {!isOpen && count > 0 && (
+                <div className={`absolute -top-2 -right-2 ${colorClass} text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-scale-up`}>
+                   {count}
+                </div>
+             )}
+          </div>
+          <h3 className={`text-sm font-black uppercase tracking-[0.2em] transition-colors ${!isOpen ? 'text-slate-400' : 'text-slate-900 group-hover:text-indigo-600'}`}>
+            {title}
+          </h3>
+          <div className={`w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 transition-all duration-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 ${!isOpen ? '-rotate-90' : 'rotate-0'}`}>
+             <i className="fa-solid fa-chevron-down text-[10px]"></i>
+          </div>
+       </div>
+       
+       <div className={`transition-all duration-500 ease-in-out overflow-hidden ${!isOpen ? 'max-h-0 opacity-0' : 'max-h-[5000px] opacity-100'}`}>
+          {children}
+       </div>
+    </div>
+  );
+};
+
 const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveTransfer }) => {
   const { missions, loading, refreshMissions } = useMissions();
   // const [loading, setLoading] = useState(true); // From Context
@@ -47,6 +93,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [technicians, setTechnicians] = useState<{id: string, email: string, first_name: string, last_name: string}[]>([]);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (key: string) => {
+    setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     // fetchMissions(); // Handled by Context
@@ -637,24 +688,33 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
               <div className="space-y-10">
                 {/* Section : Needs Review */}
                 {missions.filter(m => m.status === 'awaiting_validation').length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                       <i className="fa-solid fa-bell animate-pulse"></i>
-                       À Valider Prioritairement
-                    </h3>
+                  <CollapsibleSection
+                    title="À Valider Prioritairement"
+                    icon={<i className="fa-solid fa-bell animate-pulse"></i>}
+                    count={missions.filter(m => m.status === 'awaiting_validation').length}
+                    sectionKey="needs_review"
+                    isOpen={!collapsedSections['needs_review']}
+                    onToggle={toggleSection}
+                    colorClass="bg-rose-500"
+                  >
                     <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                       {missions.filter(m => m.status === 'awaiting_validation').map((m) => 
                         viewMode === 'grid' ? renderMissionCard(m) : renderMissionListRow(m)
                       )}
                     </div>
-                  </div>
+                  </CollapsibleSection>
                 )}
 
                 {/* Section : Ongoing */}
-                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    Missions en cours
-                  </h3>
+                <CollapsibleSection
+                  title="Missions en cours"
+                  icon={<i className="fa-solid fa-bars-progress"></i>}
+                  count={missions.filter(m => m.status !== 'completed' && m.status !== 'cancelled' && m.status !== 'awaiting_validation').length}
+                  sectionKey="ongoing"
+                  isOpen={!collapsedSections['ongoing']}
+                  onToggle={toggleSection}
+                  colorClass="bg-indigo-600"
+                >
                   <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                     {missions.filter(m => m.status !== 'completed' && m.status !== 'cancelled' && m.status !== 'awaiting_validation').length > 0 ? (
                       missions.filter(m => m.status !== 'completed' && m.status !== 'cancelled' && m.status !== 'awaiting_validation').map((m) => 
@@ -666,32 +726,36 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       </div>
                     )}
                   </div>
-                </div>
+                </CollapsibleSection>
 
                 {/* Section : Archived / Completed */}
-                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    Historique Récent
-                  </h3>
+                <CollapsibleSection
+                  title="Historique Récent"
+                  icon={<i className="fa-solid fa-clock-rotate-left"></i>}
+                  count={missions.filter(m => m.status === 'completed' || m.status === 'cancelled').length}
+                  sectionKey="history"
+                  isOpen={!collapsedSections['history']}
+                  onToggle={toggleSection}
+                  colorClass="bg-slate-400"
+                >
                   <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                     {missions.filter(m => m.status === 'completed' || m.status === 'cancelled').slice(0, 10).map((m) => 
                       viewMode === 'grid' ? renderMissionCard(m) : renderMissionListRow(m)
                     )}
                   </div>
-                </div>
+                </CollapsibleSection>
               </div>
             ) : (
               <>
                 {/* Personal Missions Section */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs shadow-lg shadow-indigo-200">
-                      <i className="fa-solid fa-user-check"></i>
-                    </div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-                      Mes Missions Personnelles
-                    </h3>
-                  </div>
+                <CollapsibleSection
+                  title="Mes Missions Personnelles"
+                  icon={<i className="fa-solid fa-user-check"></i>}
+                  count={missions.filter(m => m.assigned_to === user.id).length}
+                  sectionKey="personal"
+                  isOpen={!collapsedSections['personal']}
+                  onToggle={toggleSection}
+                >
                   <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                     {missions.filter(m => m.assigned_to === user.id).length > 0 ? (
                       missions.filter(m => m.assigned_to === user.id).map((mission) => 
@@ -703,18 +767,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       </div>
                     )}
                   </div>
-                </div>
+                </CollapsibleSection>
 
                 {/* Team Missions Section */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 mb-4 pt-6 border-t border-slate-100">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs shadow-lg shadow-emerald-200">
-                      <i className="fa-solid fa-users"></i>
-                    </div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-                      Missions d'Équipe
-                    </h3>
-                  </div>
+                <CollapsibleSection
+                  title="Missions d'Équipe"
+                  icon={<i className="fa-solid fa-users"></i>}
+                  count={missions.filter(m => m.status === 'open').length}
+                  sectionKey="team"
+                  isOpen={!collapsedSections['team']}
+                  onToggle={toggleSection}
+                  colorClass="bg-emerald-500"
+                >
                   <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                     {missions.filter(m => m.status === 'open').length > 0 ? (
                       missions.filter(m => m.status === 'open').map((mission) => 
@@ -726,7 +790,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       </div>
                     )}
                   </div>
-                </div>
+                </CollapsibleSection>
               </>
             )}
 
