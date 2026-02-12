@@ -1,4 +1,5 @@
 import { useState } from 'react';
+export const BUILD_MARKER_FIX_SOURCE_ID = "v2.1.2-b9e4d1a2";
 import { supabase } from '../lib/supabase';
 import { ActiveTransfer } from '../types';
 

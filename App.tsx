@@ -362,6 +362,7 @@ const AppContent: React.FC<any> = ({
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
+      <div id="build-marker" style={{ display: 'none' }}>v2.1.2-b9e4d1a2</div>
       <MouseTrailEffect />
 
       {user && (
