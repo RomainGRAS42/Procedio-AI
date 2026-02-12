@@ -40,6 +40,8 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
       // This ensures the procedure is created even if the Edge Function has issues
       // We use the schema we verified: uuid, title, Type, created_at (text), etc.
       // NOTE: We also add source_id to avoid trigger errors
+      // DEBUG ID: b9e4d1a2-3f8c-4a3b-9e1d-5b2c7f6a10d9
+      console.log("DEBUG: Testing publication - No source_id included. (b9e4d1a2)");
       const { error: insertError } = await supabase
         .from("procedures")
         .insert({
