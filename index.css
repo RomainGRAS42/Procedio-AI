@@ -166,3 +166,93 @@ body {
   opacity: 1;
   visibility: visible;
 }
+
+/* READER MODE PREMIUM (Markdown Version) */
+.procedure-reader {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.procedure-reader h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.procedure-reader h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.procedure-reader h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #475569;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.procedure-reader p {
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.procedure-reader ul, .procedure-reader ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.25rem;
+}
+
+.procedure-reader li {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  position: relative;
+}
+
+.procedure-reader ul li::marker {
+  color: #4f46e5;
+}
+
+.procedure-reader strong {
+  color: #312e81;
+  font-weight: 800;
+}
+
+.procedure-reader code {
+  background: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: #4f46e5;
+}
+
+.procedure-reader blockquote {
+  border-left: 4px solid #4f46e5;
+  background: #f8fafc;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0 1.5rem 1.5rem 0;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #64748b;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.procedure-reader hr {
+  border: 0;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 2rem 0;
+}

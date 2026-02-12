@@ -78,14 +78,24 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
 
           <div className={`relative border-2 border-dashed rounded-[2.5rem] p-16 transition-all text-center group ${file ? 'bg-indigo-50 border-indigo-400' : 'border-slate-100 hover:border-indigo-400'}`}>
             {!activeTransfer && (
-              <input type="file" accept=".pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <input 
+                type="file" 
+                accept=".pdf,.docx,.jpg,.jpeg,.png" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                onChange={(e) => setFile(e.target.files?.[0] || null)} 
+              />
             )}
             <div className="flex flex-col items-center gap-4">
               <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl transition-all ${file ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-200'}`}>
-                <i className={`fa-solid ${file ? 'fa-file-pdf' : 'fa-cloud-arrow-up'}`}></i>
+                <i className={`fa-solid ${
+                  !file ? 'fa-cloud-arrow-up' : 
+                  file.name.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' :
+                  file.name.toLowerCase().endsWith('.docx') ? 'fa-file-word' :
+                  'fa-file-image'
+                }`}></i>
               </div>
               <p className="font-black text-slate-800 text-xl tracking-tight uppercase">
-                {file ? file.name : 'Sélectionnez le fichier PDF'}
+                {file ? file.name : 'Sélectionnez un fichier (PDF, Word, Image)'}
               </p>
             </div>
           </div>

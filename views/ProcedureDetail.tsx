@@ -85,6 +85,23 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// 🛡️ ISOLATED MARKDOWN VIEWER COMPONENT
+const MarkdownViewer = React.memo(({ content }: { content: string }) => {
+  return (
+    <div className="flex-1 min-h-[400px] bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-y-auto p-8 md:p-12 relative group/markdown">
+      <div className="procedure-reader">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {content}
+        </ReactMarkdown>
+      </div>
+      
+      {/* Decorative gradient corners */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-50/50 to-transparent pointer-events-none rounded-tr-[3rem]"></div>
+      <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-50/50 to-transparent pointer-events-none rounded-bl-[3rem]"></div>
+    </div>
+  );
+});
+
 // 🛡️ ISOLATED PDF VIEWER COMPONENT
 // This prevents high-level re-renders from breaking the PDF.js plugin state
 const SafePDFViewer = React.memo(({ fileUrl }: { fileUrl: string }) => {
@@ -234,6 +251,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
+  const [markdownContent, setMarkdownContent] = useState<string | null>(null);
+  const [isMarkdownLoading, setIsMarkdownLoading] = useState(false);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "info" | "error";
@@ -284,23 +303,45 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
   useEffect(() => {
     if (!procedure) return;
-    if (procedure.fileUrl) {
-      // Si c'est déjà une URL complète (http...), on l'utilise
-      if (procedure.fileUrl.startsWith("http")) {
-        setDocUrl(procedure.fileUrl);
+    
+    const resolveDocUrl = async () => {
+      let finalUrl = null;
+      if (procedure.fileUrl) {
+        if (procedure.fileUrl.startsWith("http")) {
+          finalUrl = procedure.fileUrl;
+        } else {
+          const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.fileUrl);
+          finalUrl = data?.publicUrl || null;
+        }
+      } else if (procedure.id) {
+        try {
+          const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
+          finalUrl = data?.publicUrl || null;
+        } catch (err) {
+          console.error("Error getting public URL from id:", err);
+        }
+      }
+      setDocUrl(finalUrl);
+
+      // Check for Markdown
+      if (finalUrl && (finalUrl.toLowerCase().endsWith(".md") || procedure.fileUrl?.endsWith(".md"))) {
+        setIsMarkdownLoading(true);
+        try {
+          const res = await fetch(finalUrl);
+          const text = await res.text();
+          setMarkdownContent(text);
+        } catch (err) {
+          console.error("Error fetching markdown content:", err);
+          setMarkdownContent("Erreur lors du chargement de la procédure Markdown.");
+        } finally {
+          setIsMarkdownLoading(false);
+        }
       } else {
-        // Sinon c'est un chemin de stockage, on calcule l'URL publique
-        const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.fileUrl);
-        setDocUrl(data?.publicUrl || null);
+        setMarkdownContent(null);
       }
-    } else if (procedure.id) {
-      try {
-        const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
-        setDocUrl(data?.publicUrl || null);
-      } catch (err) {
-        console.error("Error getting public URL from id:", err);
-      }
-    }
+    };
+
+    resolveDocUrl();
     fetchHistory();
     fetchReferent();
   }, [procedure?.id, procedure?.fileUrl]);
@@ -924,14 +965,23 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
 
-        {docUrl ? (
+        {isMarkdownLoading ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white rounded-[3rem] border border-slate-100 shadow-xl">
+            <div className="w-16 h-16 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-6">
+              <i className="fa-solid fa-circle-notch text-2xl animate-spin"></i>
+            </div>
+            <p className="text-slate-500 font-medium animate-pulse text-sm">Traitement IA du document...</p>
+          </div>
+        ) : markdownContent ? (
+          <MarkdownViewer content={markdownContent} />
+        ) : docUrl ? (
           <SafePDFViewer fileUrl={docUrl} />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-900 rounded-[3rem] border border-slate-800">
+          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-900 rounded-[3rem] border border-slate-800 shadow-2xl">
             <div className="w-16 h-16 rounded-3xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 mb-6 animate-pulse">
               <i className="fa-solid fa-file-pdf text-2xl"></i>
             </div>
-            <p className="text-slate-400 font-medium animate-pulse">Chargement du document...</p>
+            <p className="text-slate-400 font-medium animate-pulse text-sm">Chargement de la procédure...</p>
           </div>
         )}
 

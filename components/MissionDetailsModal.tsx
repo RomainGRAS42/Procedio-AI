@@ -346,8 +346,13 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         // This is needed for useProcedurePublisher.publishFile
         const fileResponse = await fetch(attachmentUrl);
         const fileBlob = await fileResponse.blob();
-        const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.pdf`;
-        const file = new File([fileBlob], fileName, { type: "application/pdf" });
+        
+        // Get correct extension from URL or fallback to original attachment naming
+        const urlParts = attachmentUrl.split('?')[0].split('.');
+        const fileExt = urlParts.length > 1 ? urlParts.pop()?.toLowerCase() : 'pdf';
+        
+        const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${fileExt}`;
+        const file = new File([fileBlob], fileName, { type: fileBlob.type });
 
         // 2. Use the unified publisher hook
         // This will handle: Progress (ActiveTransfer), Insert, and Edge Function call
@@ -579,7 +584,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                               ref={fileInputRef}
                               onChange={handleFileUpload}
                               className="hidden"
-                              accept=".pdf,.doc,.docx,.jpg,.png"
+                              accept=".pdf,.docx,.jpg,.jpeg,.png"
                             />
                             <button
                               onClick={() => fileInputRef.current?.click()}
