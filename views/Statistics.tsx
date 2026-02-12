@@ -275,7 +275,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const [ { data: searches }, { data: procs } ] = await Promise.all([
-        supabase.from('notes').select('created_at').ilike('title', 'LOG_SEARCH_%').gte('created_at', thirtyDaysAgo.toISOString()),
+        supabase.from('notes')
+          .select('created_at')
+          .or('title.ilike.LOG_SEARCH_%,title.ilike.CONSULTATION_%')
+          .gte('created_at', thirtyDaysAgo.toISOString()),
         supabase.from('procedures').select('created_at').gte('created_at', thirtyDaysAgo.toISOString())
       ]);
 
