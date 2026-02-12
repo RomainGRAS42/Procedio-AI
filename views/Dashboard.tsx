@@ -208,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (user.role !== UserRole.TECHNICIAN || !user.id) return;
 
     // 1. Check Level Up
-    // Use CALCULATED level from XP, not the one from DB which might be corrupted or manual
+    // Use CALCULATED level from XP to be the source of truth
     const calculatedLevel = calculateLevelFromXP(personalStats.xp);
     
     // Only trigger if we have a valid previous level (not 0) and it increased
@@ -222,8 +222,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       // Update local storage and DB if needed (sync)
       localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
     } else if (prevLevelRef.current === 0 && calculatedLevel > 0) {
-      // First sync if not in localStorage - SILENT SYNC (No Modal)
-      // This prevents "Nouveau Niveau" popup on clear cache / first login
+      // First sync EVER or after clear cache
+      // SILENT SYNC into ref and storage to prevent popup on reload
       console.log(`Silent Level Sync: ${calculatedLevel}`);
       localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
     }
@@ -232,19 +232,24 @@ const Dashboard: React.FC<DashboardProps> = ({
     prevLevelRef.current = calculatedLevel;
 
     // 2. Check Badge Unlocked
-    if (earnedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
-      const newBadge = earnedBadges[earnedBadges.length - 1]?.badges;
+    // Sort badges by date to ensure the "last" one is truly the newest
+    const sortedBadges = [...earnedBadges].sort((a, b) => 
+      new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
+    );
+
+    if (sortedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
+      const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
       if (newBadge) {
         setUnlockedBadgeData(newBadge);
         setShowBadgeUnlockedModal(true);
-        localStorage.setItem(`procedio_seen_badges_${user.id}`, earnedBadges.length.toString());
+        localStorage.setItem(`procedio_seen_badges_${user.id}`, sortedBadges.length.toString());
       }
-    } else if (prevBadgeCountRef.current === 0 && earnedBadges.length > 0) {
-      // First sync if not in localStorage
-      localStorage.setItem(`procedio_seen_badges_${user.id}`, earnedBadges.length.toString());
+    } else if (prevBadgeCountRef.current === 0 && sortedBadges.length > 0) {
+      // First sync
+      localStorage.setItem(`procedio_seen_badges_${user.id}`, sortedBadges.length.toString());
     }
-    prevBadgeCountRef.current = earnedBadges.length;
-  }, [personalStats.level, earnedBadges.length, user.id]);
+    prevBadgeCountRef.current = sortedBadges.length;
+  }, [personalStats.level, earnedBadges, user.id]);
   
   // Cockpit Widgets State (Manager)
   // Cockpit Widgets State (Manager)
@@ -677,18 +682,16 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  // State for AI Exam Generation
+  const [generatingExamId, setGeneratingExamId] = useState<string | null>(null);
+
   const handleApproveMastery = async (requestId: string) => {
     try {
-      // 1. Fetch request details to get procedure_id
-      const { data: request, error: fetchError } = await supabase
-        .from('mastery_requests')
-        .select('*, user_profiles(first_name), procedures(title, uuid)')
-        .eq('id', requestId)
-        .single();
+      const request = masteryClaims.find(c => c.id === requestId);
+      if (!request) return;
 
-      if (fetchError || !request) throw new Error("Request not found");
-
-      // 2. Generate Quiz via Edge Function (Real AI)
+      // 1. Initial Update (Optimistic UI)
+      setGeneratingExamId(requestId);
       setToast({ message: "Génération de l'examen par l'IA en cours...", type: "info" });
       
       const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-mastery-quiz', {
@@ -696,11 +699,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
 
       if (quizError) {
+        setGeneratingExamId(null);
         console.error("AI Generation Error:", quizError);
         throw new Error("Erreur lors de la génération de l'examen par l'IA.");
       }
 
-      // 3. Update request with approved status and generated quiz
+      // 2. Update request with approved status and generated quiz
       const { error: updateError } = await supabase
         .from('mastery_requests')
         .update({
@@ -713,6 +717,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       setToast({ message: "Examen généré et envoyé au technicien !", type: "success" });
       fetchMasteryClaims();
+      setGeneratingExamId(null);
       
       // Activity Log (For Activity Feed)
       await supabase.from("notes").insert({
@@ -722,7 +727,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         is_locked: false
       });
 
-      // Notification for the Technician (The one that triggers the red badge and modal launch)
+      // Notification for the Technician
       await supabase.from("notes").insert({
         user_id: request.user_id, // TARGET THE TECHNICIAN
         title: `MASTERY_APPROVED_${requestId}`,
@@ -733,6 +738,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     } catch (err: any) {
       console.error("Error approving mastery:", err);
+      setGeneratingExamId(null);
       setToast({ message: err.message || "Erreur lors de l'approbation.", type: "error" });
     }
   };

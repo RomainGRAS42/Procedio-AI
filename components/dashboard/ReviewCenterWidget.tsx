@@ -8,6 +8,7 @@ interface ReviewCenterWidgetProps {
   onSelectSuggestion: (suggestion: Suggestion) => void;
   onNavigateToStatistics?: () => void;
   onApproveMastery?: (requestId: string) => void;
+  generatingExamId?: string | null;
 }
 
 const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
@@ -15,7 +16,8 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   masteryClaims,
   onSelectSuggestion,
   onNavigateToStatistics,
-  onApproveMastery
+  onApproveMastery,
+  generatingExamId
 }) => {
   return (
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
@@ -55,12 +57,23 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
             </div>
 
             <div className="flex items-center gap-2 mt-1">
-              <button 
-                onClick={() => onApproveMastery?.(claim.id)}
-                className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
-              >
-                GÉNÉRER L'EXAMEN IA
-              </button>
+              {generatingExamId === claim.id ? (
+                 <div className="flex-1 overflow-hidden h-8 bg-indigo-50 rounded-xl flex items-center px-3 relative border border-indigo-100">
+                   <div className="absolute inset-0 bg-indigo-100/50 animate-pulse w-full h-full"></div>
+                   <div className="absolute top-0 left-0 h-full bg-indigo-500/20 w-1/2 animate-[shimmer_1s_infinite]"></div>
+                   <span className="relative z-10 text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                     <i className="fa-solid fa-microchip animate-pulse"></i>
+                     Génération IA...
+                   </span>
+                 </div>
+              ) : (
+                <button 
+                  onClick={() => onApproveMastery?.(claim.id)}
+                  className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                >
+                  GÉNÉRER L'EXAMEN IA
+                </button>
+              )}
               <button className="w-10 h-8 flex items-center justify-center bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-500 hover:border-rose-100 transition-all">
                 <i className="fa-solid fa-xmark"></i>
               </button>
