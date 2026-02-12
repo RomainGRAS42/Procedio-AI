@@ -1029,9 +1029,17 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <span>Examen en attente</span>
               </div>
             ) : masteryRequest?.status === 'completed' ? (
-              <div className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-circle-check"></i>
-                <span>Maîtrisé</span>
+              <div className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
+                (masteryRequest.score || 0) >= 70 
+                  ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
+                  : "bg-rose-50 text-rose-600 border-rose-100"
+              }`}>
+                <i className={`fa-solid ${(masteryRequest.score || 0) >= 70 ? 'fa-circle-check' : 'fa-circle-xmark'}`}></i>
+                <span>
+                  {(masteryRequest.score || 0) >= 70 
+                    ? `Maîtrise validée (${masteryRequest.score || 0}%)` 
+                    : `Maîtrise non validée (${masteryRequest.score || 0}%)`}
+                </span>
               </div>
             ) : (
               <button
