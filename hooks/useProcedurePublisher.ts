@@ -12,7 +12,7 @@ interface UseProcedurePublisherProps {
 export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: UseProcedurePublisherProps) => {
   const [errorMsg, setErrorMsg] = useState('');
 
-  const publishFile = async (file: File, title: string, category: string, sourceId?: string) => {
+  const publishFile = async (file: File, title: string, category: string, sourceId?: string, batchInfo?: { current: number, total: number }) => {
     if (!title.trim() || !file) {
       setErrorMsg("Données manquantes pour la publication.");
       return;
@@ -25,29 +25,27 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
 
     const initialTransfer: ActiveTransfer = {
       fileName: file.name,
-      step: "Analyse du document par l'IA...",
+      step: batchInfo ? `Traitement du fichier ${batchInfo.current}/${batchInfo.total}...` : "Analyse du document par l'IA...",
       progress: 10,
-      abortController: controller
+      abortController: controller,
+      currentFile: batchInfo?.current,
+      totalFiles: batchInfo?.total
     };
     setActiveTransfer(initialTransfer);
     
     try {
       setActiveTransfer({ ...initialTransfer, step: "Sécurisation du transfert cloud...", progress: 40 });
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await new Promise(resolve => setTimeout(resolve, 300)); // Reduced for speed in batch
 
       setActiveTransfer({ ...initialTransfer, step: "Finalisation de l'indexation...", progress: 70 });
       
-      // 1. Insert Procedure Record IMMEDIATELY from Frontend
-      // This ensures the procedure is created even if the Edge Function has issues
-      // We use the schema we verified: uuid, title, Type, created_at (text), etc.
-      // NOTE: We also add source_id to avoid trigger errors
       const { error: insertError } = await supabase
         .from("procedures")
         .insert({
           uuid: fileId,
           file_id: fileId,
           title: title.trim(),
-          file_url: "", // Will be updated by Edge Function
+          file_url: "",
           "Type": category || "Missions / Transferts",
           created_at: uploadDate,
           updated_at: new Date().toISOString(),
@@ -57,7 +55,6 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
         });
 
       if (insertError) {
-        console.error("Erreur insertion procédure (Frontend):", insertError);
         throw new Error(`Erreur lors de la création de la procédure : ${insertError.message}`);
       }
 
@@ -72,49 +69,55 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
         formData.append('source_id', sourceId);
       }
 
-      console.log('📤 Envoi vers Supabase Edge Function (process-pdf):', {
-        file_id: fileId,
-        title: title.trim(),
-        category: category,
-        source_id: sourceId
-      });
-
       const { data: supabaseData, error: supabaseError } = await supabase.functions.invoke('process-pdf', {
         body: formData,
       });
       
-      console.log('✅ Réponse Supabase:', {
-        data: supabaseData,
-        error: supabaseError
-      });
-
       if (supabaseError) {
-        console.error('❌ Erreur Supabase Function:', supabaseError);
         throw new Error(`Le service d'indexation est momentanément indisponible. (${supabaseError.message})`);
       }
 
-      setActiveTransfer({ ...initialTransfer, step: "Fichier envoyé avec succès !", progress: 100, abortController: null });
+      // Only finish if not part of a batch or if it's the last one
+      if (!batchInfo || batchInfo.current === batchInfo.total) {
+        setActiveTransfer({ ...initialTransfer, step: "Transfert terminé !", progress: 100, abortController: null });
+        setTimeout(() => setActiveTransfer(null), 1000);
+      }
       
-      // Delay clearing transfer to let user see 100%
-      setTimeout(() => {
-        setActiveTransfer(null);
-        if (onSuccess) onSuccess(fileId);
-      }, 500);
+      if (onSuccess) onSuccess(fileId);
+      return fileId;
 
     } catch (e: any) {
-      console.error('❌ Erreur complète:', e);
-      if (e.name === 'AbortError') {
-        console.log('Publication annulée');
-      } else {
-        setErrorMsg(e.message || "Une erreur est survenue lors de la publication du document.");
+      console.error('❌ Erreur publication:', e);
+      if (e.name !== 'AbortError') {
+        setErrorMsg(e.message || "Une erreur est survenue.");
       }
       setActiveTransfer(null);
-      throw e; // Re-throw to let caller handle if needed
+      throw e;
+    }
+  };
+
+  const publishFolder = async (files: File[], category: string) => {
+    if (files.length === 0) return;
+    
+    setErrorMsg('');
+    const total = files.length;
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Automatic title based on filename
+        const title = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, ' ').trim();
+        await publishFile(file, title, category, undefined, { current: i+1, total });
+      }
+    } catch (e) {
+      console.error("Batch upload failed:", e);
+      // publishFile already sets errorMsg
     }
   };
 
   return {
     publishFile,
+    publishFolder,
     errorMsg,
     setErrorMsg
   };

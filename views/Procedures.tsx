@@ -94,13 +94,13 @@ const Procedures: React.FC<ProceduresProps> = ({
         countsMap[cat] = (countsMap[cat] || 0) + 1;
       });
 
-      // Strict list of allowed categories
-      const allowedCategories = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEURS'];
+      // Build folder list dynamically from all unique categories
+      const uniqueCategories = Array.from(new Set(mappedProcs.map(p => p.category.toUpperCase())));
       
-      const foldersWithCounts = allowedCategories.map(folder => ({
+      const foldersWithCounts = uniqueCategories.map(folder => ({
         name: folder,
-        count: countsMap[folder] || 0
-      }));
+        count: mappedProcs.filter(p => p.category.toUpperCase() === folder).length
+      })).sort((a, b) => a.name.localeCompare(b.name));
       
       setFolders(foldersWithCounts as any);
       cacheStore.set('proc_folders', foldersWithCounts);

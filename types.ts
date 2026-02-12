@@ -148,4 +148,6 @@ export interface ActiveTransfer {
   step: string;
   progress: number;
   abortController: AbortController | null;
+  currentFile?: number;
+  totalFiles?: number;
 }
