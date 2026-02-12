@@ -17,7 +17,10 @@ Deno.serve(async (req) => {
     const { procedure_id } = await req.json();
 
     if (!procedure_id) {
-      throw new Error("Missing procedure_id in request body");
+      return new Response(JSON.stringify({ error: "Missing procedure_id in request body" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -25,7 +28,8 @@ Deno.serve(async (req) => {
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
 
     if (!MISTRAL_API_KEY) {
-      throw new Error("Missing MISTRAL_API_KEY configuration");
+      console.error("Configuration Error: Missing MISTRAL_API_KEY");
+      throw new Error("Server Configuration Error: Missing AI Key");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -44,7 +48,11 @@ Deno.serve(async (req) => {
     }
 
     if (!documents || documents.length === 0) {
-      throw new Error("No content found for this procedure. Ensure it has been processed.");
+      console.warn(`⚠️ No documents found for file_id: ${procedure_id}`);
+      return new Response(JSON.stringify({ error: "No content found for this procedure. Ensure it has been processed." }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const fullText = documents.map(d => d.content).join("\n\n");

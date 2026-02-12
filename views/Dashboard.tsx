@@ -705,13 +705,21 @@ const Dashboard: React.FC<DashboardProps> = ({
       setGeneratingExamId(requestId);
       setToast({ message: "Génération de l'examen par l'IA en cours...", type: "info" });
       
+      const procedureId = Array.isArray(request.procedures) ? request.procedures[0]?.uuid : request.procedures?.uuid;
+      console.log("🚀 Lancement génération IA pour Procedure ID:", procedureId, "Request:", request);
+
+      if (!procedureId) {
+        throw new Error("ID de procédure introuvable dans la requête.");
+      }
+
       const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-mastery-quiz', {
-        body: { procedure_id: request.procedures.uuid }
+        body: { procedure_id: procedureId }
       });
 
       if (quizError) {
         setGeneratingExamId(null);
-        console.error("AI Generation Error:", quizError);
+        console.error("❌ AI Generation Error Raw:", quizError);
+        console.error("❌ AI Generation Error Body:", await quizError.context?.json?.().catch(() => "No JSON body"));
         throw new Error("Erreur lors de la génération de l'examen par l'IA.");
       }
 
