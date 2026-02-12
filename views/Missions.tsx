@@ -161,8 +161,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         .from('missions')
         .update({ 
           assigned_to: user.id, 
-          status: 'assigned',
-          assignee_name: `${user.firstName} ${user.lastName}`.trim()
+          status: 'assigned'
         })
         .match({ id: missionId, status: 'open' })
         .is('assigned_to', null);
@@ -469,13 +468,15 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
-                {mission.assignee_name ? mission.assignee_name.substring(0, 2) : <i className="fa-solid fa-users text-[8px]"></i>}
+                {mission.assignee ? mission.assignee.first_name.substring(0, 2) : (mission.assignee_name ? mission.assignee_name.substring(0, 2) : <i className="fa-solid fa-users text-[8px]"></i>)}
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 {mission.status === 'completed' ? 'Complétée par' : 
                  mission.status === 'cancelled' ? 'Annulée' : 
                  (mission.status === 'open' && (user.role === UserRole.MANAGER || (user.role as any) === 'manager')) ? 'Disponible pour' : 
-                 'En cours par'} <span className="text-slate-700">{mission.assignee_name || "Toute l'équipe"}</span>
+                 'En cours par'} <span className="text-slate-700">
+                   {mission.assignee ? `${mission.assignee.first_name} ${mission.assignee.last_name || ''}` : (mission.assignee_name || "Toute l'équipe")}
+                 </span>
               </p>
             </div>
 
@@ -551,7 +552,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             {mission.title}
           </h4>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
-            {mission.assignee_name || "Toute l'équipe"}
+            {mission.assignee ? `${mission.assignee.first_name} ${mission.assignee.last_name || ''}` : (mission.assignee_name || "Toute l'équipe")}
           </p>
         </div>
 
