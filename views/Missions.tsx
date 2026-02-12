@@ -13,9 +13,10 @@ import MissionDetailsModal from '../components/MissionDetailsModal';
 interface MissionsProps {
   user: User;
   onSelectProcedure?: (procedure: Procedure) => void;
+  setActiveTransfer?: (transfer: any | null) => void;
 }
 
-const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
+const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveTransfer }) => {
   const { missions, loading, refreshMissions } = useMissions();
   // const [loading, setLoading] = useState(true); // From Context
   // const [missions, setMissions] = useState<Mission[]>([]); // From Context
@@ -661,6 +662,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure }) => {
           user={user}
           onClose={() => setSelectedMission(null)}
           onUpdateStatus={handleStatusUpdate}
+          setActiveTransfer={setActiveTransfer}
         />
       )}
 

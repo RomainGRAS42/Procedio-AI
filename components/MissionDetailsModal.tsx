@@ -64,7 +64,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
     user,
     setActiveTransfer: setActiveTransfer || (() => {}), // Fallback if not provided
     onSuccess: async (fileId) => {
-      // 5. Validate the mission (XP + Status)
+      // 1. Validate the mission (XP + Status)
       const { error: validateError } = await supabase.rpc("validate_mission_completion", {
         mission_id: mission.id,
         feedback: completionNotes || "Excellent travail, promu en procédure.",
@@ -76,9 +76,8 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         return;
       }
 
-      // 6. Link procedure to mission
-      // Need to fetch the procedure ID first since publishFile returns void (and success callback gives fileId/uuid)
-      // Assuming fileId passed here is the uuid used during creation
+      // 2. Link procedure to mission
+      // Fetch the procedure ID using the uuid (fileId from callback)
       const { data: procRecord } = await supabase
           .from("procedures")
           .select("id")
@@ -351,84 +350,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
           return;
         }
 
-        // 1. Download the file from mission attachments
-        // We need to pass it to the Edge Function as a File object
+        // 1. Download the file from mission attachments as a File object
+        // This is needed for useProcedurePublisher.publishFile
         const fileResponse = await fetch(attachmentUrl);
         const fileBlob = await fileResponse.blob();
         const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.pdf`;
         const file = new File([fileBlob], fileName, { type: "application/pdf" });
 
-        // 2. Prepare data
-        const fileId = crypto.randomUUID();
-        const now = new Date();
-        const formattedDate = now.toLocaleString("fr-FR");
-
-        // 3. Insert Procedure Record IMMEDIATELY from Frontend
-        // This ensures the procedure is created even if the Edge Function has issues
-        const { data: insertedProc, error: insertError } = await supabase
-          .from("procedures")
-          .insert({
-            uuid: fileId,
-            file_id: fileId,
-            title: promoteTitle || mission.title,
-            file_url: attachmentUrl,
-            Type: promoteCategory || "Missions / Transferts",
-            created_at: formattedDate,
-            updated_at: now.toISOString(),
-            views: 0,
-            is_trend: false,
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Erreur insertion procédure:", insertError);
-          throw new Error(`Erreur lors de la création de la procédure : ${insertError.message}`);
-        }
-
-        // 4. Call Edge Function for AI Indexing & Storage
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("title", promoteTitle);
-        formData.append("file_id", fileId);
-        formData.append("category", promoteCategory);
-        formData.append("upload_date", formattedDate);
-        formData.append("author_id", user.id);
-
-        console.log("🚀 Lancement de l'indexation IA (process-pdf)...");
-
-        // Non-blocking call to Edge Function
-        supabase.functions
-          .invoke("process-pdf", {
-            body: formData,
-          })
-          .then(({ data, error }) => {
-            if (error) console.error("Erreur silencieuse process-pdf:", error);
-            else console.log("Indexation IA lancée avec succès");
-          });
-
-        // 5. Validate the mission (XP + Status)
-        const { error: validateError } = await supabase.rpc("validate_mission_completion", {
-          mission_id: mission.id,
-          feedback: completionNotes || "Excellent travail, promu en procédure.",
-        });
-
-        if (validateError) throw validateError;
-
-        // 6. Link procedure to mission
-        const { error: updateError } = await supabase
-          .from("missions")
-          .update({
-            procedure_id: insertedProc?.id || null,
-            completion_notes: completionNotes || "Mission validée et promue en procédure.",
-          })
-          .eq("id", mission.id);
-
-        if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
-
-        setShowSuccessModal(true); // Show custom success modal
-        setIsSubmitting(false); // Stop loading state
-        return; // Stop here, do not close main modal yet
+        // 2. Use the unified publisher hook
+        // This will handle: Progress (ActiveTransfer), Insert, and Edge Function call
+        await publishFile(file, promoteTitle, promoteCategory);
+        
+        return; // Success handling is done in onSuccess callback of useProcedurePublisher
       }
 
       onClose();
