@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { ActiveTransfer } from '../App';
+import { useProcedurePublisher } from '../hooks/useProcedurePublisher';
 
 interface UploadProcedureProps {
   onBack: () => void;
@@ -15,8 +15,13 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   const [folders] = useState(['LOGICIEL', 'UTILISATEUR', 'MATERIEL', 'INFRASTRUCTURE']);
   const [selectedFolder, setSelectedFolder] = useState('LOGICIEL');
   const [file, setFile] = useState<File | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  const { publishFile, errorMsg } = useProcedurePublisher({
+    user,
+    setActiveTransfer,
+    onSuccess: () => setShowSuccessPopup(true)
+  });
 
   const cleanFileName = (name: string) => {
     return name.replace(/\.[^/.]+$/, "").replace(/_/g, ' ').trim();
@@ -25,74 +30,8 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   const currentTitle = useCustomTitle ? customTitle : (file ? cleanFileName(file.name) : '');
 
   const handlePublish = async () => {
-    if (!currentTitle.trim() || !file) {
-      setErrorMsg("Veuillez sélectionner un fichier PDF.");
-      return;
-    }
-
-    const controller = new AbortController();
-    const uploadDate = new Date().toLocaleString('fr-FR');
-    const fileId = crypto.randomUUID(); 
-    setErrorMsg('');
-
-    const initialTransfer: ActiveTransfer = {
-      fileName: file.name,
-      step: "Analyse du document par l'IA...",
-      progress: 10,
-      abortController: controller
-    };
-    setActiveTransfer(initialTransfer);
-    
-    try {
-      setActiveTransfer({ ...initialTransfer, step: "Sécurisation du transfert cloud...", progress: 40 });
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      setActiveTransfer({ ...initialTransfer, step: "Finalisation de l'indexation...", progress: 70 });
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', currentTitle.trim());
-      formData.append('file_id', fileId);
-      formData.append('upload_date', uploadDate);
-      formData.append('category', selectedFolder);
-      formData.append('author_id', user.id);
-
-      console.log('📤 Envoi vers Supabase Edge Function (process-pdf):', {
-        file_id: fileId,
-        title: currentTitle.trim(),
-        category: selectedFolder
-      });
-
-      const { data: supabaseData, error: supabaseError } = await supabase.functions.invoke('process-pdf', {
-        body: formData,
-      });
-      
-      console.log('✅ Réponse Supabase:', {
-        data: supabaseData,
-        error: supabaseError
-      });
-
-      if (supabaseError) {
-        console.error('❌ Erreur Supabase Function:', supabaseError);
-        throw new Error(`Le service d'indexation est momentanément indisponible. (${supabaseError.message})`);
-      }
-
-      setActiveTransfer({ ...initialTransfer, step: "Fichier envoyé avec succès !", progress: 100, abortController: null });
-      
-      setTimeout(() => {
-        setActiveTransfer(null);
-        setShowSuccessPopup(true);
-      }, 500);
-
-    } catch (e: any) {
-      console.error('❌ Erreur complète:', e);
-      if (e.name === 'AbortError') {
-        console.log('Publication annulée');
-      } else {
-        setErrorMsg(e.message || "Une erreur est survenue lors de la publication du document.");
-      }
-      setActiveTransfer(null);
-    }
+    if (!currentTitle.trim() || !file) return;
+    await publishFile(file, currentTitle, selectedFolder);
   };
 
   return (

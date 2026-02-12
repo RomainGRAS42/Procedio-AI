@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../lib/supabase";
-import { Mission, User, UserRole, MissionStatus } from "../types";
+import { Mission, User, UserRole, MissionStatus, ActiveTransfer } from "../types";
+import { useProcedurePublisher } from "../hooks/useProcedurePublisher";
 
 interface MissionDetailsModalProps {
   mission: Mission;
@@ -13,6 +14,7 @@ interface MissionDetailsModalProps {
     notes?: string,
     fileUrl?: string
   ) => void;
+  setActiveTransfer?: (transfer: ActiveTransfer | null) => void;
 }
 
 interface MissionMessage {
@@ -34,6 +36,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   user,
   onClose,
   onUpdateStatus,
+  setActiveTransfer,
 }) => {
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [messages, setMessages] = useState<MissionMessage[]>([]);
@@ -55,6 +58,47 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   const [promoteCategory, setPromoteCategory] = useState("Missions / Transferts");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use the shared publisher hook
+  const { publishFile } = useProcedurePublisher({
+    user,
+    setActiveTransfer: setActiveTransfer || (() => {}), // Fallback if not provided
+    onSuccess: async (fileId) => {
+      // 5. Validate the mission (XP + Status)
+      const { error: validateError } = await supabase.rpc("validate_mission_completion", {
+        mission_id: mission.id,
+        feedback: completionNotes || "Excellent travail, promu en procédure.",
+      });
+
+      if (validateError) {
+        console.error("Error validating mission:", validateError);
+        alert("La procédure est créée mais la validation de la mission a échoué.");
+        return;
+      }
+
+      // 6. Link procedure to mission
+      // Need to fetch the procedure ID first since publishFile returns void (and success callback gives fileId/uuid)
+      // Assuming fileId passed here is the uuid used during creation
+      const { data: procRecord } = await supabase
+          .from("procedures")
+          .select("id")
+          .eq("uuid", fileId)
+          .single();
+
+      const { error: updateError } = await supabase
+        .from("missions")
+        .update({
+          procedure_id: procRecord?.id || null, 
+          completion_notes: completionNotes || "Mission validée et promue en procédure.",
+        })
+        .eq("id", mission.id);
+
+      if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
+
+      setShowSuccessModal(true);
+      setIsSubmitting(false);
+    }
+  });
 
   const PREDEFINED_CATEGORIES = [
     "LOGICIEL",
