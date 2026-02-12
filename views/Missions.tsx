@@ -299,6 +299,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         if (notes) updateData.completion_notes = notes;
         if (attachmentUrl) updateData.attachment_url = attachmentUrl;
         if (newStatus === 'cancelled') updateData.cancellation_reason = notes;
+        if (newStatus === 'assigned') updateData.assigned_to = user.id;
 
         const { error } = await supabase
           .from('missions')
