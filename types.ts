@@ -1,6 +1,6 @@
 export enum UserRole {
-  MANAGER = "MANAGER",
-  TECHNICIAN = "TECHNICIAN",
+  MANAGER = "manager",
+  TECHNICIAN = "technicien",
 }
 
 export interface Badge {

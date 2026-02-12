@@ -154,18 +154,51 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
   const handleClaimMission = async (missionId: string) => {
     try {
+      const mission = missions.find(m => m.id === missionId);
+      if (!mission) return;
+
       const { error } = await supabase
         .from('missions')
-        .update({ assigned_to: user.id, status: 'assigned' })
-        .eq('id', missionId)
-        .eq('status', 'open');
+        .update({ 
+          assigned_to: user.id, 
+          status: 'assigned',
+          assignee_name: `${user.firstName} ${user.lastName}`.trim()
+        })
+        .match({ id: missionId, status: 'open' })
+        .is('assigned_to', null);
 
       if (error) throw error;
 
+      // Notify Manager/Creator
+      if (mission.created_by) {
+        const { error: notifError } = await supabase.from('notifications').insert({
+          user_id: mission.created_by,
+          type: 'mission',
+          title: 'Mission réclamée',
+          content: `${user.firstName} ${user.lastName} a pris en charge la mission : ${mission.title}`,
+          link: '/missions'
+        });
+        if (notifError) console.error("Error sending claim notification:", notifError);
+      }
+
       setToast({ message: "Mission acceptée ! À vous de jouer.", type: "success" });
-      // fetchMissions();
-    } catch (err) {
-      setToast({ message: "Impossible de réclamer cette mission.", type: "error" });
+      
+      try {
+        await refreshMissions();
+      } catch (err) {
+        console.error("Error refreshing missions:", err);
+      }
+    } catch (err: any) {
+      console.error("Error claiming mission:", err);
+      // Detailed logging for RLS debugging
+      const session = await supabase.auth.getSession();
+      console.log("DEBUG CLAIM FAIL:", {
+        missionId,
+        userId: user.id,
+        authUid: session.data.session?.user.id,
+        error: err
+      });
+      setToast({ message: "Impossible de réclamer cette mission. " + (err.message || ""), type: "error" });
     }
   };
 
@@ -563,20 +596,20 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
+          <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 border border-slate-200 shadow-inner">
             <button 
               onClick={() => setViewMode('grid')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               title="Vue Grille"
             >
-              <i className="fa-solid fa-grip"></i>
+              <i className="fa-solid fa-table-cells-large"></i>
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               title="Vue Liste"
             >
-              <i className="fa-solid fa-list-ul"></i>
+              <i className="fa-solid fa-list"></i>
             </button>
           </div>
 
@@ -658,11 +691,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       Mes Missions Personnelles
                     </h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                     {missions.filter(m => m.assigned_to === user.id).length > 0 ? (
-                      missions.filter(m => m.assigned_to === user.id).map((mission) => renderMissionCard(mission))
+                      missions.filter(m => m.assigned_to === user.id).map((mission) => 
+                        viewMode === 'grid' ? renderMissionCard(mission) : renderMissionListRow(mission)
+                      )
                     ) : (
-                      <div className="md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                      <div className={viewMode === 'grid' ? "md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center" : "py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center"}>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucune mission personnelle en cours</p>
                       </div>
                     )}
@@ -679,11 +714,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       Missions d'Équipe
                     </h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
                     {missions.filter(m => m.status === 'open').length > 0 ? (
-                      missions.filter(m => m.status === 'open').map((mission) => renderMissionCard(mission))
+                      missions.filter(m => m.status === 'open').map((mission) => 
+                        viewMode === 'grid' ? renderMissionCard(mission) : renderMissionListRow(mission)
+                      )
                     ) : (
-                      <div className="md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                      <div className={viewMode === 'grid' ? "md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center" : "py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center"}>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucune mission d'équipe disponible</p>
                       </div>
                     )}

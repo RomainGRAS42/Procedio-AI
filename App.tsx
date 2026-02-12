@@ -121,10 +121,10 @@ const App: React.FC = () => {
 
       // Priorité au profil DB s'il existe, sinon on garde le metaRole
       if (dbRole) {
-        const normalizedRole = String(dbRole).trim().toUpperCase();
-        if (normalizedRole === "MANAGER") {
+        const normalizedRole = String(dbRole).trim().toLowerCase();
+        if (normalizedRole === "manager") {
           finalRole = UserRole.MANAGER;
-        } else {
+        } else if (normalizedRole === "technicien" || normalizedRole === "technician") {
           finalRole = UserRole.TECHNICIAN;
         }
       }
