@@ -237,7 +237,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
     );
 
+    console.log("DEBUG BADGES:", {
+      current: sortedBadges.length,
+      prev: prevBadgeCountRef.current,
+      diff: sortedBadges.length - prevBadgeCountRef.current
+    });
+
     if (sortedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
+      console.log("🏆 Badge Unlock Triggered!", {
+        newCount: sortedBadges.length,
+        oldCount: prevBadgeCountRef.current
+      });
       const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
       if (newBadge) {
         setUnlockedBadgeData(newBadge);
@@ -246,6 +256,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       }
     } else if (prevBadgeCountRef.current === 0 && sortedBadges.length > 0) {
       // First sync
+      console.log("🔄 First Sync Badges (No Modal)");
       localStorage.setItem(`procedio_seen_badges_${user.id}`, sortedBadges.length.toString());
     }
     prevBadgeCountRef.current = sortedBadges.length;

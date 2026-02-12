@@ -1367,9 +1367,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       {/* QUIZ MODAL */}
       <MasteryQuizModal 
         isOpen={isMasteryModalOpen}
-        onClose={() => {
+        onClose={async () => {
           setIsMasteryModalOpen(false);
-          fetchMasteryStatus();
+          await fetchMasteryStatus(); // Force refresh to update button state
         }}
         procedure={procedure}
         user={user}
