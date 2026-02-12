@@ -681,7 +681,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       {loading ? (
         <LoadingState message="Préparation du tableau des missions..." />
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="flex flex-col xl:flex-row gap-8 items-start">
           
           {/* Main Pipeline/List */}
           <div className="flex-1 min-w-0 space-y-12 transition-all duration-300">
