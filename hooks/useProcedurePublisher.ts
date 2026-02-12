@@ -45,7 +45,6 @@ export const useProcedurePublisher = ({ user, setActiveTransfer, onSuccess }: Us
         .insert({
           uuid: fileId,
           file_id: fileId,
-          source_id: fileId, // Required by internal trigger
           title: title.trim(),
           file_url: "", // Will be updated by Edge Function or we can guess it but safer to wait
           "Type": category || "Missions / Transferts",
