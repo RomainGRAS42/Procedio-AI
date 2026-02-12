@@ -684,7 +684,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           
           {/* Main Pipeline/List */}
-          <div className="xl:col-span-2 space-y-12">
+          <div className="flex-1 min-w-0 space-y-12 transition-all duration-300">
             {user.role === UserRole.MANAGER ? (
               <div className="space-y-10">
                 {/* Section : Needs Review */}
@@ -803,18 +803,26 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             )}
           </div>
 
-          {/* Right Sidebar - Info & Stats */}
-          <div className="space-y-12">
-             <div className="space-y-6">
-                <CollapsibleSection
-                  title="Performance & Outils"
-                  icon={<i className="fa-solid fa-chart-pie"></i>}
-                  sectionKey="performance_tools"
-                  isOpen={!collapsedSections['performance_tools']}
-                  onToggle={toggleSection}
-                  colorClass="bg-indigo-600"
-                >
-                  <div className="space-y-8">
+          {/* Right Sidebar - Info & Stats (Collapsible) */}
+          <div className={`space-y-12 transition-all duration-300 ease-in-out shrink-0 ${collapsedSections['sidebar'] ? 'w-20' : 'w-full xl:w-96'}`}>
+             <div className="space-y-6 sticky top-8">
+                <div className="flex items-center justify-between mb-4">
+                  {!collapsedSections['sidebar'] && (
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap overflow-hidden">
+                      Performance & Outils
+                    </h3>
+                  )}
+                  <button 
+                    onClick={() => toggleSection('sidebar')}
+                    className={`w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm ${collapsedSections['sidebar'] ? 'w-full rotate-180' : ''}`}
+                    title={collapsedSections['sidebar'] ? "Déplier" : "Replier"}
+                  >
+                    <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                  </button>
+                </div>
+
+                {!collapsedSections['sidebar'] ? (
+                  <div className="space-y-8 animate-fade-in">
                      <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                            <h3 className="text-sm font-black tracking-tight uppercase">Performance Missions</h3>
@@ -860,7 +868,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                         </div>
                      </section>
                   </div>
-                </CollapsibleSection>
+                ) : (
+                  <div className="flex flex-col gap-4 animate-fade-in items-center">
+                     <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-sm shadow-lg shadow-indigo-500/20" title={`XP Gagné: ${missions.reduce((acc, m) => acc + (m.status === 'completed' ? m.xp_reward : 0), 0)}`}>
+                        <i className="fa-solid fa-chart-line"></i>
+                     </div>
+                     <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 text-slate-400 flex items-center justify-center text-sm hover:text-orange-500 hover:bg-orange-50 transition-colors" title="Légende">
+                        <i className="fa-solid fa-info"></i>
+                     </div>
+                  </div>
+                )}
              </div>
           </div>
         </div>
