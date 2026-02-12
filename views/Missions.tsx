@@ -355,16 +355,15 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         }
 
         // 3. Technician starts mission -> Notify Manager (NEW)
-        if (newStatus === 'in_progress' && mission.created_by && mission.created_by !== user.id) {
-           await supabase.from('notifications').insert({
-             user_id: mission.created_by,
-             type: 'mission',
-             title: 'Mission démarrée \uD83D\uDE80',
-             content: `${user.firstName || 'Le technicien'} a commencé la mission : "${mission.title}"`,
-             link: '/missions'
-           });
-        }
-
+      if (newStatus === 'in_progress' && mission.created_by && mission.created_by !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: mission.created_by,
+          type: 'mission',
+          title: 'Mission démarrée \uD83D\uDE80',
+          content: `${user.firstName || 'Le technicien'} a commencé la mission : "${mission.title}"`,
+          link: '/missions'
+        });
+      }
 
       // Optimistic Update
       const updatedMission = { ...mission, status: newStatus, assigned_to: newStatus === 'assigned' ? user.id : mission.assigned_to };
@@ -374,17 +373,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       }
 
       // fetchMissions(); // Still kept commented to rely on optimistic update first
-        
-        // 3. Technician finishes -> Notify manager
-        if (newStatus === 'completed' && user.role === UserRole.TECHNICIAN && mission.created_by !== user.id) {
-          await supabase.from('notifications').insert({
-            user_id: mission.created_by,
-            type: 'mission',
-            title: mission.needs_attachment ? 'Livrable déposé' : 'Mission terminée',
-            content: `${user.firstName} a soumis son travail pour : ${mission.title}`,
-            link: '/missions'
-          });
-        }
+      
+      // 3. Technician finishes -> Notify manager
+      if (newStatus === 'completed' && user.role === UserRole.TECHNICIAN && mission.created_by !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: mission.created_by,
+          type: 'mission',
+          title: mission.needs_attachment ? 'Livrable déposé' : 'Mission terminée',
+          content: `${user.firstName} a soumis son travail pour : ${mission.title}`,
+          link: '/missions'
+        });
       }
     } catch (err) {
       console.error(err);
