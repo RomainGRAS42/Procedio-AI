@@ -1,6 +1,5 @@
 import React from "react";
-import { UserRole, ViewType } from "../types";
-import { ActiveTransfer } from "../App";
+import { UserRole, ViewType, ActiveTransfer } from "../types";
 
 interface SidebarProps {
   currentView: ViewType;
