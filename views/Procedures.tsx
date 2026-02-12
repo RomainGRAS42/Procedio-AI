@@ -99,8 +99,7 @@ const Procedures: React.FC<ProceduresProps> = ({
         "LOGICIEL",
         "MATERIEL",
         "UTILISATEURS",
-        "INFRASTRUCTURE",
-        "MISSIONS / TRANSFERTS"
+        "INFRASTRUCTURE"
       ];
 
       // Merge DB categories with Predefined ones
