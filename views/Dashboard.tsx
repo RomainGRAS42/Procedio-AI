@@ -6,6 +6,7 @@ import TeamPodium from '../components/TeamPodium';
 import XPProgressBar from '../components/XPProgressBar';
 import LevelUpModal from '../components/LevelUpModal';
 import BadgeUnlockedModal from '../components/BadgeUnlockedModal';
+import { calculateLevelFromXP, getLevelTitle } from '../lib/xpSystem';
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
@@ -198,18 +199,28 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (user.role !== UserRole.TECHNICIAN || !user.id) return;
 
     // 1. Check Level Up
-    if (personalStats.level > prevLevelRef.current && prevLevelRef.current !== 0) {
+    // Use CALCULATED level from XP, not the one from DB which might be corrupted or manual
+    const calculatedLevel = calculateLevelFromXP(personalStats.xp);
+    
+    // Only trigger if we have a valid previous level (not 0) and it increased
+    if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
+      console.log(`🎉 Level Up Detected! ${prevLevelRef.current} -> ${calculatedLevel}`);
       setLevelUpData({ 
-        level: personalStats.level, 
-        title: getLevelTitle(personalStats.level) 
+        level: calculatedLevel, 
+        title: getLevelTitle(calculatedLevel) 
       });
       setShowLevelUpModal(true);
-      localStorage.setItem(`procedio_seen_level_${user.id}`, personalStats.level.toString());
-    } else if (prevLevelRef.current === 0 && personalStats.level > 0) {
-      // First sync if not in localStorage
-      localStorage.setItem(`procedio_seen_level_${user.id}`, personalStats.level.toString());
+      // Update local storage and DB if needed (sync)
+      localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
+    } else if (prevLevelRef.current === 0 && calculatedLevel > 0) {
+      // First sync if not in localStorage - SILENT SYNC (No Modal)
+      // This prevents "Nouveau Niveau" popup on clear cache / first login
+      console.log(`Silent Level Sync: ${calculatedLevel}`);
+      localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
     }
-    prevLevelRef.current = personalStats.level;
+    
+    // Always update ref to current status
+    prevLevelRef.current = calculatedLevel;
 
     // 2. Check Badge Unlocked
     if (earnedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
@@ -430,7 +441,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         suggestions: suggCount || 0,
         notes: realNotesCount,
         xp: profile?.xp_points || 0,
-        level: profile?.level || 1,
+        level: calculateLevelFromXP(profile?.xp_points || 0), // Calculate level from XP
         mastery: masteryData,
       };
       setPersonalStats(stats);
