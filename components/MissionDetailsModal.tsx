@@ -86,8 +86,10 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
       if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
 
-      setShowSuccessModal(true);
-      setIsSubmitting(false);
+      if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
+
+      // Modal is already closed, background process finished.
+      console.log("Mission promoted and validated successfully in background.");
     }
   });
 
@@ -354,11 +356,16 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
         const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${fileExt}`;
         const file = new File([fileBlob], fileName, { type: fileBlob.type });
 
-        // 2. Use the unified publisher hook
-        // This will handle: Progress (ActiveTransfer), Insert, and Edge Function call
-        await publishFile(file, promoteTitle, promoteCategory, mission.id);
+        // 2. Use the unified publisher hook - FIRE AND FORGET
+        // We don't await here so the modal closes immediately. 
+        // The global ActiveTransfer UI handles the progress feedback.
+        publishFile(file, promoteTitle, promoteCategory, mission.id).catch(err => {
+          console.error("Background promotion failed:", err);
+          alert("Erreur lors de la promotion en arrière-plan. Vérifiez la console.");
+        });
         
-        return; // Success handling is done in onSuccess callback of useProcedurePublisher
+        onClose();
+        return;
       }
 
       onClose();
