@@ -240,6 +240,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   onBack,
   onSuggest,
 }) => {
+  // Ref to prevent race condition between optimistic update and stale fetch
+  const justCompletedRef = React.useRef(false);
+  
   const cleanTitle = useMemo(() => {
     try {
       if (!procedure?.title) return "Procédure sans titre";
@@ -1363,20 +1366,27 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
       )}
-
+      
       {/* QUIZ MODAL */}
       <MasteryQuizModal 
         isOpen={isMasteryModalOpen}
         onClose={async () => {
           setIsMasteryModalOpen(false);
-          await fetchMasteryStatus(); // Force refresh to update button state
+          // Only refetch if we didn't just complete the exam (prevents stale data override)
+          if (!justCompletedRef.current) {
+            await fetchMasteryStatus(); 
+          }
+          // Reset ref after a delay just in case
+          setTimeout(() => { justCompletedRef.current = false; }, 2000);
         }}
         procedure={procedure}
         user={user}
         quizData={masteryRequest?.quiz_data}
         masteryRequestId={masteryRequest?.id}
         onSuccess={(score, level) => {
+          justCompletedRef.current = true; // Mark as just completed
           setNotification({ msg: `Examen terminé ! Score: ${score}% - Niveau ${level}`, type: "success" });
+          
           // Optimistic Update to immediately remove the "launch" button
           setMasteryRequest(prev => prev ? ({
             ...prev,
