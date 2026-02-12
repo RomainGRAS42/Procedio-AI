@@ -20,7 +20,7 @@ interface MissionsProps {
 interface CollapsibleSectionProps {
   title: string;
   icon: React.ReactNode;
-  count: number;
+  count?: number;
   sectionKey: string;
   isOpen: boolean;
   onToggle: (key: string) => void;
@@ -41,9 +41,11 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             <div className={`w-10 h-10 rounded-xl ${colorClass} text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-200`}>
                {icon}
             </div>
-            <div className="bg-slate-100 rounded-lg px-2 py-0.5 text-[10px] font-black text-slate-500">
-               {count}
-            </div>
+            {count !== undefined && (
+              <div className="bg-slate-100 rounded-lg px-2 py-0.5 text-[10px] font-black text-slate-500">
+                 {count}
+              </div>
+            )}
             <h3 className={`text-sm font-black uppercase tracking-[0.2em] transition-colors ${!isOpen ? 'text-slate-400' : 'text-slate-900 group-hover:text-indigo-600'}`}>
               {title}
             </h3>
@@ -804,55 +806,61 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           {/* Right Sidebar - Info & Stats */}
           <div className="space-y-12">
              <div className="space-y-6">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">
-                  Performance & Outils
-                </h3>
-                <div className="space-y-8">
-                   <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col gap-4">
-                      <div className="flex items-center justify-between">
-                         <h3 className="text-sm font-black tracking-tight uppercase">Performance Missions</h3>
-                         <div className="hidden xl:flex items-center gap-2 text-[10px] font-bold text-indigo-200 bg-indigo-900/30 px-3 py-1 rounded-full border border-white/5">
-                            <i className="fa-solid fa-chart-line"></i>
-                            <span>Live</span>
-                         </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                         <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
-                            <span className="text-2xl font-black">{missions.reduce((acc, m) => acc + (m.status === 'completed' ? m.xp_reward : 0), 0)}</span>
-                            <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest leading-tight mt-1">XP Gagné</span>
-                         </div>
-                         <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
-                            <span className="text-2xl font-black">{missions.filter(m => m.status === 'completed').length}</span>
-                            <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest leading-tight mt-1">Complétées</span>
-                         </div>
-                      </div>
-                   </section>
+                <CollapsibleSection
+                  title="Performance & Outils"
+                  icon={<i className="fa-solid fa-chart-pie"></i>}
+                  sectionKey="performance_tools"
+                  isOpen={!collapsedSections['performance_tools']}
+                  onToggle={toggleSection}
+                  colorClass="bg-indigo-600"
+                >
+                  <div className="space-y-8">
+                     <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                           <h3 className="text-sm font-black tracking-tight uppercase">Performance Missions</h3>
+                           <div className="hidden xl:flex items-center gap-2 text-[10px] font-bold text-indigo-200 bg-indigo-900/30 px-3 py-1 rounded-full border border-white/5">
+                              <i className="fa-solid fa-chart-line"></i>
+                              <span>Live</span>
+                           </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                           <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
+                              <span className="text-2xl font-black">{missions.reduce((acc, m) => acc + (m.status === 'completed' ? m.xp_reward : 0), 0)}</span>
+                              <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest leading-tight mt-1">XP Gagné</span>
+                           </div>
+                           <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
+                              <span className="text-2xl font-black">{missions.filter(m => m.status === 'completed').length}</span>
+                              <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest leading-tight mt-1">Complétées</span>
+                           </div>
+                        </div>
+                     </section>
 
-                   <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Légende</h3>
-                      <div className="space-y-4">
-                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
-                               <i className="fa-solid fa-fire"></i>
-                            </div>
-                            <div>
-                               <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Priorité Haute</p>
-                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Action sous 48h</p>
-                            </div>
-                         </div>
-                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm">
-                               <i className="fa-solid fa-medal"></i>
-                            </div>
-                            <div>
-                               <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Récompense XP</p>
-                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selon la complexité</p>
-                            </div>
-                         </div>
-                      </div>
-                   </section>
-                </div>
+                     <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Légende</h3>
+                        <div className="space-y-4">
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
+                                 <i className="fa-solid fa-fire"></i>
+                              </div>
+                              <div>
+                                 <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Priorité Haute</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Action sous 48h</p>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm">
+                                 <i className="fa-solid fa-medal"></i>
+                              </div>
+                              <div>
+                                 <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Récompense XP</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selon la complexité</p>
+                              </div>
+                           </div>
+                        </div>
+                     </section>
+                  </div>
+                </CollapsibleSection>
              </div>
           </div>
         </div>
