@@ -1063,7 +1063,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                     <span>
                       {isSuccess
                         ? `Maîtrise validée (${score}%)` 
-                        : `Réessai le ${retryDate.toLocaleDateString()}`}
+                        : `Réessai possible le ${retryDate.toLocaleDateString()}`}
                     </span>
                   </div>
                 );
@@ -1377,6 +1377,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         masteryRequestId={masteryRequest?.id}
         onSuccess={(score, level) => {
           setNotification({ msg: `Examen terminé ! Score: ${score}% - Niveau ${level}`, type: "success" });
+          // Optimistic Update to immediately remove the "launch" button
+          setMasteryRequest(prev => prev ? ({
+            ...prev,
+            status: 'completed',
+            score: score,
+            completed_at: new Date().toISOString()
+          }) : null);
         }}
       />
     </div>
