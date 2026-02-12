@@ -71,7 +71,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(user.role === UserRole.MANAGER ? 'list' : 'grid');
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-  const [showAllPersonalMissions, setShowAllPersonalMissions] = useState(false);
+  const [personalFilter, setPersonalFilter] = useState<'active' | 'history'>('active');
 
   // Form State
   const [newMission, setNewMission] = useState({
@@ -753,37 +753,49 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                 <CollapsibleSection
                   title="Mes Missions Personnelles"
                   icon={<i className="fa-solid fa-user-check"></i>}
-                  count={missions.filter(m => m.assigned_to === user.id && (showAllPersonalMissions || m.status === 'assigned' || m.status === 'in_progress')).length}
+                  count={missions.filter(m => {
+                    if (m.assigned_to !== user.id) return false;
+                    if (personalFilter === 'active') return m.status === 'assigned' || m.status === 'in_progress';
+                    return m.status === 'completed' || m.status === 'cancelled';
+                  }).length}
                   sectionKey="personal"
                   isOpen={!collapsedSections['personal']}
                   onToggle={toggleSection}
                 >
                   <div className="flex items-center justify-end mb-4 px-2">
-                     <label className="flex items-center gap-2 cursor-pointer group select-none">
-                        <div className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-300 ${showAllPersonalMissions ? 'bg-indigo-600' : 'bg-slate-200 group-hover:bg-slate-300'}`}>
-                           <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-300 ${showAllPersonalMissions ? 'translate-x-4' : 'translate-x-0'}`} />
-                        </div>
-                        <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${showAllPersonalMissions ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-500'}`}>
-                           {showAllPersonalMissions ? 'Tout voir' : 'En cours'}
-                        </span>
-                        <input 
-                           type="checkbox" 
-                           className="hidden" 
-                           checked={showAllPersonalMissions} 
-                           onChange={(e) => setShowAllPersonalMissions(e.target.checked)} 
-                        />
-                     </label>
+                     <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
+                        <button
+                           onClick={() => setPersonalFilter('active')}
+                           className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === 'active' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                           En cours ({missions.filter(m => m.assigned_to === user.id && (m.status === 'assigned' || m.status === 'in_progress')).length})
+                        </button>
+                        <button
+                           onClick={() => setPersonalFilter('history')}
+                           className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                           Terminées ({missions.filter(m => m.assigned_to === user.id && (m.status === 'completed' || m.status === 'cancelled')).length})
+                        </button>
+                     </div>
                   </div>
 
                   <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
-                    {missions.filter(m => m.assigned_to === user.id && (showAllPersonalMissions || m.status === 'assigned' || m.status === 'in_progress')).length > 0 ? (
-                      missions.filter(m => m.assigned_to === user.id && (showAllPersonalMissions || m.status === 'assigned' || m.status === 'in_progress')).map((mission) => 
+                    {missions.filter(m => {
+                      if (m.assigned_to !== user.id) return false;
+                      if (personalFilter === 'active') return m.status === 'assigned' || m.status === 'in_progress';
+                      return m.status === 'completed' || m.status === 'cancelled';
+                    }).length > 0 ? (
+                      missions.filter(m => {
+                        if (m.assigned_to !== user.id) return false;
+                        if (personalFilter === 'active') return m.status === 'assigned' || m.status === 'in_progress';
+                        return m.status === 'completed' || m.status === 'cancelled';
+                      }).map((mission) => 
                         viewMode === 'grid' ? renderMissionCard(mission) : renderMissionListRow(mission)
                       )
                     ) : (
                       <div className={viewMode === 'grid' ? "md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center" : "py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center"}>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                           {showAllPersonalMissions ? "Aucune mission personnelle trouvée" : "Aucune mission en cours"}
+                           {personalFilter === 'active' ? "Aucune mission en cours" : "Aucune mission terminée"}
                         </p>
                       </div>
                     )}
