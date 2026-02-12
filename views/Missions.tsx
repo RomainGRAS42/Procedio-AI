@@ -348,9 +348,20 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             user_id: mission.assigned_to,
             type: 'mission',
             title: 'Mission annulée',
-            content: `La mission "${mission.title}" a été annulée par le manager.`,
+            content: `La mission "${mission.title}" a été annulée.`,
             link: '/missions'
           });
+        }
+
+        // 3. Technician starts mission -> Notify Manager (NEW)
+        if (newStatus === 'in_progress' && mission.created_by && mission.created_by !== user.id) {
+           await supabase.from('notifications').insert({
+             user_id: mission.created_by,
+             type: 'mission',
+             title: 'Mission démarrée \uD83D\uDE80',
+             content: `${user.firstName || 'Le technicien'} a commencé la mission : "${mission.title}"`,
+             link: '/missions'
+           });
         }
         
         // 3. Technician finishes -> Notify manager
