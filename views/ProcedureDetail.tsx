@@ -285,13 +285,20 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   useEffect(() => {
     if (!procedure) return;
     if (procedure.fileUrl) {
-      setDocUrl(procedure.fileUrl);
+      // Si c'est déjà une URL complète (http...), on l'utilise
+      if (procedure.fileUrl.startsWith("http")) {
+        setDocUrl(procedure.fileUrl);
+      } else {
+        // Sinon c'est un chemin de stockage, on calcule l'URL publique
+        const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.fileUrl);
+        setDocUrl(data?.publicUrl || null);
+      }
     } else if (procedure.id) {
       try {
         const { data } = supabase.storage.from("procedures").getPublicUrl(procedure.id);
         setDocUrl(data?.publicUrl || null);
       } catch (err) {
-        console.error("Error getting public URL:", err);
+        console.error("Error getting public URL from id:", err);
       }
     }
     fetchHistory();

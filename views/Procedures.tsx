@@ -64,18 +64,23 @@ const Procedures: React.FC<ProceduresProps> = ({
       const results = (allProcs || []) as any[];
       
       // Map to Procedure format and store all
-      const mappedProcs = results.map(f => ({
-        id: f.file_id || f.uuid,
-        db_id: f.uuid,
-        file_id: f.file_id || f.uuid,
-        title: f.title || "Sans titre",
-        category: f.Type || 'NON CLASSÉ',
-        fileUrl: f.file_url,
-        pinecone_document_id: f.file_id || f.uuid,
-        createdAt: f.created_at,
-        views: f.views || 0,
-        status: f.status || 'validated'
-      }));
+      const mappedProcs = results.map(f => {
+        let cat = (f.Type || 'NON CLASSÉ').toUpperCase();
+        if (cat === 'UTILISATEUR') cat = 'UTILISATEURS';
+        
+        return {
+          id: f.file_id || f.uuid,
+          db_id: f.uuid,
+          file_id: f.file_id || f.uuid,
+          title: f.title || "Sans titre",
+          category: cat,
+          fileUrl: f.file_url,
+          pinecone_document_id: f.file_id || f.uuid,
+          createdAt: f.created_at,
+          views: f.views || 0,
+          status: f.status || 'validated'
+        };
+      });
       setAllProcedures(mappedProcs);
       cacheStore.set('proc_all', mappedProcs);
       
@@ -83,19 +88,16 @@ const Procedures: React.FC<ProceduresProps> = ({
       
       const countsMap: Record<string, number> = {};
       mappedProcs.forEach(p => {
-        const cat = p.category.toUpperCase();
+        let cat = p.category.toUpperCase();
+        // Harmonisation : UTILISATEUR (DB) -> UTILISATEURS (UI)
+        if (cat === 'UTILISATEUR') cat = 'UTILISATEURS';
         countsMap[cat] = (countsMap[cat] || 0) + 1;
       });
 
-      const uniqueCategories = Array.from(new Set(
-        results.map(p => (p.Type ? String(p.Type).toUpperCase() : 'NON CLASSÉ'))
-      ));
+      // Strict list of allowed categories
+      const allowedCategories = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEURS'];
       
-      const defaultCats = ['INFRASTRUCTURE', 'LOGICIEL', 'MATERIEL', 'UTILISATEUR'];
-      const finalFolders = Array.from(new Set([...defaultCats, ...uniqueCategories])).sort() as string[];
-      
-      // We can wrap finalFolders with count metadata
-      const foldersWithCounts = finalFolders.map(folder => ({
+      const foldersWithCounts = allowedCategories.map(folder => ({
         name: folder,
         count: countsMap[folder] || 0
       }));

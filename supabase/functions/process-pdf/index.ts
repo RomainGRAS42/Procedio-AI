@@ -31,9 +31,8 @@ Deno.serve(async (req) => {
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // 1. Archivage dans Storage
-    const cleanTitle = sanitizePath(title);
-    const storagePath = `${category}/${cleanTitle}.pdf`;
+    // 1. Archivage dans Storage (Utilisation du UUID pour plus de robustesse avec le frontend)
+    const storagePath = file_id;
     
     console.log(`📂 Archivage: procedures/${storagePath}...`);
     const { error: storageError } = await supabase.storage
@@ -42,17 +41,17 @@ Deno.serve(async (req) => {
 
     if (storageError) console.error("⚠️ Storage Error:", storageError);
 
-    // 2. Synchronisation UI
-    console.log("💾 Création de l'entrée Procédure...");
+    // 2. Synchronisation UI (Update or Insert in the table procedures)
+    console.log("💾 Mise à jour de l'entrée Procédure...");
     const { error: procError } = await supabase.from('procedures').upsert({
-      uuid: file_id, 
+      uuid: file_id,
+      file_id: file_id,
       title: title,
       Type: category,
-      file_url: `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${storagePath}`,
-      file_id: file_id,
+      file_url: storagePath,
       created_at: uploadDate || new Date().toLocaleString('fr-FR'),
       updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'uuid' });
 
     if (procError) console.error("❌ Erreur Base de données:", procError);
 

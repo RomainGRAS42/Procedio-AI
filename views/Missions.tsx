@@ -22,6 +22,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   // const [missions, setMissions] = useState<Mission[]>([]); // From Context
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(user.role === UserRole.MANAGER ? 'list' : 'grid');
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   // Form State
@@ -498,18 +499,62 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     );
   };
 
+  const renderMissionListRow = (mission: Mission) => {
+    return (
+      <div 
+        key={mission.id} 
+        onClick={() => setSelectedMission(mission)}
+        className="flex items-center gap-4 bg-white hover:bg-slate-50 p-4 rounded-2xl border border-slate-100 transition-all cursor-pointer group"
+      >
+        <div className="w-1.5 h-8 rounded-full opacity-40 shrink-0" style={{
+          backgroundColor: 
+            mission.urgency === 'critical' ? '#f43f5e' :
+            mission.urgency === 'high' ? '#f97316' :
+            mission.urgency === 'medium' ? '#6366f1' : '#cbd5e1'
+        }}></div>
+        
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
+            {mission.title}
+          </h4>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+            {mission.assignee_name || "Toute l'équipe"}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-6 shrink-0">
+          <div className="hidden md:block">
+            <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">Urgence</span>
+            <UrgencyBadge urgency={mission.urgency} />
+          </div>
+          
+          <div className="hidden sm:block">
+            <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">Statut</span>
+            <StatusBadge status={mission.status} />
+          </div>
+
+          <div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-all">
+            <i className="fa-solid fa-chevron-right text-xs"></i>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-12 animate-fade-in pb-20">
       
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-100 pb-8">
         <div className="space-y-2">
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
-            Tableau des Missions
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+              Tableau des Missions
+            </h1>
             <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-200">
               <i className="fa-solid fa-compass"></i>
             </div>
-          </h1>
+          </div>
           <p className="text-slate-500 font-medium text-lg max-w-2xl">
             {user.role === UserRole.MANAGER 
               ? "Pilotez le flux de connaissances en assignant des missions stratégiques à votre équipe."
@@ -517,15 +562,34 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           </p>
         </div>
         
-        {user.role === UserRole.MANAGER && (
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="px-8 py-4 bg-indigo-600 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center gap-3 group"
-          >
-            <i className="fa-solid fa-plus group-hover:rotate-90 transition-transform"></i>
-            Mission Stratégique
-          </button>
-        )}
+        <div className="flex items-center gap-4">
+          <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Vue Grille"
+            >
+              <i className="fa-solid fa-grip"></i>
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Vue Liste"
+            >
+              <i className="fa-solid fa-list-ul"></i>
+            </button>
+          </div>
+
+          {user.role === UserRole.MANAGER && (
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="px-8 py-4 bg-indigo-600 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center gap-3 group"
+            >
+              <i className="fa-solid fa-plus group-hover:rotate-90 transition-transform"></i>
+              Mission Stratégique
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -536,12 +600,50 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           {/* Main Pipeline/List */}
           <div className="xl:col-span-2 space-y-12">
             {user.role === UserRole.MANAGER ? (
-              <div className="space-y-6">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">
-                  Pipeline des Missions
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {missions.map((mission) => renderMissionCard(mission))}
+              <div className="space-y-10">
+                {/* Section : Needs Review */}
+                {missions.filter(m => m.status === 'awaiting_validation').length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                       <i className="fa-solid fa-bell animate-pulse"></i>
+                       À Valider Prioritairement
+                    </h3>
+                    <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
+                      {missions.filter(m => m.status === 'awaiting_validation').map((m) => 
+                        viewMode === 'grid' ? renderMissionCard(m) : renderMissionListRow(m)
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Section : Ongoing */}
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                    Missions en cours
+                  </h3>
+                  <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
+                    {missions.filter(m => m.status !== 'completed' && m.status !== 'cancelled' && m.status !== 'awaiting_validation').length > 0 ? (
+                      missions.filter(m => m.status !== 'completed' && m.status !== 'cancelled' && m.status !== 'awaiting_validation').map((m) => 
+                        viewMode === 'grid' ? renderMissionCard(m) : renderMissionListRow(m)
+                      )
+                    ) : (
+                      <div className="py-8 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                         <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Aucune mission en cours</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section : Archived / Completed */}
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                    Historique Récent
+                  </h3>
+                  <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"}>
+                    {missions.filter(m => m.status === 'completed' || m.status === 'cancelled').slice(0, 10).map((m) => 
+                      viewMode === 'grid' ? renderMissionCard(m) : renderMissionListRow(m)
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
