@@ -711,7 +711,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (updateError) throw updateError;
 
-      setToast({ message: "Examen approuvé et généré par l'IA !", type: "success" });
+      setToast({ message: "Examen généré et envoyé au technicien !", type: "success" });
       fetchMasteryClaims();
       
       // Activity Log (For Activity Feed)

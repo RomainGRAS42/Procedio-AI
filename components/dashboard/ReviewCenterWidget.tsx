@@ -59,7 +59,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                 onClick={() => onApproveMastery?.(claim.id)}
                 className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
               >
-                Accepter l'examen
+                GÉNÉRER L'EXAMEN IA
               </button>
               <button className="w-10 h-8 flex items-center justify-center bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-500 hover:border-rose-100 transition-all">
                 <i className="fa-solid fa-xmark"></i>

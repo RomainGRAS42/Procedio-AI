@@ -388,6 +388,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         .select('*')
         .eq('procedure_id', targetUuid)
         .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       setMasteryRequest(data);
@@ -1029,18 +1031,43 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <span>Examen en attente</span>
               </div>
             ) : masteryRequest?.status === 'completed' ? (
-              <div className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                (masteryRequest.score || 0) >= 70 
-                  ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
-                  : "bg-rose-50 text-rose-600 border-rose-100"
-              }`}>
-                <i className={`fa-solid ${(masteryRequest.score || 0) >= 70 ? 'fa-circle-check' : 'fa-circle-xmark'}`}></i>
-                <span>
-                  {(masteryRequest.score || 0) >= 70 
-                    ? `Maîtrise validée (${masteryRequest.score || 0}%)` 
-                    : `Maîtrise non validée (${masteryRequest.score || 0}%)`}
-                </span>
-              </div>
+              (() => {
+                const score = masteryRequest.score || 0;
+                const isSuccess = score >= 70;
+                const completedAt = new Date(masteryRequest.completed_at || masteryRequest.created_at);
+                const daysSinceCompletion = (new Date().getTime() - completedAt.getTime()) / (1000 * 3600 * 24);
+                const canRetry = !isSuccess && daysSinceCompletion >= 14;
+                const retryDate = new Date(completedAt);
+                retryDate.setDate(retryDate.getDate() + 14);
+
+                if (canRetry) {
+                   return (
+                    <button
+                      onClick={handleRequestMastery}
+                      className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
+                      title="Vous pouvez retenter votre chance !"
+                    >
+                      <i className="fa-solid fa-rotate-right"></i>
+                      <span>Retenter l'examen</span>
+                    </button>
+                   );
+                }
+
+                return (
+                  <div className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
+                    isSuccess
+                      ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
+                      : "bg-rose-50 text-rose-600 border-rose-100"
+                  }`}>
+                    <i className={`fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-lock'}`}></i>
+                    <span>
+                      {isSuccess
+                        ? `Maîtrise validée (${score}%)` 
+                        : `Réessai le ${retryDate.toLocaleDateString()}`}
+                    </span>
+                  </div>
+                );
+              })()
             ) : (
               <button
                 onClick={handleRequestMastery}
