@@ -12,6 +12,8 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/search/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
 
+import MasteryQuizModal from "../components/MasteryQuizModal";
+
 // 🎨 Custom Styles to hide unwanted "Whole words" option
 const hideWholeWordsStyles = `
   .rpv-search__popover-footer-item:nth-child(2) {
@@ -291,6 +293,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     first_name: string;
     last_name: string;
   } | null>(null);
+  const [masteryRequest, setMasteryRequest] = useState<any | null>(null);
+  const [isMasteryModalOpen, setIsMasteryModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -371,7 +375,26 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     resolveDocUrl();
     fetchHistory();
     fetchReferent();
+    fetchMasteryStatus();
   }, [procedure?.id, procedure?.fileUrl]);
+
+  const fetchMasteryStatus = async () => {
+    const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+    if (!targetUuid) return;
+
+    try {
+      const { data } = await supabase
+        .from('mastery_requests')
+        .select('*')
+        .eq('procedure_id', targetUuid)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      setMasteryRequest(data);
+    } catch (err) {
+      console.error("Error fetching mastery status:", err);
+    }
+  };
 
   const fetchReferent = async () => {
     const targetUuid =
@@ -792,6 +815,43 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     }
   };
 
+  const handleRequestMastery = async () => {
+    const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+    if (!targetUuid) return;
+
+    setNotification({ msg: "Demande envoyée au manager !", type: "success" });
+    
+    try {
+      // 1. New Table entry
+      const { data, error } = await supabase
+        .from('mastery_requests')
+        .insert({
+          user_id: user.id,
+          procedure_id: targetUuid,
+          status: 'pending'
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      setMasteryRequest(data);
+
+      // 2. Legacy Log entry (for dashboard notifications)
+      await supabase.from("notes").insert([
+        {
+          user_id: user.id,
+          title: `CLAIM_MASTERY_${procedure.title.substring(0, 50)}`,
+          content: `${user.firstName} demande à valider sa maîtrise sur "${procedure.title}"`,
+          procedure_id: targetUuid,
+        },
+      ]);
+    } catch (err) {
+      console.error("Error requesting mastery:", err);
+    }
+
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
@@ -954,24 +1014,34 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               <span>{isChatOpen ? "Fermer IA" : "Discuter avec le PDF"}</span>
             </button>
 
-            {/* Claim Mastery Button */}
-            <button
-              onClick={() => {
-                setNotification({ msg: "Réclamation envoyée au manager !", type: "success" });
-                supabase.from("notes").insert([
-                  {
-                    user_id: user.id,
-                    title: `CLAIM_MASTERY_${procedure.title.substring(0, 50)}`,
-                    content: `${user.firstName} réclame la maîtrise sur la procédure "${procedure.title}"`,
-                    procedure_id: procedure.db_id || procedure.uuid || null,
-                  },
-                ]);
-              }}
-              className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
-              title="Réclamer la maîtrise sur cette procédure">
-              <i className="fa-solid fa-certificate"></i>
-              <span className="hidden xl:inline">Réclamer Maîtrise</span>
-            </button>
+            {/* Mastery Button Workflow */}
+            {masteryRequest?.status === 'approved' ? (
+              <button
+                onClick={() => setIsMasteryModalOpen(true)}
+                className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce"
+              >
+                <i className="fa-solid fa-graduation-cap"></i>
+                <span>Lancer l'Examen</span>
+              </button>
+            ) : masteryRequest?.status === 'pending' ? (
+              <div className="px-4 py-3 h-10 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <i className="fa-solid fa-clock animate-pulse"></i>
+                <span>Examen en attente</span>
+              </div>
+            ) : masteryRequest?.status === 'completed' ? (
+              <div className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <i className="fa-solid fa-circle-check"></i>
+                <span>Maîtrisé</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleRequestMastery}
+                className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
+                title="Demander à valider la maîtrise sur cette procédure">
+                <i className="fa-solid fa-certificate"></i>
+                <span className="hidden xl:inline">Demander Maîtrise</span>
+              </button>
+            )}
 
             {/* Suggestion Button */}
 
@@ -1258,6 +1328,22 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
       )}
+
+      {/* QUIZ MODAL */}
+      <MasteryQuizModal 
+        isOpen={isMasteryModalOpen}
+        onClose={() => {
+          setIsMasteryModalOpen(false);
+          fetchMasteryStatus();
+        }}
+        procedure={procedure}
+        user={user}
+        quizData={masteryRequest?.quiz_data}
+        masteryRequestId={masteryRequest?.id}
+        onSuccess={(score, level) => {
+          setNotification({ msg: `Examen terminé ! Score: ${score}% - Niveau ${level}`, type: "success" });
+        }}
+      />
     </div>
   );
 };

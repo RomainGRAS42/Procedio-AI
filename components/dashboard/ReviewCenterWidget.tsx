@@ -7,13 +7,15 @@ interface ReviewCenterWidgetProps {
   masteryClaims: any[];
   onSelectSuggestion: (suggestion: Suggestion) => void;
   onNavigateToStatistics?: () => void;
+  onApproveMastery?: (requestId: string) => void;
 }
 
 const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   pendingSuggestions,
   masteryClaims,
   onSelectSuggestion,
-  onNavigateToStatistics
+  onNavigateToStatistics,
+  onApproveMastery
 }) => {
   return (
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
@@ -33,17 +35,38 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       </div>
 
       <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
-        {masteryClaims.length > 0 && (
-          <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center justify-between animate-pulse cursor-pointer hover:bg-amber-100 transition-colors"
-               onClick={onNavigateToStatistics}
-          >
-            <div className="flex items-center gap-2">
-              <i className="fa-solid fa-medal text-amber-500"></i>
-              <span className="text-xs font-black text-amber-700 uppercase tracking-tight">{masteryClaims.length} Revendication(s)</span>
+        {masteryClaims.length > 0 && masteryClaims.map((claim) => (
+          <div key={claim.id} className="bg-orange-50/50 rounded-2xl p-4 border border-orange-100 flex flex-col gap-3 group/claim">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <i className="fa-solid fa-graduation-cap text-orange-500"></i>
+                <span className="text-[10px] font-black text-orange-700 uppercase tracking-tight">Demande de Maîtrise</span>
+              </div>
+              <span className="text-[8px] font-bold text-slate-400">Maintenant</span>
             </div>
-            <i className="fa-solid fa-arrow-right text-amber-500 text-xs"></i>
+            
+            <div className="min-w-0">
+              <p className="text-xs font-black text-slate-800 truncate">
+                {claim.procedures?.title || "Document inconnu"}
+              </p>
+              <p className="text-[10px] font-bold text-slate-500 mt-0.5">
+                Par {claim.user_profiles?.first_name} {claim.user_profiles?.last_name}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 mt-1">
+              <button 
+                onClick={() => onApproveMastery?.(claim.id)}
+                className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
+              >
+                Accepter l'examen
+              </button>
+              <button className="w-10 h-8 flex items-center justify-center bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-500 hover:border-rose-100 transition-all">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
-        )}
+        ))}
 
         {pendingSuggestions.slice(0, 10).map((sugg) => (
           <div key={sugg.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer" onClick={() => onSelectSuggestion(sugg)}>

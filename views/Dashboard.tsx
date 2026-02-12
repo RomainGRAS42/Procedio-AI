@@ -601,15 +601,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (user.role !== UserRole.MANAGER) return;
     setLoadingClaims(true);
     try {
+      // 1. Fetch from mastery_requests table (New System)
       const { data, error } = await supabase
-        .from('notes')
+        .from('mastery_requests')
         .select(`
           *,
           user_profiles:user_id (first_name, last_name, avatar_url),
           procedures:procedure_id (title, uuid)
         `)
-        .ilike('title', 'CLAIM_MASTERY_%')
-        .eq('viewed', false)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -621,6 +621,57 @@ const Dashboard: React.FC<DashboardProps> = ({
       console.error("Error fetching mastery claims:", err);
     } finally {
       setLoadingClaims(false);
+    }
+  };
+
+  const handleApproveMastery = async (requestId: string) => {
+    try {
+      // 1. Fetch request details to get procedure_id
+      const { data: request, error: fetchError } = await supabase
+        .from('mastery_requests')
+        .select('*, user_profiles(first_name), procedures(title, uuid)')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError || !request) throw new Error("Request not found");
+
+      // 2. Generate Quiz via Edge Function (Real AI)
+      setToast({ message: "Génération de l'examen par l'IA en cours...", type: "info" });
+      
+      const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-mastery-quiz', {
+        body: { procedure_id: request.procedures.uuid }
+      });
+
+      if (quizError) {
+        console.error("AI Generation Error:", quizError);
+        throw new Error("Erreur lors de la génération de l'examen par l'IA.");
+      }
+
+      // 3. Update request with approved status and generated quiz
+      const { error: updateError } = await supabase
+        .from('mastery_requests')
+        .update({
+          status: 'approved',
+          quiz_data: quizData
+        })
+        .eq('id', requestId);
+
+      if (updateError) throw updateError;
+
+      setToast({ message: "Examen approuvé et généré par l'IA !", type: "success" });
+      fetchMasteryClaims();
+      
+      // Activity Log
+      await supabase.from("notes").insert({
+        user_id: user.id,
+        title: `MASTERY_APPROVED_${requestId}`,
+        content: `Manager ${user.firstName} a approuvé la demande de maîtrise de ${request?.user_profiles?.first_name} sur "${request?.procedures?.title}". L'examen a été généré dynamiquement par l'IA.`,
+        is_locked: false
+      });
+
+    } catch (err: any) {
+      console.error("Error approving mastery:", err);
+      setToast({ message: err.message || "Erreur lors de l'approbation.", type: "error" });
     }
   };
 
@@ -1497,6 +1548,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       pendingSuggestions={pendingSuggestions}
                       masteryClaims={masteryClaims}
                       onSelectSuggestion={(s) => { setSelectedSuggestion(s); setShowSuggestionModal(true); }}
+                      onApproveMastery={handleApproveMastery}
                     />
                  </div>
 
