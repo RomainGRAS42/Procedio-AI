@@ -719,7 +719,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (error) throw error;
       if (data) {
         setApprovedExams(data);
-        onMasteryCountChange?.(data.length);
+        onAlertCountChange?.(data.length);
       }
     } catch (err) {
       console.error("Error fetching approved exams:", err);
