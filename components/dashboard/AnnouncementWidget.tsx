@@ -16,6 +16,7 @@ interface AnnouncementWidgetProps {
   handleSaveAnnouncement: () => Promise<void>;
   handleMarkAsRead: () => Promise<void>;
   formatDate: (date: string) => string;
+  embedded?: boolean;
 }
 
 const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
@@ -32,10 +33,15 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
   setRequiresConfirmation,
   handleSaveAnnouncement,
   handleMarkAsRead,
-  formatDate
+  formatDate,
+  embedded = false
 }) => {
+  const containerClasses = embedded 
+    ? "flex flex-col justify-center h-full animate-fade-in" 
+    : `bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col justify-center min-h-full animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100/50 shadow-indigo-500/10"}`;
+
   return (
-    <section className={`bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col justify-center min-h-full animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100/50 shadow-indigo-500/10"}`}>
+    <section className={containerClasses}>
       {loadingAnnouncement ? (
         <div className="flex items-center justify-center gap-4 py-8">
           <div className="w-6 h-6 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>

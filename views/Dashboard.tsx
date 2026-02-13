@@ -1603,39 +1603,70 @@ const Dashboard: React.FC<DashboardProps> = ({
       )}
 
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
-      <section className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col md:flex-row justify-between items-center gap-6">
-        {/* Titre & Toggle de vue */}
-        <div className="flex-1">
-            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
+      
+      {/* UNIFIED HERO CARD: Welcome + Announcement */}
+      <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 animate-fade-in flex flex-col xl:flex-row gap-8 items-stretch mb-8 relative overflow-hidden group hover:border-indigo-50 transition-colors">
+        
+        {/* Decorative Background Blur */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-50/30 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+
+        {/* LEFT: Welcome Section */}
+        <div className="flex-1 flex flex-col justify-center min-w-0">
+            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
+              <span className="w-1 h-4 bg-indigo-400 rounded-full"></span>
               {new Date()
                 .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
                 .toUpperCase()}
             </p>
-            <div className="flex flex-col md:flex-row md:items-baseline gap-4 md:gap-8">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
-                Bonjour, <span className="text-indigo-600">{user.firstName}</span>
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-[0.9]">
+                Bonjour, <br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">{user.firstName}</span>.
               </h1>
-              <p className="text-slate-400 font-medium text-sm md:text-base border-l-2 border-slate-100 pl-4 hidden md:block">
-                {user.role === UserRole.MANAGER 
-                  ? "Voici l'état des troupes et du savoir collectif."
-                  : viewMode === "personal" 
-                    ? "Prêt à piloter tes propres missions aujourd'hui ?" 
-                    : "Voici l'état des troupes et du savoir collectif."}
-              </p>
-              {/* Mobile version of the text without border */}
-              <p className="text-slate-400 font-medium text-sm md:hidden">
-                {user.role === UserRole.MANAGER 
-                  ? "L'état des troupes."
-                  : "À toi de jouer !"}
-              </p>
+              
+              <div className="flex items-center gap-4">
+                 <p className="text-slate-400 font-medium text-sm md:text-base border-l-2 border-slate-100 pl-4 max-w-md">
+                  {user.role === UserRole.MANAGER 
+                    ? "Voici l'état des troupes et du savoir collectif."
+                    : viewMode === "personal" 
+                      ? "Prêt à piloter tes propres missions aujourd'hui ?" 
+                      : "Voici l'état des troupes et du savoir collectif."}
+                 </p>
+              </div>
             </div>
+
+            {/* Optional Trend Visual below welcome if needed, or keep separate? Keeping separate for now as requested just to merge Welcome+Announce */}
         </div>
 
+        {/* DIVIDER (Visible only on XL screens) */}
+        <div className="hidden xl:block w-px bg-gradient-to-b from-transparent via-slate-100 to-transparent mx-4"></div>
 
-        {/* L'éclair du Trend - Uniquement si activé */}
-        {trendProcedure && (
-          <div className="mt-8 bg-gradient-to-r from-amber-500/10 via-amber-200/5 to-transparent p-6 rounded-[2.5rem] border border-amber-200/50 flex items-center justify-between gap-6 group hover:border-amber-400 transition-all cursor-pointer shadow-sm shadow-amber-100/20"
+        {/* RIGHT: Announcement Widget (Embedded) */}
+        <div className="flex-1 min-w-0 xl:pl-4">
+             <AnnouncementWidget 
+               user={user}
+               announcement={announcement}
+               loadingAnnouncement={loadingAnnouncement}
+               isEditing={isEditing}
+               editContent={editContent}
+               saving={saving}
+               requiresConfirmation={requiresConfirmation}
+               isRead={isRead}
+               setIsEditing={setIsEditing}
+               setEditContent={setEditContent}
+               setRequiresConfirmation={setRequiresConfirmation}
+               handleSaveAnnouncement={handleSaveAnnouncement}
+               handleMarkAsRead={handleMarkAsRead}
+               formatDate={formatDate}
+               embedded={true}
+             />
+        </div>
+
+      </div>
+
+      {/* TREND CARD (If active, still displayed but separate or could be integrated? User asked to merge Welcome and Connect blocks shown in screenshot. Trend is usually below.) */}
+      {trendProcedure && (
+          <div className="mt-8 mb-8 bg-gradient-to-r from-amber-500/10 via-amber-200/5 to-transparent p-6 rounded-[2.5rem] border border-amber-200/50 flex items-center justify-between gap-6 group hover:border-amber-400 transition-all cursor-pointer shadow-sm shadow-amber-100/20 animate-fade-in"
                onClick={() => onSelectProcedure(trendProcedure)}>
             <div className="flex items-center gap-6">
               <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-amber-200 animate-pulse">
@@ -1665,28 +1696,6 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         )}
-      </section>
-
-      {/* Message du Manager */}
-      <div className="">
-           <AnnouncementWidget 
-             user={user}
-             announcement={announcement}
-             loadingAnnouncement={loadingAnnouncement}
-             isEditing={isEditing}
-             editContent={editContent}
-             saving={saving}
-             requiresConfirmation={requiresConfirmation}
-             isRead={isRead}
-             setIsEditing={setIsEditing}
-             setEditContent={setEditContent}
-             setRequiresConfirmation={setRequiresConfirmation}
-             handleSaveAnnouncement={handleSaveAnnouncement}
-             handleMarkAsRead={handleMarkAsRead}
-             formatDate={formatDate}
-           />
-      </div>
-      </div>
 
       {/* XP Progress Bar - Only for Technicians */}
       {user.role === UserRole.TECHNICIAN && viewMode === "personal" && (
