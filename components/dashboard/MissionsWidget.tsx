@@ -21,7 +21,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
 
   if (isTeamView) {
     return (
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative flex-1 min-h-[300px]">
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[300px]">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100 shrink-0">
@@ -41,7 +41,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
           </button>
         </div>
 
-        <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pr-1">
+        <div className="space-y-2 flex-1 pr-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
               <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>

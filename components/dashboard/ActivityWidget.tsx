@@ -19,7 +19,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
   onRefresh
 }) => {
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[400px]">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
@@ -38,7 +38,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
           <i className={`fa-solid fa-rotate-right ${loadingActivities ? 'animate-spin text-indigo-500' : ''}`}></i>
         </button>
       </div>
-      <div className="space-y-2 overflow-y-auto flex-1 scrollbar-hide pr-1">
+      <div className="space-y-2 flex-1 pr-1">
         {activities.map((act) => (
           <div key={act.id} className="flex gap-3 items-start p-3 bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-md rounded-2xl transition-all group">
             <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform shadow-sm shadow-indigo-200"></div>

@@ -41,7 +41,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
     masteryClaims.filter(c => !c.isReadByManager).length;
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[400px]">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
@@ -67,7 +67,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pr-1">
+      <div className="space-y-2 flex-1 pr-1">
         {(() => {
           // 1. Unify items
           const allItems = [

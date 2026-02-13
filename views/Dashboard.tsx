@@ -683,7 +683,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         `)
         .or('status.eq.pending,status.eq.approved,status.eq.completed') 
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) throw error;
       if (data) {
@@ -937,7 +937,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select("*")
         .or("title.ilike.LOG_READ_%,title.ilike.CONSULTATION_%,title.ilike.SUGGESTION_%,title.ilike.LOG_SEARCH%")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
       if (data) {
         setActivities(data);
         cacheStore.set('dash_activities', data);
@@ -1075,7 +1075,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       const { data } = await query
         .order('urgency', { ascending: false })
-        .limit(10); // Increased limit for Manager view
+        .limit(50); // Increased limit for Manager view
 
       if (data) {
         setActiveMissions(data as Mission[]);
