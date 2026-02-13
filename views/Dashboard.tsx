@@ -638,7 +638,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (user.role !== UserRole.MANAGER) return;
     setLoadingClaims(true);
     try {
-      // 1. Fetch from mastery_requests table (New System)
+      // 1. Fetch from mastery_requests table (Inclusion of completed for activity feed)
       const { data, error } = await supabase
         .from('mastery_requests')
         .select(`
@@ -646,20 +646,14 @@ const Dashboard: React.FC<DashboardProps> = ({
           user_profiles:user_id (first_name, last_name, avatar_url),
           procedures:procedure_id (title, uuid)
         `)
-        .or('status.eq.pending,status.eq.approved') // Fetch both pending and approved
-        .order('created_at', { ascending: false });
+        .or('status.eq.pending,status.eq.approved,status.eq.completed') 
+        .order('updated_at', { ascending: false })
+        .limit(20);
 
       if (error) throw error;
       if (data) {
-        // Filter approved ones to only show those from the last 30 seconds (for feedback)
-        // or just keep them all for the current session view until manual refresh/navigation
-        const now = new Date();
-        const filteredData = data.filter(c => 
-          c.status === 'pending' || 
-          (c.status === 'approved' && (now.getTime() - new Date(c.updated_at || c.created_at).getTime()) < 30000)
-        );
-        setMasteryClaims(filteredData);
-        onMasteryCountChange?.(filteredData.filter(c => c.status === 'pending').length);
+        setMasteryClaims(data);
+        onMasteryCountChange?.(data.filter(c => c.status === 'pending').length);
       }
     } catch (err) {
       console.error("Error fetching mastery claims:", err);
