@@ -655,13 +655,20 @@ const Dashboard: React.FC<DashboardProps> = ({
           user_profiles:user_id (first_name, last_name, avatar_url),
           procedures:procedure_id (title, uuid)
         `)
-        .eq('status', 'pending')
+        .or('status.eq.pending,status.eq.approved') // Fetch both pending and approved
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       if (data) {
-        setMasteryClaims(data);
-        onMasteryCountChange?.(data.length);
+        // Filter approved ones to only show those from the last 30 seconds (for feedback)
+        // or just keep them all for the current session view until manual refresh/navigation
+        const now = new Date();
+        const filteredData = data.filter(c => 
+          c.status === 'pending' || 
+          (c.status === 'approved' && (now.getTime() - new Date(c.updated_at || c.created_at).getTime()) < 30000)
+        );
+        setMasteryClaims(filteredData);
+        onMasteryCountChange?.(filteredData.filter(c => c.status === 'pending').length);
       }
     } catch (err) {
       console.error("Error fetching mastery claims:", err);

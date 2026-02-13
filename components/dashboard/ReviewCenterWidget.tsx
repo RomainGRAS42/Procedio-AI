@@ -66,6 +66,11 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                      Génération IA...
                    </span>
                  </div>
+              ) : claim.status === 'approved' ? (
+                <div className="flex-1 py-2 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 border border-emerald-400">
+                  <i className="fa-solid fa-check-double scale-125"></i>
+                  Quizz généré / Quizz envoyé
+                </div>
               ) : (
                 <button 
                   onClick={() => onApproveMastery?.(claim.id)}

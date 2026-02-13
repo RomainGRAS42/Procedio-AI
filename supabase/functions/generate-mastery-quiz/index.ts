@@ -40,23 +40,35 @@ Deno.serve(async (req) => {
       .from("documents")
       .select("content")
       .eq("file_id", procedure_id)
-      .limit(10); // Limit to first 10 chunks to check context size
+      .limit(15); 
 
     if (fetchError) {
       console.error("Database Error:", fetchError);
-      throw new Error("Failed to fetch procedure content");
+      throw new Error("Failed to fetch procedure content from database");
     }
 
-    if (!documents || documents.length === 0) {
-      console.warn(`⚠️ No documents found for file_id: ${procedure_id}`);
-      return new Response(JSON.stringify({ error: "No content found for this procedure. Ensure it has been processed." }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let fullText = "";
+    if (documents && documents.length > 0) {
+      fullText = documents.map(d => d.content).join("\n\n");
+      console.log(`📄 Retrieved ${fullText.length} characters of context from documents.`);
+    } else {
+      console.warn(`⚠️ No documents found for file_id: ${procedure_id}. Attempting to fetch procedure metadata.`);
+      // Fallback: Try to get procedure info as context if content is missing
+      const { data: procedure, error: procError } = await supabase
+        .from("procedures")
+        .select("title, category")
+        .eq("uuid", procedure_id)
+        .single();
+      
+      if (procError || !procedure) {
+        return new Response(JSON.stringify({ error: "Procedure not found and no content available." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      fullText = `Titre: ${procedure.title}\nCatégorie: ${procedure.category}`;
+      console.log(`📄 Using procedure metadata as fallback context: "${procedure.title}"`);
     }
-
-    const fullText = documents.map(d => d.content).join("\n\n");
-    console.log(`📄 Retrieved ${fullText.length} characters of context.`);
 
     // 2. Call Mistral AI to Generate Quiz
     console.log("🧠 Sending request to Mistral AI...");
@@ -67,24 +79,25 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${MISTRAL_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistral-large-latest",
+        model: "open-mistral-nemo", 
         messages: [
           {
             role: "system",
             content: `Tu es un expert en formation technique et pédagogie. 
-Ta mission est de créer un examen de validation des acquis (CM) basé EXCLUSIVEMENT sur le texte fourni.
+Ta mission est de créer un examen de validation des acquis basé EXCLUSIVEMENT sur le texte fourni.
 Génère 5 questions à choix multiples (QCM).
 
-Format de sortie JSON ATTENDU (Strictement ce format, pas de texte avant/après) :
-[
-  {
-    "question": "L'intitulé de la question ?",
-    "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
-    "correctAnswer": 0, // Index du bon choix (0 pour A, 1 pour B...)
-    "explanation": "Courte explication de la réponse."
-  },
-  ...
-]
+Format de sortie JSON ATTENDU :
+{
+  "questions": [
+    {
+      "question": "L'intitulé de la question ?",
+      "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
+      "correctAnswer": 0,
+      "explanation": "Courte explication de la réponse."
+    }
+  ]
+}
 
 Règles :
 - Les questions doivent être pertinentes et tester la compréhension réelle.
@@ -98,33 +111,32 @@ Règles :
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.3
+        temperature: 0.1
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Mistral API Error:", errText);
-      throw new Error(`Mistral API Error: ${response.statusText}`);
+      console.error("Mistral API Error Status:", response.status, "Body:", errText);
+      throw new Error(`AI Provider Error: ${response.statusText}`);
     }
 
     const aiData = await response.json();
     const rawContent = aiData.choices[0].message.content;
+    console.log("📥 AI Response Raw Content received.");
     
     // 3. Parse and Validate JSON
     let questions;
     try {
-      // Sometimes models wrap JSON in markdown blocks like ```json ... ```
-      const cleanJson = rawContent.replace(/```json/g, "").replace(/```/g, "").trim();
-      questions = JSON.parse(cleanJson);
+      const parsed = JSON.parse(rawContent);
+      questions = parsed.questions || parsed; 
       
-      // Wrap in case the model returns an object { questions: [...] } instead of array directly
-      if (!Array.isArray(questions) && questions.questions) {
-        questions = questions.questions;
+      if (!Array.isArray(questions)) {
+        throw new Error("Parsed content is not an array of questions");
       }
-    } catch (e) {
-      console.error("JSON Parse Error:", e, "Raw Content:", rawContent);
-      throw new Error("Failed to parse AI generated quiz.");
+    } catch (e: any) {
+      console.error("JSON Parse Error:", e.message, "Raw Content:", rawContent);
+      throw new Error("Failed to parse AI generated quiz structure.");
     }
 
     console.log(`✅ Successfully generated ${questions.length} questions.`);
