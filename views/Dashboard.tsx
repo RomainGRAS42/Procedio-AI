@@ -39,7 +39,7 @@ interface DashboardProps {
   onUploadClick: () => void;
   onNavigate?: (view: string) => void;
   onFlashCountChange?: (count: number) => void;
-  onMasteryCountChange?: (count: number) => void;
+  onAlertCountChange?: (count: number) => void;
 }
 
 interface Announcement {
@@ -62,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onUploadClick,
   onNavigate,
   onFlashCountChange,
-  onMasteryCountChange,
+  onAlertCountChange,
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
@@ -693,8 +693,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             isReadByManager: d.is_read_by_manager
         }));
         setMasteryClaims(mappedData);
-        // Count unread instead of pending
-        onMasteryCountChange?.(mappedData.filter(c => !c.isReadByManager).length);
+        // Count update is now handled by useEffect
       }
     } catch (err) {
       console.error("Error fetching mastery claims:", err);
