@@ -9,11 +9,27 @@ interface MasteryResultDetailModalProps {
 const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isOpen, onClose, claim }) => {
   if (!isOpen || !claim) return null;
 
-  const quizData = claim.quiz_data || {};
-  const questions = quizData.questions || [];
-  const userAnswers = claim.user_answers || [];
+  // Normalization logic for different quiz formats
+  const rawData = claim.quiz_data;
+  let questions: any[] = [];
+  
+  if (Array.isArray(rawData)) {
+    questions = rawData;
+  } else if (rawData && typeof rawData === 'object' && rawData.questions) {
+    questions = rawData.questions;
+  }
+
+  // Normalize mapping (handles q vs question, correct vs correctAnswer)
+  const normalizedQuestions = questions.map(q => ({
+    q: q.q || q.question || '',
+    options: q.options || [],
+    correct: q.correct !== undefined ? q.correct : q.correctAnswer
+  }));
+
+  const userAnswers = claim.user_answers || null;
   const score = claim.score || 0;
   const isSuccess = score >= 70;
+  const hasHistory = userAnswers !== null;
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
@@ -48,49 +64,62 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
-          <div className="overflow-hidden rounded-3xl border border-slate-100 bg-slate-50/30">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-12 text-center">#</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Question</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Réponse Technicien</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Réponse Attendue</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {questions.map((q: any, idx: number) => {
-                  const userIdx = userAnswers[idx];
-                  const isCorrect = userIdx === q.correct;
-                  const userText = userIdx !== undefined ? q.options[userIdx] : 'Pas de réponse';
-                  const correctText = q.options[q.correct];
+          {!hasHistory ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+              <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-slate-300 shadow-sm mb-4">
+                <i className="fa-solid fa-ghost text-2xl"></i>
+              </div>
+              <p className="text-slate-900 font-black text-lg mb-1">Historique partiel</p>
+              <p className="text-slate-500 text-sm font-bold">
+                Cet examen a été passé avant la mise à jour du système.<br/>
+                Les réponses individuelles n'ont pas été capturées.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-3xl border border-slate-100 bg-slate-50/30">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-12 text-center">#</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Question</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Réponse Technicien</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Réponse Attendue</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {normalizedQuestions.map((q: any, idx: number) => {
+                    const userIdx = userAnswers[idx];
+                    const isCorrect = userIdx === q.correct;
+                    const userText = userIdx !== undefined ? q.options[userIdx] : 'Pas de réponse';
+                    const correctText = q.options[q.correct];
 
-                  return (
-                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-5 text-xs font-black text-slate-400 text-center">{idx + 1}</td>
-                      <td className="px-6 py-5">
-                        <p className="text-sm font-bold text-slate-800 leading-snug">{q.q}</p>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
-                          isCorrect ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
-                        }`}>
-                          <i className={`fa-solid ${isCorrect ? 'fa-check' : 'fa-xmark'} text-[10px]`}></i>
-                          <span className="text-xs font-black">{userText}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600">
-                          <i className="fa-solid fa-check text-[10px]"></i>
-                          <span className="text-xs font-black">{correctText}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-5 text-xs font-black text-slate-400 text-center">{idx + 1}</td>
+                        <td className="px-6 py-5">
+                          <p className="text-sm font-bold text-slate-800 leading-snug">{q.q}</p>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+                            isCorrect ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+                          }`}>
+                            <i className={`fa-solid ${isCorrect ? 'fa-check' : 'fa-xmark'} text-[10px]`}></i>
+                            <span className="text-xs font-black">{userText}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600">
+                            <i className="fa-solid fa-check text-[10px]"></i>
+                            <span className="text-xs font-black">{correctText}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
