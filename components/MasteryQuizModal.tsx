@@ -114,7 +114,8 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
         .update({
           status: 'completed',
           score: finalScore,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          user_answers: finalAnswers
         })
         .eq('id', masteryRequestId);
 

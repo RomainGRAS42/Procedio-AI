@@ -8,6 +8,7 @@ interface ReviewCenterWidgetProps {
   onSelectSuggestion: (suggestion: Suggestion) => void;
   onNavigateToStatistics?: () => void;
   onApproveMastery?: (requestId: string) => void;
+  onViewMasteryDetail?: (claim: any) => void;
   generatingExamId?: string | null;
 }
 
@@ -17,6 +18,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   onSelectSuggestion,
   onNavigateToStatistics,
   onApproveMastery,
+  onViewMasteryDetail,
   generatingExamId
 }) => {
   return (
@@ -49,7 +51,10 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
           return (
             <div 
               key={claim.id} 
-              className="p-3 rounded-2xl border border-slate-50 hover:border-slate-200 hover:bg-slate-50/50 transition-all group/item"
+              onClick={() => isCompleted && onViewMasteryDetail?.(claim)}
+              className={`p-3 rounded-2xl border border-slate-50 hover:border-slate-200 transition-all group/item ${
+                isCompleted ? 'cursor-pointer hover:bg-slate-50/50' : ''
+              }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">

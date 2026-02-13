@@ -27,6 +27,7 @@ import ReviewCenterWidget from '../components/dashboard/ReviewCenterWidget';
 import ExpertReviewWidget from '../components/dashboard/ExpertReviewWidget';
 import RSSWidget from "../components/RSSWidget";
 import MasteryQuizModal from "../components/MasteryQuizModal";
+import MasteryResultDetailModal from "../components/MasteryResultDetailModal";
 
 interface DashboardProps {
   user: User;
@@ -121,6 +122,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [loadingExams, setLoadingExams] = useState(false);
   const [activeQuizRequest, setActiveQuizRequest] = useState<any | null>(null);
   const [showDashboardQuiz, setShowDashboardQuiz] = useState(false);
+  const [selectedMasteryClaim, setSelectedMasteryClaim] = useState<any | null>(null);
+  const [showMasteryDetail, setShowMasteryDetail] = useState(false);
 
   // Badges (Personal View)
   const [earnedBadges, setEarnedBadges] = useState<any[]>(cacheStore.get('dash_earned_badges') || []);
@@ -1635,6 +1638,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       masteryClaims={masteryClaims}
                       onSelectSuggestion={(s) => { setSelectedSuggestion(s); setShowSuggestionModal(true); }}
                       onApproveMastery={handleApproveMastery}
+                      onViewMasteryDetail={(claim) => { setSelectedMasteryClaim(claim); setShowMasteryDetail(true); }}
                     />
                  </div>
 
@@ -1970,6 +1974,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           }}
         />
       )}
+      {showMasteryDetail && selectedMasteryClaim && createPortal(
+        <MasteryResultDetailModal 
+          isOpen={showMasteryDetail}
+          onClose={() => setShowMasteryDetail(false)}
+          claim={selectedMasteryClaim}
+        />,
+        document.body
+      )}
+
     </div>
   );
 };
