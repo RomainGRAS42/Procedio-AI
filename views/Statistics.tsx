@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User, Procedure, UserRole } from '../types';
 import { 
@@ -25,6 +26,7 @@ interface ActivityData {
 }
 
 const Statistics: React.FC<StatisticsProps> = ({ user }) => {
+  const navigate = useNavigate();
   // Initialisation à partir du cache pour un affichage instantané
   const [loading, setLoading] = useState(!cacheStore.has('stats_health'));
   
@@ -336,7 +338,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           avatar_url, 
           role, 
           level, 
-          current_xp,
+          xp_points,
           user_badges (
             badges (
               icon,
@@ -344,7 +346,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             )
           )
         `)
-        .order('current_xp', { ascending: false })
+        .order('xp_points', { ascending: false })
         .limit(5);
 
       if (data) {
@@ -629,28 +631,70 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         )}
 
         {type === 'intensity' && (
-            <div className="space-y-6 animate-fade-in flex-1">
+            <div className="space-y-6 animate-fade-in flex-1 h-full flex flex-col">
                {layoutMode === 'focus' && (
-                  <h2 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-3"><i className="fa-solid fa-bolt-lightning text-amber-500"></i> Intensité</h2>
+                  <div className="mb-6">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <i className="fa-solid fa-bolt-lightning text-amber-500"></i>
+                         Cartographie d'Expertise
+                    </h2>
+                    <p className="text-slate-500 mt-2">Répartition des compétences et leaders.</p>
+                  </div>
                )}
-               <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={skillMapData}>
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 800 }} />
-                      <Radar name="Team" dataKey="A" stroke="#f59e0b" strokeWidth={3} fill="#f59e0b" fillOpacity={0.2} />
-                      <RechartsTooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
-               </div>
-               <div className="space-y-2">
-                  {teamLeaderboard.slice(0,3).map((m, i) => (
-                     <div key={i} className="flex items-center gap-3 p-2 border-b border-slate-50 last:border-0">
-                        <span className="text-xs font-black text-slate-300">#{i+1}</span>
-                        <div className="flex-1 text-xs font-bold text-slate-700">{m.first_name} {m.last_name}</div>
-                        <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-black">{m.current_xp} XP</span>
-                     </div>
-                  ))}
+               
+               <div className="flex-1 flex flex-col gap-6 ">
+                   {/* Radar Chart */}
+                   <div className="flex-1 min-h-[200px] w-full relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={skillMapData}>
+                          <PolarGrid stroke="#e2e8f0" />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} />
+                          <Radar name="Team" dataKey="A" stroke="#f59e0b" strokeWidth={3} fill="#f59e0b" fillOpacity={0.2} />
+                          <RechartsTooltip />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                      <div className="absolute top-0 right-0">
+                          <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 uppercase tracking-wider">
+                            Intensité: {globalKPIs.teamIntensity}%
+                          </span>
+                      </div>
+                   </div>
+
+                   {/* Leaderboard Section */}
+                   <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                      <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                             <i className="fa-solid fa-trophy text-amber-500"></i> Top Contributeurs
+                          </h3>
+                          <button 
+                            onClick={() => navigate('/team')}
+                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm hover:shadow-md transition-all active:scale-95"
+                          >
+                            VOIR TOUTE L'ÉQUIPE
+                          </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                          {teamLeaderboard.length > 0 ? (
+                              teamLeaderboard.slice(0,3).map((m, i) => (
+                                 <div key={i} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${i===0 ? 'bg-amber-100 text-amber-700' : i===1 ? 'bg-slate-200 text-slate-600' : 'bg-orange-100 text-orange-700'}`}>
+                                       {i+1}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-700 truncate">{m.first_name} {m.last_name}</p>
+                                        <p className="text-[9px] text-slate-400 capitalize">{m.role}</p>
+                                    </div>
+                                    <span className="text-[10px] bg-slate-50 text-slate-600 px-2 py-0.5 rounded-full font-black border border-slate-100">{m.xp_points} XP</span>
+                                 </div>
+                              ))
+                          ) : (
+                              <div className="text-center py-4 text-slate-400 text-xs">
+                                  Aucune donnée disponible.
+                              </div>
+                          )}
+                      </div>
+                   </div>
                </div>
             </div>
         )}
