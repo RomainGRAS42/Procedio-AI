@@ -15,15 +15,16 @@ Deno.serve(async (req) => {
 
   try {
     // 1. Log Request Info
-    console.log(`📥 Received ${req.method} request to generate-mastery-quiz`);
+    console.log(`📥 Received ${req.method} request`);
     
     let procedure_id;
     try {
       const body = await req.json();
       procedure_id = body.procedure_id;
-    } catch (e) {
+      console.log("📦 Parsed Procedure ID:", procedure_id);
+    } catch (e: any) {
       console.error("❌ Failed to parse request JSON body:", e.message);
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      return new Response(JSON.stringify({ error: "Invalid JSON body", details: e.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
 
-    console.log(`🔧 Config: URL=${SUPABASE_URL ? "OK" : "MISSING"}, Key=${MISTRAL_API_KEY ? "PRESENT" : "MISSING"}`);
+    console.log(`🔧 Env Check: URL=${!!SUPABASE_URL}, Key=${!!MISTRAL_API_KEY}`);
 
     if (!MISTRAL_API_KEY) {
       console.error("❌ Configuration Error: Missing MISTRAL_API_KEY");
@@ -59,17 +60,16 @@ Deno.serve(async (req) => {
       .limit(15); 
 
     if (fetchError) {
-      console.error("Database Error:", fetchError);
+      console.error("❌ Database Error (documents):", fetchError);
       throw new Error("Failed to fetch procedure content from database");
     }
 
     let fullText = "";
     if (documents && documents.length > 0) {
       fullText = documents.map(d => d.content).join("\n\n");
-      console.log(`📄 Retrieved ${fullText.length} characters of context from documents.`);
+      console.log(`📄 Retrieved ${fullText.length} characters of context.`);
     } else {
-      console.warn(`⚠️ No documents found for file_id: ${procedure_id}. Attempting to fetch procedure metadata.`);
-      // Fallback: Try to get procedure info as context if content is missing
+      console.warn(`⚠️ No documents found. Falling back to procedure metadata.`);
       const { data: procedure, error: procError } = await supabase
         .from("procedures")
         .select("title, category")
@@ -77,17 +77,18 @@ Deno.serve(async (req) => {
         .single();
       
       if (procError || !procedure) {
-        return new Response(JSON.stringify({ error: "Procedure not found and no content available." }), {
+        console.error("❌ Fallback failed. Procedure not found:", procError);
+        return new Response(JSON.stringify({ error: "Procedure not found and no document content available." }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       fullText = `Titre: ${procedure.title}\nCatégorie: ${procedure.category}`;
-      console.log(`📄 Using procedure metadata as fallback context: "${procedure.title}"`);
+      console.log(`📄 Using procedure metadata as fallback: "${procedure.title}"`);
     }
 
     // 2. Call Mistral AI to Generate Quiz
-    console.log("🧠 Sending request to Mistral AI...");
+    console.log("🧠 Requesting Mistral AI...");
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -95,7 +96,7 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${MISTRAL_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistral-large-latest", 
+        model: "mistral-large-latest",
         messages: [
           {
             role: "system",
@@ -133,8 +134,8 @@ Règles :
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Mistral API Error Status:", response.status, "Body:", errText);
-      throw new Error(`AI Provider Error: ${response.statusText}`);
+      console.error("❌ Mistral API Error:", response.status, errText);
+      throw new Error(`AI Provider Error (${response.status})`);
     }
 
     const aiData = await response.json();
@@ -151,7 +152,7 @@ Règles :
         throw new Error("Parsed content is not an array of questions");
       }
     } catch (e: any) {
-      console.error("JSON Parse Error:", e.message, "Raw Content:", rawContent);
+      console.error("❌ JSON Parse Error:", e.message, "Raw Content:", rawContent);
       throw new Error("Failed to parse AI generated quiz structure.");
     }
 
@@ -162,7 +163,7 @@ Règles :
     });
 
   } catch (err: any) {
-    console.error("🔥 Edge Function Error:", err.message);
+    console.error("🔥 Global Function Error:", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
