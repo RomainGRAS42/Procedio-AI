@@ -179,18 +179,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   const prevBadgeCountRef = React.useRef<number>(0);
 
   // Initialize refs and localStorage on mount/user change
+  // Initialize refs on mount
   useEffect(() => {
-    if (user?.id) {
-      const storedLevel = localStorage.getItem(`procedio_seen_level_${user.id}`);
-      const storedBadges = localStorage.getItem(`procedio_seen_badges_${user.id}`);
-      
-      if (storedLevel) prevLevelRef.current = parseInt(storedLevel);
-      else prevLevelRef.current = personalStats.level;
-
-      if (storedBadges) prevBadgeCountRef.current = parseInt(storedBadges);
-      else prevBadgeCountRef.current = earnedBadges.length;
+    if (user?.id && personalStats.level > 0) {
+       // Just set initial refs to current state to avoid immediate triggering on refresh
+       // The real logic is inside the celebration effect
+       if (prevLevelRef.current === 0) prevLevelRef.current = personalStats.level;
+       if (prevBadgeCountRef.current === 0) prevBadgeCountRef.current = earnedBadges.length;
     }
-  }, [user?.id]);
+  }, [user?.id, personalStats.level, earnedBadges.length]);
 
   const getLevelTitle = (level: number) => {
     switch(level) {
@@ -209,39 +206,73 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Detection Level Up & Badges
+  // Detection Level Up & Badges
   useEffect(() => {
-    if (user.role !== UserRole.TECHNICIAN || !user.id) return;
+    if (user.role !== UserRole.TECHNICIAN || !user.id || loadingBadges) return;
 
     const newQueue: CelebrationItem[] = [];
+    
+    // Initial Session Check (Only once per session)
+    const hasSeenIntro = sessionStorage.getItem(`procedio_session_intro_${user.id}`);
 
-    // 1. Check Level Up
-    const calculatedLevel = calculateLevelFromXP(personalStats.xp);
-    if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
-      newQueue.push({
-        type: 'level',
-        data: { level: calculatedLevel, title: getLevelTitle(calculatedLevel) }
-      });
-      localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
-    }
-    prevLevelRef.current = calculatedLevel;
-
-    // 2. Check Badge Unlocked
-    const sortedBadges = [...earnedBadges].sort((a, b) => 
-      new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
-    );
-    if (sortedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
-      const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
-      if (newBadge) {
-        newQueue.push({ type: 'badge', data: newBadge });
-        localStorage.setItem(`procedio_seen_badges_${user.id}`, sortedBadges.length.toString());
+    if (!hasSeenIntro) {
+      // 1. Show Level if > 1
+      const currentLevel = calculateLevelFromXP(personalStats.xp);
+      if (currentLevel > 1) {
+         newQueue.push({
+          type: 'level',
+          data: { level: currentLevel, title: getLevelTitle(currentLevel) }
+        });
       }
+
+      // 2. Show Last Badge if exists
+      if (earnedBadges.length > 0) {
+        const sortedBadges = [...earnedBadges].sort((a, b) => 
+          new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
+        );
+        const lastBadge = sortedBadges[sortedBadges.length - 1]?.badges;
+        if (lastBadge) {
+          newQueue.push({ type: 'badge', data: lastBadge });
+        }
+      }
+      
+      // Mark session as seen
+      sessionStorage.setItem(`procedio_session_intro_${user.id}`, 'true');
+      
+      // Sync refs to prevent double firing immediately
+      prevLevelRef.current = currentLevel;
+      prevBadgeCountRef.current = earnedBadges.length;
+
+    } else {
+        // REAL-TIME UPDATES (Already handled logic, just ensuring persistence)
+        
+        // 1. Check Level Up Realtime
+        const calculatedLevel = calculateLevelFromXP(personalStats.xp);
+        if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
+          newQueue.push({
+            type: 'level',
+            data: { level: calculatedLevel, title: getLevelTitle(calculatedLevel) }
+          });
+        }
+        prevLevelRef.current = calculatedLevel;
+
+        // 2. Check Badge Unlocked Realtime
+        if (earnedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
+           const sortedBadges = [...earnedBadges].sort((a, b) => 
+            new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
+          );
+          const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
+          if (newBadge) {
+            newQueue.push({ type: 'badge', data: newBadge });
+          }
+        }
+        prevBadgeCountRef.current = earnedBadges.length;
     }
-    prevBadgeCountRef.current = sortedBadges.length;
 
     if (newQueue.length > 0) {
       setCelebrationQueue(prev => [...prev, ...newQueue]);
     }
-  }, [personalStats.level, earnedBadges, user.id]);
+  }, [personalStats.level, earnedBadges, user.id, loadingBadges]);
 
   // Handle Celebration Queue PROCESSING
   useEffect(() => {
