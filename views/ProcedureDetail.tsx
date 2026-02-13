@@ -293,8 +293,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [referentExpert, setReferentExpert] = useState<{
+    id: string;
     first_name: string;
     last_name: string;
+    avatar_url?: string;
   } | null>(null);
   const [masteryRequest, setMasteryRequest] = useState<any | null>(null);
   const [isMasteryModalOpen, setIsMasteryModalOpen] = useState(false);
@@ -414,7 +416,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         .from("procedure_referents")
         .select(
           `
-          user:user_profiles (first_name, last_name)
+          user:user_profiles (id, first_name, last_name, avatar_url)
         `
         )
         .eq("procedure_id", targetUuid)
@@ -422,6 +424,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       if (data && (data as any).user) {
         setReferentExpert((data as any).user);
+      } else {
+        setReferentExpert(null);
       }
     } catch (err) {
       console.error("Error fetching referent:", err);
@@ -1058,7 +1062,29 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             {/* Mastery Button Workflow */}
             {user.role !== UserRole.MANAGER && (
               <>
-                {masteryRequest?.status === 'approved' ? (
+                {/* 🛡️ SINGLE REFERENT LOGIC */}
+                {referentExpert && referentExpert.id !== user.id ? (
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-slate-200 transition-all">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm border-2 border-white shadow-sm">
+                                {referentExpert.avatar_url ? (
+                                    <img src={referentExpert.avatar_url} alt="Referent" className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                    <span className="font-black">{referentExpert.first_name[0]}{referentExpert.last_name[0]}</span>
+                                )}
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Gardien de la Procédure</h4>
+                                <p className="text-[10px] font-bold text-slate-400">Cette procédure est sous la responsabilité de <span className="text-indigo-600">{referentExpert.first_name} {referentExpert.last_name}</span>.</p>
+                            </div>
+                        </div>
+                        <div className="w-8 h-8 rounded-xl bg-white text-slate-300 flex items-center justify-center shadow-sm">
+                            <i className="fa-solid fa-lock"></i>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {masteryRequest?.status === 'approved' ? (
                   <button
                     onClick={() => setIsMasteryModalOpen(true)}
                     className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce"
@@ -1117,7 +1143,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                     <i className="fa-solid fa-certificate"></i>
                     <span className="hidden xl:inline">Demander Maîtrise</span>
                   </button>
-                )}
+                        )}
+                      </>
+                    )}
               </>
             )}
 

@@ -9,6 +9,7 @@ interface ReviewCenterWidgetProps {
   onNavigateToStatistics?: () => void;
   onApproveMastery?: (requestId: string) => void;
   onViewMasteryDetail?: (claim: any) => void;
+  onUpdateReferent?: (procedureId: string, userId: string, action: 'assign' | 'revoke') => Promise<void>;
   generatingExamId?: string | null;
 }
 
@@ -19,6 +20,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   onNavigateToStatistics,
   onApproveMastery,
   onViewMasteryDetail,
+  onUpdateReferent,
   generatingExamId
 }) => {
   return (

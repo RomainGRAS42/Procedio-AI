@@ -738,6 +738,29 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleUpdateReferent = async (procedureId: string, userId: string, action: 'assign' | 'revoke') => {
+    try {
+        if (action === 'assign') {
+            await supabase.from('procedure_referents').delete().eq('procedure_id', procedureId);
+            const { error } = await supabase.from('procedure_referents').insert({
+                procedure_id: procedureId,
+                user_id: userId,
+                assigned_by: user.id
+            });
+            if (error) throw error;
+            setToast({ message: "Référent nommé avec succès !", type: "success" });
+        } else {
+            const { error } = await supabase.from('procedure_referents').delete().eq('procedure_id', procedureId);
+            if (error) throw error;
+            setToast({ message: "Référent révoqué.", type: "info" });
+        }
+        fetchManagerKPIs();
+    } catch (err: any) {
+        console.error("Error updating referent:", err);
+        setToast({ message: "Erreur lors de la mise à jour du référent.", type: "error" });
+    }
+  };
+
 
 
 
@@ -1639,6 +1662,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       onSelectSuggestion={(s) => { setSelectedSuggestion(s); setShowSuggestionModal(true); }}
                       onApproveMastery={handleApproveMastery}
                       onViewMasteryDetail={(claim) => { setSelectedMasteryClaim(claim); setShowMasteryDetail(true); }}
+                      onUpdateReferent={handleUpdateReferent}
                     />
                  </div>
 
@@ -1979,6 +2003,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           isOpen={showMasteryDetail}
           onClose={() => setShowMasteryDetail(false)}
           claim={selectedMasteryClaim}
+          onUpdateReferent={handleUpdateReferent}
         />,
         document.body
       )}

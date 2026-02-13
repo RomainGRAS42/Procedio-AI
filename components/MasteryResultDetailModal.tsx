@@ -4,12 +4,36 @@ interface MasteryResultDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   claim: any;
+  onUpdateReferent?: (procedureId: string, userId: string, action: 'assign' | 'revoke') => Promise<void>;
 }
 
-const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isOpen, onClose, claim }) => {
+const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isOpen, onClose, claim, onUpdateReferent }) => {
   if (!isOpen || !claim) return null;
 
-  // Normalization logic for different quiz formats
+  const [isReferentLoading, setIsReferentLoading] = React.useState(false);
+  const [currentReferentId, setCurrentReferentId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (claim?.procedure_id) {
+       // Check if this procedure already has a referent
+       // In a real app we might pass this as prop or fetch it
+       // For now let's assume we can fetch it or we rely on parent to handle logic
+    }
+  }, [claim]);
+
+  const handleReferentAction = async (action: 'assign' | 'revoke') => {
+    if (!onUpdateReferent) return;
+    setIsReferentLoading(true);
+    try {
+        await onUpdateReferent(claim.procedure_id, claim.user_id, action);
+        if (action === 'assign') setCurrentReferentId(claim.user_id);
+        else setCurrentReferentId(null);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsReferentLoading(false);
+    }
+  };
   const rawData = claim.quiz_data;
   let questions: any[] = [];
   
@@ -124,12 +148,27 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
 
         {/* Footer */}
         <div className="p-8 border-t border-slate-50 bg-slate-50/30 flex justify-end">
-          <button 
-            onClick={onClose}
-            className="px-8 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95"
-          >
-            Fermer l'Analyse
-          </button>
+          <div className="flex gap-3">
+             {/* 🛡️ REFERENT MANAGEMENT */}
+             {isSuccess && onUpdateReferent && (
+                <button
+                    onClick={() => handleReferentAction('assign')}
+                    disabled={isReferentLoading}
+                    className="px-6 py-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2"
+                    title="Nommer cet utilisateur comme Gardien de la procédure"
+                >
+                    {isReferentLoading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-chess-king"></i>}
+                    Nommer Gardien
+                </button>
+             )}
+
+            <button 
+              onClick={onClose}
+              className="px-8 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+            >
+              Fermer l'Analyse
+            </button>
+          </div>
         </div>
       </div>
     </div>
