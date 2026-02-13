@@ -29,7 +29,8 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
               <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
               <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} />
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 truncate">{stat.label}</p>
+            <p className="text-xs font-bold text-slate-500 mb-0.5">{stat.desc}</p>
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] truncate">{stat.label}</p>
           </div>
         </div>
       ))}

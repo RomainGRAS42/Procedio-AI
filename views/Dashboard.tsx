@@ -302,7 +302,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: "fa-triangle-exclamation",
       color: "text-rose-600",
       bg: "bg-rose-50",
-      desc: "Recherches échouées",
+      desc: "Besoins non couverts",
       tooltipTitle: "Alertes Critiques",
       tooltipDesc: "Nombre de recherches sans résultat nécessitant une création de contenu immédiate."
     },
@@ -312,7 +312,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: "fa-shield-heart",
       color: "text-emerald-600",
       bg: "bg-emerald-50",
-      desc: "Score de santé",
+      desc: "Pertinence du contenu",
       tooltipTitle: "Santé du Patrimoine",
       tooltipDesc: "Indicateur global de fraîcheur et de validation des procédures."
     },
@@ -322,7 +322,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: "fa-arrow-trend-up",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
-      desc: "Lectures période",
+      desc: "Niveau d'adoption",
       tooltipTitle: "Croissance d'Usage",
       tooltipDesc: "Volume de consultations sur la période en cours."
     },
@@ -332,7 +332,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: "fa-triangle-exclamation",
       color: "text-rose-600",
       bg: "bg-rose-50",
-      desc: "Sans référent",
+      desc: "Gouvernance manquante",
       tooltipTitle: "Risque de Perte",
       tooltipDesc: "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour)."
     }
