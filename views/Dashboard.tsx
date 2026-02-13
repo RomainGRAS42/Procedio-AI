@@ -647,7 +647,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           procedures:procedure_id (title, uuid)
         `)
         .or('status.eq.pending,status.eq.approved,status.eq.completed') 
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;

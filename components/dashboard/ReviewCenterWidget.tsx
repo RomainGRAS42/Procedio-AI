@@ -23,17 +23,19 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
-            <i className="fa-solid fa-bolt"></i>
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+            <i className="fa-solid fa-tower-control"></i>
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
-            Fil d'actualité
-            <InfoTooltip text="Suivez les examens de maîtrise et les suggestions de votre équipe." />
+            Centre de Pilotage
+            <InfoTooltip text="Prenez des décisions sur les suggestions et validez l'expertise métier." />
           </h3>
         </div>
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">
-          {pendingSuggestions.length + masteryClaims.filter(c => c.status === 'pending').length} actions<br/>en attente
-        </span>
+        <div className="text-right">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            {pendingSuggestions.length + masteryClaims.filter(c => c.status === 'pending').length} alertes
+          </span>
+        </div>
       </div>
 
       <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">

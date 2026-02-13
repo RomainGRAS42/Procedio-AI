@@ -22,9 +22,12 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+            <i className="fa-solid fa-heart-pulse"></i>
+          </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
-            Activité Récente
-            <InfoTooltip text="Surveillez les dernières actions de l'équipe en temps réel." />
+            Pouls de l'Équipe
+            <InfoTooltip text="Vibrez au rythme de vos collaborateurs : lectures, badges et notes de terrain." />
           </h3>
         </div>
         <button onClick={onRefresh} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none">
