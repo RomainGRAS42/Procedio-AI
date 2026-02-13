@@ -384,6 +384,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   // ... (keep handleCreateRedZoneMission for backward compatibility or remove if fully replaced, but user asked for popup on click now)
 
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<'urgent' | 'reliability' | 'dynamic' | 'redZone' | 'intensity'>('urgent');
+
   if (user.role !== UserRole.MANAGER) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-400">
@@ -396,7 +399,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-12 animate-fade-in pb-20">
       
-      {/* 🚀 HEADER & GLOBAL KPIs */}
+      {/* 🚀 HEADER & GLOBAL KPIs (NAVIGATION TABS) */}
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-100 pb-8">
           <div className="space-y-2">
@@ -405,12 +408,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
               <span className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest font-black">Pro</span>
             </h1>
             <p className="text-slate-500 font-medium text-lg max-w-2xl">
-              Analyse prédictive et pilotage stratégique du capital intellectuel de votre équipe.
+              Analysez la performance de votre base de connaissances via 5 axes stratégiques.
+              Cliquez sur un indicateur pour voir le détail.
             </p>
           </div>
         </div>
 
-        {/* TOP KPI ROW */}
+        {/* TOP KPI ROW (TABS) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <KPICard 
             label="Urgent" 
@@ -418,8 +422,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-triangle-exclamation" 
             color="text-rose-600"
             bg="bg-rose-50"
-            tooltip="Recherches échouées nécessitant une création de contenu immédiate (Alertes Critiques). Cliquez pour voir."
-            onClick={() => handleKpiClick('urgent')}
+            tooltip="Recherches échouées nécessitant une action immédiate."
+            isActive={activeTab === 'urgent'}
+            onClick={() => setActiveTab('urgent')}
           />
           <KPICard 
             label="Fiabilité" 
@@ -427,7 +432,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-shield-heart" 
             color="text-emerald-600"
             bg="bg-emerald-50"
-            tooltip="Score de santé : Proportion de procédures mises à jour il y a moins de 6 mois."
+            tooltip="Santé documentaire et fraîcheur du contenu."
+            isActive={activeTab === 'reliability'}
+            onClick={() => setActiveTab('reliability')}
           />
           <KPICard 
             label="Dynamique" 
@@ -435,7 +442,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-arrow-trend-up" 
             color="text-indigo-600"
             bg="bg-indigo-50"
-            tooltip="Croissance d'Usage : Volume total de consultations sur la période."
+            tooltip="Croissance d'usage et trafic."
+            isActive={activeTab === 'dynamic'}
+            onClick={() => setActiveTab('dynamic')}
           />
           <KPICard 
             label="Zone Rouge" 
@@ -443,8 +452,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-triangle-exclamation" 
             color="text-rose-600"
             bg="bg-rose-50"
-            tooltip="Risque de Perte : Procédures sans référent assigné. Cliquez pour voir."
-            onClick={() => handleKpiClick('redZone')}
+            tooltip="Procédures orphelines (sans référent)."
+            isActive={activeTab === 'redZone'}
+            onClick={() => setActiveTab('redZone')}
           />
           <KPICard 
             label="Intensité Team" 
@@ -452,178 +462,110 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-bolt-lightning" 
             color="text-amber-600"
             bg="bg-amber-50"
-            tooltip="Niveau d'activité global de l'équipe (consultations et contributions) par rapport aux objectifs."
+            tooltip="Engagement et contributions de l'équipe."
             align="right"
+            isActive={activeTab === 'intensity'}
+            onClick={() => setActiveTab('intensity')}
           />
         </div>
       </div>
 
-      {modalConfig && (
-        <KPIDetailsModal 
-          title={modalConfig.title}
-          type={modalConfig.type}
-          items={modalConfig.items}
-          onClose={() => setModalConfig(null)}
-        />
-      )}
-
       {loading ? (
-        <LoadingState message="Synthèse analytique de votre base..." />
+        <LoadingState message="Analyse des données en cours..." />
       ) : (
-        <div className="space-y-12">
+        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] animate-fade-in relative overflow-hidden transition-all">
           
-          {/* 📈 SECTION 1: TENDANCES D'ACTIVITÉ (Full Width) */}
-          <section className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-indigo-200">
-                  <i className="fa-solid fa-chart-line"></i>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Dynamique Interactive
-                    <InfoTooltip text="Évolution croisée entre l'utilisation du savoir (lectures) et la production de nouveau savoir (contributions) sur 30 jours." />
-                  </h3>
-                  <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">Growth vs Consumption</p>
-                </div>
+          {/* TAB CONTENT: URGENT */}
+          {activeTab === 'urgent' && (
+            <div className="space-y-8 animate-fade-in">
+              <div className="border-b border-rose-100 pb-8 mb-8">
+                 <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center gap-3">
+                   <i className="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                   Opportunités de Croissance (Manquantes)
+                 </h2>
+                 <p className="text-slate-500 text-lg">
+                   Ces termes ont été recherchés par vos équipes sans succès. Chaque "Recherche Échouée" est une demande directe d'information non satisfaite.
+                   <br/><strong>Action requise :</strong> Créez les procédures manquantes pour combler ces vides.
+                 </p>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                  <span className="text-xs font-black text-slate-500">Lectures</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                  <span className="text-xs font-black text-slate-500">Créations</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="h-[400px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activityData}>
-                  <defs>
-                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorContribs" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                    dy={15}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                  />
-                  <RechartsTooltip 
-                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="views" 
-                    stroke="#6366f1" 
-                    strokeWidth={4} 
-                    fillOpacity={1} 
-                    fill="url(#colorViews)" 
-                    name="Lectures"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="contributions" 
-                    stroke="#10b981" 
-                    strokeWidth={4} 
-                    fillOpacity={1} 
-                    fill="url(#colorContribs)" 
-                    name="Contributions"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
-
-          {/* 🧩 SECTION 2: ANALYSE DU CONTENU & TEAM (Grid System) */}
-          <div className="space-y-12">
-            
-            {/* 📈 ROW 1: EXPÉRTISE & QUALITÉ (Bento 60/40) */}
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-12">
-              
-              {/* SKILL MAP RADAR (60%) */}
-              <div className="xl:col-span-3 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 relative group">
-                <div className="flex items-center justify-between mb-10 relative z-10">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Cartographie d'Expertise
-                    <InfoTooltip text="Visualisation radar du niveau moyen de compétence de l'équipe sur vos domaines clés. Identifiez les zones de fragilité." />
-                  </h3>
-                </div>
-
-                <div className="h-[320px] w-full relative z-10">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="45%" outerRadius="80%" data={skillMapData}>
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900 }} />
-                      <Radar
-                        name="Équipe"
-                        dataKey="A"
-                        stroke="#6366f1"
-                        strokeWidth={4}
-                        fill="#6366f1"
-                        fillOpacity={0.15}
-                      />
-                      <RechartsTooltip 
-                        contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
-                  {skillMapData.slice(0, 4).map((skill, idx) => (
-                    <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 transition-all hover:border-indigo-100">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{skill.subject}</span>
-                        <span className="text-xs font-black text-indigo-600">{skill.A}%</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {missedOpportunities.length > 0 ? (
+                  missedOpportunities.map((opp, idx) => (
+                    <div key={idx} className="p-8 rounded-[2rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group cursor-pointer relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-50">
+                        <span className="text-4xl font-black text-rose-200">#{idx + 1}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-black text-slate-700 truncate">
-                          <i className="fa-solid fa-crown text-amber-400 mr-2"></i>
-                          {skill.champion || 'N/A'}
+                      <div className="relative z-10">
+                        <span className="inline-block px-3 py-1 rounded-lg bg-white border border-rose-200 text-[10px] font-black text-rose-600 uppercase tracking-widest mb-4 shadow-sm">
+                          {opp.count} échecs
+                        </span>
+                        <h3 className="font-black text-slate-900 text-xl capitalize mb-2 leading-tight">
+                          "{opp.term}"
+                        </h3>
+                        <p className="text-sm text-slate-500 font-medium mb-6">
+                          Recherché fréquemment cette semaine.
                         </p>
-                        <InfoTooltip text="Référent ayant le plus haut score d'activité sur ce sujet." align="right" />
+                        <button className="flex items-center gap-2 text-xs font-black text-rose-600 uppercase tracking-widest group-hover:gap-3 transition-all bg-white px-4 py-2 rounded-xl w-fit shadow-sm border border-rose-100">
+                          Créer la fiche <i className="fa-solid fa-plus"></i>
+                        </button>
                       </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-12 text-center text-slate-300 flex flex-col items-center">
+                    <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 text-3xl mb-4">
+                      <i className="fa-solid fa-check"></i>
+                    </div>
+                    <p className="font-black uppercase tracking-widest text-sm text-emerald-600">Aucune opportunité manquante détectée !</p>
+                    <p className="text-slate-400 mt-2">Votre base couvre 100% des recherches actuelles.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB CONTENT: RELIABILITY (HEALTH) */}
+          {activeTab === 'reliability' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 animate-fade-in">
+              <div className="space-y-6">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                   <i className="fa-solid fa-shield-heart text-emerald-500"></i>
+                   Qualité du Patrimoine
+                </h2>
+                <p className="text-slate-500 text-lg">
+                  L'index de santé mesure la "fraîcheur" de vos procédures. Une base saine doit être mise à jour régulièrement pour rester fiable.
+                  <br/><strong>Objectif :</strong> Maintenir plus de 70% de procédures "Fraîches" (&lt; 6 mois).
+                </p>
+                
+                <div className="space-y-3 pt-4">
+                  {healthData.map((item, idx) => (
+                    <div key={idx} className="p-6 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg shadow-sm" style={{ backgroundColor: item.color }}>
+                          <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-800 text-sm">{item.name}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.value} procédures</p>
+                        </div>
+                      </div>
+                      <span className="text-xl font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* HEALTH DONUT (40%) */}
-              <div className="xl:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Qualité du Patrimoine
-                    <InfoTooltip text="Évaluation de l'obsolescence documentaire. Une base saine doit avoir plus de 70% de documents 'Frais'." />
-                  </h3>
-                </div>
-                
-                <div className="flex flex-col items-center gap-8">
-                  <div className="w-[240px] h-[240px] relative">
+              <div className="flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-8">
+                 <div className="w-full h-[350px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={healthData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={75}
-                          outerRadius={100}
+                          innerRadius={90}
+                          outerRadius={120}
                           paddingAngle={8}
                           dataKey="value"
                         >
@@ -634,120 +576,187 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                         <RechartsTooltip />
                       </PieChart>
                     </ResponsiveContainer>
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="text-center">
-                        <span className="block text-4xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Index Santé</span>
-                      </div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                        <span className="block text-5xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
+                        <span className="text-xs font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full mt-2">Score Global</span>
                     </div>
-                  </div>
-
-                  <div className="w-full space-y-3">
-                    {healthData.map((item, idx) => (
-                      <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:scale-[1.02] transition-transform">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base shadow-sm" style={{ backgroundColor: item.color }}>
-                            <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
-                          </div>
-                          <div>
-                            <p className="font-black text-slate-800 text-xs">{item.name}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.value} procédures</p>
-                          </div>
-                        </div>
-                        <span className="text-base font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                 </div>
               </div>
             </div>
+          )}
 
-            {/* 🏆 ROW 2: LEADERS & OPPORTUNITIES (Bento 40/60) */}
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-12">
-              
-              {/* TEAM LEADERBOARD (40%) */}
-              <div className="xl:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Top Contributeurs
-                    <InfoTooltip text="Classement des collaborateurs les plus actifs sur la plateforme (XP, rédactions, validations)." />
-                  </h3>
-                </div>
+          {/* TAB CONTENT: DYNAMIC (ACTIVITY) */}
+          {activeTab === 'dynamic' && (
+             <div className="space-y-8 animate-fade-in">
+               <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-indigo-100 pb-8 mb-8 gap-6">
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 mb-2">
+                       <i className="fa-solid fa-arrow-trend-up text-indigo-500"></i>
+                       Dynamique Interactive
+                    </h2>
+                    <p className="text-slate-500 text-lg max-w-2xl">
+                       Suivez l'évolution de la consommation (Lectures) par rapport à la production (Contributions) sur 30 jours.
+                       Une courbe saine montre une corrélation entre les deux.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-6 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                       <span className="text-xs font-black text-slate-500">Lectures</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                       <span className="text-xs font-black text-slate-500">Créations</span>
+                    </div>
+                  </div>
+               </div>
 
-                <div className="space-y-4">
-                  {teamLeaderboard.map((member, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
-                      <div className="flex items-center gap-5">
-                        <div className="relative">
-                          {idx === 0 && <i className="fa-solid fa-crown absolute -top-3 -left-1 text-amber-400 text-sm rotate-[-20deg]"></i>}
-                          <img src={member.avatar_url} alt="" className="w-14 h-14 rounded-2xl object-cover ring-4 ring-white shadow-md" />
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-indigo-600 border-2 border-white text-[10px] font-black text-white flex items-center justify-center shadow-lg">
-                            {member.level}
-                          </div>
+               <div className="h-[400px] w-full">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <AreaChart data={activityData}>
+                     <defs>
+                       <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                       </linearGradient>
+                       <linearGradient id="colorContribs" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                       </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                     <XAxis 
+                       dataKey="date" 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
+                       dy={15}
+                     />
+                     <YAxis 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
+                     />
+                     <RechartsTooltip 
+                       contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
+                     />
+                     <Area type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorViews)" name="Lectures" />
+                     <Area type="monotone" dataKey="contributions" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorContribs)" name="Contributions" />
+                   </AreaChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+          )}
+
+          {/* TAB CONTENT: RED ZONE (ORPHANS) */}
+          {activeTab === 'redZone' && (
+             <div className="space-y-8 animate-fade-in">
+               <div className="border-b border-rose-100 pb-8 mb-8">
+                  <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center gap-3">
+                    <i className="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                    Zone Rouge (Procédures Orphelines)
+                  </h2>
+                  <p className="text-slate-500 text-lg">
+                    Ces procédures n'ont **aucun référent assigné**. Personne n'est responsable de leur mise à jour.
+                    C'est un risque majeur d'obsolescence et d'erreur pour les équipes terrain.
+                    <br/><strong>Action :</strong> Assignez un manager ou un expert à chaque procédure ci-dessous.
+                  </p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 {redZoneList.length > 0 ? (
+                   redZoneList.map((item, idx) => (
+                     <div key={idx} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col gap-4 relative group hover:border-rose-300 transition-all">
+                        <div className="flex items-start justify-between">
+                           <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+                             <i className="fa-solid fa-file-circle-xmark"></i>
+                           </div>
+                           <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">Orheline</span>
                         </div>
                         <div>
-                          <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
-                            {member.first_name} {member.last_name}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {member.role === UserRole.MANAGER ? 'Manager Expert' : 'Technicien Senior'}
-                          </p>
-                          <div className="flex gap-1.5 mt-2">
-                             {(member as any).user_badges?.slice(0, 3).map((ub: any, bIdx: number) => (
-                               <div key={bIdx} className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center border border-indigo-100/50" title={ub.badges.name}>
-                                 <i className={`fa-solid ${ub.badges.icon} text-[8px] text-indigo-500`}></i>
-                               </div>
-                             ))}
-                          </div>
+                          <h3 className="font-bold text-slate-900 line-clamp-2 mb-1 group-hover:text-rose-600 transition-colors">
+                            {item.label}
+                          </h3>
+                          <p className="text-xs text-slate-400">ID: {item.id.slice(0, 8)}...</p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-black text-indigo-600">{member.current_xp.toLocaleString()}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expérience</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* MISSED OPPORTUNITIES GRID (60%) */}
-              <div className="xl:col-span-3 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    Opportunités de Croissance
-                    <InfoTooltip text="Lexique des termes recherchés mais non trouvés. Chaque bloc est une opportunité de croissance pour votre KB." />
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {missedOpportunities.length > 0 ? (
-                    missedOpportunities.map((opp, idx) => (
-                      <div key={idx} className="p-6 rounded-3xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-all group cursor-pointer">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-indigo-600 shadow-sm font-black text-xs">
-                            #{idx + 1}
-                          </div>
-                          <span className="text-[10px] font-black text-slate-400 uppercase">Perdu {opp.count}x</span>
-                        </div>
-                        <p className="font-black text-slate-800 text-lg capitalize mb-4 leading-tight group-hover:text-indigo-600 transition-colors">
-                          {opp.term}
-                        </p>
-                        <button className="flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest group-hover:gap-3 transition-all">
-                          Combler <i className="fa-solid fa-arrow-right"></i>
+                        <button className="mt-auto w-full py-3 rounded-xl bg-slate-50 text-slate-600 font-bold text-xs uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                           Assigner un référent <i className="fa-solid fa-user-plus"></i>
                         </button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-12 text-center text-slate-300">
-                      <i className="fa-solid fa-shield-heart text-5xl mb-4"></i>
-                      <p className="font-black uppercase tracking-widest text-sm">Tout est couvert !</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                     </div>
+                   ))
+                 ) : (
+                   <div className="col-span-full py-12 text-center text-emerald-500">
+                     <i className="fa-solid fa-check-circle text-5xl mb-4"></i>
+                     <p className="font-black">Aucune procédure orpheline ! Bravo.</p>
+                   </div>
+                 )}
+               </div>
+             </div>
+          )}
 
-            </div>
-          </div>
+          {/* TAB CONTENT: INTENSITY (TEAM) */}
+          {activeTab === 'intensity' && (
+             <div className="grid grid-cols-1 xl:grid-cols-5 gap-12 animate-fade-in">
+                
+                {/* RADAR CHART (Left) */}
+                <div className="xl:col-span-2 flex flex-col justify-center border-r border-slate-100 pr-8">
+                   <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+                     <i className="fa-solid fa-crosshairs text-indigo-500"></i> Cartographie d'Expertise
+                   </h3>
+                   <div className="h-[300px] w-full">
+                     <ResponsiveContainer width="100%" height="100%">
+                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillMapData}>
+                         <PolarGrid stroke="#e2e8f0" />
+                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900 }} />
+                         <Radar name="Équipe" dataKey="A" stroke="#6366f1" strokeWidth={4} fill="#6366f1" fillOpacity={0.15} />
+                         <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                       </RadarChart>
+                     </ResponsiveContainer>
+                   </div>
+                   <p className="text-center text-xs text-slate-400 font-medium mt-4 max-w-xs mx-auto">
+                     Le graphique montre la répartition des compétences validées (Quiz & Missions) par l'équipe.
+                   </p>
+                </div>
+
+                {/* LEADERBOARD (Right) */}
+                <div className="xl:col-span-3 space-y-6">
+                   <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                        <i className="fa-solid fa-users text-amber-500"></i> Top Contributeurs
+                      </h3>
+                      <button className="text-xs font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest">
+                        Voir toute l'équipe
+                      </button>
+                   </div>
+                   
+                   <div className="space-y-3">
+                     {teamLeaderboard.map((member, idx) => (
+                       <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white hover:border-indigo-100 hover:shadow-md transition-all group">
+                         <div className="flex items-center gap-4">
+                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${idx === 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                              #{idx + 1}
+                            </span>
+                            <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-white" />
+                            <div>
+                               <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{member.first_name} {member.last_name}</p>
+                               <p className="text-[10px] uppercase font-bold text-slate-400">Niveau {member.level} • {member.current_xp} XP</p>
+                            </div>
+                         </div>
+                         
+                         <div className="flex items-center gap-1">
+                            {(member as any).user_badges?.slice(0, 3).map((ub: any, bIdx: number) => (
+                              <div key={bIdx} className="w-6 h-6 rounded bg-white flex items-center justify-center border border-slate-100 text-xs text-indigo-500 shadow-sm" title={ub.badges.name}>
+                                <i className={`fa-solid ${ub.badges.icon}`}></i>
+                              </div>
+                            ))}
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+             </div>
+          )}
+
         </div>
       )}
       
@@ -765,48 +774,42 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   );
 };
 
-// Sub-component for KPI Cards
-// Sub-component for KPI Cards
-const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick }: any) => {
-  const isInteractive = !!onClick;
-
+// Sub-component for KPI Cards (Updated for Active State)
+const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick, isActive }: any) => {
   return (
     <div 
       onClick={onClick}
       className={`
-        relative p-6 rounded-[2.5rem] border transition-all duration-300 group flex items-center gap-5
-        ${isInteractive 
-          ? 'bg-white border-rose-100 hover:border-rose-400 hover:bg-rose-50/10 cursor-pointer active:scale-95 shadow-md shadow-rose-100/50 hover:shadow-xl hover:shadow-rose-200/50' 
-          : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
+        relative p-6 rounded-[2.5rem] border transition-all duration-300 group flex items-center gap-5 cursor-pointer
+        ${isActive 
+          ? `bg-white border-indigo-500 ring-4 ring-indigo-500/10 shadow-xl shadow-indigo-500/20 scale-[1.02] z-10` 
+          : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200 hover:scale-[1.01]'
         }
       `}
     >
       {/* Icon Section - Left */}
-      <div className={`w-16 h-16 rounded-[1.5rem] ${bg} ${color} flex items-center justify-center text-2xl shadow-inner`}>
+      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-inner transition-colors duration-300
+        ${isActive ? 'bg-indigo-600 text-white' : `${bg} ${color}`}
+      `}>
         <i className={`fa-solid ${icon}`}></i>
       </div>
 
       {/* Content Section - Right */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 mb-0.5">
-          <p className={`text-3xl font-black tracking-tighter leading-none ${isInteractive ? 'text-rose-600' : 'text-slate-900'}`}>
+          <p className={`text-3xl font-black tracking-tighter leading-none transition-colors duration-300 ${isActive ? 'text-indigo-900' : 'text-slate-900'}`}>
             {value}
             {unit && <span className="text-xs font-bold text-slate-400 ml-1">{unit}</span>}
           </p>
-          <InfoTooltip text={tooltip || "Indicateur Clé"} />
         </div>
-        <p className={`text-[10px] font-black uppercase tracking-[0.2em] truncate ${isInteractive ? 'text-rose-400' : 'text-slate-400'}`}>
+        <p className={`text-[10px] font-black uppercase tracking-[0.2em] truncate transition-colors duration-300 ${isActive ? 'text-indigo-500' : 'text-slate-400'}`}>
           {label}
         </p>
       </div>
-
-      {/* Interactive Badge - Float (Optional: Remove if cluttered, but kept for affordance) */}
-      {isInteractive && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-           <div className="w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm">
-             <i className="fa-solid fa-arrow-right"></i>
-           </div>
-        </div>
+      
+      {/* Active Indicator Arrow */}
+      {isActive && (
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border-b border-r border-indigo-100 rotate-45 transform z-20 hidden lg:block"></div>
       )}
     </div>
   );
