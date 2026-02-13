@@ -30,8 +30,12 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
             <InfoTooltip text="Vibrez au rythme de vos collaborateurs : lectures, badges et notes de terrain." />
           </h3>
         </div>
-        <button onClick={onRefresh} className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none">
-          <i className="fa-solid fa-rotate-right"></i>
+        <button 
+          onClick={onRefresh} 
+          disabled={loadingActivities}
+          className="text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 rounded-lg outline-none disabled:opacity-50"
+        >
+          <i className={`fa-solid fa-rotate-right ${loadingActivities ? 'animate-spin text-indigo-500' : ''}`}></i>
         </button>
       </div>
       <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">

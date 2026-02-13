@@ -540,6 +540,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               title: `CONSULTATION_${procedure.title.substring(0, 50)}`,
               content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
               procedure_id: isUUID ? realProcedureId : procedure.db_id || procedure.uuid || null,
+              is_protected: false,
+              status: 'public',
             },
           ]);
 

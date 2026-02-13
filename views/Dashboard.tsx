@@ -935,7 +935,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const { data } = await supabase
         .from("notes")
         .select("*")
-        .or("title.ilike.LOG_READ_%,title.ilike.CONSULTATION%")
+        .or("title.ilike.LOG_READ_%,title.ilike.CONSULTATION_%,title.ilike.SUGGESTION_%,title.ilike.LOG_SEARCH%")
         .order("created_at", { ascending: false })
         .limit(5);
       if (data) {
