@@ -126,11 +126,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [earnedBadges, setEarnedBadges] = useState<any[]>(cacheStore.get('dash_earned_badges') || []);
   const [loadingBadges, setLoadingBadges] = useState(!cacheStore.has('dash_earned_badges'));
 
-  // Gamification Celebrations
-  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
-  const [levelUpData, setLevelUpData] = useState<{ level: number; title: string } | null>(null);
-  const [showBadgeUnlockedModal, setShowBadgeUnlockedModal] = useState(false);
-  const [unlockedBadgeData, setUnlockedBadgeData] = useState<any | null>(null);
+  // Celebration Queue System (Daisy Chaining)
+  interface CelebrationItem {
+    type: 'level' | 'badge';
+    data: any;
+  }
+  const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
+  const [currentCelebration, setCurrentCelebration] = useState<CelebrationItem | null>(null);
 
 
 
@@ -207,60 +209,49 @@ const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     if (user.role !== UserRole.TECHNICIAN || !user.id) return;
 
+    const newQueue: CelebrationItem[] = [];
+
     // 1. Check Level Up
-    // Use CALCULATED level from XP to be the source of truth
     const calculatedLevel = calculateLevelFromXP(personalStats.xp);
-    
-    // Only trigger if we have a valid previous level (not 0) and it increased
     if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
-      console.log(`🎉 Level Up Detected! ${prevLevelRef.current} -> ${calculatedLevel}`);
-      setLevelUpData({ 
-        level: calculatedLevel, 
-        title: getLevelTitle(calculatedLevel) 
+      newQueue.push({
+        type: 'level',
+        data: { level: calculatedLevel, title: getLevelTitle(calculatedLevel) }
       });
-      setShowLevelUpModal(true);
-      // Update local storage and DB if needed (sync)
-      localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
-    } else if (prevLevelRef.current === 0 && calculatedLevel > 0) {
-      // First sync EVER or after clear cache
-      // SILENT SYNC into ref and storage to prevent popup on reload
-      console.log(`Silent Level Sync: ${calculatedLevel}`);
       localStorage.setItem(`procedio_seen_level_${user.id}`, calculatedLevel.toString());
     }
-    
-    // Always update ref to current status
     prevLevelRef.current = calculatedLevel;
 
     // 2. Check Badge Unlocked
-    // Sort badges by date to ensure the "last" one is truly the newest
     const sortedBadges = [...earnedBadges].sort((a, b) => 
       new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
     );
-
-    console.log("DEBUG BADGES:", {
-      current: sortedBadges.length,
-      prev: prevBadgeCountRef.current,
-      diff: sortedBadges.length - prevBadgeCountRef.current
-    });
-
     if (sortedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
-      console.log("🏆 Badge Unlock Triggered!", {
-        newCount: sortedBadges.length,
-        oldCount: prevBadgeCountRef.current
-      });
       const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
       if (newBadge) {
-        setUnlockedBadgeData(newBadge);
-        setShowBadgeUnlockedModal(true);
+        newQueue.push({ type: 'badge', data: newBadge });
         localStorage.setItem(`procedio_seen_badges_${user.id}`, sortedBadges.length.toString());
       }
-    } else if (prevBadgeCountRef.current === 0 && sortedBadges.length > 0) {
-      // First sync
-      console.log("🔄 First Sync Badges (No Modal)");
-      localStorage.setItem(`procedio_seen_badges_${user.id}`, sortedBadges.length.toString());
     }
     prevBadgeCountRef.current = sortedBadges.length;
+
+    if (newQueue.length > 0) {
+      setCelebrationQueue(prev => [...prev, ...newQueue]);
+    }
   }, [personalStats.level, earnedBadges, user.id]);
+
+  // Handle Celebration Queue PROCESSING
+  useEffect(() => {
+    if (!currentCelebration && celebrationQueue.length > 0) {
+      const next = celebrationQueue[0];
+      setCurrentCelebration(next);
+      setCelebrationQueue(prev => prev.slice(1));
+    }
+  }, [celebrationQueue, currentCelebration]);
+
+  const handleCloseCelebration = () => {
+    setCurrentCelebration(null);
+  };
   
   // Cockpit Widgets State (Manager)
   // Cockpit Widgets State (Manager)
@@ -1936,20 +1927,22 @@ const Dashboard: React.FC<DashboardProps> = ({
         document.body
       )}
 
-      {/* GAMIFICATION CELEBRATIONS */}
-      {showLevelUpModal && levelUpData && createPortal(
+      {/* GAMIFICATION CELEBRATIONS QUEUE */}
+      {currentCelebration?.type === 'level' && createPortal(
         <LevelUpModal 
-          level={levelUpData.level} 
-          title={levelUpData.title} 
-          onClose={() => setShowLevelUpModal(false)} 
+          level={currentCelebration.data.level} 
+          title={currentCelebration.data.title} 
+          onClose={handleCloseCelebration} 
         />,
         document.body
       )}
 
-      {showBadgeUnlockedModal && unlockedBadgeData && createPortal(
+      {currentCelebration?.type === 'badge' && createPortal(
         <BadgeUnlockedModal 
-          badge={unlockedBadgeData} 
-          onClose={() => setShowBadgeUnlockedModal(false)} 
+          badge={currentCelebration.data} 
+          onClose={handleCloseCelebration}
+          currentXP={personalStats.xp}
+          currentLevel={personalStats.level}
         />,
         document.body
       )}

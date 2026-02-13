@@ -23,20 +23,20 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
     return (
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative flex-1 min-h-[300px]">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100 shrink-0">
               <i className="fa-solid fa-map-location-dot"></i>
             </div>
-            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
-              Missions d'Équipe
-              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." />
+            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center min-w-0">
+              <span className="truncate">Missions d'Équipe</span>
+              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." className="shrink-0" />
             </h3>
           </div>
           <button 
             onClick={() => onNavigate?.('missions')}
-            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center group/action"
+            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center shrink-0 whitespace-nowrap group/action"
           >
-            Tout voir
+            Voir tout
             <i className="fa-solid fa-chevron-right ml-2 text-[8px] group-hover:translate-x-0.5 transition-transform"></i>
           </button>
         </div>
@@ -81,21 +81,21 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
 
   return (
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full min-h-[320px] hover:border-indigo-100 transition-all">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+      <div className="flex items-center justify-between mb-6 gap-4 flex-nowrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shrink-0">
             <i className="fa-solid fa-layer-group"></i>
           </div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Autres Missions Disponibles</h3>
-            <InfoTooltip text="Missions recommandées basées sur votre profil." />
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="font-black text-slate-900 text-base tracking-tight uppercase truncate">Missions Disponibles</h3>
+            <InfoTooltip text="Missions recommandées basées sur votre profil." className="shrink-0" />
           </div>
         </div>
         <button 
           onClick={() => onNavigate?.('missions')} 
-          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center group/action"
+          className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center shrink-0 whitespace-nowrap group/action"
         >
-          Voir tout
+          <span>Voir tout</span>
           <i className="fa-solid fa-chevron-right ml-2 text-[8px] group-hover:translate-x-0.5 transition-transform"></i>
         </button>
       </div>

@@ -146,6 +146,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
       onSuccess(finalScore, level);
     } catch (err) {
       console.error("Error saving quiz results:", err);
+      alert("Erreur lors de la sauvegarde de vos résultats. Veuillez vérifier votre connexion.");
     } finally {
       setIsSubmitting(false);
     }
