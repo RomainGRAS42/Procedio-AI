@@ -39,7 +39,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
         </button>
       </div>
       <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide">
-        {activities.slice(0, 10).map((act) => (
+        {activities.map((act) => (
           <div key={act.id} className="flex gap-3 items-start p-3 hover:bg-slate-50 rounded-xl transition-colors group">
             <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform"></div>
             <div>

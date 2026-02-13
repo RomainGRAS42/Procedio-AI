@@ -937,7 +937,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select("*")
         .or("title.ilike.LOG_READ_%,title.ilike.CONSULTATION_%,title.ilike.SUGGESTION_%,title.ilike.LOG_SEARCH%")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(20);
       if (data) {
         setActivities(data);
         cacheStore.set('dash_activities', data);
@@ -1341,7 +1341,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .from("procedures")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (error) throw error;
       if (data) {

@@ -67,7 +67,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide pr-1">
+      <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pr-1">
         {(() => {
           // 1. Unify items
           const allItems = [
@@ -193,6 +193,8 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
             } else {
               const sugg = item;
               const isRead = sugg.isRead;
+              const isApproved = sugg.status === 'approved';
+              const isRejected = sugg.status === 'rejected';
               
               return (
                 <div 
@@ -230,28 +232,42 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                   </div>
 
                   <div className="flex gap-2 shrink-0">
-                      <button 
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
-                              onSelectSuggestion(sugg);
-                          }}
-                          className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center hover:bg-emerald-100 transition-colors"
-                          title="Valider"
-                      >
-                          <i className="fa-solid fa-check text-xs"></i>
-                      </button>
-                      <button 
-                          onClick={(e) => {
-                               e.stopPropagation();
-                               if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
-                               onSelectSuggestion(sugg);
-                          }} 
-                           className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 transition-colors"
-                          title="Refuser / Voir"
-                      >
-                           <i className="fa-solid fa-xmark text-xs"></i>
-                      </button>
+                    {isApproved ? (
+                        <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center gap-2">
+                            <i className="fa-solid fa-check text-[10px]"></i>
+                            <span className="text-[9px] font-black uppercase tracking-widest">Validé</span>
+                        </div>
+                    ) : isRejected ? (
+                        <div className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center gap-2">
+                            <i className="fa-solid fa-xmark text-[10px]"></i>
+                            <span className="text-[9px] font-black uppercase tracking-widest">Refusé</span>
+                        </div>
+                    ) : (
+                        <>
+                          <button 
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
+                                  onSelectSuggestion(sugg);
+                              }}
+                              className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center hover:bg-emerald-100 transition-colors"
+                              title="Valider"
+                          >
+                              <i className="fa-solid fa-check text-xs"></i>
+                          </button>
+                          <button 
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
+                                  onSelectSuggestion(sugg);
+                              }} 
+                              className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 transition-colors"
+                              title="Refuser / Voir"
+                          >
+                              <i className="fa-solid fa-xmark text-xs"></i>
+                          </button>
+                        </>
+                    )}
                   </div>
                 </div>
               );
