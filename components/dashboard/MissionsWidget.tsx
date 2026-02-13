@@ -41,7 +41,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
           </button>
         </div>
 
-        <div className="space-y-3 flex-1 overflow-y-auto scrollbar-hide">
+        <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pr-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
               <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
