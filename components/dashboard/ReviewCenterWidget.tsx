@@ -12,6 +12,7 @@ interface ReviewCenterWidgetProps {
   onUpdateReferent?: (procedureId: string, userId: string, action: 'assign' | 'revoke') => Promise<void>;
   generatingExamId?: string | null;
   onToggleReadStatus?: (type: 'suggestion' | 'mastery', id: string, status: boolean) => void;
+  onMarkAllRead?: () => void;
 }
 
 const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
@@ -23,7 +24,8 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   onViewMasteryDetail,
   onUpdateReferent,
   generatingExamId,
-  onToggleReadStatus
+  onToggleReadStatus,
+  onMarkAllRead
 }) => {
 
   const handleContextMenu = (e: React.MouseEvent, type: 'suggestion' | 'mastery', item: any) => {
@@ -50,15 +52,31 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
             <InfoTooltip text="Clic Droit pour marquer comme Non Lu/Lu." />
           </h3>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end gap-1">
           <span className={`text-[10px] font-bold uppercase tracking-widest ${alertCount > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
             {alertCount} alertes non lues
           </span>
+          {alertCount > 0 && onMarkAllRead && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onMarkAllRead(); }}
+              className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 underline underline-offset-2 transition-colors"
+            >
+              Tout marquer comme lu
+            </button>
+          )}
         </div>
       </div>
 
       <div className="space-y-2 flex-1 overflow-y-auto max-h-[350px] scrollbar-hide pr-1">
-        {masteryClaims.length > 0 && masteryClaims.map((claim) => {
+        {masteryClaims.length > 0 && [...masteryClaims]
+          .sort((a, b) => {
+            // Priority 1: Unread first (isReadByManager === false)
+            if (a.isReadByManager === false && b.isReadByManager !== false) return -1;
+            if (a.isReadByManager !== false && b.isReadByManager === false) return 1;
+            // Priority 2: Newest first
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          })
+          .map((claim) => {
           const isCompleted = claim.status === 'completed';
           const isApproved = claim.status === 'approved';
           const isPending = claim.status === 'pending';

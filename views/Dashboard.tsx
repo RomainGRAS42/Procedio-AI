@@ -797,7 +797,33 @@ const Dashboard: React.FC<DashboardProps> = ({
     } catch (err) {
         console.error("Error toggling read status:", err);
         setToast({ message: "Erreur de synchronisation", type: "error" });
-        // Revert could be implemented here
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      // 1. Optimistic Update
+      setPendingSuggestions(prev => prev.map(s => ({ ...s, isReadByManager: true })));
+      setMasteryClaims(prev => prev.map(c => ({ ...c, isReadByManager: true })));
+
+      // 2. DB Update (Parallel)
+      const unreadSuggestions = pendingSuggestions.filter(s => !s.isReadByManager).map(s => s.id);
+      const unreadClaims = masteryClaims.filter(c => !c.isReadByManager).map(c => c.id);
+
+      const updates: any[] = [];
+      if (unreadSuggestions.length > 0) {
+        updates.push(supabase.from('procedure_suggestions').update({ is_read_by_manager: true }).in('id', unreadSuggestions).then());
+      }
+      if (unreadClaims.length > 0) {
+        updates.push(supabase.from('mastery_requests').update({ is_read_by_manager: true }).in('id', unreadClaims).then());
+      }
+
+      await Promise.all(updates);
+      setToast({ message: "Toutes les alertes ont été marquées comme lues", type: "success" });
+
+    } catch (err) {
+      console.error("Error marking all as read:", err);
+      setToast({ message: "Erreur lors de la mise à jour", type: "error" });
     }
   };
 
@@ -1728,6 +1754,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       onViewMasteryDetail={(claim) => { setSelectedMasteryClaim(claim); setShowMasteryDetail(true); }}
                       onUpdateReferent={handleUpdateReferent}
                       onToggleReadStatus={handleToggleReadStatus}
+                      onMarkAllRead={handleMarkAllAsRead}
                     />
                  </div>
 
