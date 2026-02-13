@@ -411,7 +411,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         </div>
 
         {/* TOP KPI ROW */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <KPICard 
             label="Urgent" 
             value={`${globalKPIs.urgentCount}`} 
@@ -774,48 +774,40 @@ const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick 
     <div 
       onClick={onClick}
       className={`
-        relative p-6 rounded-3xl border transition-all duration-300 group
+        relative p-6 rounded-[2.5rem] border transition-all duration-300 group flex items-center gap-5
         ${isInteractive 
           ? 'bg-white border-rose-100 hover:border-rose-400 hover:bg-rose-50/10 cursor-pointer active:scale-95 shadow-md shadow-rose-100/50 hover:shadow-xl hover:shadow-rose-200/50' 
           : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
         }
       `}
     >
-      {/* Interactive Badge - Moved to bottom right */}
+      {/* Icon Section - Left */}
+      <div className={`w-16 h-16 rounded-[1.5rem] ${bg} ${color} flex items-center justify-center text-2xl shadow-inner`}>
+        <i className={`fa-solid ${icon}`}></i>
+      </div>
+
+      {/* Content Section - Right */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 mb-0.5">
+          <p className={`text-3xl font-black tracking-tighter leading-none ${isInteractive ? 'text-rose-600' : 'text-slate-900'}`}>
+            {value}
+            {unit && <span className="text-xs font-bold text-slate-400 ml-1">{unit}</span>}
+          </p>
+          <InfoTooltip text={tooltip || "Indicateur Clé"} />
+        </div>
+        <p className={`text-[10px] font-black uppercase tracking-[0.2em] truncate ${isInteractive ? 'text-rose-400' : 'text-slate-400'}`}>
+          {label}
+        </p>
+      </div>
+
+      {/* Interactive Badge - Float (Optional: Remove if cluttered, but kept for affordance) */}
       {isInteractive && (
-        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 z-20">
-           <div className="bg-rose-500 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg">
-             Agir <i className="fa-solid fa-bolt"></i>
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+           <div className="w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm">
+             <i className="fa-solid fa-arrow-right"></i>
            </div>
         </div>
       )}
-
-      {/* Info Tooltip (Absolute for stability) - Always shown if tooltip exists */}
-      {tooltip && (
-        <div className="absolute top-3 right-3 z-20">
-          <InfoTooltip 
-            text={tooltip} 
-            align="right"
-            className="ml-0"
-            iconClassName="text-slate-300 hover:text-indigo-500 text-sm bg-slate-50 hover:bg-indigo-50 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-sm"
-          />
-        </div>
-      )}
-
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-12 h-12 rounded-2xl ${bg} ${color} flex items-center justify-center text-xl transition-transform group-hover:scale-110 duration-300`}>
-          <i className={`fa-solid ${icon}`}></i>
-        </div>
-      </div>
-      <div className="space-y-1 relative z-10">
-        <div className="flex items-baseline gap-1">
-          <span className={`text-3xl font-black ${isInteractive ? 'text-rose-600' : 'text-slate-900'}`}>{value}</span>
-          {unit && <span className="text-xs font-bold text-slate-400">{unit}</span>}
-        </div>
-        <h4 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isInteractive ? 'text-rose-400' : 'text-slate-400'}`}>
-          {label}
-        </h4>
-      </div>
     </div>
   );
 };

@@ -1028,6 +1028,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
   }, [user.id, user.role]);
 
+  // Real-time Suggestions Sync
+  useEffect(() => {
+    if (user.role !== UserRole.MANAGER) return;
+
+    const suggestionsChannel = supabase
+      .channel('suggestion_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'procedure_suggestions',
+        },
+        async (payload) => {
+          console.log("Realtime Suggestion Update:", payload);
+          // Simple Strategy: Refetch to ensure joined data (user profile, procedure title) is correct
+          // Fetching is cheap for this list size
+          await fetchSuggestions();
+          setToast({ message: "Nouvelle activité de suggestion reçue", type: "info" });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(suggestionsChannel);
+    };
+  }, [user.role]);
+
   const fetchActiveMissions = async () => {
     setLoadingMissions(true);
     try {
