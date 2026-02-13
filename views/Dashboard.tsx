@@ -672,6 +672,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (user.role !== UserRole.TECHNICIAN) return;
     setLoadingExams(true);
     try {
+      console.log("DEBUG: Fetching approved exams for user ID:", user.id);
       const { data, error } = await supabase
         .from('mastery_requests')
         .select(`
@@ -682,8 +683,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log("DEBUG: approvedExams raw result:", { data, error });
+
+      if (error) {
+        console.error("DEBUG: Error fetching approved exams:", error);
+        throw error;
+      }
       if (data) {
+        console.log("DEBUG: Setting approvedExams state with", data.length, "items");
         setApprovedExams(data);
         onMasteryCountChange?.(data.length);
       }

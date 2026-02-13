@@ -82,7 +82,7 @@ const App: React.FC = () => {
         .maybeSingle();
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("DB_TIMEOUT")), 5000)
+        setTimeout(() => reject(new Error("DB_TIMEOUT")), 10000)
       );
 
       let profile = null;
