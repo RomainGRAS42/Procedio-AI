@@ -67,7 +67,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2 flex-1 pr-1">
+      <div className="space-y-2 flex-1 overflow-y-auto pr-1 max-h-[400px] scrollbar-thin">
         {(() => {
           // 1. Unify items
           const allItems = [
