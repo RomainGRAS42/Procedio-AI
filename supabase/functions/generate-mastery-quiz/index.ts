@@ -14,9 +14,23 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { procedure_id } = await req.json();
+    // 1. Log Request Info
+    console.log(`📥 Received ${req.method} request to generate-mastery-quiz`);
+    
+    let procedure_id;
+    try {
+      const body = await req.json();
+      procedure_id = body.procedure_id;
+    } catch (e) {
+      console.error("❌ Failed to parse request JSON body:", e.message);
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!procedure_id) {
+      console.error("❌ Missing procedure_id in body");
       return new Response(JSON.stringify({ error: "Missing procedure_id in request body" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -27,8 +41,10 @@ Deno.serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")?.trim();
 
+    console.log(`🔧 Config: URL=${SUPABASE_URL ? "OK" : "MISSING"}, Key=${MISTRAL_API_KEY ? "PRESENT" : "MISSING"}`);
+
     if (!MISTRAL_API_KEY) {
-      console.error("Configuration Error: Missing MISTRAL_API_KEY");
+      console.error("❌ Configuration Error: Missing MISTRAL_API_KEY");
       throw new Error("Server Configuration Error: Missing AI Key");
     }
 
@@ -79,7 +95,7 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${MISTRAL_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "open-mistral-nemo", 
+        model: "mistral-large-latest", 
         messages: [
           {
             role: "system",
