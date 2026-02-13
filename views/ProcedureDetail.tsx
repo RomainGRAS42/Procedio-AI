@@ -298,6 +298,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   } | null>(null);
   const [masteryRequest, setMasteryRequest] = useState<any | null>(null);
   const [isMasteryModalOpen, setIsMasteryModalOpen] = useState(false);
+  const [procedureExperts, setProcedureExperts] = useState<string[]>([]); // Liste des noms des experts
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -379,6 +380,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     fetchHistory();
     fetchReferent();
     fetchMasteryStatus();
+    fetchProcedureExperts();
   }, [procedure?.id, procedure?.fileUrl]);
 
   const fetchMasteryStatus = async () => {
@@ -457,6 +459,32 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       console.error("Erreur history:", err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const fetchProcedureExperts = async () => {
+    const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+    if (!targetUuid) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('mastery_requests')
+        .select(`
+          user_profiles:user_id (first_name, last_name)
+        `)
+        .eq('procedure_id', targetUuid)
+        .eq('status', 'completed')
+        .gte('score', 70) // Score minimum pour être considéré expert
+        .limit(5);
+
+      if (data) {
+        const experts = data
+          .map((item: any) => `${item.user_profiles?.first_name} ${item.user_profiles?.last_name}`)
+          .filter(Boolean);
+        setProcedureExperts(experts);
+      }
+    } catch (err) {
+      console.error("Error fetching procedure experts:", err);
     }
   };
 
@@ -721,6 +749,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             referentName: referentExpert
               ? `${referentExpert.first_name} ${referentExpert.last_name}`
               : undefined,
+            expertNames: procedureExperts, // Envoi des experts au chat
           }),
         }
       );
@@ -1000,6 +1029,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 flex items-center gap-2">
                     <i className="fa-solid fa-certificate text-[8px]"></i>
                     Expert : {referentExpert.first_name} {referentExpert.last_name}
+                  </span>
+                )}
+                {/* Badge MAITRISE pour l'utilisateur courant s'il a réussi */}
+                {masteryRequest?.status === 'completed' && (masteryRequest.score || 0) >= 70 && (
+                   <span className="text-[10px] font-black text-white uppercase tracking-widest bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1 rounded-lg shadow-lg shadow-emerald-500/30 flex items-center gap-2 animate-fade-in">
+                    <i className="fa-solid fa-medal text-[9px]"></i>
+                    MAÎTRISE VALIDÉE
                   </span>
                 )}
               </div>

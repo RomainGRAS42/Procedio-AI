@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { question, file_id, userName, referentName } = await req.json();
+    const { question, file_id, userName, referentName, expertNames } = await req.json();
 
     if (!question || !file_id) {
       return new Response(JSON.stringify({ error: 'Missing question or file_id' }), {
@@ -25,6 +25,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Prepare Expert Fallback Message
+    let expertFallback = "";
+    if (referentName) {
+        expertFallback += `Tu peux contacter le référent officiel : **${referentName}**.`;
+    }
+    if (expertNames && Array.isArray(expertNames) && expertNames.length > 0) {
+        expertFallback += `\nSinon, voici des collègues qui maîtrisent cette procédure : **${expertNames.join(", ")}**.`;
+    }
 
     // 1. Generate embedding for the question
     console.log(`🧠 Generating embedding for question: "${question}"`);
@@ -76,8 +85,8 @@ Deno.serve(async (req) => {
             CONSIGNES CRITIQUES :
             1. Réponds UNIQUEMENT en te basant sur le CONTEXTE fourni ci-dessous.
             2. Si la réponse n'est pas dans le contexte ou que l'information est manquante :
-               - S'il y a un référant nommé (${referentName || "personne pour l'instant"}), dis poliment que tu n'as pas l'info précise dans le document mais que **${referentName}** est l'expert sur ce sujet et pourra sûrement t'aider.
-               - S'il n'y a pas de référant nommé, dis que l'info est manquante et suggère à l'utilisateur de cliquer sur "Suggérer une modif" pour alerter le manager.
+               - Dis poliment que tu n'as pas l'info précise dans le document.
+               - ${expertFallback ? "Ensuite, suggère de contacter ces experts :\n" + expertFallback : "Suggère à l'utilisateur de cliquer sur 'Suggérer une modif' pour alerter le manager."}
             3. Sois précis, technique et professionnel.
             4. Utilise le Markdown pour la mise en forme (gras, listes, étapes).
             
