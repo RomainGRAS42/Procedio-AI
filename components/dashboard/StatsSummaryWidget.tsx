@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import InfoTooltip from '../InfoTooltip';
 
 interface StatItem {
@@ -17,10 +18,16 @@ interface StatsSummaryWidgetProps {
 }
 
 const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
+  const navigate = useNavigate();
+
   return (
     <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${Math.min(stats.length, 4)} gap-6`}>
       {stats.map((stat, idx) => (
-        <div key={idx} className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between gap-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all group relative">
+        <div 
+          key={idx} 
+          onClick={() => navigate('/statistics')}
+          className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between gap-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all group relative cursor-pointer"
+        >
           <div className="flex items-center gap-4 shrink-0">
             <div className={`w-14 h-14 rounded-[1.2rem] ${stat.bg} ${stat.color} flex items-center justify-center text-xl shadow-inner shrink-0`}>
               <i className={`fa-solid ${stat.icon}`}></i>
