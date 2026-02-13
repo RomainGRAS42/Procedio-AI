@@ -678,7 +678,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select(`
           *,
           user_profiles:user_id (first_name, last_name, avatar_url),
-          procedures:procedure_id (title, uuid)
+          procedures:procedure_id (title, uuid),
+          is_read_by_manager
         `)
         .or('status.eq.pending,status.eq.approved,status.eq.completed') 
         .order('created_at', { ascending: false })
@@ -686,8 +687,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (error) throw error;
       if (data) {
-        setMasteryClaims(data);
-        onMasteryCountChange?.(data.filter(c => c.status === 'pending').length);
+        // Map snake_case to camelCase
+        const mappedData = data.map(d => ({
+            ...d,
+            isReadByManager: d.is_read_by_manager
+        }));
+        setMasteryClaims(mappedData);
+        // Count unread instead of pending
+        onMasteryCountChange?.(mappedData.filter(c => !c.isReadByManager).length);
       }
     } catch (err) {
       console.error("Error fetching mastery claims:", err);
@@ -766,6 +773,32 @@ const Dashboard: React.FC<DashboardProps> = ({
       console.error("Error approving mastery:", err);
       setGeneratingExamId(null);
       setToast({ message: err.message || "Erreur lors de l'approbation.", type: "error" });
+    }
+  };
+
+  const handleToggleReadStatus = async (type: 'suggestion' | 'mastery', id: string, status: boolean) => {
+    try {
+        const table = type === 'suggestion' ? 'procedure_suggestions' : 'mastery_requests';
+        
+        // 1. Optimistic Update
+        if (type === 'suggestion') {
+            setPendingSuggestions(prev => prev.map(s => s.id === id ? { ...s, isReadByManager: status } : s));
+        } else {
+            setMasteryClaims(prev => prev.map(c => c.id === id ? { ...c, isReadByManager: status } : c));
+        }
+
+        // 2. DB Update
+        const { error } = await supabase
+            .from(table)
+            .update({ is_read_by_manager: status })
+            .eq('id', id);
+
+        if (error) throw error;
+
+    } catch (err) {
+        console.error("Error toggling read status:", err);
+        setToast({ message: "Erreur de synchronisation", type: "error" });
+        // Revert could be implemented here
     }
   };
 
@@ -1107,7 +1140,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           manager_response,
           responded_at,
           user:user_profiles!user_id(first_name, last_name, avatar_url),
-          procedure:procedures!procedure_id(title)
+          procedure:procedures!procedure_id(title),
+          is_read_by_manager
         `
         )
         .order("created_at", { ascending: false });
@@ -1128,6 +1162,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             procedure_id: item.procedure_id,
             managerResponse: item.manager_response,
             respondedAt: item.responded_at,
+            isReadByManager: item.is_read_by_manager
           }));
         setPendingSuggestions(suggestions);
         cacheStore.set('dash_suggestions', suggestions);
@@ -1685,7 +1720,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               {/* ZONE 2: Centre de Révision, Missions & Activité */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                  
-                 {/* COL 1: Centre de Révision */}
                  <div className="h-full">
                     <ReviewCenterWidget 
                       pendingSuggestions={pendingSuggestions}
@@ -1694,6 +1728,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       onApproveMastery={handleApproveMastery}
                       onViewMasteryDetail={(claim) => { setSelectedMasteryClaim(claim); setShowMasteryDetail(true); }}
                       onUpdateReferent={handleUpdateReferent}
+                      onToggleReadStatus={handleToggleReadStatus}
                     />
                  </div>
 

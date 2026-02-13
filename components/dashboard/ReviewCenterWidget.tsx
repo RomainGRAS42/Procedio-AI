@@ -11,6 +11,7 @@ interface ReviewCenterWidgetProps {
   onViewMasteryDetail?: (claim: any) => void;
   onUpdateReferent?: (procedureId: string, userId: string, action: 'assign' | 'revoke') => Promise<void>;
   generatingExamId?: string | null;
+  onToggleReadStatus?: (type: 'suggestion' | 'mastery', id: string, status: boolean) => void;
 }
 
 const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
@@ -21,8 +22,22 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   onApproveMastery,
   onViewMasteryDetail,
   onUpdateReferent,
-  generatingExamId
+  generatingExamId,
+  onToggleReadStatus
 }) => {
+
+  const handleContextMenu = (e: React.MouseEvent, type: 'suggestion' | 'mastery', item: any) => {
+    e.preventDefault();
+    if (onToggleReadStatus) {
+        // Toggle read status (inverse current)
+        onToggleReadStatus(type, item.id, !item.isReadByManager);
+    }
+  };
+
+  const alertCount = 
+    pendingSuggestions.filter(s => !s.isReadByManager).length + 
+    masteryClaims.filter(c => !c.isReadByManager).length;
+
   return (
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
       <div className="flex items-center justify-between mb-6">
@@ -32,12 +47,12 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
             Centre de Pilotage
-            <InfoTooltip text="Prenez des décisions sur les suggestions et validez l'expertise métier." />
+            <InfoTooltip text="Clic Droit pour marquer comme Non Lu/Lu." />
           </h3>
         </div>
         <div className="text-right">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            {pendingSuggestions.length + masteryClaims.filter(c => c.status === 'pending').length} alertes
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${alertCount > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
+            {alertCount} alertes non lues
           </span>
         </div>
       </div>
@@ -49,23 +64,31 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
           const isPending = claim.status === 'pending';
           const score = claim.score || 0;
           const isSuccess = score >= 70;
+          
+          // isReadByManager defaults to false if undefined
+          const isRead = claim.isReadByManager === true; 
 
           return (
             <div 
-              key={claim.id} 
-              onClick={() => isCompleted && onViewMasteryDetail?.(claim)}
-              className={`p-3 rounded-2xl border border-slate-50 hover:border-slate-200 transition-all group/item ${
-                isCompleted ? 'cursor-pointer hover:bg-slate-50/50' : ''
-              }`}
+              key={claim.id}
+              onContextMenu={(e) => handleContextMenu(e, 'mastery', claim)}
+              onClick={() => {
+                  if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
+                  if (isCompleted) onViewMasteryDetail?.(claim);
+              }}
+              className={`p-3 rounded-2xl border transition-all group/item ${
+                !isRead ? 'bg-white border-indigo-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80'
+              } ${isCompleted ? 'cursor-pointer hover:border-indigo-200' : ''}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-1.5 h-1.5 rounded-full ${
-                    isPending ? 'bg-orange-400 animate-pulse' : 
+                    !isRead ? 'bg-indigo-600 ring-2 ring-indigo-100 ring-offset-1' : 
+                    isPending ? 'bg-orange-400' : 
                     isApproved ? 'bg-indigo-400' : 
                     (isSuccess ? 'bg-emerald-400' : 'bg-rose-400')
                   }`}></div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                  <span className={`text-[10px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-indigo-900' : 'font-bold text-slate-400'}`}>
                     {isCompleted ? 'Examen' : 'Expertise'}
                   </span>
                 </div>
@@ -76,7 +99,9 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
 
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-[13px] font-black text-slate-800 truncate leading-tight group-hover/item:text-indigo-600 transition-colors">
+                  <h4 className={`text-[13px] truncate leading-tight group-hover/item:text-indigo-600 transition-colors ${
+                      !isRead ? 'font-black text-slate-900' : 'font-medium text-slate-600'
+                  }`}>
                     {claim.procedures?.title || "Document inconnu"}
                   </h4>
                   <p className="text-[10px] font-bold text-slate-400 mt-0.5">
@@ -104,7 +129,11 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                     </div>
                   ) : (
                     <button 
-                      onClick={() => onApproveMastery?.(claim.id)}
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
+                          onApproveMastery?.(claim.id);
+                      }}
                       className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
                     >
                       VALIDER
@@ -119,27 +148,64 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
         {pendingSuggestions.length > 0 && (
           <div className="pt-4 mt-2 border-t border-slate-50">
             <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3 block px-1">Suggestions</span>
-            {pendingSuggestions.slice(0, 5).map((sugg) => (
+            {pendingSuggestions.slice(0, 5).map((sugg) => {
+               const isRead = sugg.isReadByManager === true;
+               
+               return (
               <div 
                 key={sugg.id} 
-                onClick={() => onSelectSuggestion(sugg)}
-                className="p-3 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all cursor-pointer group/sugg flex items-center justify-between gap-4"
+                onContextMenu={(e) => handleContextMenu(e, 'suggestion', sugg)}
+                className={`p-3 rounded-2xl border transition-all group/sugg flex items-center justify-between gap-4 ${
+                    !isRead ? 'bg-white border-amber-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80 hover:bg-slate-100'
+                }`}
               >
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-[12px] font-black text-slate-700 truncate leading-tight group-hover/sugg:text-indigo-600">
+                <div 
+                    onClick={() => {
+                        if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
+                        onSelectSuggestion(sugg);
+                    }}
+                    className="min-w-0 flex-1 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-1.5 h-1.5 rounded-full ${!isRead ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                    <span className={`text-[9px] uppercase tracking-widest ${!isRead ? 'font-black text-amber-600' : 'font-bold text-slate-400'}`}>Suggestion</span>
+                  </div>
+                  <h4 className={`text-[12px] truncate leading-tight transition-colors ${
+                      !isRead ? 'font-black text-slate-900 group-hover/sugg:text-amber-600' : 'font-medium text-slate-600'
+                  }`}>
                     {sugg.procedureTitle}
                   </h4>
                   <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-                    {sugg.userName} • {sugg.type}
+                    {sugg.userName} • {new Date(sugg.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
-                  sugg.priority === 'high' ? 'bg-rose-50 border-rose-100 text-rose-500' : 'bg-slate-100 border-slate-200 text-slate-500'
-                }`}>
-                  {sugg.priority}
+
+                <div className="flex gap-2 shrink-0">
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
+                            onSelectSuggestion(sugg);
+                        }}
+                        className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center hover:bg-emerald-100 transition-colors"
+                        title="Valider"
+                    >
+                        <i className="fa-solid fa-check text-xs"></i>
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                             e.stopPropagation();
+                             if (onToggleReadStatus && !isRead) onToggleReadStatus('suggestion', sugg.id, true);
+                             onSelectSuggestion(sugg);
+                        }} 
+                         className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 transition-colors"
+                        title="Refuser / Voir"
+                    >
+                         <i className="fa-solid fa-xmark text-xs"></i>
+                    </button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
 
@@ -148,7 +214,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
             <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
               <i className="fa-solid fa-check-double text-2xl"></i>
             </div>
-            <p className="text-[11px] font-black uppercase tracking-widest">Tour de contrôle vide</p>
+            <p className="text-[11px] font-black uppercase tracking-widest">Tout est à jour</p>
           </div>
         )}
       </div>

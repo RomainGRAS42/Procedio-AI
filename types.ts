@@ -94,6 +94,7 @@ export interface Suggestion {
   procedure_id?: string;
   managerResponse?: string;
   respondedAt?: string;
+  isReadByManager?: boolean;
 }
 
 export type ViewType =
