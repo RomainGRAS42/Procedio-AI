@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { UserRole } from '../types';
+import InfoTooltip from './InfoTooltip';
 
 interface Champion {
   user_id: string;
@@ -160,7 +161,10 @@ const TeamPodium: React.FC = () => {
           <i className="fa-solid fa-medal"></i>
         </div>
         <div>
-            <h3 className="font-black text-slate-900 text-lg tracking-tight">Dynamique d'Équipe</h3>
+            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+              Dynamique d'Équipe
+              <InfoTooltip text="Les champions de la semaine : Progression fulgurante, Expert validé et Explorateur de connaissances." />
+            </h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Champions de la semaine</p>
         </div>
       </div>

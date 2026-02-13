@@ -29,7 +29,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center min-w-0">
               <span className="truncate">Missions d'Équipe</span>
-              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." className="shrink-0" />
+              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." className="shrink-0 ml-2" />
             </h3>
           </div>
           <button 
