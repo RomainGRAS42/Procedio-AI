@@ -74,7 +74,7 @@ const TeamSynergyWidget: React.FC = () => {
   );
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-amber-100 shadow-xl shadow-amber-500/5 relative group/synergy overflow-visible transition-all hover:shadow-2xl hover:shadow-amber-500/10">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-amber-100 shadow-xl shadow-amber-500/5 relative overflow-visible transition-all hover:shadow-2xl hover:shadow-amber-500/10">
       
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
@@ -119,42 +119,7 @@ const TeamSynergyWidget: React.FC = () => {
          </span>
       </div>
 
-      {/* HOVER DETAILS - POPOVER */}
-      <div className="absolute left-0 right-0 top-[90%] mt-4 mx-4 bg-white rounded-[2rem] p-6 shadow-2xl shadow-slate-200/50 border border-slate-100 z-50 opacity-0 invisible group-hover/synergy:opacity-100 group-hover/synergy:visible transition-all duration-300 transform group-hover/synergy:translate-y-0 translate-y-4 pointer-events-none group-hover/synergy:pointer-events-auto">
-         {/* Little Arrow */}
-         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white transform rotate-45 border-l border-t border-slate-100"></div>
-         
-         <div className="mb-4 flex items-center justify-between border-b border-slate-50 pb-4">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-list-ol"></i> Détail des Forces
-            </h4>
-            <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm">{teamMembers.length} Membres Actifs</span>
-         </div>
 
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-            {teamMembers.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-50 transition-all group/member cursor-default">
-                    <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-md overflow-hidden shrink-0 relative">
-                        {member.avatar_url ? (
-                            <img src={member.avatar_url} alt={member.first_name} className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold bg-slate-100 text-xs uppercase">
-                                {member.first_name?.[0]}{member.last_name?.[0]}
-                            </div>
-                        )}
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full"></div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-900 truncate group-hover/member:text-indigo-600 transition-colors">{member.first_name} {member.last_name}</p>
-                        <div className="flex items-center justify-between mt-0.5">
-                             <span className="text-[9px] font-black text-white bg-indigo-400 px-1.5 py-0.5 rounded-md shadow-sm">NV {member.level}</span>
-                             <span className="text-[10px] text-slate-400 font-bold">{member.xp_points.toLocaleString()} XP</span>
-                        </div>
-                    </div>
-                </div>
-            ))}
-         </div>
-      </div>
 
     </div>
   );
