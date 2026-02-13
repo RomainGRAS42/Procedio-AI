@@ -241,6 +241,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
               {score >= 70 ? 'Félicitations !' : 'Oups...'}
             </h2>
             <p className="text-slate-500 font-bold mb-8">
+              Examen sur : <span className="text-slate-900">{procedure.title}</span><br/>
               Vous avez obtenu un score de <span className="text-indigo-600 font-black">{score}%</span>
             </p>
 
