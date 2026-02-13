@@ -1761,7 +1761,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="space-y-6 animate-fade-in">
               
                 {/* ZONE 1: Synergie d'Équipe (Maintenant au dessus des KPIs) */}
-                <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                <div className="animate-slide-up relative z-20" style={{ animationDelay: '0.1s' }}>
                    <TeamSynergyWidget />
                 </div>
 

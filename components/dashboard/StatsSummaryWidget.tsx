@@ -29,10 +29,10 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
           </div>
           <div className="flex flex-col items-end text-right min-w-0">
              <div className="flex items-center gap-1.5 justify-end">
-               <p className="text-xs font-bold text-slate-600 truncate max-w-[120px]">{stat.desc}</p>
+               <p className="text-sm font-bold text-slate-600 truncate max-w-[140px]">{stat.desc}</p>
                <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} />
              </div>
-             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{stat.label}</p>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{stat.label}</p>
           </div>
         </div>
       ))}
