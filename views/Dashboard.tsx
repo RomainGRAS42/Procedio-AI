@@ -683,7 +683,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data) setApprovedExams(data);
+      if (data) {
+        setApprovedExams(data);
+        onMasteryCountChange?.(data.length);
+      }
     } catch (err) {
       console.error("Error fetching approved exams:", err);
     } finally {
@@ -1431,17 +1434,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* RAPPEL TECHNICIEN: EXAMEN DE MAITRISE PRÊT */}
       {user.role === UserRole.TECHNICIAN && approvedExams.length > 0 && (
         <div className="animate-slide-up">
-          <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+          <div className="bg-gradient-to-r from-indigo-600 to-indigo-900 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-white/10 transition-colors"></div>
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0 animate-bounce">
                 <i className="fa-solid fa-graduation-cap"></i>
               </div>
-              <div>
-                <h3 className="text-xl font-black tracking-tight leading-none italic">
-                  Examen Prêt !
+              <div className="min-w-0">
+                <h3 className="text-xl font-black tracking-tight leading-none italic uppercase">
+                  Valide ta Maîtrise !
                 </h3>
-                <p className="text-white/80 text-sm mt-1 font-bold">
-                  Le manager a validé ta demande pour <span className="text-white font-black underline decoration-2 underline-offset-4">{approvedExams[0]?.procedures?.title}</span>. L'examen est prêt.
+                <p className="text-white/80 text-sm mt-1 font-bold truncate">
+                  Ton examen pour <span className="text-white font-black underline decoration-2 underline-offset-4">{approvedExams[0]?.procedures?.title}</span> est prêt.
                 </p>
               </div>
             </div>
@@ -1450,10 +1454,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                 setActiveQuizRequest(approvedExams[0]);
                 setShowDashboardQuiz(true);
               }}
-              className="px-8 py-4 bg-white text-indigo-700 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-slate-50 transition-all active:scale-95 shrink-0 flex items-center gap-2"
+              className="px-8 py-4 bg-white text-indigo-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:shadow-indigo-500/40 transition-all active:scale-95 shrink-0 flex items-center gap-2 relative z-10"
             >
               <i className="fa-solid fa-play text-[10px]"></i>
-              Lancer l'Examen
+              Passer l'Examen
             </button>
           </div>
         </div>
