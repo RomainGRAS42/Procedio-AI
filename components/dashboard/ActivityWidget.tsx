@@ -20,7 +20,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[400px]">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
             <i className="fa-solid fa-heart-pulse"></i>
