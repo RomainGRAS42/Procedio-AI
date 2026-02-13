@@ -384,8 +384,279 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   // ... (keep handleCreateRedZoneMission for backward compatibility or remove if fully replaced, but user asked for popup on click now)
 
-  // Tabs State
-  const [activeTab, setActiveTab] = useState<'urgent' | 'reliability' | 'dynamic' | 'redZone' | 'intensity'>('urgent');
+  // Tabs State & Multi-View
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'split' | 'grid'>('focus');
+  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>(['urgent', 'reliability', 'dynamic']);
+
+  const kpiConfig = [
+    { id: 'urgent', label: 'Urgent', icon: 'fa-triangle-exclamation', color: 'text-rose-600', bg: 'bg-rose-50' },
+    { id: 'reliability', label: 'Fiabilité', icon: 'fa-shield-heart', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { id: 'dynamic', label: 'Dynamique', icon: 'fa-arrow-trend-up', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { id: 'redZone', label: 'Zone Rouge', icon: 'fa-file-circle-xmark', color: 'text-rose-600', bg: 'bg-rose-50' }, // Fixed icon in config
+    { id: 'intensity', label: 'Intensité', icon: 'fa-bolt-lightning', color: 'text-amber-600', bg: 'bg-amber-50' }
+  ];
+
+  const updateSlot = (index: number, kpiId: string | null) => {
+    const newSlots = [...selectedSlots];
+    newSlots[index] = kpiId;
+    setSelectedSlots(newSlots);
+  };
+
+  const isKpiSelected = (id: string) => {
+    // In focus mode, only check the first slot
+    if (layoutMode === 'focus') return selectedSlots[0] === id;
+    
+    // In split mode, check first 2 slots
+    if (layoutMode === 'split') return selectedSlots.slice(0, 2).includes(id);
+    
+    // In grid mode, check all 3
+    return selectedSlots.slice(0, 3).includes(id);
+  };
+
+  const getAvailableKPIs = (currentSlotIndex: number) => {
+    // Filter out KPIs that are already selected in OTHER slots
+    // We only care about active slots based on mode
+    const activeSlotsCount = layoutMode === 'focus' ? 1 : layoutMode === 'split' ? 2 : 3;
+    const otherSelectedKPIs = selectedSlots.filter((k, i) => i < activeSlotsCount && i !== currentSlotIndex && k !== null);
+    return kpiConfig.filter(k => !otherSelectedKPIs.includes(k.id));
+  };
+
+  const renderKPIContent = (type: string | null, slotIndex: number) => {
+    if (!type) {
+      const options = getAvailableKPIs(slotIndex);
+      return (
+        <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 p-8 text-center animate-fade-in hover:border-indigo-300 hover:bg-slate-50 transition-all group">
+            <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-slate-300 group-hover:text-indigo-500">
+               <i className="fa-solid fa-plus text-2xl"></i>
+            </div>
+            <p className="font-black text-slate-400 mb-6 uppercase tracking-widest text-sm">Ajouter une analyse</p>
+            <div className="grid grid-cols-1 gap-3 w-full max-w-xs">
+               {options.map(opt => (
+                 <button 
+                   key={opt.id}
+                   onClick={() => updateSlot(slotIndex, opt.id)}
+                   className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 transition-all text-left group/btn"
+                 >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${opt.bg} ${opt.color}`}>
+                      <i className={`fa-solid ${opt.icon}`}></i>
+                    </div>
+                    <span className="font-bold text-slate-700 group-hover/btn:text-indigo-700">{opt.label}</span>
+                 </button>
+               ))}
+            </div>
+        </div>
+      );
+    }
+
+    const isCompact = layoutMode !== 'focus';
+
+    return (
+      <div className={`relative h-full flex flex-col ${isCompact ? '' : ''}`}>
+        {/* Slot Header (Only in Split/Grid mode to allow changing/removing) */}
+        {layoutMode !== 'focus' && (
+           <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                 {(() => {
+                    const cfg = kpiConfig.find(k => k.id === type);
+                    return (
+                      <>
+                        <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] ${cfg?.bg} ${cfg?.color}`}>
+                           <i className={`fa-solid ${cfg?.icon}`}></i>
+                        </div>
+                        <span className="font-black text-slate-700 text-sm uppercase tracking-wider">{cfg?.label}</span>
+                      </>
+                    )
+                 })()}
+              </div>
+              <div className="flex items-center gap-1">
+                 <button onClick={() => updateSlot(slotIndex, null)} className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center">
+                    <i className="fa-solid fa-xmark"></i>
+                 </button>
+              </div>
+           </div>
+        )}
+
+        {/* CONTENT SWITCH */}
+        {type === 'urgent' && (
+             <div className="space-y-6 animate-fade-in flex-1">
+               {layoutMode === 'focus' && (
+                 <div className="border-b border-rose-100 pb-6 mb-6">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center gap-3">
+                      <i className="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                      Opportunités (Manquantes)
+                    </h2>
+                    <p className="text-slate-500 text-lg">
+                      Termes recherchés sans succès. <br/><strong>Action :</strong> Créez les procédures manquantes.
+                    </p>
+                 </div>
+               )}
+
+               <div className={`grid gap-4 ${layoutMode === 'focus' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                 {missedOpportunities.slice(0, layoutMode === 'focus' ? 6 : 4).map((opp, idx) => (
+                   <div key={idx} className="p-5 rounded-[1.5rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group cursor-pointer relative overflow-hidden">
+                     <div className="relative z-10">
+                       <span className="inline-block px-2 py-0.5 rounded-md bg-white border border-rose-200 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-2 shadow-sm">
+                         {opp.count} échecs
+                       </span>
+                       <h3 className="font-black text-slate-900 text-lg capitalize mb-1 leading-tight truncate">
+                         "{opp.term}"
+                       </h3>
+                       <button className="mt-3 flex items-center gap-2 text-[10px] font-black text-rose-600 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg w-fit shadow-sm border border-rose-100 hover:bg-rose-600 hover:text-white transition-all">
+                         Créer <i className="fa-solid fa-plus"></i>
+                       </button>
+                     </div>
+                   </div>
+                 ))}
+                 {missedOpportunities.length === 0 && (
+                    <div className="py-10 text-center text-slate-400">
+                       <i className="fa-solid fa-check text-3xl mb-2 text-emerald-500"></i>
+                       <p className="font-bold">Tout est sous contrôle</p>
+                    </div>
+                 )}
+               </div>
+             </div>
+        )}
+
+        {type === 'reliability' && (
+             <div className="space-y-6 animate-fade-in flex-1">
+                {layoutMode === 'focus' && (
+                  <div className="mb-6">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                       <i className="fa-solid fa-shield-heart text-emerald-500"></i>
+                       Qualité du Patrimoine
+                    </h2>
+                     <p className="text-slate-500 mt-2">Objectif : &gt; 70% de procédures fraîches.</p>
+                  </div>
+                )}
+                
+                <div className={`flex ${layoutMode === 'split' ? 'flex-col-reverse' : layoutMode === 'grid' ? 'flex-col-reverse' : 'grid grid-cols-2 gap-8'}`}>
+                   <div className="space-y-3">
+                     {healthData.map((item, idx) => (
+                       <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs shadow-sm" style={{ backgroundColor: item.color }}>
+                             <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
+                           </div>
+                           <div>
+                             <p className="font-bold text-slate-800 text-xs">{item.name}</p>
+                           </div>
+                         </div>
+                         <span className="text-sm font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
+                       </div>
+                     ))}
+                   </div>
+
+                   <div className="flex items-center justify-center relative min-h-[200px]">
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={healthData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {healthData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                          <span className="block text-2xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Santé</span>
+                      </div>
+                   </div>
+                </div>
+             </div>
+        )}
+
+        {type === 'dynamic' && (
+            <div className="space-y-6 animate-fade-in flex-1">
+               {layoutMode === 'focus' && (
+                  <div className="mb-6">
+                     <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <i className="fa-solid fa-arrow-trend-up text-indigo-500"></i>
+                        Dynamique
+                     </h2>
+                     <p className="text-slate-500 mt-2">Lectures vs Créations (30 jours)</p>
+                  </div>
+               )}
+               <div className="h-[250px] w-full">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <AreaChart data={activityData}>
+                     <defs>
+                       <linearGradient id={`${slotIndex}-colorViews`} x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                       </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                     <XAxis dataKey="date" hide={layoutMode === 'grid'} tick={{ fontSize: 10 }} />
+                     <YAxis hide={true} />
+                     <RechartsTooltip contentStyle={{ borderRadius: '12px', fontSize: '12px' }}/>
+                     <Area type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill={`url(#${slotIndex}-colorViews)`} />
+                     <Area type="monotone" dataKey="contributions" stroke="#10b981" strokeWidth={3} fillOpacity={0} fill="transparent" />
+                   </AreaChart>
+                 </ResponsiveContainer>
+               </div>
+            </div>
+        )}
+        
+        {type === 'redZone' && (
+             <div className="space-y-6 animate-fade-in flex-1 h-full overflow-y-auto pr-2 custom-scrollbar">
+               {layoutMode === 'focus' && (
+                  <h2 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-3"><i className="fa-solid fa-file-circle-xmark text-rose-500"></i> Zone Rouge</h2>
+               )}
+               <div className="grid grid-cols-1 gap-3">
+                 {redZoneList.map((item, idx) => (
+                   <div key={idx} className="bg-white rounded-xl p-4 border border-slate-100 flex items-center justify-between group hover:border-rose-200">
+                      <div className="overflow-hidden">
+                        <h3 className="font-bold text-slate-900 truncate text-sm">{item.label}</h3>
+                        <p className="text-[10px] text-slate-400">ID: {item.id.slice(0,6)}</p>
+                      </div>
+                      <button className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all">
+                        <i className="fa-solid fa-user-plus text-xs"></i>
+                      </button>
+                   </div>
+                 ))}
+                 {redZoneList.length === 0 && <p className="text-center text-slate-400">Aucune procédure orpheline</p>}
+               </div>
+             </div>
+        )}
+
+        {type === 'intensity' && (
+            <div className="space-y-6 animate-fade-in flex-1">
+               {layoutMode === 'focus' && (
+                  <h2 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-3"><i className="fa-solid fa-bolt-lightning text-amber-500"></i> Intensité</h2>
+               )}
+               <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={skillMapData}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 800 }} />
+                      <Radar name="Team" dataKey="A" stroke="#f59e0b" strokeWidth={3} fill="#f59e0b" fillOpacity={0.2} />
+                      <RechartsTooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+               </div>
+               <div className="space-y-2">
+                  {teamLeaderboard.slice(0,3).map((m, i) => (
+                     <div key={i} className="flex items-center gap-3 p-2 border-b border-slate-50 last:border-0">
+                        <span className="text-xs font-black text-slate-300">#{i+1}</span>
+                        <div className="flex-1 text-xs font-bold text-slate-700">{m.first_name} {m.last_name}</div>
+                        <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-black">{m.current_xp} XP</span>
+                     </div>
+                  ))}
+               </div>
+            </div>
+        )}
+      </div>
+    );
+  };
 
   if (user.role !== UserRole.MANAGER) {
     return (
@@ -409,12 +680,40 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             </h1>
             <p className="text-slate-500 font-medium text-lg max-w-2xl">
               Analysez la performance de votre base de connaissances via 5 axes stratégiques.
-              Cliquez sur un indicateur pour voir le détail.
             </p>
+          </div>
+          
+          {/* LAYOUT SWITCHER */}
+          <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex items-center gap-1 shadow-inner">
+             <button 
+               onClick={() => setLayoutMode('focus')}
+               className={`p-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'focus' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+               title="Focus View (1)"
+             >
+                <i className="fa-regular fa-square"></i>
+                <span className="text-xs font-black uppercase tracking-wider hidden md:block">Focus</span>
+             </button>
+             <div className="w-px h-6 bg-slate-200 mx-1"></div>
+             <button 
+               onClick={() => setLayoutMode('split')}
+               className={`p-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'split' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+               title="Split View (2)"
+             >
+                <i className="fa-solid fa-table-columns"></i>
+                <span className="text-xs font-black uppercase tracking-wider hidden md:block">Comparatif</span>
+             </button>
+             <button 
+               onClick={() => setLayoutMode('grid')}
+               className={`p-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'grid' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+               title="Grid View (3)"
+             >
+                <i className="fa-solid fa-grip"></i>
+                <span className="text-xs font-black uppercase tracking-wider hidden md:block">Global</span>
+             </button>
           </div>
         </div>
 
-        {/* TOP KPI ROW (TABS) */}
+        {/* TOP KPI ROW (TABS/PALETTE) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <KPICard 
             label="Urgent" 
@@ -423,8 +722,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             color="text-rose-600"
             bg="bg-rose-50"
             tooltip="Recherches échouées nécessitant une action immédiate."
-            isActive={activeTab === 'urgent'}
-            onClick={() => setActiveTab('urgent')}
+            isActive={isKpiSelected('urgent')}
+            onClick={() => updateSlot(0, 'urgent')}
           />
           <KPICard 
             label="Fiabilité" 
@@ -433,8 +732,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             color="text-emerald-600"
             bg="bg-emerald-50"
             tooltip="Santé documentaire et fraîcheur du contenu."
-            isActive={activeTab === 'reliability'}
-            onClick={() => setActiveTab('reliability')}
+            isActive={isKpiSelected('reliability')}
+            onClick={() => updateSlot(0, 'reliability')}
           />
           <KPICard 
             label="Dynamique" 
@@ -443,18 +742,18 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             color="text-indigo-600"
             bg="bg-indigo-50"
             tooltip="Croissance d'usage et trafic."
-            isActive={activeTab === 'dynamic'}
-            onClick={() => setActiveTab('dynamic')}
+            isActive={isKpiSelected('dynamic')}
+            onClick={() => updateSlot(0, 'dynamic')}
           />
           <KPICard 
             label="Zone Rouge" 
             value={`${globalKPIs.redZone}`} 
-            icon="fa-triangle-exclamation" 
+            icon="fa-file-circle-xmark" 
             color="text-rose-600"
             bg="bg-rose-50"
             tooltip="Procédures orphelines (sans référent)."
-            isActive={activeTab === 'redZone'}
-            onClick={() => setActiveTab('redZone')}
+            isActive={isKpiSelected('redZone')}
+            onClick={() => updateSlot(0, 'redZone')}
           />
           <KPICard 
             label="Intensité Team" 
@@ -464,8 +763,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             bg="bg-amber-50"
             tooltip="Engagement et contributions de l'équipe."
             align="right"
-            isActive={activeTab === 'intensity'}
-            onClick={() => setActiveTab('intensity')}
+            isActive={isKpiSelected('intensity')}
+            onClick={() => updateSlot(0, 'intensity')}
           />
         </div>
       </div>
@@ -473,289 +772,31 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       {loading ? (
         <LoadingState message="Analyse des données en cours..." />
       ) : (
-        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] animate-fade-in relative overflow-hidden transition-all">
-          
-          {/* TAB CONTENT: URGENT */}
-          {activeTab === 'urgent' && (
-            <div className="space-y-8 animate-fade-in">
-              <div className="border-b border-rose-100 pb-8 mb-8">
-                 <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center gap-3">
-                   <i className="fa-solid fa-triangle-exclamation text-rose-500"></i>
-                   Opportunités de Croissance (Manquantes)
-                 </h2>
-                 <p className="text-slate-500 text-lg">
-                   Ces termes ont été recherchés par vos équipes sans succès. Chaque "Recherche Échouée" est une demande directe d'information non satisfaite.
-                   <br/><strong>Action requise :</strong> Créez les procédures manquantes pour combler ces vides.
-                 </p>
-              </div>
+        <div className={`
+           grid gap-6 transition-all duration-500 ease-in-out
+           ${layoutMode === 'focus' ? 'grid-cols-1' : ''}
+           ${layoutMode === 'split' ? 'grid-cols-1 lg:grid-cols-2' : ''}
+           ${layoutMode === 'grid' ? 'grid-cols-1 lg:grid-cols-3' : ''}
+        `}>
+           
+           {/* SLOT 1: Always visible */}
+           <div className={`bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] overflow-hidden ${selectedSlots[0] ? '' : 'flex flex-col'}`}>
+              {renderKPIContent(selectedSlots[0], 0)}
+           </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {missedOpportunities.length > 0 ? (
-                  missedOpportunities.map((opp, idx) => (
-                    <div key={idx} className="p-8 rounded-[2rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group cursor-pointer relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-4 opacity-50">
-                        <span className="text-4xl font-black text-rose-200">#{idx + 1}</span>
-                      </div>
-                      <div className="relative z-10">
-                        <span className="inline-block px-3 py-1 rounded-lg bg-white border border-rose-200 text-[10px] font-black text-rose-600 uppercase tracking-widest mb-4 shadow-sm">
-                          {opp.count} échecs
-                        </span>
-                        <h3 className="font-black text-slate-900 text-xl capitalize mb-2 leading-tight">
-                          "{opp.term}"
-                        </h3>
-                        <p className="text-sm text-slate-500 font-medium mb-6">
-                          Recherché fréquemment cette semaine.
-                        </p>
-                        <button className="flex items-center gap-2 text-xs font-black text-rose-600 uppercase tracking-widest group-hover:gap-3 transition-all bg-white px-4 py-2 rounded-xl w-fit shadow-sm border border-rose-100">
-                          Créer la fiche <i className="fa-solid fa-plus"></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-12 text-center text-slate-300 flex flex-col items-center">
-                    <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 text-3xl mb-4">
-                      <i className="fa-solid fa-check"></i>
-                    </div>
-                    <p className="font-black uppercase tracking-widest text-sm text-emerald-600">Aucune opportunité manquante détectée !</p>
-                    <p className="text-slate-400 mt-2">Votre base couvre 100% des recherches actuelles.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB CONTENT: RELIABILITY (HEALTH) */}
-          {activeTab === 'reliability' && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 animate-fade-in">
-              <div className="space-y-6">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                   <i className="fa-solid fa-shield-heart text-emerald-500"></i>
-                   Qualité du Patrimoine
-                </h2>
-                <p className="text-slate-500 text-lg">
-                  L'index de santé mesure la "fraîcheur" de vos procédures. Une base saine doit être mise à jour régulièrement pour rester fiable.
-                  <br/><strong>Objectif :</strong> Maintenir plus de 70% de procédures "Fraîches" (&lt; 6 mois).
-                </p>
-                
-                <div className="space-y-3 pt-4">
-                  {healthData.map((item, idx) => (
-                    <div key={idx} className="p-6 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg shadow-sm" style={{ backgroundColor: item.color }}>
-                          <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-800 text-sm">{item.name}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.value} procédures</p>
-                        </div>
-                      </div>
-                      <span className="text-xl font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center bg-slate-50/50 rounded-[2.5rem] p-8">
-                 <div className="w-full h-[350px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={healthData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={90}
-                          outerRadius={120}
-                          paddingAngle={8}
-                          dataKey="value"
-                        >
-                          {healthData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
-                        <span className="block text-5xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
-                        <span className="text-xs font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full mt-2">Score Global</span>
-                    </div>
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB CONTENT: DYNAMIC (ACTIVITY) */}
-          {activeTab === 'dynamic' && (
-             <div className="space-y-8 animate-fade-in">
-               <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-indigo-100 pb-8 mb-8 gap-6">
-                  <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 mb-2">
-                       <i className="fa-solid fa-arrow-trend-up text-indigo-500"></i>
-                       Dynamique Interactive
-                    </h2>
-                    <p className="text-slate-500 text-lg max-w-2xl">
-                       Suivez l'évolution de la consommation (Lectures) par rapport à la production (Contributions) sur 30 jours.
-                       Une courbe saine montre une corrélation entre les deux.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-6 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-2">
-                       <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                       <span className="text-xs font-black text-slate-500">Lectures</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                       <span className="text-xs font-black text-slate-500">Créations</span>
-                    </div>
-                  </div>
-               </div>
-
-               <div className="h-[400px] w-full">
-                 <ResponsiveContainer width="100%" height="100%">
-                   <AreaChart data={activityData}>
-                     <defs>
-                       <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                       </linearGradient>
-                       <linearGradient id="colorContribs" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                       </linearGradient>
-                     </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                     <XAxis 
-                       dataKey="date" 
-                       axisLine={false} 
-                       tickLine={false} 
-                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                       dy={15}
-                     />
-                     <YAxis 
-                       axisLine={false} 
-                       tickLine={false} 
-                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                     />
-                     <RechartsTooltip 
-                       contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
-                     />
-                     <Area type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorViews)" name="Lectures" />
-                     <Area type="monotone" dataKey="contributions" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorContribs)" name="Contributions" />
-                   </AreaChart>
-                 </ResponsiveContainer>
-               </div>
+           {/* SLOT 2: Visible in Split & Grid */}
+           {layoutMode !== 'focus' && (
+             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] overflow-hidden">
+                {renderKPIContent(selectedSlots[1], 1)}
              </div>
-          )}
+           )}
 
-          {/* TAB CONTENT: RED ZONE (ORPHANS) */}
-          {activeTab === 'redZone' && (
-             <div className="space-y-8 animate-fade-in">
-               <div className="border-b border-rose-100 pb-8 mb-8">
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center gap-3">
-                    <i className="fa-solid fa-triangle-exclamation text-rose-500"></i>
-                    Zone Rouge (Procédures Orphelines)
-                  </h2>
-                  <p className="text-slate-500 text-lg">
-                    Ces procédures n'ont **aucun référent assigné**. Personne n'est responsable de leur mise à jour.
-                    C'est un risque majeur d'obsolescence et d'erreur pour les équipes terrain.
-                    <br/><strong>Action :</strong> Assignez un manager ou un expert à chaque procédure ci-dessous.
-                  </p>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {redZoneList.length > 0 ? (
-                   redZoneList.map((item, idx) => (
-                     <div key={idx} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col gap-4 relative group hover:border-rose-300 transition-all">
-                        <div className="flex items-start justify-between">
-                           <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
-                             <i className="fa-solid fa-file-circle-xmark"></i>
-                           </div>
-                           <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">Orheline</span>
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900 line-clamp-2 mb-1 group-hover:text-rose-600 transition-colors">
-                            {item.label}
-                          </h3>
-                          <p className="text-xs text-slate-400">ID: {item.id.slice(0, 8)}...</p>
-                        </div>
-                        <button className="mt-auto w-full py-3 rounded-xl bg-slate-50 text-slate-600 font-bold text-xs uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                           Assigner un référent <i className="fa-solid fa-user-plus"></i>
-                        </button>
-                     </div>
-                   ))
-                 ) : (
-                   <div className="col-span-full py-12 text-center text-emerald-500">
-                     <i className="fa-solid fa-check-circle text-5xl mb-4"></i>
-                     <p className="font-black">Aucune procédure orpheline ! Bravo.</p>
-                   </div>
-                 )}
-               </div>
+           {/* SLOT 3: Visible in Grid */}
+           {layoutMode === 'grid' && (
+             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] overflow-hidden">
+                {renderKPIContent(selectedSlots[2], 2)}
              </div>
-          )}
-
-          {/* TAB CONTENT: INTENSITY (TEAM) */}
-          {activeTab === 'intensity' && (
-             <div className="grid grid-cols-1 xl:grid-cols-5 gap-12 animate-fade-in">
-                
-                {/* RADAR CHART (Left) */}
-                <div className="xl:col-span-2 flex flex-col justify-center border-r border-slate-100 pr-8">
-                   <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
-                     <i className="fa-solid fa-crosshairs text-indigo-500"></i> Cartographie d'Expertise
-                   </h3>
-                   <div className="h-[300px] w-full">
-                     <ResponsiveContainer width="100%" height="100%">
-                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillMapData}>
-                         <PolarGrid stroke="#e2e8f0" />
-                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900 }} />
-                         <Radar name="Équipe" dataKey="A" stroke="#6366f1" strokeWidth={4} fill="#6366f1" fillOpacity={0.15} />
-                         <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                       </RadarChart>
-                     </ResponsiveContainer>
-                   </div>
-                   <p className="text-center text-xs text-slate-400 font-medium mt-4 max-w-xs mx-auto">
-                     Le graphique montre la répartition des compétences validées (Quiz & Missions) par l'équipe.
-                   </p>
-                </div>
-
-                {/* LEADERBOARD (Right) */}
-                <div className="xl:col-span-3 space-y-6">
-                   <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                        <i className="fa-solid fa-users text-amber-500"></i> Top Contributeurs
-                      </h3>
-                      <button className="text-xs font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest">
-                        Voir toute l'équipe
-                      </button>
-                   </div>
-                   
-                   <div className="space-y-3">
-                     {teamLeaderboard.map((member, idx) => (
-                       <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white hover:border-indigo-100 hover:shadow-md transition-all group">
-                         <div className="flex items-center gap-4">
-                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${idx === 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
-                              #{idx + 1}
-                            </span>
-                            <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-white" />
-                            <div>
-                               <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{member.first_name} {member.last_name}</p>
-                               <p className="text-[10px] uppercase font-bold text-slate-400">Niveau {member.level} • {member.current_xp} XP</p>
-                            </div>
-                         </div>
-                         
-                         <div className="flex items-center gap-1">
-                            {(member as any).user_badges?.slice(0, 3).map((ub: any, bIdx: number) => (
-                              <div key={bIdx} className="w-6 h-6 rounded bg-white flex items-center justify-center border border-slate-100 text-xs text-indigo-500 shadow-sm" title={ub.badges.name}>
-                                <i className={`fa-solid ${ub.badges.icon}`}></i>
-                              </div>
-                            ))}
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-             </div>
-          )}
+           )}
 
         </div>
       )}
