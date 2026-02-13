@@ -676,7 +676,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .from('mastery_requests')
         .select(`
           *,
-          procedures:procedure_id (title, uuid, file_url, Type, views, status)
+          procedure:procedure_id (title, uuid, file_url, Type, views, status)
         `)
         .eq('user_id', user.id)
         .eq('status', 'approved')
@@ -1445,7 +1445,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   Valide ta Maîtrise !
                 </h3>
                 <p className="text-white/80 text-sm mt-1 font-bold truncate">
-                  Ton examen pour <span className="text-white font-black underline decoration-2 underline-offset-4">{approvedExams[0]?.procedures?.title}</span> est prêt.
+                  Ton examen pour <span className="text-white font-black underline decoration-2 underline-offset-4">{approvedExams[0]?.procedure?.title}</span> est prêt.
                 </p>
               </div>
             </div>
@@ -1962,7 +1962,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             fetchPersonalStats();
           }}
           procedure={{
-            ...activeQuizRequest.procedures,
+            ...activeQuizRequest.procedure,
             id: activeQuizRequest.procedure_id,
             db_id: activeQuizRequest.procedure_id
           }}
