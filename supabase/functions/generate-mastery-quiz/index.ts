@@ -119,9 +119,9 @@ Format de sortie JSON ATTENDU :
 {
   "questions": [
     {
-      "question": "L'intitulé de la question ?",
+      "q": "L'intitulé de la question ?",
       "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
-      "correctAnswer": 0,
+      "correct": 0,
       "explanation": "Courte explication de la réponse."
     }
   ]
@@ -154,20 +154,23 @@ Règles :
     console.log("📥 AI Response Raw Content received.");
     
     // 3. Parse and Validate JSON
-    let questions;
+    let quizDataObject;
     try {
       const parsed = JSON.parse(rawContent);
-      questions = parsed.questions || parsed; 
-      
-      if (!Array.isArray(questions)) {
-        throw new Error("Parsed content is not an array of questions");
+      // Garantir que quiz_data contient une clé 'questions'
+      if (Array.isArray(parsed)) {
+        quizDataObject = { questions: parsed };
+      } else if (parsed && Array.isArray(parsed.questions)) {
+        quizDataObject = parsed;
+      } else {
+        throw new Error("Parsed content is not a valid quiz structure");
       }
     } catch (e: any) {
       console.error("❌ JSON Parse Error:", e.message, "Raw Content:", rawContent);
       throw new Error("Failed to parse AI generated quiz structure.");
     }
 
-    console.log(`✅ Successfully generated ${questions.length} questions.`);
+    console.log(`✅ Successfully generated ${quizDataObject.questions.length} questions.`);
 
     // 4. Background Persistence & Notifications (If request_id is present)
     if (request_id) {
@@ -177,7 +180,7 @@ Règles :
       const { data: requestData, error: updateError } = await supabase
         .from('mastery_requests')
         .update({
-          quiz_data: questions,
+          quiz_data: quizDataObject,
           status: 'approved' // Ensure it's approved after quiz generation
         })
         .eq('id', request_id)
@@ -214,7 +217,7 @@ Règles :
       }
     }
 
-    return new Response(JSON.stringify(questions), {
+    return new Response(JSON.stringify(quizDataObject), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

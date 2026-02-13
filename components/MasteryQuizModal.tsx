@@ -31,12 +31,25 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const questions = quizData?.questions || [
-    // Fallback Mock Questions if quizData is empty (demo purposes)
-    { q: "Quel est l'objectif principal de cette procédure ?", options: ["Option A", "Option B", "Option C", "Option D"], correct: 0 },
-    { q: "Quelle est la première étape critique ?", options: ["Étape 1", "Étape 2", "Étape 3", "Étape 4"], correct: 1 },
-    // Repeat for 10 questions...
-  ];
+  // Normalisation des données du quiz (supporte tableau direct, objet {questions: []} et noms de clés variés)
+  const questions = React.useMemo(() => {
+    let rawQuestions = [];
+    
+    if (Array.isArray(quizData)) {
+      rawQuestions = quizData;
+    } else if (quizData?.questions && Array.isArray(quizData.questions)) {
+      rawQuestions = quizData.questions;
+    } else {
+      console.warn("MasteryQuizModal: Format de données invalide ou vide.", quizData);
+      return [];
+    }
+
+    return rawQuestions.map((item: any) => ({
+      q: item.q || item.question || "Question manquante",
+      options: Array.isArray(item.options) ? item.options : ["Option A", "Option B", "Option C", "Option D"],
+      correct: typeof item.correct === 'number' ? item.correct : (typeof item.correctAnswer === 'number' ? item.correctAnswer : 0)
+    }));
+  }, [quizData]);
 
   useEffect(() => {
     if (isOpen && !isFinished) {
