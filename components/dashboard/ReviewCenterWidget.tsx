@@ -52,22 +52,24 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
             <InfoTooltip text="Clic Droit pour marquer comme Non Lu/Lu." />
           </h3>
         </div>
-        <div className="text-right flex flex-col items-end gap-1">
+        <div className="flex items-center gap-4">
           <span className={`text-[10px] font-bold uppercase tracking-widest ${alertCount > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
-            {alertCount} alertes non lues
+            {alertCount} alertes
           </span>
           {alertCount > 0 && onMarkAllRead && (
             <button 
               onClick={(e) => { e.stopPropagation(); onMarkAllRead(); }}
-              className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 underline underline-offset-2 transition-colors"
+              className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 group"
+              title="Tout marquer comme lu"
+              aria-label="Tout marquer comme lu"
             >
-              Tout marquer comme lu
+              <i className="fa-solid fa-check-double text-xs group-hover:scale-110 transition-transform"></i>
             </button>
           )}
         </div>
       </div>
 
-      <div className="space-y-2 flex-1 overflow-y-auto pr-1 max-h-[400px] scrollbar-thin">
+      <div className="space-y-2 flex-1 overflow-y-auto pr-1 max-h-[600px] scrollbar-thin">
         {(() => {
           // 1. Unify items
           const allItems = [

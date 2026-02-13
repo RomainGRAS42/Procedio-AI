@@ -38,7 +38,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
           <i className={`fa-solid fa-rotate-right ${loadingActivities ? 'animate-spin text-indigo-500' : ''}`}></i>
         </button>
       </div>
-      <div className="space-y-2 flex-1 overflow-y-auto pr-1 max-h-[400px] scrollbar-thin">
+      <div className="space-y-2 flex-1 overflow-y-auto pr-1 max-h-[600px] scrollbar-thin">
         {activities.map((act) => (
           <div key={act.id} className="flex gap-3 items-start p-3 bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-md rounded-2xl transition-all group">
             <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform shadow-sm shadow-indigo-200"></div>
