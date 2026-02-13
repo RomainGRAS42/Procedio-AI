@@ -25,12 +25,12 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
             <i className={`fa-solid ${stat.icon}`}></i>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-baseline gap-2 mb-0.5">
               <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</p>
+              <p className="text-xs font-bold text-slate-500 truncate">{stat.desc}</p>
               <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} />
             </div>
-            <p className="text-xs font-bold text-slate-500 mb-0.5">{stat.desc}</p>
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] truncate">{stat.label}</p>
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{stat.label}</p>
           </div>
         </div>
       ))}
