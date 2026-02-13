@@ -1619,9 +1619,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 .toUpperCase()}
             </p>
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-[0.9]">
-                Bonjour, <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">{user.firstName}</span>.
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+                Bonjour, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">{user.firstName}</span>.
               </h1>
               
               <div className="flex items-center gap-4">
