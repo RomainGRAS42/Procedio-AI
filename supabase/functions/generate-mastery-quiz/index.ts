@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
             role: "system",
             content: `Tu es un expert en formation technique et pédagogie. 
 Ta mission est de créer un examen de validation des acquis basé EXCLUSIVEMENT sur le texte fourni.
-Génère 5 questions à choix multiples (QCM).
+Génère 10 questions à choix multiples (QCM).
 
 Format de sortie JSON ATTENDU :
 {
