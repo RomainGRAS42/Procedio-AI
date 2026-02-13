@@ -18,10 +18,15 @@ Deno.serve(async (req) => {
     console.log(`📥 Received ${req.method} request`);
     
     let procedure_id;
+    let request_id;
+    let manager_name = "Le Manager";
+    
     try {
       const body = await req.json();
       procedure_id = body.procedure_id;
-      console.log("📦 Parsed Procedure ID:", procedure_id);
+      request_id = body.request_id;
+      manager_name = body.manager_name || manager_name;
+      console.log("📦 Parsed Procedure ID:", procedure_id, "Request ID:", request_id);
     } catch (e: any) {
       console.error("❌ Failed to parse request JSON body:", e.message);
       return new Response(JSON.stringify({ error: "Invalid JSON body", details: e.message }), {
@@ -65,31 +70,37 @@ Deno.serve(async (req) => {
     }
 
     let fullText = "";
+    let procedureTitle = "Procédure";
+
+    // Try to get procedure title regardless of content availability
+    const { data: procedureData } = await supabase
+      .from("procedures")
+      .select("title, category")
+      .eq("uuid", procedure_id)
+      .single();
+    
+    if (procedureData) {
+      procedureTitle = procedureData.title;
+    }
+
     if (documents && documents.length > 0) {
       fullText = documents.map(d => d.content).join("\n\n");
       console.log(`📄 Retrieved ${fullText.length} characters of context.`);
-    } else {
+    } else if (procedureData) {
       console.warn(`⚠️ No documents found. Falling back to procedure metadata.`);
-      const { data: procedure, error: procError } = await supabase
-        .from("procedures")
-        .select("title, category")
-        .eq("uuid", procedure_id)
-        .single();
-      
-      if (procError || !procedure) {
-        console.error("❌ Fallback failed. Procedure not found:", procError);
-        return new Response(JSON.stringify({ error: "Procedure not found and no document content available." }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      fullText = `Titre: ${procedure.title}\nCatégorie: ${procedure.category}`;
-      console.log(`📄 Using procedure metadata as fallback: "${procedure.title}"`);
+      fullText = `Titre: ${procedureData.title}\nCatégorie: ${procedureData.category}`;
+      console.log(`📄 Using procedure metadata as fallback: "${procedureData.title}"`);
+    } else {
+      console.error("❌ Procedure not found.");
+      return new Response(JSON.stringify({ error: "Procedure not found." }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // 2. Call Mistral AI to Generate Quiz
     console.log("🧠 Requesting Mistral AI...");
-    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    const mistralResponse = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -132,13 +143,13 @@ Règles :
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("❌ Mistral API Error:", response.status, errText);
-      throw new Error(`AI Provider Error (${response.status})`);
+    if (!mistralResponse.ok) {
+      const errText = await mistralResponse.text();
+      console.error("❌ Mistral API Error:", mistralResponse.status, errText);
+      throw new Error(`AI Provider Error (${mistralResponse.status})`);
     }
 
-    const aiData = await response.json();
+    const aiData = await mistralResponse.json();
     const rawContent = aiData.choices[0].message.content;
     console.log("📥 AI Response Raw Content received.");
     
@@ -157,6 +168,51 @@ Règles :
     }
 
     console.log(`✅ Successfully generated ${questions.length} questions.`);
+
+    // 4. Background Persistence & Notifications (If request_id is present)
+    if (request_id) {
+      console.log(`💾 Persisting data for request: ${request_id}`);
+      
+      // Update the mastery request
+      const { data: requestData, error: updateError } = await supabase
+        .from('mastery_requests')
+        .update({
+          quiz_data: questions,
+          status: 'approved' // Ensure it's approved after quiz generation
+        })
+        .eq('id', request_id)
+        .select(`
+          user_id,
+          user_profiles:user_id (first_name)
+        `)
+        .single();
+      
+      if (updateError) {
+        console.error("❌ Failed to update mastery_requests:", updateError);
+      } else if (requestData) {
+        const technicianName = requestData.user_profiles?.first_name || "le technicien";
+        
+        // Activity Log for Manager
+        // Note: we don't have manager_id here easily without passing it, but let's assume request_id contains context or we use service role.
+        await supabase.from("notes").insert({
+          user_id: requestData.user_id, // For log feed, we can associate with technician or a manager id if passed.
+          title: `LOG_MASTERY_APPROVED_${request_id}`,
+          content: `L'examen pour "${procedureTitle}" demandé par ${technicianName} a été généré avec succès par l'IA.`,
+          is_locked: false
+        }).catch((e: any) => console.error("❌ Note log error:", e.message));
+
+        // Notification for the Technician
+        await supabase.from("notes").insert({
+          user_id: requestData.user_id,
+          title: `MASTERY_APPROVED_${request_id}`,
+          content: `Bonne nouvelle ! Ton examen pour "${procedureTitle}" est prêt. Clique pour le lancer !`,
+          is_locked: false,
+          viewed: false
+        }).catch((e: any) => console.error("❌ Note notif error:", e.message));
+        
+        console.log("🔔 Notifications pushed to technicians.");
+      }
+    }
 
     return new Response(JSON.stringify(questions), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

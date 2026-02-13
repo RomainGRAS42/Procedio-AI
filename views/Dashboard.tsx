@@ -708,58 +708,36 @@ const Dashboard: React.FC<DashboardProps> = ({
       const request = masteryClaims.find(c => c.id === requestId);
       if (!request) return;
 
-      // 1. Initial Update (Optimistic UI)
-      setGeneratingExamId(requestId);
-      setToast({ message: "Génération de l'examen par l'IA en cours...", type: "info" });
-      
       const procedureId = Array.isArray(request.procedures) ? request.procedures[0]?.uuid : request.procedures?.uuid;
-      console.log("🚀 Lancement génération IA pour Procedure ID:", procedureId, "Request:", request);
+      if (!procedureId) throw new Error("ID de procédure introuvable.");
 
-      if (!procedureId) {
-        throw new Error("ID de procédure introuvable dans la requête.");
-      }
+      // 1. Instant UI Feedback (Optimistic)
+      setGeneratingExamId(requestId);
+      setToast({ message: "Lancement de la génération IA en arrière-plan...", type: "info" });
 
-      const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-mastery-quiz', {
-        body: { procedure_id: procedureId }
-      });
-
-      if (quizError) {
-        setGeneratingExamId(null);
-        console.error("❌ AI Generation Error Raw:", quizError);
-        console.error("❌ AI Generation Error Body:", await quizError.context?.json?.().catch(() => "No JSON body"));
-        throw new Error("Erreur lors de la génération de l'examen par l'IA.");
-      }
-
-      // 2. Update request with approved status and generated quiz
-      const { error: updateError } = await supabase
+      // 2. Pre-approve in DB immediately to free up the Manager
+      const { error: preUpdateError } = await supabase
         .from('mastery_requests')
-        .update({
-          status: 'approved',
-          quiz_data: quizData
-        })
+        .update({ status: 'approved' })
         .eq('id', requestId);
 
-      if (updateError) throw updateError;
+      if (preUpdateError) throw preUpdateError;
 
-      setToast({ message: "Examen généré et envoyé au technicien !", type: "success" });
-      fetchMasteryClaims();
+      // 3. UI Success - Manager is done
+      setToast({ message: "Demande approuvée ! L'examen sera prêt dans quelques instants.", type: "success" });
       setGeneratingExamId(null);
-      
-      // Activity Log (For Activity Feed)
-      await supabase.from("notes").insert({
-        user_id: user.id,
-        title: `LOG_MASTERY_APPROVED_${requestId}`,
-        content: `Manager ${user.firstName} a approuvé la demande de maîtrise de ${request?.user_profiles?.first_name} sur "${request?.procedures?.title}". L'examen a été généré dynamiquement par l'IA.`,
-        is_locked: false
-      });
+      fetchMasteryClaims(); // Refresh local list
 
-      // Notification for the Technician
-      await supabase.from("notes").insert({
-        user_id: request.user_id, // TARGET THE TECHNICIAN
-        title: `MASTERY_APPROVED_${requestId}`,
-        content: `Bonne nouvelle ! Ton examen pour "${request?.procedures?.title}" est prêt. Clique pour le lancer !`,
-        is_locked: false,
-        viewed: false
+      // 4. Fire and Forget Edge Function (Background)
+      supabase.functions.invoke('generate-mastery-quiz', {
+        body: { 
+          procedure_id: procedureId, 
+          request_id: requestId,
+          manager_name: user.firstName
+        }
+      }).then(({ error }) => {
+        if (error) console.error("❌ Background AI Generation Error:", error);
+        else console.log("✅ Background AI Generation Finished.");
       });
 
     } catch (err: any) {
@@ -867,15 +845,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       setLoadingActivities(false);
     }
   };
-
   // Real-time Mission Sync
   useEffect(() => {
+    if (!user.id) return;
+
     // Manager listens to ALL missions, Tech listens only to theirs/open ones
     const filter = user.role === UserRole.MANAGER 
       ? undefined 
       : `assigned_to=eq.${user.id}`;
 
-    const channel = supabase
+    const missionChannel = supabase
       .channel('mission_updates')
       .on(
         'postgres_changes',
@@ -883,28 +862,23 @@ const Dashboard: React.FC<DashboardProps> = ({
           event: 'UPDATE',
           schema: 'public',
           table: 'missions',
-          filter: filter // Manager gets global updates, Tech gets personal updates
+          filter: filter
         },
         (payload) => {
           console.log("Realtime Mission Update:", payload);
           const newMission = payload.new as Mission;
           
           setActiveMissions((prev) => {
-            // If mission is completed and we're not manager viewing history, remove it
             if (newMission.status === 'completed' && user.role !== UserRole.MANAGER) {
               return prev.filter(m => m.id !== newMission.id);
             }
-            // Update existing or add if matches criteria (for Manager)
             const exists = prev.find(m => m.id === newMission.id);
             if (exists) {
               return prev.map((m) => m.id === newMission.id ? { ...m, status: newMission.status } : m);
             }
-            // If it's a new mission for the feed (e.g. just assigned), we might want to fetch it or ignore
-            // For simple status sync, updating existing is enough.
             return prev;
           });
           
-          // Also update cache
           const currentCache = cacheStore.get('dash_active_missions') || [];
           const updatedCache = currentCache.map((m: Mission) => m.id === newMission.id ? { ...m, status: newMission.status } : m);
           cacheStore.set('dash_active_missions', updatedCache);
@@ -913,7 +887,41 @@ const Dashboard: React.FC<DashboardProps> = ({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(missionChannel);
+    };
+  }, [user.id, user.role]);
+
+  // Real-time Mastery Request Sync (Technician & Manager)
+  useEffect(() => {
+    if (!user.id) return;
+
+    const masteryChannel = supabase
+      .channel('mastery_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for all changes (UPDATE status/quiz_data)
+          schema: 'public',
+          table: 'mastery_requests',
+        },
+        (payload) => {
+          console.log("Realtime Mastery Update:", payload);
+          if (user.role === UserRole.MANAGER) {
+            fetchMasteryClaims();
+            fetchActivities(); 
+          } else {
+            const newRequest = payload.new as any;
+            if (newRequest.user_id === user.id && newRequest.status === 'approved' && newRequest.quiz_data) {
+              fetchApprovedExams();
+              setToast({ message: "Ton examen de maîtrise est prêt !", type: "info" });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(masteryChannel);
     };
   }, [user.id, user.role]);
 
