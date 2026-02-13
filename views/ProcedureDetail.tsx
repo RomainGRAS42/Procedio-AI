@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Procedure, User } from "../types";
+import { Procedure, User, UserRole } from "../types";
 import { supabase } from "../lib/supabase";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -1020,65 +1020,69 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             </button>
 
             {/* Mastery Button Workflow */}
-            {masteryRequest?.status === 'approved' ? (
-              <button
-                onClick={() => setIsMasteryModalOpen(true)}
-                className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce"
-              >
-                <i className="fa-solid fa-graduation-cap"></i>
-                <span>Lancer l'Examen</span>
-              </button>
-            ) : masteryRequest?.status === 'pending' ? (
-              <div className="px-4 py-3 h-10 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-clock animate-pulse"></i>
-                <span>Examen en attente</span>
-              </div>
-            ) : masteryRequest?.status === 'completed' ? (
-              (() => {
-                const score = masteryRequest.score || 0;
-                const isSuccess = score >= 70;
-                const completedAt = new Date(masteryRequest.completed_at || masteryRequest.created_at);
-                const daysSinceCompletion = (new Date().getTime() - completedAt.getTime()) / (1000 * 3600 * 24);
-                const canRetry = !isSuccess && daysSinceCompletion >= 14;
-                const retryDate = new Date(completedAt);
-                retryDate.setDate(retryDate.getDate() + 14);
-
-                if (canRetry) {
-                   return (
-                    <button
-                      onClick={handleRequestMastery}
-                      className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
-                      title="Vous pouvez retenter votre chance !"
-                    >
-                      <i className="fa-solid fa-rotate-right"></i>
-                      <span>Retenter l'examen</span>
-                    </button>
-                   );
-                }
-
-                return (
-                  <div className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                    isSuccess
-                      ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
-                      : "bg-rose-50 text-rose-600 border-rose-100"
-                  }`}>
-                    <i className={`fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-lock'}`}></i>
-                    <span>
-                      {isSuccess
-                        ? `Maîtrise validée (${score}%)` 
-                        : `Réessai possible le ${retryDate.toLocaleDateString()}`}
-                    </span>
+            {user.role !== UserRole.MANAGER && (
+              <>
+                {masteryRequest?.status === 'approved' ? (
+                  <button
+                    onClick={() => setIsMasteryModalOpen(true)}
+                    className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce"
+                  >
+                    <i className="fa-solid fa-graduation-cap"></i>
+                    <span>Lancer l'Examen</span>
+                  </button>
+                ) : masteryRequest?.status === 'pending' ? (
+                  <div className="px-4 py-3 h-10 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fa-solid fa-clock animate-pulse"></i>
+                    <span>Examen en attente</span>
                   </div>
-                );
-              })()
-            ) : (
-              <button
-                onClick={handleRequestMastery}
-                className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
-                title="Demander à valider la maîtrise sur cette procédure">
-                <i className="fa-solid fa-certificate"></i>
-                <span className="hidden xl:inline">Demander Maîtrise</span>
-              </button>
+                ) : masteryRequest?.status === 'completed' ? (
+                  (() => {
+                    const score = masteryRequest.score || 0;
+                    const isSuccess = score >= 70;
+                    const completedAt = new Date(masteryRequest.completed_at || masteryRequest.created_at);
+                    const daysSinceCompletion = (new Date().getTime() - completedAt.getTime()) / (1000 * 3600 * 24);
+                    const canRetry = !isSuccess && daysSinceCompletion >= 14;
+                    const retryDate = new Date(completedAt);
+                    retryDate.setDate(retryDate.getDate() + 14);
+
+                    if (canRetry) {
+                      return (
+                        <button
+                          onClick={handleRequestMastery}
+                          className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
+                          title="Vous pouvez retenter votre chance !"
+                        >
+                          <i className="fa-solid fa-rotate-right"></i>
+                          <span>Retenter l'examen</span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <div className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
+                        isSuccess
+                          ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
+                          : "bg-rose-50 text-rose-600 border-rose-100"
+                      }`}>
+                        <i className={`fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-lock'}`}></i>
+                        <span>
+                          {isSuccess
+                            ? `Maîtrise validée (${score}%)` 
+                            : `Réessai possible le ${retryDate.toLocaleDateString()}`}
+                        </span>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <button
+                    onClick={handleRequestMastery}
+                    className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
+                    title="Demander à valider la maîtrise sur cette procédure">
+                    <i className="fa-solid fa-certificate"></i>
+                    <span className="hidden xl:inline">Demander Maîtrise</span>
+                  </button>
+                )}
+              </>
             )}
 
             {/* Suggestion Button */}
