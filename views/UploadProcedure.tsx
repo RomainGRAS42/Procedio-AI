@@ -13,7 +13,6 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   const [uploadMode, setUploadMode] = useState<'file' | 'folder' | 'sharepoint'>('file');
   const [sharepointUrl, setSharepointUrl] = useState('');
   const [isSharepointLoading, setIsSharepointLoading] = useState(false);
-  const [showFolderWarning, setShowFolderWarning] = useState(false);
   const [categoryMode, setCategoryMode] = useState<'existing' | 'new'>('existing');
   const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
@@ -42,20 +41,8 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   const folderInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFolderClick = (e: React.MouseEvent) => {
-    if (!folderFiles.length) {
-      e.preventDefault();
-      setShowFolderWarning(true);
-    }
-  };
-
-  const triggerFolderPicker = () => {
-    // We close the modal first
-    setShowFolderWarning(false);
-    // Then we trigger the picker after a tiny delay to ensure the browser 
-    // doesn't block it due to the modal disappearing
-    setTimeout(() => {
-      folderInputRef.current?.click();
-    }, 100);
+    // Direct click - let the browser handle the folder picker
+    folderInputRef.current?.click();
   };
 
   const handlePublish = async () => {
@@ -359,57 +346,6 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
         </div>
       </div>
 
-      {showFolderWarning && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-[3rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Branded background effect */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-60"></div>
-            
-            <div className="relative z-10 space-y-8">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl shadow-xl shadow-indigo-100">
-                  <i className="fa-solid fa-shield-halved"></i>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">Accès Sécurisé</h3>
-                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-1">Protocole d'importation Procedio</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Vous allez importer un dossier complet. Pour des raisons de sécurité, votre navigateur va vous demander de confirmer l'accès à vos fichiers <span className="text-indigo-600 font-bold">via la plateforme sécurisée Procedio</span>.
-                </p>
-                
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                    <i className="fa-solid fa-fingerprint"></i>
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-bold leading-normal">
-                    L'indexation Procedio est 100% sécurisée. Aucun fichier n'est stocké sans chiffrement de bout en bout.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 pt-4">
-                <button 
-                  onClick={triggerFolderPicker}
-                  className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
-                >
-                  Continuer vers l'import
-                  <i className="fa-solid fa-arrow-right"></i>
-                </button>
-                <button 
-                  onClick={() => setShowFolderWarning(false)}
-                  className="w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  Plus tard
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
