@@ -145,7 +145,14 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         throw error;
       }
 
-      console.log('✅ Delete successful, refreshing list...');
+      // CRITICAL: Verify that rows were actually deleted
+      if (!data || data.length === 0) {
+        console.error('⚠️ WARNING: DELETE query succeeded but 0 rows were deleted!');
+        console.error('This usually means RLS (Row Level Security) is blocking the delete.');
+        throw new Error('Aucune ligne supprimée - vérifiez les permissions RLS');
+      }
+
+      console.log(`✅ Delete successful - ${data.length} row(s) deleted`);
 
       // Close modal
       setShowDeleteConfirm(false);
