@@ -527,6 +527,14 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                       {/* Delete Button */}
                       <button 
                         onClick={async () => {
+                          // Confirmation dialog
+                          const confirmed = window.confirm(
+                            `⚠️ Supprimer définitivement l'opportunité "${opp.term}" ?\n\n` +
+                            `Cette action est irréversible et supprimera toutes les données associées.`
+                          );
+                          
+                          if (!confirmed) return;
+                          
                           try {
                             // Permanently delete from database
                             await supabase
