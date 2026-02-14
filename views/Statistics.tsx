@@ -118,38 +118,47 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     if (!opportunityToDelete) return;
 
     try {
-      console.log('Deleting opportunity:', opportunityToDelete.term);
+      console.log('🗑️ Starting deletion for:', opportunityToDelete.term);
+      console.log('Current opportunities list:', missedOpportunities);
       
       // Optimistic UI update - remove from list immediately
       const updatedList = missedOpportunities.filter(opp => opp.term !== opportunityToDelete.term);
+      console.log('Updated list after filter:', updatedList);
       setMissedOpportunities(updatedList);
       
       // CRITICAL: Update cache to prevent restoration
       cacheStore.set('stats_missed', updatedList);
+      console.log('Cache updated');
 
       // Permanently delete from database
-      const { error } = await supabase
+      console.log('Executing DELETE query for term:', opportunityToDelete.term);
+      const { data, error, count } = await supabase
         .from('search_opportunities')
         .delete()
-        .eq('term', opportunityToDelete.term);
+        .eq('term', opportunityToDelete.term)
+        .select(); // Add select to see what was deleted
+
+      console.log('DELETE result:', { data, error, count, deletedRows: data?.length });
 
       if (error) {
-        console.error('Supabase delete error:', error);
+        console.error('❌ Supabase delete error:', error);
         throw error;
       }
 
-      console.log('Delete successful, refreshing list...');
+      console.log('✅ Delete successful, refreshing list...');
 
       // Close modal
       setShowDeleteConfirm(false);
       setOpportunityToDelete(null);
 
-      // Refresh the list to ensure consistency
-      await fetchMissedOpportunities();
+      // DON'T refresh - we already have the correct state from optimistic update
+      // If we refresh, it might reload the item if delete failed
+      // await fetchMissedOpportunities();
+      // console.log('Fetch complete, new list:', missedOpportunities);
       
       setToast({ message: 'Opportunité supprimée définitivement', type: 'success' });
     } catch (error) {
-      console.error('Error deleting opportunity:', error);
+      console.error('❌ Error deleting opportunity:', error);
       setToast({ message: 'Erreur lors de la suppression', type: 'error' });
       
       // Revert optimistic update on error
