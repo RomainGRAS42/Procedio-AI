@@ -34,18 +34,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       let finalProcedures: Procedure[] = [];
 
       try {
-        // 0. LOG SEARCH QUERY (GLOBAL)
-        if (searchTerm.length > 2) {
-           await supabase.from('notes').insert({
-             user_id: user.id,
-             title: `LOG_SEARCH_${searchTerm.toUpperCase()}`,
-             content: `Recherche effectuée par ${user.firstName}`,
-             tags: ['system_log', 'search_query'],
-             status: 'private',
-             category: 'general'
-           });
-        }
-
         // 1. RECHERCHE DIRECTE SUPABASE (MATCH EXACT/PARTIEL)
         const { data: dbMatches, error: dbError } = await supabase
           .from('procedures')
@@ -72,22 +60,18 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           
           setResults(finalProcedures);
           setLoading(false);
-
-          // Log success for KPI volume
-          await supabase.from('notes').insert({
-            user_id: user.id,
-            title: `LOG_SEARCH_SUCCESS_${searchTerm.trim().toUpperCase()}`,
-            content: `Recherche fructueuse (DB) pour "${searchTerm}".`,
-            tags: ['system_log', 'search_success'],
-            status: 'private',
-            category: 'general'
-          });
           successLogged = true;
           return; // Sortie anticipée si match direct
         }
 
-        // 2. FALLBACK SÉMANTIQUE (Edge Function interne)
-        console.log("🤖 Fallback: Recherche via Edge Function pour:", searchTerm);
+        // 2. FALLBACK SÉMANTIQUE (Edge Function interne - RAG)
+        // Anti-Bruit: Si le terme est trop court, on évite le sémantique pour ne pas halluciner
+        if (searchTerm.trim().length <= 3) {
+          console.log("⚠️ Terme trop court pour la recherche sémantique, passage direct aux opportunités.");
+          return;
+        }
+
+        console.log("🤖 Fallback Sémantique: Appel Edge Function pour:", searchTerm);
         try {
           const { data, error: functionError } = await supabase.functions.invoke('copilot-assistant', {
             body: { 
@@ -99,10 +83,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
           if (functionError) throw functionError;
 
+          // Si l'IA renvoie 'uncertain', on ne traite pas cela comme un succès
+          if (data.type === 'uncertain') {
+            console.log("ℹ️ IA incertaine pour ce terme.");
+            return;
+          }
+
           let semanticProcedures: Procedure[] = [];
 
-          // Mapping similaire à ExpertAIModal pour récupérer les vrais objets Procedure
+          // Mapping Expert (RAG de haute confiance)
           if (data.type === 'expert' && data.source) {
+            // Dans ce mode, l'IA a trouvé une source très proche (score > 0.82)
             const { data: proc } = await supabase
               .from('procedures')
               .select('*')
@@ -124,7 +115,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             }
           }
 
+          // Mapping Explorer (RAG de confiance moyenne - 0.45+)
           if (data.type === 'explorer' && data.groupedSuggestions) {
+            // Pour limiter les hallucinations sur des mots comme "kool", 
+            // on pourrait filtrer par score côté client ici si nécessaire.
             const titles = data.groupedSuggestions.map((s: any) => s.title);
             const { data: procs } = await supabase
               .from('procedures')
@@ -156,16 +150,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             setResults(finalProcedures);
             cacheStore.set(`search_${searchTerm}`, finalProcedures);
             successLogged = true;
-
-            // Log success for KPI volume
-            await supabase.from('notes').insert({
-              user_id: user.id,
-              title: `LOG_SEARCH_SUCCESS_${searchTerm.trim().toUpperCase()}`,
-              content: `Recherche fructueuse (IA Interne) pour "${searchTerm}".`,
-              tags: ['system_log', 'search_success'],
-              status: 'private',
-              category: 'general'
-            });
           }
         } catch (funcErr) {
           console.error("❌ Fallback Edge Function Failed:", funcErr);
@@ -174,10 +158,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       } catch (err) {
         console.error("❌ Global Search error:", err);
       } finally {
-        // 3. LOG SEARCH FAILURE / OPPORTUNITY
+        // 3. LOG SEARCH OPPORTUNITY (Échec garanti si pas de résultats)
         if (!successLogged && finalProcedures.length === 0 && searchTerm.length > 2) {
            const normalizedTerm = searchTerm.trim();
-           console.log("⚙️ Log Search Failure for:", normalizedTerm);
+           console.log("⚙️ Tentative de log Search Opportunity pour:", normalizedTerm);
            
            try {
               const { data: existingOp } = await supabase
@@ -188,6 +172,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 .maybeSingle();
 
               if (existingOp) {
+                console.log("♻️ Mise à jour d'une opportunité existante");
                 await supabase
                   .from('search_opportunities')
                   .update({ 
@@ -196,7 +181,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   })
                   .eq('id', existingOp.id);
               } else {
-                await supabase
+                console.log("🆕 Création d'une nouvelle opportunité");
+                const { error: insertErr } = await supabase
                   .from('search_opportunities')
                   .insert({
                     term: normalizedTerm,
@@ -204,19 +190,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     status: 'pending',
                     last_searched_at: new Date().toISOString()
                   });
+                if (insertErr) throw insertErr;
+                console.log("✅ Opportunité créée avec succès !");
               }
-
-              // Audit Note
-              await supabase.from('notes').insert({
-                user_id: user.id,
-                title: `LOG_SEARCH_FAIL_${normalizedTerm.toUpperCase()}`,
-                content: `Échec de recherche pour "${normalizedTerm}" (Interne).`,
-                tags: ['system_log', 'search_fail'],
-                status: 'private',
-                category: 'general'
-              });
            } catch (dbLogErr) {
-              console.error("❌ Error logging to Supabase:", dbLogErr);
+              console.error("❌ Critical RLS/Database Error for search_opportunities:", dbLogErr);
            }
         }
         setLoading(false);
@@ -236,7 +214,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         </button>
         <div>
           <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2">
-            Moteur de Recherche IA Interne
+            Moteur de Recherche Intelligence Artificielle
           </p>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">
             Résultats pour <span className="text-indigo-600">"{searchTerm}"</span>
@@ -245,7 +223,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       </section>
 
       {loading ? (
-        <LoadingState message="L'IA décode votre intention..." />
+        <LoadingState message="Contextualisation des procédures..." />
       ) : (
         <section className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
           {results.length > 0 ? (
@@ -286,11 +264,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               </div>
               <h3 className="text-2xl font-black text-slate-800 mb-2">Aucun résultat trouvé</h3>
               <p className="text-slate-400 max-w-md mx-auto mb-8 font-medium">
-                Notre IA n'a trouvé aucune procédure correspondant à "{searchTerm}".
+                Aucune procédure n'est remontée dans le contexte interne pour "{searchTerm}".
                 <br />
                 <span className="text-indigo-500 font-medium block mt-3 text-sm">
-                  <i className="fa-solid fa-check-circle mr-2"></i>
-                  Cette recherche a été enregistrée pour aider à enrichir la base de connaissances.
+                  <i className="fa-solid fa-shield-check mr-2"></i>
+                  Nouveau besoin enregistré dans le plan de connaissances.
                 </span>
               </p>
               <button 
