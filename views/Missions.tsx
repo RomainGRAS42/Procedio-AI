@@ -560,7 +560,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       
       // We assume procedure title is needed or ID is enough.
       // We fetch procedure details first to be safe for the Modal
-      const { data: procData } = await supabase.from('procedures').select('*').eq('id', mission.procedure_id).single();
+      const { data: procData } = await supabase.from('procedures').select('*').eq('uuid', mission.procedure_id).single();
       if (!procData) throw new Error("Procédure introuvable");
       setQuizProcedure(procData);
 
