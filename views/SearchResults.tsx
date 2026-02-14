@@ -28,7 +28,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         return;
       }
 
-      console.log("🔍 SearchResults: Recherche Hybride pour:", searchTerm);
+      console.log("🔍 SearchResults: Recherche Hybride (Interne) pour:", searchTerm);
       setLoading(true);
       let successLogged = false;
       let finalProcedures: Procedure[] = [];
@@ -83,66 +83,92 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             category: 'general'
           });
           successLogged = true;
-          return; // Exit if results found in DB
+          return; // Sortie anticipée si match direct
         }
 
-        // 2. FALLBACK SÉMANTIQUE (WEBHOOK n8n)
-        console.log("🤖 Fallback: Recherche via Webhook pour:", searchTerm);
+        // 2. FALLBACK SÉMANTIQUE (Edge Function interne)
+        console.log("🤖 Fallback: Recherche via Edge Function pour:", searchTerm);
         try {
-          const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              query: searchTerm,
-              user_email: user.email || 'unknown'
-            })
+          const { data, error: functionError } = await supabase.functions.invoke('copilot-assistant', {
+            body: { 
+              question: searchTerm,
+              userName: user.firstName,
+              userId: user.id
+            }
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            const resultData = Array.isArray(data) ? data[0] : data;
-            let webhookProcedures: any[] = [];
+          if (functionError) throw functionError;
+
+          let semanticProcedures: Procedure[] = [];
+
+          // Mapping similaire à ExpertAIModal pour récupérer les vrais objets Procedure
+          if (data.type === 'expert' && data.source) {
+            const { data: proc } = await supabase
+              .from('procedures')
+              .select('*')
+              .ilike('title', `%${data.source}%`)
+              .maybeSingle();
             
-            if (resultData && resultData.results) {
-                webhookProcedures = resultData.results;
+            if (proc) {
+              semanticProcedures.push({
+                id: proc.file_id || proc.uuid,
+                db_id: proc.uuid,
+                file_id: proc.file_id || proc.uuid,
+                title: proc.title,
+                category: proc.Type,
+                fileUrl: proc.file_url,
+                createdAt: proc.created_at,
+                views: proc.views || 0,
+                status: proc.status || 'validated'
+              } as Procedure);
             }
+          }
 
-            finalProcedures = webhookProcedures.map((f: any, index: number) => ({
-              id: f.id || f.uuid || `webhook-${index}`,
-              db_id: f.id || f.uuid,
-              file_id: f.id || f.uuid || `webhook-${index}`,
-              title: f.title || "Sans titre",
-              category: f.category || 'NON CLASSÉ',
-              fileUrl: f.file_url,
-              pinecone_document_id: f.pinecone_document_id,
-              createdAt: new Date().toISOString(),
-              views: 0,
-              status: 'validated'
-            }));
-
-            if (finalProcedures.length > 0) {
-              setResults(finalProcedures);
-              cacheStore.set(`search_${searchTerm}`, finalProcedures);
-              successLogged = true;
-
-              // Log success for KPI volume
-              await supabase.from('notes').insert({
-                user_id: user.id,
-                title: `LOG_SEARCH_SUCCESS_${searchTerm.trim().toUpperCase()}`,
-                content: `Recherche fructueuse (AI) pour "${searchTerm}".`,
-                tags: ['system_log', 'search_success'],
-                status: 'private',
-                category: 'general'
+          if (data.type === 'explorer' && data.groupedSuggestions) {
+            const titles = data.groupedSuggestions.map((s: any) => s.title);
+            const { data: procs } = await supabase
+              .from('procedures')
+              .select('*')
+              .in('title', titles);
+            
+            if (procs) {
+              procs.forEach(p => {
+                 if (!semanticProcedures.find(fp => fp.id === (p.file_id || p.uuid))) {
+                   semanticProcedures.push({
+                     id: p.file_id || p.uuid,
+                     db_id: p.uuid,
+                     file_id: p.file_id || p.uuid,
+                     title: p.title,
+                     category: p.Type,
+                     fileUrl: p.file_url,
+                     createdAt: p.created_at,
+                     views: p.views || 0,
+                     status: p.status || 'validated'
+                   } as Procedure);
+                 }
               });
             }
-          } else {
-            console.warn("⚠️ Webhook response not OK:", response.status);
           }
-        } catch (fetchErr) {
-          console.error("❌ Fallback Webhook Failed (CORS or Network):", fetchErr);
-          // Non-blocking error, allow failure logging below
+
+          finalProcedures = semanticProcedures;
+
+          if (finalProcedures.length > 0) {
+            setResults(finalProcedures);
+            cacheStore.set(`search_${searchTerm}`, finalProcedures);
+            successLogged = true;
+
+            // Log success for KPI volume
+            await supabase.from('notes').insert({
+              user_id: user.id,
+              title: `LOG_SEARCH_SUCCESS_${searchTerm.trim().toUpperCase()}`,
+              content: `Recherche fructueuse (IA Interne) pour "${searchTerm}".`,
+              tags: ['system_log', 'search_success'],
+              status: 'private',
+              category: 'general'
+            });
+          }
+        } catch (funcErr) {
+          console.error("❌ Fallback Edge Function Failed:", funcErr);
         }
 
       } catch (err) {
@@ -154,7 +180,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
            console.log("⚙️ Log Search Failure for:", normalizedTerm);
            
            try {
-              // Check if opportunity already exists
               const { data: existingOp } = await supabase
                 .from('search_opportunities')
                 .select('id, search_count')
@@ -163,7 +188,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 .maybeSingle();
 
               if (existingOp) {
-                console.log("📝 Update existing opportunity:", existingOp.id);
                 await supabase
                   .from('search_opportunities')
                   .update({ 
@@ -172,7 +196,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   })
                   .eq('id', existingOp.id);
               } else {
-                console.log("📝 Create new opportunity:", normalizedTerm);
                 await supabase
                   .from('search_opportunities')
                   .insert({
@@ -183,11 +206,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   });
               }
 
-              // Also log a general search fail note
+              // Audit Note
               await supabase.from('notes').insert({
                 user_id: user.id,
                 title: `LOG_SEARCH_FAIL_${normalizedTerm.toUpperCase()}`,
-                content: `Échec de recherche pour "${normalizedTerm}" (Table search_opportunities mise à jour).`,
+                content: `Échec de recherche pour "${normalizedTerm}" (Interne).`,
                 tags: ['system_log', 'search_fail'],
                 status: 'private',
                 category: 'general'
@@ -203,16 +226,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     performSearch();
   }, [searchTerm, user.id, user.firstName]);
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "N/A";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
   return (
     <div className="space-y-8 animate-slide-up pb-12 px-4 md:px-10 py-8 h-full">
       <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center gap-6">
@@ -223,7 +236,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         </button>
         <div>
           <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2">
-            Moteur de Recherche IA
+            Moteur de Recherche IA Interne
           </p>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">
             Résultats pour <span className="text-indigo-600">"{searchTerm}"</span>
