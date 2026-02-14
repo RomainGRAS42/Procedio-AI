@@ -134,13 +134,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
   const [currentCelebration, setCurrentCelebration] = useState<CelebrationItem | null>(null);
 
-  // État de la vue (Personnel vs Équipe) - Initialisé selon le rôle
-  const [viewMode, setViewMode] = useState<"personal" | "team">(user.role === UserRole.MANAGER ? "team" : "personal");
+  // ViewMode removed
 
-  // Force update if role changes (though unlikely in session)
-  useEffect(() => {
-    setViewMode(user.role === UserRole.MANAGER ? "team" : "personal");
-  }, [user.role]);
 
   // Stats personnelles
   const [personalStats, setPersonalStats] = useState(cacheStore.get('dash_personal_stats') || {
@@ -258,7 +253,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     setCurrentCelebration(null);
   };
   
-  const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
+  const stats = user.role === UserRole.MANAGER ? [
     {
       label: "Succès Recherche",
       value: `${managerKPIs.searchSuccess}%`,
@@ -298,37 +293,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       desc: "Gouvernance manquante",
       tooltipTitle: "Risque de Perte",
       tooltipDesc: "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour)."
-    }
-  ] : user.role === UserRole.MANAGER && viewMode === "personal" ? [
-    {
-      label: "Pilotage & Impact",
-      value: `${personalStats.suggestions + personalStats.notes}`,
-      icon: "fa-rocket",
-      color: "text-orange-600",
-      bg: "bg-orange-50",
-      desc: "Actions managériales",
-      tooltipTitle: "Contribution Manager",
-      tooltipDesc: "Nombre d'annonces, réponses aux suggestions et actions de pilotage effectuées."
-    },
-    {
-      label: "Validation Équipe",
-      value: pendingSuggestions.filter(s => s.status === 'approved').length.toString(),
-      icon: "fa-certificate",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
-      desc: "Suggestions validées",
-      tooltipTitle: "Amélioration continue",
-      tooltipDesc: "Nombre de suggestions de votre équipe que vous avez validées."
-    },
-    {
-      label: "Notes de Terrain",
-      value: personalStats.notes.toString(),
-      icon: "fa-book-open",
-      color: "text-indigo-600",
-      bg: "bg-indigo-50",
-      desc: "Observations partagées",
-      tooltipTitle: "Transmission",
-      tooltipDesc: "Notes et retours partagés avec l'équipe pour améliorer les processus."
     }
   ] : [
     {
@@ -1057,22 +1021,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-             {user.role === UserRole.MANAGER && (
-               <div className="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm mr-4">
-                  <button 
-                    onClick={() => setViewMode("team")}
-                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === "team" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-slate-600"}`}
-                  >
-                    <i className="fa-solid fa-users mr-2"></i> Équipe
-                  </button>
-                  <button 
-                    onClick={() => setViewMode("personal")}
-                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === "personal" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-slate-600"}`}
-                  >
-                    <i className="fa-solid fa-user mr-2"></i> Perso
-                  </button>
-               </div>
-             )}
+             {/* Toggle Removed */}
 
              <button 
               onClick={onUploadClick}
@@ -1101,6 +1050,12 @@ const Dashboard: React.FC<DashboardProps> = ({
           formatDate={(d) => new Date(d).toLocaleDateString()}
         />
 
+        {user.role === UserRole.MANAGER && (
+          <section>
+            <TeamSynergyWidget />
+          </section>
+        )}
+
         <section>
           <StatsSummaryWidget stats={filteredStats} />
         </section>
@@ -1126,9 +1081,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                  onToggleReadStatus={handleToggleReadStatus}
                />
                
-               {user.role === UserRole.MANAGER && viewMode === "team" ? (
-                  <TeamSynergyWidget />
-               ) : (
+               {user.role === UserRole.TECHNICIAN && (
                   <MasteryWidget 
                     personalStats={personalStats} 
                   />
@@ -1137,7 +1090,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                <MissionsWidget 
                  activeMissions={activeMissions}
                  userRole={user.role}
-                 viewMode={viewMode}
+                 viewMode="team"
                  onNavigate={onNavigate}
                  loading={loadingMissions}
                />
@@ -1155,13 +1108,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                <RecentProceduresWidget 
                   recentProcedures={recentProcedures} 
                   userRole={user.role}
-                  viewMode={viewMode}
+                  viewMode="team"
                   onSelectProcedure={onSelectProcedure}
                   onShowHistory={() => onNavigate?.('/history')}
                   formatDate={(d) => new Date(d).toLocaleDateString()}
                />
 
-               {viewMode === "personal" && (
+               {user.role === UserRole.TECHNICIAN && (
                    <BadgesWidget 
                      earnedBadges={earnedBadges} 
                      onNavigate={onNavigate}
