@@ -204,8 +204,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 Notre IA n'a trouvé aucune procédure correspondant à "{searchTerm}".
                 <br />
                 <span className="text-indigo-500 font-medium block mt-3 text-sm">
-                  <i className="fa-solid fa-lightbulb mr-2"></i>
-                  Grâce à cette recherche, nous pourrons identifier et créer les procédures manquantes.
+                  <i className="fa-solid fa-check-circle mr-2"></i>
+                  Cette recherche a été enregistrée pour aider à enrichir la base de connaissances.
                 </span>
               </p>
               <button 

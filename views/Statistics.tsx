@@ -32,7 +32,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   const [loading, setLoading] = useState(!cacheStore.has('stats_health'));
   
   const [healthData, setHealthData] = useState(cacheStore.get('stats_health') || []);
-  const [missedOpportunities, setMissedOpportunities] = useState(cacheStore.get('stats_missed') || []);
   const [skillMapData, setSkillMapData] = useState(cacheStore.get('stats_skill_map') || []);
   const [activityData, setActivityData] = useState(cacheStore.get('stats_activity') || []);
   const [teamLeaderboard, setTeamLeaderboard] = useState(cacheStore.get('stats_leaderboard') || []);
@@ -40,27 +39,17 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   
   const [globalKPIs, setGlobalKPIs] = useState(cacheStore.get('stats_global_kpis') || {
     searchSuccess: 0,
+    searchSuccessRate: 100,
     teamIntensity: 0,
     healthPct: 0,
     contributionPulse: 0,
     redZone: 0,
-    urgentCount: 0,
     totalViews: 0
   });
 
   // Modal State
-  const [modalConfig, setModalConfig] = useState<{ title: string; type: 'urgent' | 'redZone'; items: any[] } | null>(null);
+  const [modalConfig, setModalConfig] = useState<{ title: string; type: 'redZone'; items: any[] } | null>(null);
   const [redZoneList, setRedZoneList] = useState<any[]>([]);
-  const [urgentList, setUrgentList] = useState<any[]>([]);
-  
-  // Mission Modal State
-  const [showMissionModal, setShowMissionModal] = useState(false);
-  const [selectedOpportunity, setSelectedOpportunity] = useState<{ term: string; count: number } | null>(null);
-  const [technicians, setTechnicians] = useState<{ id: string; email: string; first_name: string; last_name: string }[]>([]);
-  
-  // Delete Confirmation Modal State
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [opportunityToDelete, setOpportunityToDelete] = useState<{ term: string; count: number } | null>(null);
 
   useEffect(() => {
     const fetchAllStats = async () => {
@@ -72,7 +61,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       try {
         await Promise.all([
           fetchHealthData(),
-          fetchMissedOpportunities(),
+          fetchSearchSuccessRate(),
           fetchSkillMap(),
           fetchActivityTrends(),
           fetchTeamLeaderboard()
@@ -89,92 +78,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
     if (user.role === UserRole.MANAGER) {
       fetchAllStats();
-      fetchTechnicians();
     }
   }, [user]);
-
-  const fetchTechnicians = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, email, first_name, last_name, role');
-
-      if (error) throw error;
-
-      if (data) {
-        const techList = data.filter(
-          (u) =>
-            u.role &&
-            (u.role.toLowerCase() === 'technicien' || u.role.toLowerCase() === 'technician')
-        );
-        setTechnicians(techList);
-      }
-    } catch (err) {
-      console.error('Error fetching technicians:', err);
-    }
-  };
-
-  const handleDeleteOpportunity = async () => {
-    if (!opportunityToDelete) return;
-
-    try {
-      console.log('🗑️ Starting deletion for:', opportunityToDelete.term);
-      console.log('Current opportunities list:', missedOpportunities);
-      
-      // Optimistic UI update - remove from list immediately
-      const updatedList = missedOpportunities.filter(opp => opp.term !== opportunityToDelete.term);
-      console.log('Updated list after filter:', updatedList);
-      setMissedOpportunities(updatedList);
-      
-      // CRITICAL: Update cache to prevent restoration
-      cacheStore.set('stats_missed', updatedList);
-      console.log('Cache updated');
-
-      // Permanently delete from database
-      console.log('Executing DELETE query for term:', opportunityToDelete.term);
-      const { data, error, count } = await supabase
-        .from('search_opportunities')
-        .delete()
-        .eq('term', opportunityToDelete.term)
-        .select(); // Add select to see what was deleted
-
-      console.log('DELETE result:', { data, error, count, deletedRows: data?.length });
-
-      if (error) {
-        console.error('❌ Supabase delete error:', error);
-        throw error;
-      }
-
-      // CRITICAL: Verify that rows were actually deleted
-      if (!data || data.length === 0) {
-        console.error('⚠️ WARNING: DELETE query succeeded but 0 rows were deleted!');
-        console.error('This usually means RLS (Row Level Security) is blocking the delete.');
-        throw new Error('Aucune ligne supprimée - vérifiez les permissions RLS');
-      }
-
-      console.log(`✅ Delete successful - ${data.length} row(s) deleted`);
-
-      // Close modal
-      setShowDeleteConfirm(false);
-      setOpportunityToDelete(null);
-
-      // DON'T refresh - we already have the correct state from optimistic update
-      // If we refresh, it might reload the item if delete failed
-      // await fetchMissedOpportunities();
-      // console.log('Fetch complete, new list:', missedOpportunities);
-      
-      setToast({ message: 'Opportunité supprimée définitivement', type: 'success' });
-    } catch (error) {
-      console.error('❌ Error deleting opportunity:', error);
-      setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-      
-      // Revert optimistic update on error
-      await fetchMissedOpportunities();
-      
-      setShowDeleteConfirm(false);
-      setOpportunityToDelete(null);
-    }
-  };
 
   const fetchHealthData = async () => {
     try {
@@ -246,53 +151,28 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
   };
 
-  const fetchMissedOpportunities = async () => {
+  const fetchSearchSuccessRate = async () => {
     try {
-      // 1. Fetch pending opportunities count for URGENT KPI
-      const { count: urgentCount, data: opportunities } = await supabase
-        .from('search_opportunities')
-        .select('term, search_count', { count: 'exact' })
-        .eq('status', 'pending')
-        .order('search_count', { ascending: false })
-        .limit(20); // Limit to top 20 for the list
-
-      // 2. Calculate Search Success based on all search logs vs failures
-      const { count: failCount } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_FAIL_%');
-
-      const { count: totalSearch } = await supabase
+      // Count total searches (all LOG_SEARCH_* entries)
+      const { count: totalSearches } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
         .ilike('title', 'LOG_SEARCH_%');
 
-      const successPct = totalSearch && totalSearch > 0 
-        ? Math.round(((totalSearch - (failCount || 0)) / totalSearch) * 100) 
+      // Count failed searches
+      const { count: failedSearches } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .ilike('title', 'LOG_SEARCH_FAIL_%');
+
+      const successRate = totalSearches && totalSearches > 0 
+        ? Math.round(((totalSearches - (failedSearches || 0)) / totalSearches) * 100)
         : 100;
-      
-      setGlobalKPIs(prev => ({ ...prev, searchSuccess: successPct, urgentCount: urgentCount || 0 }));
 
-      if (opportunities) {
-        const mapped = opportunities.slice(0, 6).map((opp: any) => ({
-          term: opp.term,
-          count: opp.search_count,
-          trend: 'stable'
-        }));
-        setMissedOpportunities(mapped);
-        cacheStore.set('stats_missed', mapped);
-
-        // Store full list for modal
-        setUrgentList(opportunities.map((opp: any) => ({
-          label: opp.term,
-          sublabel: `${opp.search_count} recherche(s) échouée(s)`,
-          count: opp.search_count
-        })));
-      }
-      
-      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccess: successPct, urgentCount: urgentCount || 0 });
+      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: successRate }));
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: successRate });
     } catch (err) {
-      console.error("Error fetching missed opportunities:", err);
+      console.error("Error fetching search success rate:", err);
     }
   };
 
@@ -573,82 +453,56 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         )}
 
         {/* CONTENT SWITCH */}
-        {type === 'urgent' && (
-             <div className="space-y-6 animate-fade-in flex-1">
-               {layoutMode === 'focus' && (
-                 <div className="border-b border-rose-100 pb-6 mb-6">
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center gap-3">
-                      <i className="fa-solid fa-triangle-exclamation text-rose-500"></i>
-                      Opportunités (Manquantes)
-                    </h2>
-                    <p className="text-slate-500 text-lg">
-                      Termes recherchés sans succès. <br/><strong>Action :</strong> Créez les procédures manquantes.
-                    </p>
-                 </div>
-               )}
+        {type === 'searchSuccess' && (
+             <div className="space-y-6 animate-fade-in flex-1 flex items-center justify-center">
+               <div className="max-w-md w-full">
+                 {layoutMode === 'focus' && (
+                   <div className="text-center mb-8">
+                     <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center justify-center gap-3">
+                       <i className="fa-solid fa-magnifying-glass-chart text-indigo-500"></i>
+                       Taux de Succès des Recherches
+                     </h2>
+                   </div>
+                 )}
 
-               <div className={`grid gap-4 ${layoutMode === 'focus' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-                 {missedOpportunities.slice(0, layoutMode === 'focus' ? 6 : 4).map((opp, idx) => (
-                   <div key={idx} className="p-5 rounded-[1.5rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group relative overflow-hidden">
-                      {/* Delete Button */}
-                      <button 
-                        onClick={() => {
-                          setOpportunityToDelete(opp);
-                          setShowDeleteConfirm(true);
-                        }}
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white border border-rose-200 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all flex items-center justify-center shadow-sm z-20"
-                        title="Supprimer définitivement cette opportunité"
-                      >
-                        <i className="fa-solid fa-xmark text-xs"></i>
-                      </button>
-
-                      <div className="relative z-10">
-                       <span className="inline-block px-2 py-0.5 rounded-md bg-white border border-rose-200 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-2 shadow-sm">
-                         {opp.count} échecs
-                       </span>
-                       <h3 className="font-black text-slate-900 text-lg capitalize mb-4 leading-tight truncate pr-6">
-                         "{opp.term}"
-                       </h3>
-                       
-                       {/* Dual Action Buttons */}
-                       <div className="grid grid-cols-2 gap-2">
-                         {/* Primary: Create Procedure */}
-                         <button 
-                           onClick={() => navigate('/upload', { 
-                             state: { 
-                               prefillTitle: opp.term 
-                             } 
-                           })}
-                           className="flex items-center justify-center gap-1.5 text-[9px] font-black text-white uppercase tracking-wider bg-gradient-to-r from-indigo-600 to-indigo-700 px-3 py-3 rounded-xl shadow-md hover:from-indigo-700 hover:to-indigo-800 transition-all active:scale-95"
-                         >
-                           <i className="fa-solid fa-plus text-xs"></i>
-                           <span>Créer</span>
-                         </button>
-                         
-                         {/* Secondary: Delegate as Mission */}
-                         <button 
-                           onClick={() => {
-                              setSelectedOpportunity(opp);
-                              setShowMissionModal(true);
-                            }}
-                           className="flex items-center justify-center gap-1.5 text-[9px] font-black text-indigo-600 uppercase tracking-wider bg-white px-3 py-3 rounded-xl border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all active:scale-95"
-                           title="Déléguer la création en mission"
-                         >
-                           <i className="fa-solid fa-paper-plane text-xs"></i>
-                            <span>Déléguer</span>
-                         </button>
-                       </div>
+                 <div className={`p-8 rounded-3xl ${globalKPIs.searchSuccessRate >= 85 ? 'bg-emerald-50/50 border-2 border-emerald-200' : 'bg-amber-50/50 border-2 border-amber-200'} text-center`}>
+                   <div className="mb-6">
+                     <div className="text-6xl font-black mb-2">
+                       {globalKPIs.searchSuccessRate >= 85 ? (
+                         <span className="text-emerald-600">✅ {globalKPIs.searchSuccessRate}%</span>
+                       ) : (
+                         <span className="text-amber-600">⚠️ {globalKPIs.searchSuccessRate}%</span>
+                       )}
                      </div>
                    </div>
-                 ))}
-                 {missedOpportunities.length === 0 && (
-                    <div className="py-10 text-center text-slate-400">
-                       <i className="fa-solid fa-check text-3xl mb-2 text-emerald-500"></i>
-                       <p className="font-bold">Tout est sous contrôle</p>
-                    </div>
-                 )}
+
+                   {globalKPIs.searchSuccessRate >= 85 ? (
+                     <div className="space-y-2">
+                       <p className="text-lg font-bold text-slate-900">Excellent !</p>
+                       <p className="text-slate-600">
+                         Vos procédures répondent à la majorité des besoins de l'équipe.
+                       </p>
+                     </div>
+                   ) : (
+                     <div className="space-y-4">
+                       <p className="text-lg font-bold text-slate-900">Certaines recherches échouent</p>
+                       <p className="text-slate-600">
+                         Pensez à enrichir votre base de connaissances.
+                       </p>
+                       <button
+                         onClick={() => navigate('/upload')}
+                         className="mt-4 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg hover:from-indigo-700 hover:to-indigo-800 transition-all active:scale-95"
+                       >
+                         <i className="fa-solid fa-plus mr-2"></i>
+                         Créer une procédure
+                       </button>
+                     </div>
+                   )}
+                 </div>
                </div>
              </div>
+        )}
+     </div>
         )}
 
         {type === 'reliability' && (

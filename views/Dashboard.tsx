@@ -169,7 +169,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState(cacheStore.get('dash_manager_kpis') || {
-    searchGaps: 0,
+    searchSuccess: 100,
     health: 0,
     usage: 0,
     redZone: 0
@@ -297,14 +297,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const stats = user.role === UserRole.MANAGER && viewMode === "team" ? [
     {
-      label: "Urgent",
-      value: `${managerKPIs.searchGaps}`,
-      icon: "fa-triangle-exclamation",
-      color: "text-rose-600",
-      bg: "bg-rose-50",
-      desc: "Besoins non couverts",
-      tooltipTitle: "Alertes Critiques",
-      tooltipDesc: "Nombre de recherches sans résultat nécessitant une création de contenu immédiate."
+      label: "Succès Recherche",
+      value: `${managerKPIs.searchSuccess}%`,
+      icon: "fa-magnifying-glass-chart",
+      color: managerKPIs.searchSuccess >= 85 ? "text-emerald-600" : "text-amber-600",
+      bg: managerKPIs.searchSuccess >= 85 ? "bg-emerald-50" : "bg-amber-50",
+      desc: "Efficacité des recherches",
+      tooltipTitle: "Taux de Succès",
+      tooltipDesc: "Pourcentage de recherches aboutissant à un résultat."
     },
     {
       label: "Fiabilité",
@@ -580,11 +580,22 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const fetchManagerKPIs = async () => {
     try {
-      // 1. Calculate Search Gaps Count using the new aggregated table
-      const { count: opportunityCount } = await supabase
-        .from('search_opportunities')
+      // 1. Calculate Search Success Rate
+      // Count total searches (all LOG_SEARCH_* entries)
+      const { count: totalSearches } = await supabase
+        .from('notes')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .ilike('title', 'LOG_SEARCH_%');
+
+      // Count failed searches
+      const { count: failedSearches } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .ilike('title', 'LOG_SEARCH_FAIL_%');
+
+      const successRate = totalSearches && totalSearches > 0 
+        ? Math.round(((totalSearches - (failedSearches || 0)) / totalSearches) * 100)
+        : 100;
 
       // 2. Calculate Health % and Usage
       const { data: procs } = await supabase
@@ -612,7 +623,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const redZoneCount = allIds?.filter(p => !referentSet.has(p.uuid)).length || 0;
 
       const kpis = {
-        searchGaps: opportunityCount || 0,
+        searchSuccess: successRate,
         health: healthPct,
         usage: totalViews,
         redZone: redZoneCount
