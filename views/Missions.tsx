@@ -913,47 +913,53 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
         <div className="flex items-center gap-6 shrink-0">
           {/* Action Buttons for List View */}
-          <div className="flex items-center gap-2">
-              {mission.status === "assigned" && mission.assigned_to === user.id && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleStartMission(mission.id);
-                  }}
-                  className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all">
-                  Démarrer
-                </button>
-              )}
-              
-              {mission.status === "in_progress" && 
-               mission.assigned_to === user.id && 
-               !mission.title.startsWith("Devenir Référent") && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCompletingMission(mission);
-                    setReasonText("");
-                  }}
-                  className="px-3 py-1 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all">
-                  Terminer
-                </button>
-              )}
-
-              {(mission.status === "in_progress" || mission.status === "assigned") && 
-               mission.assigned_to === user.id && 
-               mission.title.startsWith("Devenir Référent") && (
-                 <button
+          <div className="flex flex-col items-start min-h-[34px] justify-end">
+             {/* Invisible spacer label to align with "URGENCE" / "STATUT" */}
+             <span className="block text-[8px] font-black text-transparent uppercase tracking-widest mb-0.5 select-none">
+              Action
+            </span>
+            <div className="flex items-center gap-2">
+                {mission.status === "assigned" && mission.assigned_to === user.id && (
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleStartExam(mission);
+                      handleStartMission(mission.id);
                     }}
-                    disabled={loadingQuiz}
-                    className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-sm"
-                 >
-                    {loadingQuiz ? <i className="fa-solid fa-circle-notch fa-spin text-[8px]"></i> : <i className="fa-solid fa-file-signature text-[8px]"></i>}
-                    Examen
-                 </button>
-              )}
+                    className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all">
+                    Démarrer
+                  </button>
+                )}
+                
+                {mission.status === "in_progress" && 
+                mission.assigned_to === user.id && 
+                !mission.title.startsWith("Devenir Référent") && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCompletingMission(mission);
+                      setReasonText("");
+                    }}
+                    className="px-3 py-1 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all">
+                    Terminer
+                  </button>
+                )}
+
+                {(mission.status === "in_progress" || mission.status === "assigned") && 
+                mission.assigned_to === user.id && 
+                mission.title.startsWith("Devenir Référent") && (
+                  <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartExam(mission);
+                      }}
+                      disabled={loadingQuiz}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-sm"
+                  >
+                      {loadingQuiz ? <i className="fa-solid fa-circle-notch fa-spin text-[8px]"></i> : <i className="fa-solid fa-file-signature text-[8px]"></i>}
+                      Examen
+                  </button>
+                )}
+            </div>
           </div>
 
           <div className="hidden md:block">
@@ -1377,6 +1383,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           onClose={() => setSelectedMission(null)}
           onUpdateStatus={handleStatusUpdate}
           setActiveTransfer={setActiveTransfer}
+          onStartQuiz={(mission) => {
+            setSelectedMission(null); // Close modal
+            handleStartExam(mission); // Start exam
+          }}
         />
       )}
 
