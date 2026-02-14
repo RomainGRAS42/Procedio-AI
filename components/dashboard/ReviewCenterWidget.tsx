@@ -49,7 +49,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
             Centre de Pilotage
-            <InfoTooltip text="Clic Droit pour marquer comme Non Lu/Lu." />
+            <InfoTooltip text="Centralise la validation des suggestions et des expertises de l'équipe. Clic droit pour marquer comme Lu/Non lu." />
           </h3>
         </div>
         <div className="flex items-center gap-4">
