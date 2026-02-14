@@ -39,7 +39,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         const { data: dbMatches, error: dbError } = await supabase
           .from('procedures')
           .select('*')
-          .or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`)
+          .or(`title.ilike.%${searchTerm}%,Type.ilike.%${searchTerm}%`)
           .limit(20);
 
         if (dbError) console.error("❌ Database search error:", dbError);
