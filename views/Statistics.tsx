@@ -118,25 +118,41 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     if (!opportunityToDelete) return;
 
     try {
+      console.log('Deleting opportunity:', opportunityToDelete.term);
+      
+      // Optimistic UI update - remove from list immediately
+      setMissedOpportunities(prev => 
+        prev.filter(opp => opp.term !== opportunityToDelete.term)
+      );
+
       // Permanently delete from database
       const { error } = await supabase
         .from('search_opportunities')
         .delete()
         .eq('term', opportunityToDelete.term);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
+
+      console.log('Delete successful, refreshing list...');
 
       // Close modal
       setShowDeleteConfirm(false);
       setOpportunityToDelete(null);
 
-      // Refresh the list to remove from UI
+      // Refresh the list to ensure consistency
       await fetchMissedOpportunities();
       
       setToast({ message: 'Opportunité supprimée définitivement', type: 'success' });
     } catch (error) {
       console.error('Error deleting opportunity:', error);
       setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+      
+      // Revert optimistic update on error
+      await fetchMissedOpportunities();
+      
       setShowDeleteConfirm(false);
       setOpportunityToDelete(null);
     }
