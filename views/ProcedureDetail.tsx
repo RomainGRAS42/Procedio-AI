@@ -1050,13 +1050,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                     </span>
                   </div>
                 )}
-                {/* Badge MAITRISE pour l'utilisateur courant s'il a réussi */}
-                {masteryRequest?.status === 'completed' && (masteryRequest.score || 0) >= 70 && (
-                   <span className="text-[10px] font-black text-white uppercase tracking-widest bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1 rounded-lg shadow-lg shadow-emerald-500/30 flex items-center gap-2 animate-fade-in">
-                    <i className="fa-solid fa-medal text-[9px]"></i>
-                    MAÎTRISE VALIDÉE
-                  </span>
-                )}
+                {/* Badge MAITRISE pour l'utilisateur courant s'il a réussi - SUPPRIMÉ SUR DEMANDE (14/02/2026) */}
               </div>
             </div>
           </div>

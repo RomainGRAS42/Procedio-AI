@@ -26,14 +26,8 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Prepare Expert Fallback Message
-    let expertFallback = "";
-    if (referentName) {
-        expertFallback += `Tu peux contacter le référent officiel : **${referentName}**.`;
-    }
-    if (expertNames && Array.isArray(expertNames) && expertNames.length > 0) {
-        expertFallback += `\nSinon, voici des collègues qui maîtrisent cette procédure : **${expertNames.join(", ")}**.`;
-    }
+    // Prepare Expert Fallback Message - NOT USED ANYMORE IN PROMPT
+    // Logic moved directly to system prompt to be stricter.
 
     // 1. Generate embedding for the question
     console.log(`🧠 Generating embedding for question: "${question}"`);
@@ -83,10 +77,11 @@ Deno.serve(async (req) => {
             content: `Tu es l'Expert Procedio, un assistant technique spécialisé. Ta mission est d'aider l'utilisateur ${userName || ''} en répondant à ses questions sur une procédure technique.
             
             CONSIGNES CRITIQUES :
-            1. Réponds UNIQUEMENT en te basant sur le CONTEXTE fourni ci-dessous.
-            2. Si la réponse n'est pas dans le contexte ou que l'information est manquante :
-               - Dis poliment que tu n'as pas l'info précise dans le document.
-               - ${expertFallback ? "Ensuite, suggère de contacter ces experts :\n" + expertFallback : "Suggère à l'utilisateur de cliquer sur 'Suggérer une modif' pour alerter le manager."}
+            1. Ton unique source de vérité est le CONTEXTE fourni ci-dessous. N'invente RIEN.
+            2. Si la réponse n'est pas dans le contexte :
+               - Dis simplement : "Je ne trouve pas cette information dans le document."
+               - ${referentName ? `Ajoute immédiatement : "Pour une réponse précise, veuillez contacter le référent de la procédure : **${referentName}**."` : "Suggère de faire une demande de modification via le bouton 'Suggérer une modif'."}
+               - NE TENTE PAS DE RÉPONDRE AVEC TES CONNAISSANCES GÉNÉRALES.
             3. Sois précis, technique et professionnel.
             4. Utilise le Markdown pour la mise en forme (gras, listes, étapes).
             
