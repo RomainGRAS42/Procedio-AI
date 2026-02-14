@@ -33,6 +33,18 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       setLoading(true);
       
       try {
+        // 0. LOG SEARCH QUERY (GLOBAL)
+        if (searchTerm.length > 2) {
+           await supabase.from('notes').insert({
+             user_id: user.id,
+             title: `LOG_SEARCH_${searchTerm.toUpperCase()}`,
+             content: `Recherche effectuée par ${user.firstName}`,
+             tags: ['system_log', 'search_query'],
+             status: 'private',
+             category: 'general'
+           });
+        }
+
         // 1. RECHERCHE DIRECTE SUPABASE (MATCH EXACT/PARTIEL)
         const { data: dbMatches, error: dbError } = await supabase
           .from('procedures')
