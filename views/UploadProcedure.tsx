@@ -75,27 +75,65 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-slide-up pb-20 relative">
       {showSuccessPopup && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/10 backdrop-blur-xl">
-          <div className="bg-white rounded-[4rem] p-12 max-w-lg w-full shadow-2xl border border-white text-center space-y-10 animate-slide-up">
-            <div className="w-28 h-28 bg-emerald-500 text-white rounded-[2.8rem] flex items-center justify-center text-4xl mx-auto shadow-xl">
-              <i className="fa-solid fa-check"></i>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+          <div className="bg-gradient-to-br from-white to-slate-50 rounded-[3rem] p-12 max-w-lg w-full shadow-2xl border border-white/50 text-center space-y-8 animate-scale-up relative overflow-hidden">
+            {/* Decorative background elements */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full blur-3xl opacity-40 -translate-y-1/3 translate-x-1/3"></div>
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-emerald-100 to-cyan-100 rounded-full blur-3xl opacity-30 translate-y-1/3 -translate-x-1/3"></div>
+            
+            <div className="relative z-10">
+              {/* Success Icon */}
+              <div className="relative w-32 h-32 mx-auto mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-[2rem] animate-pulse shadow-2xl shadow-emerald-200"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-[2rem] flex items-center justify-center">
+                  <i className="fa-solid fa-check text-5xl text-white drop-shadow-lg"></i>
+                </div>
+                {/* Animated ring */}
+                <div className="absolute inset-0 rounded-[2rem] border-4 border-emerald-300 animate-ping opacity-20"></div>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-5">
+                <h3 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  {uploadMode === 'folder' ? 'Synchronisation Lancée !' : 'Transfert Terminé !'}
+                </h3>
+                
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-100/50 shadow-inner">
+                  <p className="text-slate-700 font-semibold leading-relaxed text-[15px]">
+                    {uploadMode === 'folder' 
+                      ? `${folderFiles.length} fichier${folderFiles.length > 1 ? 's' : ''} en cours d'indexation`
+                      : "Votre document a été envoyé au cloud"
+                    }
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-3 text-indigo-600">
+                  <i className="fa-solid fa-robot text-xl animate-pulse"></i>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em]">
+                    IA Procedio en action
+                  </p>
+                </div>
+
+                <p className="text-slate-500 text-sm font-medium px-4">
+                  {uploadMode === 'folder' && `Dossier : ${finalCategory}`}<br/>
+                  Les documents apparaîtront dans votre liste d'ici quelques instants.
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <button 
+                onClick={onBack} 
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.25em] hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-xl shadow-indigo-200 active:scale-95 flex items-center justify-center gap-3 group"
+              >
+                <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                RETOUR AU DRIVE
+              </button>
             </div>
-            <div className="space-y-4">
-              <h3 className="text-4xl font-black text-slate-900 tracking-tighter text-balance">
-                {uploadMode === 'folder' ? 'Synchronisation lancée' : 'Transfert terminé'}
-              </h3>
-              <p className="text-slate-500 font-semibold leading-relaxed px-4">
-                {uploadMode === 'folder' 
-                  ? `${folderFiles.length} fichiers sont en cours d'indexation dans le dossier ${finalCategory}.`
-                  : "Votre document a été envoyé au cloud."
-                } <br/>
-                <span className="text-indigo-600 font-black uppercase text-[10px] tracking-widest">L'IA Procedio indexe actuellement le contenu.</span> <br/>
-                Il apparaîtra dans votre liste d'ici quelques instants.
-              </p>
-            </div>
-            <button onClick={onBack} className="w-full bg-indigo-600 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-900 transition-all shadow-xl active:scale-95 shadow-indigo-100">
-              RETOUR AU DRIVE
-            </button>
           </div>
         </div>
       )}
