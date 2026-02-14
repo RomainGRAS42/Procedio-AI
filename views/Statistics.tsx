@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User, Procedure, UserRole } from '../types';
@@ -500,12 +500,40 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                        <span className="inline-block px-2 py-0.5 rounded-md bg-white border border-rose-200 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-2 shadow-sm">
                          {opp.count} échecs
                        </span>
-                       <h3 className="font-black text-slate-900 text-lg capitalize mb-1 leading-tight truncate">
+                       <h3 className="font-black text-slate-900 text-lg capitalize mb-3 leading-tight truncate">
                          "{opp.term}"
                        </h3>
-                       <button className="mt-3 flex items-center gap-2 text-[10px] font-black text-rose-600 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg w-fit shadow-sm border border-rose-100 hover:bg-rose-600 hover:text-white transition-all">
-                         Créer <i className="fa-solid fa-plus"></i>
-                       </button>
+                       
+                       {/* Dual Action Buttons */}
+                       <div className="flex items-center gap-2 mt-4">
+                         {/* Primary: Create Procedure */}
+                         <button 
+                           onClick={() => navigate('/upload', { 
+                             state: { 
+                               prefillTitle: opp.term 
+                             } 
+                           })}
+                           className="flex-1 flex items-center justify-center gap-2 text-[10px] font-black text-white uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-indigo-700 px-3 py-2.5 rounded-xl shadow-md hover:from-indigo-700 hover:to-indigo-800 transition-all active:scale-95"
+                         >
+                           <i className="fa-solid fa-plus"></i>
+                           CRÉER
+                         </button>
+                         
+                         {/* Secondary: Delegate as Mission */}
+                         <button 
+                           onClick={() => navigate('/missions', { 
+                             state: { 
+                               autoOpenCreate: true,
+                               prefillTitle: `Créer procédure : ${opp.term}`,
+                               prefillDescription: `Créer une procédure pour répondre à la recherche "${opp.term}" qui n'a pas abouti.`
+                             } 
+                           })}
+                           className="flex items-center justify-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-white px-3 py-2.5 rounded-xl border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all active:scale-95"
+                           title="Déléguer la création en mission"
+                         >
+                           <i className="fa-solid fa-paper-plane"></i>
+                         </button>
+                       </div>
                      </div>
                    </div>
                  ))}

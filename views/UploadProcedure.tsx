@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ActiveTransfer } from '../types';
 import { useProcedurePublisher } from '../hooks/useProcedurePublisher';
 
@@ -10,12 +11,14 @@ interface UploadProcedureProps {
 }
 
 const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeTransfer, setActiveTransfer }) => {
+  const location = useLocation();
+  const prefillTitle = (location.state as any)?.prefillTitle || '';
   const [uploadMode, setUploadMode] = useState<'file' | 'folder' | 'sharepoint'>('file');
   const [sharepointUrl, setSharepointUrl] = useState('');
   const [isSharepointLoading, setIsSharepointLoading] = useState(false);
   const [categoryMode, setCategoryMode] = useState<'existing' | 'new'>('existing');
-  const [useCustomTitle, setUseCustomTitle] = useState(false);
-  const [customTitle, setCustomTitle] = useState('');
+  const [useCustomTitle, setUseCustomTitle] = useState(!!prefillTitle);
+  const [customTitle, setCustomTitle] = useState(prefillTitle);
   const [customFolder, setCustomFolder] = useState('');
   const [folders] = useState(['LOGICIEL', 'UTILISATEUR', 'MATERIEL', 'INFRASTRUCTURE']);
   const [selectedFolder, setSelectedFolder] = useState('LOGICIEL');
