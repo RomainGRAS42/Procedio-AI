@@ -495,17 +495,17 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
                <div className={`grid gap-4 ${layoutMode === 'focus' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                  {missedOpportunities.slice(0, layoutMode === 'focus' ? 6 : 4).map((opp, idx) => (
-                   <div key={idx} className="p-5 rounded-[1.5rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group cursor-pointer relative overflow-hidden">
+                   <div key={idx} className="p-5 rounded-[1.5rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group relative overflow-hidden">
                      <div className="relative z-10">
                        <span className="inline-block px-2 py-0.5 rounded-md bg-white border border-rose-200 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-2 shadow-sm">
                          {opp.count} échecs
                        </span>
-                       <h3 className="font-black text-slate-900 text-lg capitalize mb-3 leading-tight truncate">
+                       <h3 className="font-black text-slate-900 text-lg capitalize mb-4 leading-tight truncate pr-6">
                          "{opp.term}"
                        </h3>
                        
                        {/* Dual Action Buttons */}
-                       <div className="flex items-center gap-2 mt-4">
+                       <div className="grid grid-cols-2 gap-2">
                          {/* Primary: Create Procedure */}
                          <button 
                            onClick={() => navigate('/upload', { 
@@ -513,10 +513,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                                prefillTitle: opp.term 
                              } 
                            })}
-                           className="flex-1 flex items-center justify-center gap-2 text-[10px] font-black text-white uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-indigo-700 px-3 py-2.5 rounded-xl shadow-md hover:from-indigo-700 hover:to-indigo-800 transition-all active:scale-95"
+                           className="flex items-center justify-center gap-1.5 text-[9px] font-black text-white uppercase tracking-wider bg-gradient-to-r from-indigo-600 to-indigo-700 px-3 py-3 rounded-xl shadow-md hover:from-indigo-700 hover:to-indigo-800 transition-all active:scale-95"
                          >
-                           <i className="fa-solid fa-plus"></i>
-                           CRÉER
+                           <i className="fa-solid fa-plus text-xs"></i>
+                           <span>Créer</span>
                          </button>
                          
                          {/* Secondary: Delegate as Mission */}
@@ -528,10 +528,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                                prefillDescription: `Créer une procédure pour répondre à la recherche "${opp.term}" qui n'a pas abouti.`
                              } 
                            })}
-                           className="flex items-center justify-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-white px-3 py-2.5 rounded-xl border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all active:scale-95"
+                           className="flex items-center justify-center gap-1.5 text-[9px] font-black text-indigo-600 uppercase tracking-wider bg-white px-3 py-3 rounded-xl border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all active:scale-95"
                            title="Déléguer la création en mission"
                          >
-                           <i className="fa-solid fa-paper-plane"></i>
+                           <i className="fa-solid fa-paper-plane text-xs"></i>
+                            <span>Déléguer</span>
                          </button>
                        </div>
                      </div>
