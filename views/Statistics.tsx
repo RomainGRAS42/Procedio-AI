@@ -356,10 +356,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   // Tabs State & Multi-View
   const [layoutMode, setLayoutMode] = useState<'focus' | 'split' | 'grid'>('focus');
-  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>(['urgent', 'reliability', 'dynamic']);
+  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>(['searchSuccess', 'reliability', 'dynamic']);
 
   const kpiConfig = [
-    { id: 'urgent', label: 'Urgent', icon: 'fa-triangle-exclamation', color: 'text-rose-600', bg: 'bg-rose-50' },
+    { id: 'searchSuccess', label: 'Succès Recherche', icon: 'fa-magnifying-glass-chart', color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { id: 'reliability', label: 'Fiabilité', icon: 'fa-shield-heart', color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { id: 'dynamic', label: 'Dynamique', icon: 'fa-arrow-trend-up', color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { id: 'redZone', label: 'Zone Rouge', icon: 'fa-file-circle-xmark', color: 'text-rose-600', bg: 'bg-rose-50' }, // Fixed icon in config
@@ -739,14 +739,14 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         {/* TOP KPI ROW (TABS/PALETTE) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <KPICard 
-            label="Urgent" 
-            value={`${globalKPIs.urgentCount}`} 
-            icon="fa-triangle-exclamation" 
-            color="text-rose-600"
-            bg="bg-rose-50"
-            tooltip="Recherches échouées nécessitant une action immédiate."
-            isActive={isKpiSelected('urgent')}
-            onClick={() => updateSlot(0, 'urgent')}
+            label="Succès Recherche" 
+            value={`${globalKPIs.searchSuccessRate}%`} 
+            icon="fa-magnifying-glass-chart" 
+            color={globalKPIs.searchSuccessRate >= 85 ? "text-emerald-600" : "text-amber-600"}
+            bg={globalKPIs.searchSuccessRate >= 85 ? "bg-emerald-50" : "bg-amber-50"}
+            tooltip="Efficacité des recherches."
+            isActive={isKpiSelected('searchSuccess')}
+            onClick={() => updateSlot(0, 'searchSuccess')}
           />
           <KPICard 
             label="Fiabilité" 
