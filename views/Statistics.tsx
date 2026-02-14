@@ -57,6 +57,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   const [showMissionModal, setShowMissionModal] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<{ term: string; count: number } | null>(null);
   const [technicians, setTechnicians] = useState<{ id: string; email: string; first_name: string; last_name: string }[]>([]);
+  
+  // Delete Confirmation Modal State
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [opportunityToDelete, setOpportunityToDelete] = useState<{ term: string; count: number } | null>(null);
 
   useEffect(() => {
     const fetchAllStats = async () => {
@@ -107,6 +111,34 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       }
     } catch (err) {
       console.error('Error fetching technicians:', err);
+    }
+  };
+
+  const handleDeleteOpportunity = async () => {
+    if (!opportunityToDelete) return;
+
+    try {
+      // Permanently delete from database
+      const { error } = await supabase
+        .from('search_opportunities')
+        .delete()
+        .eq('term', opportunityToDelete.term);
+
+      if (error) throw error;
+
+      // Close modal
+      setShowDeleteConfirm(false);
+      setOpportunityToDelete(null);
+
+      // Refresh the list to remove from UI
+      await fetchMissedOpportunities();
+      
+      setToast({ message: 'Opportunité supprimée définitivement', type: 'success' });
+    } catch (error) {
+      console.error('Error deleting opportunity:', error);
+      setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+      setShowDeleteConfirm(false);
+      setOpportunityToDelete(null);
     }
   };
 
@@ -526,29 +558,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                    <div key={idx} className="p-5 rounded-[1.5rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group relative overflow-hidden">
                       {/* Delete Button */}
                       <button 
-                        onClick={async () => {
-                          // Confirmation dialog
-                          const confirmed = window.confirm(
-                            `⚠️ Supprimer définitivement l'opportunité "${opp.term}" ?\n\n` +
-                            `Cette action est irréversible et supprimera toutes les données associées.`
-                          );
-                          
-                          if (!confirmed) return;
-                          
-                          try {
-                            // Permanently delete from database
-                            await supabase
-                              .from('search_opportunities')
-                              .delete()
-                              .eq('term', opp.term);
-                            
-                            // Refresh the list to remove from UI
-                            await fetchMissedOpportunities();
-                            setToast({ message: 'Opportunité supprimée définitivement', type: 'success' });
-                          } catch (error) {
-                            console.error('Error deleting opportunity:', error);
-                            setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-                          }
+                        onClick={() => {
+                          setOpportunityToDelete(opp);
+                          setShowDeleteConfirm(true);
                         }}
                         className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white border border-rose-200 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all flex items-center justify-center shadow-sm z-20"
                         title="Supprimer définitivement cette opportunité"
@@ -965,6 +977,54 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 - Validation manager requise` : ''}
         technicians={technicians}
       />
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && opportunityToDelete && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-2xl">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight text-center mb-3">
+              Supprimer définitivement ?
+            </h3>
+
+            {/* Description */}
+            <div className="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-100">
+              <p className="text-sm font-bold text-slate-700 mb-3">
+                Opportunité : <span className="text-indigo-600">"{opportunityToDelete.term}"</span>
+              </p>
+              <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                Cette action est <span className="font-black text-rose-600">irréversible</span> et supprimera toutes les données associées à cette opportunité.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setOpportunityToDelete(null);
+                }}
+                className="py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all active:scale-95"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteOpportunity}
+                className="py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all active:scale-95"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
