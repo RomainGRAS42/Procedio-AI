@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 
 import MissionDetailsModal from "../components/MissionDetailsModal";
+import MasteryQuizModal from "../components/MasteryQuizModal";
 
 interface MissionsProps {
   user: User;
@@ -116,6 +117,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const toggleSection = (key: string) => {
     setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Quiz State
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [currentQuizData, setCurrentQuizData] = useState<any>(null);
+  const [currentMasteryRequestId, setCurrentMasteryRequestId] = useState<string | null>(null);
+  const [quizProcedure, setQuizProcedure] = useState<Procedure | null>(null);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
 
   useEffect(() => {
     // fetchMissions(); // Handled by Context
@@ -487,6 +495,153 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     }
   };
 
+  const handleStartExam = async (mission: Mission) => {
+    if (!mission.procedure_id) {
+       setToast({ message: "Erreur : Procédure non liée.", type: "error" });
+       return;
+    }
+
+    setLoadingQuiz(true);
+    try {
+      // 1. Check Cooldown (15 days)
+      const { data: recentFailures } = await supabase
+        .from("mastery_requests")
+        .select("created_at, status")
+        .eq("user_id", user.id)
+        .eq("procedure_id", mission.procedure_id) // Procedure ID must be stored in mission or we infer it? 
+        // Note: AssignReferentModal stores procedure_id in mission.
+        .eq("status", "failed")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (recentFailures && recentFailures.length > 0) {
+         const lastFailDate = new Date(recentFailures[0].created_at);
+         const daysSince = Math.floor((new Date().getTime() - lastFailDate.getTime()) / (1000 * 3600 * 24));
+         if (daysSince < 15) {
+            alert(`Vous devez attendre ${15 - daysSince} jours avant de retenter cet examen.`);
+            setLoadingQuiz(false);
+            return;
+         }
+      }
+
+      // 2. Create/Get Mastery Request
+      // We create a new one for this attempt
+      const { data: requestData, error: reqError } = await supabase
+        .from("mastery_requests")
+        .insert({
+           user_id: user.id,
+           procedure_id: mission.procedure_id, // Ensure this column is used/available or we use procedure_uuid if that's the FK
+           // procedure_id is likely text/uuid in mastery_requests.
+           // Mission procedure_id is UUID?
+           status: 'approved', // Auto-approved to start quiz
+           manager_id: mission.created_by // The one who created the mission
+        })
+        .select()
+        .single();
+      
+      if (reqError) throw reqError;
+
+      // 3. Trigger Generation
+      setToast({ message: "Génération de l'examen en cours...", type: "info" });
+      
+      // We assume procedure title is needed or ID is enough.
+      // We fetch procedure details first to be safe for the Modal
+      const { data: procData } = await supabase.from('procedures').select('*').eq('id', mission.procedure_id).single();
+      if (!procData) throw new Error("Procédure introuvable");
+      setQuizProcedure(procData);
+
+      const { error: fnError } = await supabase.functions.invoke('generate-mastery-quiz', {
+        body: { 
+          procedure_id: mission.procedure_id, 
+          request_id: requestData.id,
+          manager_name: "Système" 
+        }
+      });
+
+      if (fnError) throw fnError;
+
+      // 4. Poll for Quiz Data
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+         attempts++;
+         const { data: updatedReq } = await supabase
+           .from("mastery_requests")
+           .select("quiz_data")
+           .eq("id", requestData.id)
+           .single();
+         
+         if (updatedReq?.quiz_data) {
+            clearInterval(pollInterval);
+            setCurrentQuizData(updatedReq.quiz_data);
+            setCurrentMasteryRequestId(requestData.id);
+            setLoadingQuiz(false);
+            setIsQuizOpen(true);
+         }
+
+         if (attempts > 20) {
+            clearInterval(pollInterval);
+            setToast({ message: "Délai d'attente dépassé.", type: "error" });
+            setLoadingQuiz(false);
+         }
+      }, 1000);
+
+    } catch (err: any) {
+      console.error(err);
+      setToast({ message: "Erreur lancement examen: " + err.message, type: "error" });
+      setLoadingQuiz(false);
+    }
+  };
+
+  const handleQuizResult = async (score: number, level: number) => {
+      setIsQuizOpen(false);
+      // Logic handled in Modal? No, Modal calls this onSuccess.
+      // But Modal *also* updates DB? 
+      // MasteryQuizModal updates `mastery_requests` and `user_expertise`.
+      // We need to handle Mission Status here.
+
+      if (!selectedMission) return;
+
+      if (score >= 80) {
+         // SUCCESS
+         setToast({ message: "Examen réussi ! Vous êtes maintenant Référent.", type: "success" });
+         
+         // 1. Complete Mission
+         await supabase.from("missions").update({ status: "completed" }).eq("id", selectedMission.id);
+
+         // 2. Add as Referent (if not exist)
+         if (selectedMission.procedure_id) {
+             await supabase.from("procedure_referents").insert({
+                 procedure_id: selectedMission.procedure_id,
+                 user_id: user.id
+             });
+         }
+      } else {
+         // FAILURE
+         setToast({ message: `Score: ${score}%. Échec (< 80%). Mode "Cooldown" activé.`, type: "error" });
+         
+         // 1. Release Mission (Open)
+         await supabase.from("missions").update({ 
+             status: "open", 
+             assigned_to: null,
+             title: selectedMission.title // Ensure title stays same
+         }).eq("id", selectedMission.id);
+
+         // 2. Notify Manager
+         if (selectedMission.created_by) {
+            await supabase.from("notifications").insert({
+               user_id: selectedMission.created_by,
+               type: "mission",
+               title: "Échec Certification",
+               content: `${user.firstName} a échoué à l'examen de référent (${score}%). Mission remise dans le pool.`,
+               link: "/missions"
+            });
+         }
+      }
+      
+      // Refresh
+      refreshMissions();
+  };
+
   const UrgencyBadge = ({ urgency }: { urgency: MissionUrgency }) => {
     const config = {
       critical: {
@@ -649,7 +804,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   Démarrer
                 </button>
               )}
-              {mission.status === "in_progress" && mission.assigned_to === user.id && (
+              
+              {/* Finish Button (Classic) */}
+              {mission.status === "in_progress" && 
+               mission.assigned_to === user.id && 
+               !mission.title.startsWith("Devenir Référent") && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -660,6 +819,25 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   Terminer
                 </button>
               )}
+
+              {/* Quiz Button (Referent) */}
+              {(mission.status === "in_progress" || mission.status === "assigned") && 
+               mission.assigned_to === user.id && 
+               mission.title.startsWith("Devenir Référent") && (
+                 <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartExam(mission);
+                    }}
+                    disabled={loadingQuiz}
+                    className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-indigo-700 transition-all font-black flex items-center gap-2 shadow-lg shadow-indigo-200"
+                 >
+                    {loadingQuiz ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-file-signature"></i>}
+                    Passer l'Examen
+                 </button>
+              )}
+
+              {/* Manager Actions */}
               {(mission.status === "assigned" ||
                 mission.status === "in_progress" ||
                 (mission.status === "open" &&
@@ -734,6 +912,50 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         </div>
 
         <div className="flex items-center gap-6 shrink-0">
+          {/* Action Buttons for List View */}
+          <div className="flex items-center gap-2">
+              {mission.status === "assigned" && mission.assigned_to === user.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartMission(mission.id);
+                  }}
+                  className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-slate-900 transition-all">
+                  Démarrer
+                </button>
+              )}
+              
+              {mission.status === "in_progress" && 
+               mission.assigned_to === user.id && 
+               !mission.title.startsWith("Devenir Référent") && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCompletingMission(mission);
+                    setReasonText("");
+                  }}
+                  className="px-3 py-1 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-emerald-600 transition-all">
+                  Terminer
+                </button>
+              )}
+
+              {(mission.status === "in_progress" || mission.status === "assigned") && 
+               mission.assigned_to === user.id && 
+               mission.title.startsWith("Devenir Référent") && (
+                 <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartExam(mission);
+                    }}
+                    disabled={loadingQuiz}
+                    className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-sm"
+                 >
+                    {loadingQuiz ? <i className="fa-solid fa-circle-notch fa-spin text-[8px]"></i> : <i className="fa-solid fa-file-signature text-[8px]"></i>}
+                    Examen
+                 </button>
+              )}
+          </div>
+
           <div className="hidden md:block">
             <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">
               Urgence
@@ -1622,6 +1844,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           type={toast.type}
           visible={!!toast}
           onClose={() => setToast(null)}
+        />
+      )}
+      {/* Quiz Modal */}
+      {isQuizOpen && quizProcedure && currentQuizData && currentMasteryRequestId && (
+        <MasteryQuizModal
+          isOpen={isQuizOpen}
+          onClose={() => setIsQuizOpen(false)}
+          procedure={quizProcedure}
+          user={user}
+          quizData={currentQuizData}
+          masteryRequestId={currentMasteryRequestId}
+          onSuccess={handleQuizResult}
         />
       )}
     </div>

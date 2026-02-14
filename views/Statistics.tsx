@@ -13,6 +13,7 @@ import LoadingState from '../components/LoadingState';
 import CustomToast from '../components/CustomToast';
 import CreateMissionModal from '../components/CreateMissionModal';
 import { cacheStore } from '../lib/CacheStore';
+import AssignReferentModal from '../components/dashboard/AssignReferentModal';
 
 interface StatisticsProps {
   user: User;
@@ -50,6 +51,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   // Modal State
   const [modalConfig, setModalConfig] = useState<{ title: string; type: 'redZone'; items: any[] } | null>(null);
   const [redZoneList, setRedZoneList] = useState<any[]>([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedOrphan, setSelectedOrphan] = useState<{id: string, title: string} | null>(null);
 
   useEffect(() => {
     const fetchAllStats = async () => {
@@ -400,7 +403,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     if (!type) {
       const options = getAvailableKPIs(slotIndex);
       return (
-        <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 p-8 text-center animate-fade-in hover:border-indigo-300 hover:bg-slate-50 transition-all group">
+        <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 p-8 text-center animate-fade-in hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all group">
             <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-slate-300 group-hover:text-indigo-500">
                <i className="fa-solid fa-plus text-2xl"></i>
             </div>
@@ -599,12 +602,19 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                )}
                <div className="grid grid-cols-1 gap-3">
                  {redZoneList.map((item, idx) => (
-                   <div key={idx} className="bg-white rounded-xl p-4 border border-slate-100 flex items-center justify-between group hover:border-rose-200">
+                   <div key={idx} className="bg-white rounded-xl p-4 border border-slate-100 flex items-center justify-between group hover:border-rose-200 hover:shadow-sm transition-all">
                       <div className="overflow-hidden">
                         <h3 className="font-bold text-slate-900 truncate text-sm">{item.label}</h3>
                         <p className="text-[10px] text-slate-400">ID: {item.id.slice(0,6)}</p>
                       </div>
-                      <button className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all">
+                      <button 
+                        onClick={() => {
+                            setSelectedOrphan({ id: item.id, title: item.label });
+                            setAssignModalOpen(true);
+                        }}
+                        className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm"
+                        title="Assigner un référent"
+                      >
                         <i className="fa-solid fa-user-plus text-xs"></i>
                       </button>
                    </div>
@@ -849,14 +859,27 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           items={modalConfig.items}
         />
       )}
-      
+
+      {selectedOrphan && (
+        <AssignReferentModal
+          isOpen={assignModalOpen}
+          onClose={() => setAssignModalOpen(false)}
+          onSuccess={() => {
+            setToast({ message: "Mission de validation envoyée !", type: "success" });
+            fetchHealthData(); // Refresh list (though item will stay red until validated)
+          }}
+          procedureId={selectedOrphan.id}
+          procedureTitle={selectedOrphan.title}
+        />
+      )}
+
       {/* Toast */}
       {toast && (
-        <CustomToast 
+        <CustomToast
           visible={!!toast}
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>
