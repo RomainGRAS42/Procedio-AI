@@ -524,7 +524,29 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                <div className={`grid gap-4 ${layoutMode === 'focus' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                  {missedOpportunities.slice(0, layoutMode === 'focus' ? 6 : 4).map((opp, idx) => (
                    <div key={idx} className="p-5 rounded-[1.5rem] bg-rose-50/50 border border-rose-100 hover:border-rose-300 transition-all group relative overflow-hidden">
-                     <div className="relative z-10">
+                      {/* Delete Button */}
+                      <button 
+                        onClick={async () => {
+                          try {
+                            await supabase
+                              .from('search_opportunities')
+                              .update({ status: 'dismissed' })
+                              .eq('term', opp.term);
+                            
+                            await fetchMissedOpportunities();
+                            setToast({ message: 'Opportunité supprimée', type: 'success' });
+                          } catch (error) {
+                            console.error('Error dismissing opportunity:', error);
+                            setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+                          }
+                        }}
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white border border-rose-200 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all flex items-center justify-center shadow-sm z-20"
+                        title="Supprimer cette opportunité"
+                      >
+                        <i className="fa-solid fa-xmark text-xs"></i>
+                      </button>
+
+                      <div className="relative z-10">
                        <span className="inline-block px-2 py-0.5 rounded-md bg-white border border-rose-200 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-2 shadow-sm">
                          {opp.count} échecs
                        </span>
