@@ -100,6 +100,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     deadline: "",
     needs_attachment: false,
     category: "",
+    opportunity_id: null as string | null, // Track the origin opportunity
   });
 
   // Lifecycle Modals State
@@ -214,6 +215,14 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         });
       }
 
+      // Resolve the opportunity if it came from one
+      if ((newMission as any).opportunity_id) {
+        await supabase
+          .from('search_opportunities')
+          .update({ status: 'resolved' })
+          .eq('id', (newMission as any).opportunity_id);
+      }
+
       setToast({ message: "Mission stratégique crée !", type: "success" });
       setShowCreateModal(false);
       setNewMission({
@@ -227,6 +236,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         deadline: "",
         needs_attachment: false,
         category: "",
+        opportunity_id: null,
       });
 
       // fetchMissions(); // Handled by Realtime in Context

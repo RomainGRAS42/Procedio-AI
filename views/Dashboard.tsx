@@ -507,16 +507,19 @@ const Dashboard: React.FC<DashboardProps> = ({
         .ilike('title', 'LOG_SEARCH_%')
         .gte('created_at', RESET_DATE);
 
-      // Count failed searches AFTER Reset Date
-      const { count: failedSearches } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_FAIL_%')
-        .gte('created_at', RESET_DATE);
+      // Count failed searches using search_opportunities table (sum of counts for pending status)
+      const { data: opSums } = await supabase
+        .from('search_opportunities')
+        .select('search_count')
+        .eq('status', 'pending');
+        
+      const totalFailedCount = opSums?.reduce((acc, curr) => acc + (curr.search_count || 0), 0) || 0;
 
       const successRate = totalSearches && totalSearches > 0 
-        ? Math.round(((totalSearches - (failedSearches || 0)) / totalSearches) * 100)
+        ? Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100)
         : 100;
+
+      const finalSuccessRate = Math.max(0, Math.min(100, successRate));
 
       // 2. Calculate Health % and Usage
       const { data: procs } = await supabase
@@ -544,7 +547,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const redZoneCount = allIds?.filter(p => !referentSet.has(p.uuid)).length || 0;
 
       const kpis = {
-        searchSuccess: successRate,
+        searchSuccess: finalSuccessRate,
         health: healthPct,
         usage: totalViews,
         redZone: redZoneCount

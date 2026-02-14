@@ -47,7 +47,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     redZone: 0,
 
     totalViews: 0,
-    missedOpportunities: [] as { term: string; count: number }[]
+    missedOpportunities: [] as { id: string; term: string; count: number }[]
   });
 
   // Modal State
@@ -186,30 +186,32 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .ilike('title', 'LOG_SEARCH_FAIL_%')
         .gte('created_at', RESET_DATE);
 
-      // Fetch aggregated missed opportunities
-      const { data: failedLogs } = await supabase
-        .from('notes')
-        .select('title')
-        .ilike('title', 'LOG_SEARCH_FAIL_%')
-        .gte('created_at', RESET_DATE);
+      // Fetch aggregated missed opportunities from DEDICATED TABLE
+      const { data: opportunities } = await supabase
+        .from('search_opportunities')
+        .select('id, term, search_count')
+        .eq('status', 'pending')
+        .order('search_count', { ascending: false })
+        .limit(5);
 
-      const missedOpsMap = new Map<string, number>();
-      failedLogs?.forEach(log => {
-        const term = log.title.replace('LOG_SEARCH_FAIL_', '').trim();
-        missedOpsMap.set(term, (missedOpsMap.get(term) || 0) + 1);
-      });
+      const missedOpportunities = (opportunities || []).map(op => ({
+        id: op.id,
+        term: op.term,
+        count: op.search_count
+      }));
 
-      const missedOpportunities = Array.from(missedOpsMap.entries())
-        .map(([term, count]) => ({ term, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5); // Top 5
+      // Calculate total failures based on the sum of search_counts in the table (plus current period logic if needed)
+      // For simplicity and alignment with the dashboard, we sum pending opportunities counts
+      const totalFailedCount = missedOpportunities.reduce((acc, curr) => acc + (curr.count || 0), 0);
 
       const successRate = totalSearches && totalSearches > 0 
-        ? Math.round(((totalSearches - (failedSearches || 0)) / totalSearches) * 100)
+        ? Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100)
         : 100;
 
-      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: successRate, missedOpportunities }));
-      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: successRate, missedOpportunities });
+      const finalSuccessRate = Math.max(0, Math.min(100, successRate));
+
+      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: finalSuccessRate, missedOpportunities }));
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: finalSuccessRate, missedOpportunities });
     } catch (err) {
       console.error("Error fetching search success rate:", err);
     }
@@ -539,7 +541,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                                             title: `Opportunité Manquée : ${op.term}`,
                                             description: `L'expression "${op.term}" a été recherchée ${op.count} fois sans résultat.\nActions recommandées :\n1. Créer la procédure.\n2. L'ajouter aux synonymes si elle existe déjà.`,
                                             urgency: 'high',
-                                            category: 'Opportunité' // Requires Missions.tsx update to handle
+                                            category: 'Opportunité',
+                                            opportunity_id: op.id // Pass the ID to resolve it later
                                          } 
                                       } 
                                    })}
