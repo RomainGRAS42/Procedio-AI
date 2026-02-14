@@ -49,8 +49,8 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   };
 
   const triggerFolderPicker = () => {
-    setShowFolderWarning(false);
     folderInputRef.current?.click();
+    setShowFolderWarning(false);
   };
 
   const handlePublish = async () => {
@@ -373,7 +373,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
 
               <div className="space-y-4">
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Vous allez importer un dossier complet. Pour des raisons de sécurité, votre navigateur va vous demander de confirmer l'accès aux fichiers du dossier <span className="text-indigo-600 font-bold">Procedio</span>.
+                  Vous allez importer un dossier complet. Pour des raisons de sécurité, votre navigateur va vous demander de confirmer l'accès à vos fichiers <span className="text-indigo-600 font-bold">par l'application Procedio</span>.
                 </p>
                 
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex gap-4">
