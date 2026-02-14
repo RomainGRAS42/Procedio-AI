@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       .from("documents")
       .select("content")
       .eq("file_id", procedure_id)
-      .limit(15); 
+      .limit(8); 
 
     if (fetchError) {
       console.error("❌ Database Error (documents):", fetchError);
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${MISTRAL_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistral-large-latest",
+        model: "mistral-small-latest",
         messages: [
           {
             role: "system",
