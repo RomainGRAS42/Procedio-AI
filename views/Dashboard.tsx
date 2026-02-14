@@ -1051,42 +1051,70 @@ const Dashboard: React.FC<DashboardProps> = ({
         />
 
         {user.role === UserRole.MANAGER && (
-          <section>
+          <section className="mb-8">
             <TeamSynergyWidget />
           </section>
         )}
 
-        <section>
+        <section className="mb-8">
           <StatsSummaryWidget stats={filteredStats} />
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex flex-col gap-8">
             
-            <div className="lg:col-span-2 space-y-8">
+            {/* ROW 1: Centre de Pilotage | Podium | Pouls */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                
-               <ReviewCenterWidget 
-                 pendingSuggestions={pendingSuggestions || []}
-                 masteryClaims={masteryClaims || []}
-                 onSelectSuggestion={(sugg) => {
-                     setSelectedSuggestion(sugg);
-                     setShowSuggestionModal(true);
-                 }}
-                 onNavigateToStatistics={() => onNavigate?.('/statistics')}
-                 onApproveMastery={handleApproveMastery}
-                 onViewMasteryDetail={(claim) => {
-                     setSelectedMasteryClaim(claim);
-                     setShowMasteryDetail(true);
-                 }}
-                 generatingExamId={generatingExamId}
-                 onToggleReadStatus={handleToggleReadStatus}
-               />
-               
-               {user.role === UserRole.TECHNICIAN && (
-                  <MasteryWidget 
-                    personalStats={personalStats} 
-                  />
-               )}
-               
+               {/* Col 1: Centre de Pilotage */}
+               <div className="space-y-8">
+                 <ReviewCenterWidget 
+                   pendingSuggestions={pendingSuggestions || []}
+                   masteryClaims={masteryClaims || []}
+                   onSelectSuggestion={(sugg) => {
+                       setSelectedSuggestion(sugg);
+                       setShowSuggestionModal(true);
+                   }}
+                   onNavigateToStatistics={() => onNavigate?.('/statistics')}
+                   onApproveMastery={handleApproveMastery}
+                   onViewMasteryDetail={(claim) => {
+                       setSelectedMasteryClaim(claim);
+                       setShowMasteryDetail(true);
+                   }}
+                   generatingExamId={generatingExamId}
+                   onToggleReadStatus={handleToggleReadStatus}
+                 />
+               </div>
+
+               {/* Col 2: Podium (Manager) or Mastery (Technician) */}
+               <div className="space-y-8">
+                  {user.role === UserRole.MANAGER ? (
+                    <TeamPodium />
+                  ) : (
+                    <MasteryWidget 
+                      personalStats={personalStats} 
+                    />
+                  )}
+               </div>
+
+               {/* Col 3: Pouls de l'Équipe (Activity) */}
+               <div className="space-y-8">
+                 <ActivityWidget 
+                   activities={activities} 
+                   loadingActivities={loadingActivities}
+                   onRefresh={fetchActivities}
+                 />
+                  {user.role === UserRole.TECHNICIAN && (
+                   <BadgesWidget 
+                     earnedBadges={earnedBadges} 
+                     onNavigate={onNavigate}
+                   />
+                 )}
+               </div>
+
+            </div>
+
+            {/* ROW 2: Missions (Preserved) & RSS (Veille Info) */}
+            <div className="space-y-8">
                <MissionsWidget 
                  activeMissions={activeMissions}
                  userRole={user.role}
@@ -1094,17 +1122,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                  onNavigate={onNavigate}
                  loading={loadingMissions}
                />
-
-               <ActivityWidget 
-                 activities={activities} 
-                 loadingActivities={loadingActivities}
-                 onRefresh={fetchActivities}
-               />
-
+               
+               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
+                  <RSSWidget user={user} />
+               </div>
             </div>
 
+            {/* ROW 3: Dernière Procédure en Ligne (Full Width) */}
             <div className="space-y-8">
-               
                <RecentProceduresWidget 
                   recentProcedures={recentProcedures} 
                   userRole={user.role}
@@ -1113,26 +1138,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                   onShowHistory={() => onNavigate?.('/history')}
                   formatDate={(d) => new Date(d).toLocaleDateString()}
                />
-
-               {user.role === UserRole.TECHNICIAN && (
-                   <BadgesWidget 
-                     earnedBadges={earnedBadges} 
-                     onNavigate={onNavigate}
-                   />
-               )}
                
-               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 h-96">
-                  <RSSWidget user={user} />
-               </div>
-
                {isReferent && (
                  <ExpertReviewWidget 
                    pendingReviews={pendingReviews}
                    onSelectProcedure={onSelectProcedure}
                  />
                )}
-
             </div>
+
         </div>
 
       </div>
