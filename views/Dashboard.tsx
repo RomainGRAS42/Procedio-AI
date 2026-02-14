@@ -359,6 +359,37 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [user?.id, user?.role]);
 
+  // Realtime Subscriptions for Pilotage Center & Activities
+  useEffect(() => {
+    if (!user?.id || user.role !== UserRole.MANAGER) return;
+
+    const channel = supabase
+      .channel('pilotage_updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'mastery_requests' },
+        () => {
+          console.log("Realtime: Mastery update detected");
+          fetchMasteryClaims();
+          fetchActivities();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'procedure_suggestions' },
+        () => {
+          console.log("Realtime: Suggestion update detected");
+          fetchSuggestions();
+          fetchActivities();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, user?.role]);
+
   // Support for deep linking to suggestions or mastery exams
   useEffect(() => {
     if (targetAction && (pendingSuggestions.length > 0 || approvedExams.length > 0)) {

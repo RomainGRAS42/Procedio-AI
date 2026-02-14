@@ -115,7 +115,8 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
           status: 'completed',
           score: finalScore,
           completed_at: new Date().toISOString(),
-          user_answers: finalAnswers
+          user_answers: finalAnswers,
+          is_read_by_manager: false // Reset so manager sees new alert
         })
         .eq('id', masteryRequestId);
 
@@ -143,7 +144,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
 
         await supabase.from("notes").insert([
           {
-            title: `MASTERY_COMPLETED_${masteryRequestId}`,
+            title: `CLAIM_MASTERY_RESULT_${masteryRequestId}`,
             content: `${user.firstName} a terminé l'examen de maîtrise sur "${procedure.title}" avec un score de ${finalScore}%.\n\nDétail des réponses :\n${detailedAnswers}`,
             is_protected: false,
             user_id: user.id,

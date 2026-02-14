@@ -610,7 +610,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       
       if (!selectedMission) return;
 
-      if (score >= 80) {
+      if (score >= 70) {
          // SUCCESS
          setToast({ message: "Examen réussi ! Félicitations.", type: "success" });
          
