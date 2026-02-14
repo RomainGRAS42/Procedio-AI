@@ -125,6 +125,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const [currentQuizData, setCurrentQuizData] = useState<any>(null);
   const [currentMasteryRequestId, setCurrentMasteryRequestId] = useState<string | null>(null);
   const [quizProcedure, setQuizProcedure] = useState<Procedure | null>(null);
+  const [examMission, setExamMission] = useState<Mission | null>(null); // Track mission for exam
   const [loadingQuiz, setLoadingQuiz] = useState(false);
 
   useEffect(() => {
@@ -557,6 +558,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
       // 3. Trigger Generation
       setToast({ message: "Génération de l'examen en cours...", type: "info" });
+      setExamMission(mission); // Set the active mission for the exam
       
       // We assume procedure title is needed or ID is enough.
       // We fetch procedure details first to be safe for the Modal
@@ -595,6 +597,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             clearInterval(pollInterval);
             setToast({ message: "Délai d'attente dépassé.", type: "error" });
             setLoadingQuiz(false);
+            setExamMission(null); // Reset if failed
          }
       }, 1000);
 
@@ -602,13 +605,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       console.error(err);
       setToast({ message: "Erreur lancement examen: " + err.message, type: "error" });
       setLoadingQuiz(false);
+      setExamMission(null); // Reset on error
     }
   };
 
   const handleQuizResult = async (score: number, level: number) => {
-      // REMOVED: setIsQuizOpen(false); -> Allow user to see results in Modal
+      // Use examMission if available (list view), otherwise fallback to selectedMission (modal view)
+      const missionToUpdate = examMission || selectedMission;
       
-      if (!selectedMission) return;
+      if (!missionToUpdate) {
+        console.error("No active mission found for quiz result");
+        return;
+      }
 
       if (score >= 70) {
          // SUCCESS
@@ -616,19 +624,19 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
          
          // Optimistic UI update: hide the exam button in the local state
          setMissions(prev => prev.map(m => 
-           m.id === selectedMission.id ? { ...m, status: 'completed' as MissionStatus } : m
+           m.id === missionToUpdate.id ? { ...m, status: 'completed' as MissionStatus } : m
          ));
 
          // 1. Complete Mission
          await supabase.from("missions").update({ 
            status: "completed",
            completion_notes: `Examen validé avec un score de ${score}%` 
-         }).eq("id", selectedMission.id);
+         }).eq("id", missionToUpdate.id);
 
          // 2. Add as Referent (if not exist)
-         if (selectedMission.procedure_id) {
+         if (missionToUpdate.procedure_id) {
              await supabase.from("procedure_referents").insert({
-                 procedure_id: selectedMission.procedure_id,
+                 procedure_id: missionToUpdate.procedure_id,
                  user_id: user.id
              });
          }
@@ -638,27 +646,28 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
          
          // Optimistic UI update: move to history even if failed
          setMissions(prev => prev.map(m => 
-           m.id === selectedMission.id ? { ...m, status: 'completed' as MissionStatus } : m
+           m.id === missionToUpdate.id ? { ...m, status: 'completed' as MissionStatus } : m
          ));
 
          // 1. Mark Mission as Completed but with failure note
          await supabase.from("missions").update({ 
              status: "completed", 
              completion_notes: `Échec à la certification avec un score de ${score}%`
-         }).eq("id", selectedMission.id);
+         }).eq("id", missionToUpdate.id);
 
          // 2. Notify Manager
-         if (selectedMission.created_by) {
+         if (missionToUpdate.created_by) {
             await supabase.from("notifications").insert({
-               user_id: selectedMission.created_by,
+               user_id: missionToUpdate.created_by,
                type: "mission",
                title: "Échec Certification",
-               content: `${user.firstName} a échoué à l'examen de référent (${score}%). La mission est terminée.`,
+               content: `${user.firstName} a échoué à l'examen de référent (${score}%). (Détails en Pilotage)`,
                link: "/missions"
             });
          }
       }
       
+      setExamMission(null); // Reset exam mission state
       // Refresh
       refreshMissions();
   };
