@@ -740,6 +740,14 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                            )}
                           </>
                         )}
+                        {mission.status === "in_progress" && mission.assigned_to === user.id && mission.title.startsWith("Devenir Référent") && onStartQuiz && (
+                             <button
+                               onClick={() => onStartQuiz(mission)}
+                               className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2">
+                               <i className="fa-solid fa-file-signature"></i>
+                               Passer l'Examen
+                             </button>
+                        )}
                       </div>
                     )}
                   </div>

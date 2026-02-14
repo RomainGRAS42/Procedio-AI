@@ -534,7 +534,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
            // procedure_id is likely text/uuid in mastery_requests.
            // Mission procedure_id is UUID?
            status: 'approved', // Auto-approved to start quiz
-           manager_id: mission.created_by // The one who created the mission
+           // manager_id: mission.created_by // REMOVED: Column does not exist in schema
         })
         .select()
         .single();
