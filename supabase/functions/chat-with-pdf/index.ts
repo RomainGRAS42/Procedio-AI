@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
             1. Ton unique source de vérité est le CONTEXTE fourni ci-dessous. N'invente RIEN.
             2. Si la réponse n'est pas dans le contexte :
                - Dis simplement : "Je ne trouve pas cette information dans le document."
-               - ${referentName ? `Ajoute immédiatement : "Pour une réponse précise, veuillez contacter le référent de la procédure : **${referentName}**."` : "Suggère de faire une demande de modification via le bouton 'Suggérer une modif'."}
+               - ${referentName ? `Ajoute immédiatement : "Pour une réponse précise, veuillez contacter le Référent sur la procédure : **${referentName}**."` : "Suggère de faire une demande de modification via le bouton 'Suggérer une modif'."}
                - NE TENTE PAS DE RÉPONDRE AVEC TES CONNAISSANCES GÉNÉRALES.
             3. Sois précis, technique et professionnel.
             4. Utilise le Markdown pour la mise en forme (gras, listes, étapes).
