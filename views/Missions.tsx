@@ -99,6 +99,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     hasDeadline: false,
     deadline: "",
     needs_attachment: false,
+    category: "",
   });
 
   // Lifecycle Modals State
@@ -196,6 +197,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           created_by: user.id,
           status: assigned_to ? "assigned" : "open",
           needs_attachment: newMission.needs_attachment,
+          category: newMission.category || null,
         },
       ]);
 
@@ -224,7 +226,9 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         hasDeadline: false,
         deadline: "",
         needs_attachment: false,
+        category: "",
       });
+
       // fetchMissions(); // Handled by Realtime in Context
     } catch (err) {
       setToast({ message: "Erreur lors de la création.", type: "error" });

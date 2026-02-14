@@ -45,7 +45,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     healthPct: 0,
     contributionPulse: 0,
     redZone: 0,
-    totalViews: 0
+
+    totalViews: 0,
+    missedOpportunities: [] as { term: string; count: number }[]
   });
 
   // Modal State
@@ -184,12 +186,30 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .ilike('title', 'LOG_SEARCH_FAIL_%')
         .gte('created_at', RESET_DATE);
 
+      // Fetch aggregated missed opportunities
+      const { data: failedLogs } = await supabase
+        .from('notes')
+        .select('title')
+        .ilike('title', 'LOG_SEARCH_FAIL_%')
+        .gte('created_at', RESET_DATE);
+
+      const missedOpsMap = new Map<string, number>();
+      failedLogs?.forEach(log => {
+        const term = log.title.replace('LOG_SEARCH_FAIL_', '').trim();
+        missedOpsMap.set(term, (missedOpsMap.get(term) || 0) + 1);
+      });
+
+      const missedOpportunities = Array.from(missedOpsMap.entries())
+        .map(([term, count]) => ({ term, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5); // Top 5
+
       const successRate = totalSearches && totalSearches > 0 
         ? Math.round(((totalSearches - (failedSearches || 0)) / totalSearches) * 100)
         : 100;
 
-      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: successRate }));
-      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: successRate });
+      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: successRate, missedOpportunities }));
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: successRate, missedOpportunities });
     } catch (err) {
       console.error("Error fetching search success rate:", err);
     }
@@ -497,20 +517,44 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                        </p>
                      </div>
                    ) : (
-                     <div className="space-y-4">
-                       <p className="text-lg font-bold text-slate-900">Certaines recherches échouent</p>
-                       <p className="text-slate-600">
-                         Pensez à enrichir votre base de connaissances.
-                       </p>
-                       <button
-                         onClick={() => navigate('/upload')}
-                         className="mt-4 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg hover:from-indigo-700 hover:to-indigo-800 transition-all active:scale-95"
-                       >
-                         <i className="fa-solid fa-plus mr-2"></i>
-                         Créer une procédure
-                       </button>
-                     </div>
-                   )}
+
+                       <div className="space-y-4">
+                         <p className="text-lg font-bold text-slate-900">Certaines recherches échouent</p>
+                         <p className="text-slate-600 text-sm">
+                           Voici les termes recherchés sans succès par l'équipe :
+                         </p>
+                         
+                         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden text-left max-h-[200px] overflow-y-auto">
+                           {(globalKPIs.missedOpportunities || []).map((op, idx) => (
+                              <div key={idx} className="p-3 border-b border-slate-50 last:border-0 flex items-center justify-between hover:bg-slate-50 transition-colors group/item">
+                                 <div>
+                                    <p className="text-sm font-bold text-slate-800">{op.term}</p>
+                                    <span className="text-[10px] text-slate-400 uppercase font-bold">{op.count} échec{op.count > 1 ? 's' : ''}</span>
+                                 </div>
+                                 <button
+                                   onClick={() => navigate('/missions', { 
+                                      state: { 
+                                         createMission: true, 
+                                         initialData: { 
+                                            title: `Opportunité Manquée : ${op.term}`,
+                                            description: `L'expression "${op.term}" a été recherchée ${op.count} fois sans résultat.\nActions recommandées :\n1. Créer la procédure.\n2. L'ajouter aux synonymes si elle existe déjà.`,
+                                            urgency: 'high',
+                                            category: 'Opportunité' // Requires Missions.tsx update to handle
+                                         } 
+                                      } 
+                                   })}
+                                   className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all opacity-0 group-hover/item:opacity-100"
+                                   title="Lancer une mission"
+                                 >
+                                    <i className="fa-solid fa-rocket mr-1"></i>
+                                    Mission
+                                 </button>
+                              </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
                  </div>
                </div>
              </div>

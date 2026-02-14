@@ -161,18 +161,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                      .limit(1);
 
                    if (!existingMissions || existingMissions.length === 0) {
-                      console.log("🚨 Creating Missed Opportunity Mission for:", searchTerm);
-                      await supabase.from('missions').insert({
-                        title: missionTitle,
-                        description: `L'expression "${searchTerm}" a été recherchée plus de 3 fois sans résultat ce mois-ci.\nUne procédure semble manquante.\n\nActions recommandées :\n1. Créer la procédure.\n2. L'ajouter aux synonymes si elle existe déjà.`,
-                        status: 'open',
-                        priority: 'high',
-                        user_id: null, // Open to all
-                        category: 'Opportunité'
-                      });
+                      console.log("🚨 Missed Opportunity Detected for:", searchTerm);
+                      // Auto-creation DISABLED per user request (Manual flow in Dashboard)
                    }
                 }
              }
+
           }
         }
       } catch (err) {
