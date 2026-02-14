@@ -134,11 +134,17 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
             last_tested_at: new Date().toISOString()
           });
 
-        // 3. Notify Manager (via a legacy note log)
+        // 3. Notify Manager with detailed answers
+        const detailedAnswers = questions.map((q, idx) => {
+          const userAnswer = finalAnswers[idx] !== -1 ? q.options[finalAnswers[idx]] : "Pas de réponse (Timeout)";
+          const isCorrect = finalAnswers[idx] === q.correct;
+          return `Q${idx + 1}: ${q.q}\nRéponse: ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})\n`;
+        }).join('\n');
+
         await supabase.from("notes").insert([
           {
             title: `MASTERY_COMPLETED_${masteryRequestId}`,
-            content: `${user.firstName} a terminé l'examen de maîtrise sur "${procedure.title}" avec un score de ${finalScore}%. (Niveau ${level} atteint)`,
+            content: `${user.firstName} a terminé l'examen de maîtrise sur "${procedure.title}" avec un score de ${finalScore}%.\n\nDétail des réponses :\n${detailedAnswers}`,
             is_protected: false,
             user_id: user.id,
             tags: ["MASTERY", "COMPLETED"],

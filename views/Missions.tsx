@@ -606,18 +606,19 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   };
 
   const handleQuizResult = async (score: number, level: number) => {
-      setIsQuizOpen(false);
-      // Logic handled in Modal? No, Modal calls this onSuccess.
-      // But Modal *also* updates DB? 
-      // MasteryQuizModal updates `mastery_requests` and `user_expertise`.
-      // We need to handle Mission Status here.
-
+      // REMOVED: setIsQuizOpen(false); -> Allow user to see results in Modal
+      
       if (!selectedMission) return;
 
       if (score >= 80) {
          // SUCCESS
-         setToast({ message: "Examen réussi ! Vous êtes maintenant Référent.", type: "success" });
+         setToast({ message: "Examen réussi ! Félicitations.", type: "success" });
          
+         // Optimistic UI update: hide the exam button in the local state
+         setMissions(prev => prev.map(m => 
+           m.id === selectedMission.id ? { ...m, status: 'completed' as MissionStatus } : m
+         ));
+
          // 1. Complete Mission
          await supabase.from("missions").update({ status: "completed" }).eq("id", selectedMission.id);
 
@@ -1399,6 +1400,26 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOADING OVERLAY FOR EXAM GENERATION */}
+      {loadingQuiz && (
+        <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md animate-fade-in text-center p-6">
+          <div className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white text-3xl mb-8 shadow-2xl shadow-indigo-500/20 animate-bounce">
+            <i className="fa-solid fa-brain"></i>
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2 tracking-tight">
+            Génération de l'examen...
+          </h2>
+          <p className="text-indigo-200 font-bold max-w-sm">
+            Merci de patienter quelques secondes, Procedio analyse la procédure pour créer vos questions.
+          </p>
+          <div className="mt-8 flex gap-2">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}></div>
+            ))}
           </div>
         </div>
       )}
