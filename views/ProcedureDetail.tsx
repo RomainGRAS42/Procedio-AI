@@ -1045,8 +1045,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                           </span>
                        )}
                     </div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                        {referentExpert.first_name} {referentExpert.last_name}
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest pl-1">
+                        Référent : <span className="text-indigo-600">{referentExpert.first_name} {referentExpert.last_name}</span>
                     </span>
                   </div>
                 )}
