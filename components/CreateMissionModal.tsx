@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { MissionUrgency } from '../types';
@@ -22,6 +22,8 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
   prefillDescription = '',
   technicians = [],
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
   const [newMission, setNewMission] = useState({
     title: prefillTitle,
     description: prefillDescription,
@@ -44,6 +46,17 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
       }));
     }
   }, [prefillTitle, prefillDescription]);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to auto to get the correct scrollHeight
+      textareaRef.current.style.height = 'auto';
+      // Set height to scrollHeight (content height)
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${scrollHeight}px`;
+    }
+  }, [newMission.description]);
 
   const handleCreateMission = async () => {
     if (!newMission.title.trim()) return;
@@ -142,10 +155,16 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
               Description & Objectif
             </label>
             <textarea
+              ref={textareaRef}
               placeholder="Expliquez ce qui est attendu..."
-              className="w-full h-32 p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none"
+              className="w-full min-h-32 max-h-96 p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none overflow-y-auto"
               value={newMission.description}
-              onChange={(e) => setNewMission({ ...newMission, description: e.target.value })}
+              onChange={(e) => {
+                setNewMission({ ...newMission, description: e.target.value });
+                // Auto-resize on change
+                e.target.style.height = 'auto';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
             />
           </div>
 
