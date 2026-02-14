@@ -620,7 +620,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
          ));
 
          // 1. Complete Mission
-         await supabase.from("missions").update({ status: "completed" }).eq("id", selectedMission.id);
+         await supabase.from("missions").update({ 
+           status: "completed",
+           completion_notes: `Examen validé avec un score de ${score}%` 
+         }).eq("id", selectedMission.id);
 
          // 2. Add as Referent (if not exist)
          if (selectedMission.procedure_id) {
@@ -630,14 +633,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
              });
          }
       } else {
-         // FAILURE
-         setToast({ message: `Score: ${score}%. Échec (< 80%). Mode "Cooldown" activé.`, type: "error" });
+         // FAILURE - Single attempt allowed
+         setToast({ message: `Score: ${score}%. Échec (seuil 70%). Mission terminée.`, type: "error" });
          
-         // 1. Release Mission (Open)
+         // Optimistic UI update: move to history even if failed
+         setMissions(prev => prev.map(m => 
+           m.id === selectedMission.id ? { ...m, status: 'completed' as MissionStatus } : m
+         ));
+
+         // 1. Mark Mission as Completed but with failure note
          await supabase.from("missions").update({ 
-             status: "open", 
-             assigned_to: null,
-             title: selectedMission.title // Ensure title stays same
+             status: "completed", 
+             completion_notes: `Échec à la certification avec un score de ${score}%`
          }).eq("id", selectedMission.id);
 
          // 2. Notify Manager
@@ -646,7 +653,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                user_id: selectedMission.created_by,
                type: "mission",
                title: "Échec Certification",
-               content: `${user.firstName} a échoué à l'examen de référent (${score}%). Mission remise dans le pool.`,
+               content: `${user.firstName} a échoué à l'examen de référent (${score}%). La mission est terminée.`,
                link: "/missions"
             });
          }
