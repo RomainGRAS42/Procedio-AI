@@ -95,6 +95,15 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
       const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
 
+      // 1. Fetch active missions ("open", "assigned", "in_progress") to check "Mission Launched"
+      const { data: activeMissions } = await supabase
+        .from('missions')
+        .select('procedure_id')
+        .in('status', ['open', 'assigned', 'in_progress'])
+        .not('procedure_id', 'is', null);
+      
+      const activeMissionSet = new Set(activeMissions?.map(m => m.procedure_id) || []);
+
       const now = new Date();
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(now.getMonth() - 6);
@@ -116,10 +125,12 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
         if (!referentSet.has(p.uuid)) {
           redZoneCount++;
+          const hasMission = activeMissionSet.has(p.uuid);
           redZoneItems.push({
             id: p.uuid,
             label: p.title || "Procédure sans titre",
-            sublabel: "Aucun référent assigné"
+            sublabel: hasMission ? "Mission en cours" : "Aucun référent assigné",
+            hasMission: hasMission
           });
         }
         totalViews += (p.views || 0);

@@ -763,6 +763,15 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                     </h3>
                     <div className="flex items-center gap-2">
                       <a
+                         href={attachmentUrl}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                         title="Ouvrir dans un nouvel onglet"
+                      >
+                         <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                      </a>
+                      <a
                         href={`${attachmentUrl}${attachmentUrl.includes("?") ? "&" : "?"}download=`}
                         download
                         className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
