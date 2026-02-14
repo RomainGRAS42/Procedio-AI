@@ -30,6 +30,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
       console.log("🔍 SearchResults: Recherche par terme exact pour:", searchTerm);
       setLoading(true);
+      setResults([]); // Reset results to avoid persistent results from previous searches
       let successLogged = false;
       let finalProcedures: Procedure[] = [];
 
