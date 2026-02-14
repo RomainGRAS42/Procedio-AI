@@ -11,6 +11,7 @@ import KPIDetailsModal from '../components/KPIDetailsModal';
 import InfoTooltip from '../components/InfoTooltip';
 import LoadingState from '../components/LoadingState';
 import CustomToast from '../components/CustomToast';
+import CreateMissionModal from '../components/CreateMissionModal';
 import { cacheStore } from '../lib/CacheStore';
 
 interface StatisticsProps {
@@ -51,6 +52,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   const [modalConfig, setModalConfig] = useState<{ title: string; type: 'urgent' | 'redZone'; items: any[] } | null>(null);
   const [redZoneList, setRedZoneList] = useState<any[]>([]);
   const [urgentList, setUrgentList] = useState<any[]>([]);
+  
+  // Mission Modal State
+  const [showMissionModal, setShowMissionModal] = useState(false);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<{ term: string; count: number } | null>(null);
+  const [technicians, setTechnicians] = useState<{ id: string; email: string; first_name: string; last_name: string }[]>([]);
 
   useEffect(() => {
     const fetchAllStats = async () => {
@@ -79,8 +85,30 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
     if (user.role === UserRole.MANAGER) {
       fetchAllStats();
+      fetchTechnicians();
     }
   }, [user]);
+
+  const fetchTechnicians = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, email, first_name, last_name, role');
+
+      if (error) throw error;
+
+      if (data) {
+        const techList = data.filter(
+          (u) =>
+            u.role &&
+            (u.role.toLowerCase() === 'technicien' || u.role.toLowerCase() === 'technician')
+        );
+        setTechnicians(techList);
+      }
+    } catch (err) {
+      console.error('Error fetching technicians:', err);
+    }
+  };
 
   const fetchHealthData = async () => {
     try {
@@ -521,13 +549,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                          
                          {/* Secondary: Delegate as Mission */}
                          <button 
-                           onClick={() => navigate('/missions', { 
-                             state: { 
-                               autoOpenCreate: true,
-                               prefillTitle: `Créer procédure : ${opp.term}`,
-                               prefillDescription: `Créer une procédure pour répondre à la recherche "${opp.term}" qui n'a pas abouti.`
-                             } 
-                           })}
+                           onClick={() => {
+                              setSelectedOpportunity(opp);
+                              setShowMissionModal(true);
+                            }}
                            className="flex items-center justify-center gap-1.5 text-[9px] font-black text-indigo-600 uppercase tracking-wider bg-white px-3 py-3 rounded-xl border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all active:scale-95"
                            title="Déléguer la création en mission"
                          >
@@ -884,6 +909,30 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           />
         </div>
       )}
+      
+      {/* Mission Creation Modal */}
+      <CreateMissionModal
+        isOpen={showMissionModal}
+        onClose={() => {
+          setShowMissionModal(false);
+          setSelectedOpportunity(null);
+        }}
+        onSuccess={async () => {
+          setToast({ message: 'Mission stratégique créée !', type: 'success' });
+          await fetchMissedOpportunities();
+        }}
+        userId={user.id}
+        prefillTitle={selectedOpportunity ? `Créer procédure : ${selectedOpportunity.term}` : ''}
+        prefillDescription={selectedOpportunity ? `📊 Opportunité détectée : ${selectedOpportunity.count} recherche${selectedOpportunity.count > 1 ? 's' : ''} infructueuse${selectedOpportunity.count > 1 ? 's' : ''} pour "${selectedOpportunity.term}"
+
+🎯 Objectif : Créer une procédure complète pour répondre à cette demande récurrente.
+
+✅ Critères de validation :
+- Procédure publiée et indexée
+- Le terme "${selectedOpportunity.term}" permet de trouver la procédure
+- Validation manager requise` : ''}
+        technicians={technicians}
+      />
     </div>
   );
 };
