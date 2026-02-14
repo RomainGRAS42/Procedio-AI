@@ -121,9 +121,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       console.log('Deleting opportunity:', opportunityToDelete.term);
       
       // Optimistic UI update - remove from list immediately
-      setMissedOpportunities(prev => 
-        prev.filter(opp => opp.term !== opportunityToDelete.term)
-      );
+      const updatedList = missedOpportunities.filter(opp => opp.term !== opportunityToDelete.term);
+      setMissedOpportunities(updatedList);
+      
+      // CRITICAL: Update cache to prevent restoration
+      cacheStore.set('stats_missed', updatedList);
 
       // Permanently delete from database
       const { error } = await supabase
