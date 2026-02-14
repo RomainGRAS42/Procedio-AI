@@ -29,7 +29,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center min-w-0">
               <span className="truncate">Missions d'Équipe</span>
-              <InfoTooltip text="Objectifs prioritaires identifiés par l'IA pour combler les manques." className="shrink-0 ml-2" />
+              <InfoTooltip text="Suivi global des missions : statut, attribution et progression." className="shrink-0 ml-2" />
             </h3>
           </div>
           <button 
@@ -47,27 +47,47 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
               <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
               <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Analyse en cours...</span>
             </div>
-          ) : activeMissions.filter(m => m.status === 'open' || m.status === 'in_progress').length > 0 ? (
+          ) : activeMissions.length > 0 ? (
             activeMissions
-              .filter(m => m.status === 'open' || m.status === 'in_progress')
               .slice(0, 5)
-              .map((mission) => (
-              <div key={mission.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => onNavigate?.('missions')}>
-                <div className="flex justify-between items-start mb-1">
-                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                    mission.urgency === 'high' ? 'bg-rose-100 text-rose-600' : 
-                    mission.urgency === 'medium' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500'
-                  }`}>
-                    {mission.urgency === 'high' ? 'Urgent' : mission.urgency === 'medium' ? 'Important' : 'Normal'}
-                  </span>
-                  <span className="text-[8px] font-bold text-indigo-400 flex items-center gap-1">
-                    <i className="fa-solid fa-star text-[7px]"></i> {mission.xp_reward} XP
-                  </span>
-                </div>
-                <h4 className="font-bold text-slate-800 text-xs leading-tight mb-0.5 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</h4>
-                <p className="text-[9px] text-slate-400 line-clamp-1">{mission.description}</p>
-              </div>
-            ))
+              .map((mission) => {
+                 const assigneeName = mission.assignee ? `${mission.assignee.first_name} ${mission.assignee.last_name}` : 'Non assigné';
+                 const statusLabel = {
+                   'open': 'À prendre',
+                   'assigned': 'Assignée',
+                   'in_progress': 'En cours',
+                   'awaiting_validation': 'En attente',
+                   'completed': 'Terminée'
+                 }[mission.status] || mission.status;
+                 
+                 const statuscolor = {
+                   'open': 'bg-slate-100 text-slate-500',
+                   'assigned': 'bg-blue-100 text-blue-600',
+                   'in_progress': 'bg-indigo-100 text-indigo-600',
+                   'awaiting_validation': 'bg-amber-100 text-amber-600',
+                   'completed': 'bg-emerald-100 text-emerald-600'
+                 }[mission.status] || 'bg-slate-100 text-slate-500';
+
+                 return (
+                  <div key={mission.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => onNavigate?.('missions')}>
+                    <div className="flex justify-between items-center mb-1">
+                      <div className="flex items-center gap-2">
+                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${statuscolor}`}>
+                           {statusLabel}
+                         </span>
+                         <span className="text-[9px] font-bold text-slate-400">
+                           {assigneeName}
+                         </span>
+                      </div>
+                      <span className="text-[8px] font-bold text-indigo-400 flex items-center gap-1">
+                        <i className="fa-solid fa-star text-[7px]"></i> {mission.xp_reward} XP
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-slate-800 text-xs leading-tight mb-0.5 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</h4>
+                    <p className="text-[9px] text-slate-400 line-clamp-1">{mission.description}</p>
+                  </div>
+                );
+              })
           ) : (
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center opacity-50">
               <i className="fa-solid fa-flag-checkered text-3xl text-slate-300 mb-2"></i>

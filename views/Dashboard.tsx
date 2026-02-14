@@ -764,13 +764,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const fetchActivities = async () => {
-    try {
-    } catch (err) { }
-    finally {
-      setLoadingActivities(false);
-    }
-  };
+
 
   const fetchSuggestions = async () => {
     setLoadingSuggestions(true);
@@ -819,13 +813,47 @@ const Dashboard: React.FC<DashboardProps> = ({
      }
   };
 
-  const fetchActiveMissions = async () => {
+  const fetchActivities = async () => {
+    setLoadingActivities(true);
     try {
       const { data, error } = await supabase
+        .from('notes')
+        .select(`
+          id, 
+          title, 
+          content, 
+          created_at, 
+          user:user_id (first_name, last_name)
+        `)
+        .or('title.ilike.CONSULTATION%,title.ilike.LOG_SUGGESTION%,title.ilike.CLAIM_MASTERY%,title.ilike.MISSION_%')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      
+      if (data) {
+        setActivities(data);
+        cacheStore.set('dash_activities', data);
+      }
+    } catch (err) {
+      console.error("Error fetching activities:", err);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const fetchActiveMissions = async () => {
+    try {
+      // Fetch missions with assignee details
+      const { data, error } = await supabase
         .from('missions')
-        .select('*')
-        .eq('status', 'active')
-        .order('end_date', { ascending: true }); 
+        .select(`
+          *,
+          assignee:assigned_to (first_name, last_name)
+        `)
+        // Filter for specific statuses relevant to the team view
+        .in('status', ['open', 'assigned', 'in_progress', 'awaiting_validation', 'completed'])
+        .order('updated_at', { ascending: false }); 
 
       if (error) console.error("Error fetching missions:", error);
       else if (data) {
@@ -951,6 +979,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       // Update Local State
       setActiveMissions(prev => prev.map(m => m.id === mission.id ? { ...m, assigned_to: user.id, status: 'in_progress' } : m));
       setToast({ message: "Mission acceptée ! Bonne chance.", type: "success" });
+
+      // LOG ACTIVITY
+      await supabase.from('notes').insert({
+        user_id: user.id,
+        title: `MISSION_CLAIM_${mission.id}`,
+        content: `a pris en charge la mission "${mission.title}"`,
+        category: 'mission_log',
+        tags: ['mission_claim'],
+        status: 'public'
+      });
 
     } catch (err) {
       console.error("Error claiming mission:", err);
