@@ -37,7 +37,11 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
           <div className="flex flex-col items-end text-right min-w-0">
              <div className="flex items-center gap-1.5 justify-end">
                <p className="text-sm font-bold text-slate-600 leading-tight">{stat.desc}</p>
-               <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} />
+               {/* Last 2 items get right alignment to avoid overflow */}
+               <InfoTooltip 
+                 text={stat.tooltipDesc || "Indicateur clé"} 
+                 align={idx >= 2 ? 'right' : 'center'} 
+               />
              </div>
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{stat.label}</p>
           </div>

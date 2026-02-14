@@ -798,7 +798,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       </div>
 
       {loading ? (
-        <LoadingState message="Analyse des données en cours..." />
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <LoadingState message="Analyse des données en cours..." />
+        </div>
       ) : (
         <div className={`
            grid gap-6 transition-all duration-500 ease-in-out

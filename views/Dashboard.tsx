@@ -844,7 +844,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const fetchActiveMissions = async () => {
     try {
-      // Fetch missions with assignee details
+      // Fetch missions - Simpler query first to ensure data comes through
       const { data, error } = await supabase
         .from('missions')
         .select(`
@@ -855,8 +855,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         .in('status', ['open', 'assigned', 'in_progress', 'awaiting_validation', 'completed'])
         .order('updated_at', { ascending: false }); 
 
-      if (error) console.error("Error fetching missions:", error);
-      else if (data) {
+      if (error) {
+         console.error("Error fetching missions:", error);
+      } else if (data) {
+         console.log("Missions fetched:", data); // Debug log
          setActiveMissions(data);
          cacheStore.set('dash_active_missions', data);
       }
@@ -868,10 +870,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const fetchLatestAnnouncement = async () => {
+    console.log("DEBUG: Fetching latest announcement from team_announcements...");
     setLoadingAnnouncement(true);
     try {
       const { data, error } = await supabase
-        .from('announcements')
+        .from('team_announcements')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -906,11 +909,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleUpdateAnnouncement = async () => {
+    console.log("DEBUG: Updating announcement in team_announcements...");
     if (!editContent.trim()) return;
     setSaving(true);
     try {
       const { data, error } = await supabase
-        .from('announcements')
+        .from('team_announcements')
         .insert({
           content: editContent,
           author_id: user.id || 'system',
