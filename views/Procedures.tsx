@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, Procedure } from '../types';
 import { supabase } from '../lib/supabase';
 // ExpertAIModal moved to App.tsx
-import SharePointImportModal from './SharePointImportModal';
 import LoadingState from '../components/LoadingState';
 import { cacheStore } from '../lib/CacheStore';
 
@@ -38,7 +37,6 @@ const Procedures: React.FC<ProceduresProps> = ({
   const [allProcedures, setAllProcedures] = useState<Procedure[]>(cacheStore.get('proc_all') || []);
   const [loading, setLoading] = useState(!cacheStore.get('proc_folders'));
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
-  const [isSharePointModalOpen, setIsSharePointModalOpen] = useState(false);
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
 
   const cleanFileName = (name: string) => {
@@ -201,21 +199,6 @@ const Procedures: React.FC<ProceduresProps> = ({
                 </div>
               </div>
 
-              <div className="relative group">
-                <button 
-                  onClick={() => setIsSharePointModalOpen(true)}
-                  className="bg-white px-6 py-5 rounded-[1.5rem] font-bold text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-indigo-100 transition-all active:scale-95 border border-slate-100 text-slate-600 hover:text-[#0078d4]"
-                >
-                  <i className="fa-brands fa-microsoft text-lg text-[#0078d4]"></i>
-                  <span>Importer SharePoint</span>
-                </button>
-                
-                {/* Tooltip Premium */}
-                <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-80 p-5 bg-slate-800 text-white text-xs font-semibold rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-relaxed tracking-wide antialiased">
-                  Connectez votre Cloud pour synchroniser automatiquement vos dossiers SharePoint masifs.
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-2 border-8 border-transparent border-b-slate-800"></div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -476,15 +459,6 @@ const Procedures: React.FC<ProceduresProps> = ({
         </div>
       </div>
 
-      {isSharePointModalOpen && (
-        <SharePointImportModal 
-          onClose={() => setIsSharePointModalOpen(false)}
-          onImport={(url) => {
-            console.log("Import SharePoint requested:", url);
-            // Ici, on pourrait déclencher un vrai appel backend
-          }}
-        />
-      )}
     </div>
   );
 };

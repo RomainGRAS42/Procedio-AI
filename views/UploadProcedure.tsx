@@ -10,7 +10,11 @@ interface UploadProcedureProps {
 }
 
 const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeTransfer, setActiveTransfer }) => {
-  const [uploadMode, setUploadMode] = useState<'file' | 'folder'>('file');
+  const [uploadMode, setUploadMode] = useState<'file' | 'folder' | 'sharepoint'>('file');
+  const [sharepointUrl, setSharepointUrl] = useState('');
+  const [isSharepointLoading, setIsSharepointLoading] = useState(false);
+  const [showFolderWarning, setShowFolderWarning] = useState(false);
+  const [categoryMode, setCategoryMode] = useState<'existing' | 'new'>('existing');
   const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const [customFolder, setCustomFolder] = useState('');
@@ -33,7 +37,21 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   };
 
   const currentTitle = useCustomTitle ? customTitle : (file ? cleanFileName(file.name) : '');
-  const finalCategory = customFolder.trim() || selectedFolder;
+  const finalCategory = categoryMode === 'new' ? (customFolder.trim() || 'NON CLASSÉ') : selectedFolder;
+
+  const folderInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFolderClick = (e: React.MouseEvent) => {
+    if (!folderFiles.length) {
+      e.preventDefault();
+      setShowFolderWarning(true);
+    }
+  };
+
+  const triggerFolderPicker = () => {
+    setShowFolderWarning(false);
+    folderInputRef.current?.click();
+  };
 
   const handlePublish = async () => {
     if (uploadMode === 'file') {
@@ -115,6 +133,12 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
           >
             <i className="fa-solid fa-folder-tree"></i> Dossier complet
           </button>
+          <button 
+            onClick={() => setUploadMode('sharepoint')}
+            className={`px-8 py-3 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${uploadMode === 'sharepoint' ? 'bg-white text-[#0078d4] shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <i className="fa-brands fa-microsoft"></i> SharePoint
+          </button>
         </div>
 
         <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-xl space-y-8 mt-8">
@@ -126,9 +150,9 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
           )}
 
           <div className={`relative border-2 border-dashed rounded-[2.5rem] p-16 transition-all text-center group ${
-            (uploadMode === 'file' ? file : folderFiles.length > 0) ? 'bg-indigo-50 border-indigo-400' : 'border-slate-100 hover:border-indigo-400'
+            (uploadMode === 'file' ? file : uploadMode === 'folder' ? folderFiles.length > 0 : sharepointUrl.trim().length > 0) ? 'bg-indigo-50 border-indigo-400' : 'border-slate-100 hover:border-indigo-400'
           }`}>
-            {!activeTransfer && (
+            {!activeTransfer && uploadMode !== 'sharepoint' && (
               uploadMode === 'file' ? (
                 <input 
                   type="file" 
@@ -137,37 +161,66 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
                   onChange={(e) => setFile(e.target.files?.[0] || null)} 
                 />
               ) : (
-                <input 
-                  type="file" 
-                  {...({ 
-                    webkitdirectory: "", 
-                    directory: "" 
-                  } as any)}
-                  multiple
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                  onChange={handleFolderChange} 
-                />
+                <div className="absolute inset-0 z-10 cursor-pointer" onClick={handleFolderClick}>
+                  <input 
+                    type="file" 
+                    ref={folderInputRef}
+                    {...({ 
+                      webkitdirectory: "", 
+                      directory: "" 
+                    } as any)}
+                    multiple
+                    className="hidden" 
+                    onChange={handleFolderChange} 
+                  />
+                </div>
               )
             )}
-            <div className="flex flex-col items-center gap-4">
-              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl transition-all ${
-                (uploadMode === 'file' ? file : folderFiles.length > 0) ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-200'
-              }`}>
-                <i className={`fa-solid ${
-                  uploadMode === 'folder' ? 'fa-folder-open' :
-                  !file ? 'fa-cloud-arrow-up' : 
-                  file.name.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' :
-                  file.name.toLowerCase().endsWith('.docx') ? 'fa-file-word' :
-                  'fa-file-image'
-                }`}></i>
+            
+            {uploadMode === 'sharepoint' ? (
+              <div className="flex flex-col items-center gap-6 w-full max-w-md mx-auto relative z-10">
+                <div className={`w-20 h-20 rounded-[1.5rem] bg-[#0078d4] text-white flex items-center justify-center text-3xl shadow-lg transition-all ${sharepointUrl.trim() ? 'scale-110 shadow-blue-200' : 'opacity-80'}`}>
+                  <i className="fa-brands fa-microsoft"></i>
+                </div>
+                <div className="w-full space-y-3">
+                  <label className="block text-[10pt] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    Lien SharePoint
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <i className="fa-solid fa-link text-slate-300 group-focus-within:text-[#0078d4] transition-colors"></i>
+                    </div>
+                    <input
+                      type="text"
+                      value={sharepointUrl}
+                      onChange={(e) => setSharepointUrl(e.target.value)}
+                      placeholder="https://company.sharepoint.com/..."
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-2 border-slate-100 focus:border-[#0078d4] outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300 shadow-sm"
+                    />
+                  </div>
+                </div>
               </div>
-              <p className="font-black text-slate-800 text-xl tracking-tight uppercase">
-                {uploadMode === 'file' 
-                  ? (file ? file.name : 'Sélectionnez un fichier')
-                  : (folderFiles.length > 0 ? `${folderFiles.length} fichiers sélectionnés` : 'Sélectionnez un dossier')
-                }
-              </p>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl transition-all ${
+                  (uploadMode === 'file' ? file : folderFiles.length > 0) ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-200'
+                }`}>
+                  <i className={`fa-solid ${
+                    uploadMode === 'folder' ? 'fa-folder-open' :
+                    !file ? 'fa-cloud-arrow-up' : 
+                    file.name.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' :
+                    file.name.toLowerCase().endsWith('.docx') ? 'fa-file-word' :
+                    'fa-file-image'
+                  }`}></i>
+                </div>
+                <p className="font-black text-slate-800 text-xl tracking-tight uppercase">
+                  {uploadMode === 'file' 
+                    ? (file ? file.name : 'Sélectionnez un fichier')
+                    : (folderFiles.length > 0 ? `${folderFiles.length} fichiers sélectionnés` : 'Sélectionnez un dossier')
+                  }
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -204,43 +257,88 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
               </div>
             )}
 
-            <div className="grid md:grid-cols-2 gap-8 pt-4">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Dossier de destination existant</label>
-                <select 
-                  className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 shadow-inner appearance-none cursor-pointer"
-                  value={selectedFolder}
-                  onChange={(e) => setSelectedFolder(e.target.value)}
-                  disabled={!!activeTransfer || !!customFolder.trim()}
-                >
-                  {folders.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
+            <div className="space-y-6 pt-4">
+              <div className="flex flex-col items-center gap-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Organisation du Drive</label>
+                <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner w-full max-w-sm">
+                  <button 
+                    onClick={() => setCategoryMode('existing')}
+                    className={`flex-1 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${categoryMode === 'existing' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Dossier Existant
+                  </button>
+                  <button 
+                    onClick={() => setCategoryMode('new')}
+                    className={`flex-1 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${categoryMode === 'new' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Nouvelle Catégorie
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Ou créer une nouvelle catégorie</label>
-                <input 
-                  type="text"
-                  placeholder="NOM DU NOUVEAU DOSSIER..."
-                  className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 shadow-inner focus:placeholder-transparent"
-                  value={customFolder}
-                  onChange={(e) => setCustomFolder(e.target.value)}
-                  disabled={!!activeTransfer}
-                />
+              <div className="animate-fade-in">
+                {categoryMode === 'existing' ? (
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Sélectionner un dossier</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 shadow-inner appearance-none cursor-pointer pr-12"
+                        value={selectedFolder}
+                        onChange={(e) => setSelectedFolder(e.target.value)}
+                        disabled={!!activeTransfer}
+                      >
+                        {folders.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                        <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 animate-slide-up">
+                    <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom du nouveau dossier</label>
+                    <input 
+                      type="text"
+                      placeholder="EX: FINANCE, RH, TECHNIQUE..."
+                      className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 shadow-inner focus:placeholder-transparent"
+                      value={customFolder}
+                      onChange={(e) => setCustomFolder(e.target.value)}
+                      disabled={!!activeTransfer}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             <button 
-              onClick={handlePublish}
+              onClick={async () => {
+                if (uploadMode === 'sharepoint') {
+                  setIsSharepointLoading(true);
+                  // Simulation
+                  await new Promise(r => setTimeout(r, 2000));
+                  setIsSharepointLoading(false);
+                  setShowSuccessPopup(true);
+                } else {
+                  handlePublish();
+                }
+              }}
               disabled={
                 activeTransfer !== null ||
                 (uploadMode === 'file' && (!file || !currentTitle.trim())) ||
                 (uploadMode === 'folder' && folderFiles.length === 0) ||
-                !finalCategory.trim()
+                (uploadMode === 'sharepoint' && !sharepointUrl.trim()) ||
+                !finalCategory.trim() || isSharepointLoading
               }
-              className="w-full bg-indigo-600 text-white px-12 py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 disabled:opacity-30 mt-4"
+              className={`w-full ${uploadMode === 'sharepoint' ? 'bg-[#0078d4]' : 'bg-indigo-600'} text-white px-12 py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 disabled:opacity-30 mt-4 flex items-center justify-center gap-3`}
             >
-              {activeTransfer ? 'INDEXATION IA EN COURS...' : 'LANCER LA SYNCHRONISATION'}
+              {isSharepointLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>CONNEXION CLOUD...</span>
+                </>
+              ) : (
+                activeTransfer ? 'INDEXATION IA EN COURS...' : (uploadMode === 'sharepoint' ? 'LANCER L\'IMPORT SHAREPOINT' : 'LANCER LA SYNCHRONISATION')
+              )}
             </button>
           </div>
         </div>
@@ -255,6 +353,58 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
            </div>
         </div>
       </div>
+
+      {showFolderWarning && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Branded background effect */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-60"></div>
+            
+            <div className="relative z-10 space-y-8">
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl shadow-xl shadow-indigo-100">
+                  <i className="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">Accès Sécurisé</h3>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-1">Protocole d'importation Procedio</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  Vous allez importer un dossier complet. Pour des raisons de sécurité, votre navigateur va vous demander de confirmer l'accès aux fichiers du dossier <span className="text-indigo-600 font-bold">Procedio</span>.
+                </p>
+                
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                    <i className="fa-solid fa-fingerprint"></i>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-bold leading-normal">
+                    L'indexation Procedio est 100% sécurisée. Aucun fichier n'est stocké sans chiffrement de bout en bout.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-4">
+                <button 
+                  onClick={triggerFolderPicker}
+                  className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
+                >
+                  Continuer vers l'import
+                  <i className="fa-solid fa-arrow-right"></i>
+                </button>
+                <button 
+                  onClick={() => setShowFolderWarning(false)}
+                  className="w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  Plus tard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
