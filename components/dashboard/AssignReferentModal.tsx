@@ -38,7 +38,7 @@ const AssignReferentModal: React.FC<AssignReferentModalProps> = ({
         .select("id")
         .eq("procedure_id", procedureId)
         .in("status", ["open", "assigned", "in_progress"])
-        .single();
+        .maybeSingle();
 
       if (existingMission) {
         // Just close if already exists, maybe toast
@@ -60,7 +60,7 @@ const AssignReferentModal: React.FC<AssignReferentModalProps> = ({
           description: `Objectif : Valider votre expertise sur cette procédure orpheline.\n\nAction requise : Passer l'examen de maîtrise (Quiz).\n\nRécompense : Statut de Référent + Prime XP.`,
           xp_reward: 300, // High reward for crucial role
           urgency: "high", // Critical/High
-          targetType: "team", // Visible to all
+          target_type: "team", // Visible to all
           assigned_to: null, // OPEN
           created_by: user.id,
           status: "open",
