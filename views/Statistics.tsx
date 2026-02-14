@@ -341,14 +341,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
   };
 
-  const handleKpiClick = (type: 'urgent' | 'redZone') => {
-    if (type === 'urgent') {
-      setModalConfig({
-        title: 'Recherches Critiques (Manquantes)',
-        type: 'urgent',
-        items: urgentList
-      });
-    } else {
+  const handleKpiClick = (type: 'redZone') => {
+    if (type === 'redZone') {
       setModalConfig({
         title: 'Procédures Orphelines (Zone Rouge)',
         type: 'redZone',
@@ -502,8 +496,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                </div>
              </div>
         )}
-     </div>
-        )}
+
 
         {type === 'reliability' && (
              <div className="space-y-6 animate-fade-in flex-1">
@@ -843,76 +836,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       )}
       
       {/* Mission Creation Modal */}
-      <CreateMissionModal
-        isOpen={showMissionModal}
-        onClose={() => {
-          setShowMissionModal(false);
-          setSelectedOpportunity(null);
-        }}
-        onSuccess={async () => {
-          setToast({ message: 'Mission stratégique créée !', type: 'success' });
-          await fetchMissedOpportunities();
-        }}
-        userId={user.id}
-        prefillTitle={selectedOpportunity ? `Créer procédure : ${selectedOpportunity.term}` : ''}
-        prefillDescription={selectedOpportunity ? `📊 Opportunité détectée : ${selectedOpportunity.count} recherche${selectedOpportunity.count > 1 ? 's' : ''} infructueuse${selectedOpportunity.count > 1 ? 's' : ''} pour "${selectedOpportunity.term}"
 
-🎯 Objectif : Créer une procédure complète pour répondre à cette demande récurrente.
-
-✅ Critères de validation :
-- Procédure publiée et indexée
-- Le terme "${selectedOpportunity.term}" permet de trouver la procédure
-- Validation manager requise` : ''}
-        technicians={technicians}
-      />
-      
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && opportunityToDelete && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-scale-up">
-            {/* Header */}
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-2xl">
-                <i className="fa-solid fa-triangle-exclamation"></i>
-              </div>
-            </div>
-
-            {/* Title */}
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight text-center mb-3">
-              Supprimer définitivement ?
-            </h3>
-
-            {/* Description */}
-            <div className="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-100">
-              <p className="text-sm font-bold text-slate-700 mb-3">
-                Opportunité : <span className="text-indigo-600">"{opportunityToDelete.term}"</span>
-              </p>
-              <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                Cette action est <span className="font-black text-rose-600">irréversible</span> et supprimera toutes les données associées à cette opportunité.
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setOpportunityToDelete(null);
-                }}
-                className="py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all active:scale-95"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleDeleteOpportunity}
-                className="py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all active:scale-95"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
