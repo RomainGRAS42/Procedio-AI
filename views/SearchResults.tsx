@@ -20,7 +20,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const cachedResults = cacheStore.get(`search_${searchTerm}`);
   const [loading, setLoading] = useState(!cachedResults && searchTerm.trim() !== "");
   const [results, setResults] = useState<Procedure[]>(cachedResults || []);
-  const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
   useEffect(() => {
     const performSearch = async () => {
@@ -31,7 +30,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
       console.log("🔍 SearchResults: Recherche Hybride pour:", searchTerm);
       setLoading(true);
-      
+      let successLogged = false;
+      let finalProcedures: Procedure[] = [];
+
       try {
         // 0. LOG SEARCH QUERY (GLOBAL)
         if (searchTerm.length > 2) {
@@ -56,7 +57,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
         if (dbMatches && dbMatches.length > 0) {
           console.log("✅ Database matches found:", dbMatches.length);
-          const procedures: Procedure[] = dbMatches.map((f: any) => ({
+          finalProcedures = dbMatches.map((f: any) => ({
             id: f.uuid || f.file_id || f.id,
             db_id: f.uuid,
             file_id: f.file_id || f.uuid,
@@ -68,7 +69,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             views: f.views || 0,
             status: f.status || 'validated'
           }));
-          setResults(procedures);
+          
+          setResults(finalProcedures);
           setLoading(false);
 
           // Log success for KPI volume
@@ -80,127 +82,120 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             status: 'private',
             category: 'general'
           });
-
-          return;
+          successLogged = true;
+          return; // Exit if results found in DB
         }
 
         // 2. FALLBACK SÉMANTIQUE (WEBHOOK n8n)
         console.log("🤖 Fallback: Recherche via Webhook pour:", searchTerm);
-        const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            query: searchTerm,
-            user_email: user.email || 'unknown'
-          })
-        });
+        try {
+          const response = await fetch('https://n8n.srv901593.hstgr.cloud/webhook/search-procedures', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: searchTerm,
+              user_email: user.email || 'unknown'
+            })
+          });
 
-        if (!response.ok) {
-          throw new Error(`Erreur webhook: ${response.status}`);
-        }
+          if (response.ok) {
+            const data = await response.json();
+            const resultData = Array.isArray(data) ? data[0] : data;
+            let webhookProcedures: any[] = [];
+            
+            if (resultData && resultData.results) {
+                webhookProcedures = resultData.results;
+            }
 
-        const data = await response.json();
-        const resultData = Array.isArray(data) ? data[0] : data;
-        let webhookProcedures: any[] = [];
-        
-        if (resultData && resultData.results) {
-            webhookProcedures = resultData.results;
-        }
+            finalProcedures = webhookProcedures.map((f: any, index: number) => ({
+              id: f.id || f.uuid || `webhook-${index}`,
+              db_id: f.id || f.uuid,
+              file_id: f.id || f.uuid || `webhook-${index}`,
+              title: f.title || "Sans titre",
+              category: f.category || 'NON CLASSÉ',
+              fileUrl: f.file_url,
+              pinecone_document_id: f.pinecone_document_id,
+              createdAt: new Date().toISOString(),
+              views: 0,
+              status: 'validated'
+            }));
 
-        const foundProcedures: Procedure[] = webhookProcedures.map((f: any, index: number) => ({
-          id: f.id || f.uuid || `webhook-${index}`,
-          db_id: f.id || f.uuid,
-          file_id: f.id || f.uuid || `webhook-${index}`,
-          title: f.title || "Sans titre",
-          category: f.category || 'NON CLASSÉ',
-          fileUrl: f.file_url,
-          pinecone_document_id: f.pinecone_document_id,
-          createdAt: new Date().toISOString(),
-          views: 0,
-          status: 'validated'
-        }));
+            if (finalProcedures.length > 0) {
+              setResults(finalProcedures);
+              cacheStore.set(`search_${searchTerm}`, finalProcedures);
+              successLogged = true;
 
-        setResults(foundProcedures);
-        cacheStore.set(`search_${searchTerm}`, foundProcedures);
-
-        if (foundProcedures.length > 0) {
-           // Log success for KPI volume
-           await supabase.from('notes').insert({
-             user_id: user.id,
-             title: `LOG_SEARCH_SUCCESS_${searchTerm.trim().toUpperCase()}`,
-             content: `Recherche fructueuse (AI) pour "${searchTerm}".`,
-             tags: ['system_log', 'search_success'],
-             status: 'private',
-             category: 'general'
-           });
-        }
-
-
-
-        // Log si aucun résultat global
-        if (foundProcedures.length === 0) {
-          console.log("⚠️ Aucune procédure trouvée au total pour:", searchTerm);
-          
-          if (searchTerm.length > 2) {
-             const normalizedTerm = searchTerm.trim();
-             console.log("⚙️ Tentative de log Search Opportunity pour:", normalizedTerm);
-             
-             // Check if opportunity already exists
-             const { data: existingOp, error: fetchError } = await supabase
-               .from('search_opportunities')
-               .select('id, search_count')
-               .ilike('term', normalizedTerm)
-               .eq('status', 'pending')
-               .maybeSingle();
-
-             if (fetchError) console.error("❌ Erreur fetch opportunity:", fetchError);
-
-             if (existingOp) {
-               console.log("📝 Mise à jour de l'opportunité existante:", existingOp.id);
-               const { error: updateError } = await supabase
-                 .from('search_opportunities')
-                 .update({ 
-                   search_count: (existingOp.search_count || 0) + 1,
-                   last_searched_at: new Date().toISOString()
-                 })
-                 .eq('id', existingOp.id);
-               
-               if (updateError) console.error("❌ Erreur update opportunity:", updateError);
-               else console.log("✅ Opportunity mise à jour (+1)");
-             } else {
-               console.log("📝 Création d'une nouvelle opportunité pour:", normalizedTerm);
-               const { error: insertError } = await supabase
-                 .from('search_opportunities')
-                 .insert({
-                   term: normalizedTerm,
-                   search_count: 1,
-                   status: 'pending',
-                   last_searched_at: new Date().toISOString()
-                 });
-               
-               if (insertError) console.error("❌ Erreur insert opportunity:", insertError);
-               else console.log("✅ Nouvelle opportunity créée");
-             }
-
-             // Also log a general search fail note for audit history
-             const { error: logError } = await supabase.from('notes').insert({
-               user_id: user.id,
-               title: `LOG_SEARCH_FAIL_${normalizedTerm.toUpperCase()}`,
-               content: `Échec de recherche pour "${normalizedTerm}" (Table search_opportunities mise à jour).`,
-               tags: ['system_log', 'search_fail'],
-               status: 'private',
-               category: 'general'
-             });
-             
-             if (logError) console.error("❌ Erreur log search fail (notes):", logError);
+              // Log success for KPI volume
+              await supabase.from('notes').insert({
+                user_id: user.id,
+                title: `LOG_SEARCH_SUCCESS_${searchTerm.trim().toUpperCase()}`,
+                content: `Recherche fructueuse (AI) pour "${searchTerm}".`,
+                tags: ['system_log', 'search_success'],
+                status: 'private',
+                category: 'general'
+              });
+            }
+          } else {
+            console.warn("⚠️ Webhook response not OK:", response.status);
           }
+        } catch (fetchErr) {
+          console.error("❌ Fallback Webhook Failed (CORS or Network):", fetchErr);
+          // Non-blocking error, allow failure logging below
         }
+
       } catch (err) {
-        console.error("❌ Search error:", err);
-        setResults([]);
+        console.error("❌ Global Search error:", err);
       } finally {
+        // 3. LOG SEARCH FAILURE / OPPORTUNITY
+        if (!successLogged && finalProcedures.length === 0 && searchTerm.length > 2) {
+           const normalizedTerm = searchTerm.trim();
+           console.log("⚙️ Log Search Failure for:", normalizedTerm);
+           
+           try {
+              // Check if opportunity already exists
+              const { data: existingOp } = await supabase
+                .from('search_opportunities')
+                .select('id, search_count')
+                .ilike('term', normalizedTerm)
+                .eq('status', 'pending')
+                .maybeSingle();
+
+              if (existingOp) {
+                console.log("📝 Update existing opportunity:", existingOp.id);
+                await supabase
+                  .from('search_opportunities')
+                  .update({ 
+                    search_count: (existingOp.search_count || 0) + 1,
+                    last_searched_at: new Date().toISOString()
+                  })
+                  .eq('id', existingOp.id);
+              } else {
+                console.log("📝 Create new opportunity:", normalizedTerm);
+                await supabase
+                  .from('search_opportunities')
+                  .insert({
+                    term: normalizedTerm,
+                    search_count: 1,
+                    status: 'pending',
+                    last_searched_at: new Date().toISOString()
+                  });
+              }
+
+              // Also log a general search fail note
+              await supabase.from('notes').insert({
+                user_id: user.id,
+                title: `LOG_SEARCH_FAIL_${normalizedTerm.toUpperCase()}`,
+                content: `Échec de recherche pour "${normalizedTerm}" (Table search_opportunities mise à jour).`,
+                tags: ['system_log', 'search_fail'],
+                status: 'private',
+                category: 'general'
+              });
+           } catch (dbLogErr) {
+              console.error("❌ Error logging to Supabase:", dbLogErr);
+           }
+        }
         setLoading(false);
       }
     };
@@ -220,8 +215,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   return (
     <div className="space-y-8 animate-slide-up pb-12 px-4 md:px-10 py-8 h-full">
-      {/* Header Resultats */}
-      {/* Header Resultats */}
       <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center gap-6">
         <button 
           onClick={onBack}
@@ -238,7 +231,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
       </section>
 
-      {/* Loading State */}
       {loading ? (
         <LoadingState message="L'IA décode votre intention..." />
       ) : (
@@ -275,7 +267,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               </article>
             ))
           ) : (
-            /* Empty State */
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
               <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-sm animate-bounce-slow">
                 <i className="fa-solid fa-magnifying-glass-minus"></i>
