@@ -17,7 +17,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onSelectProcedure,
   onBack,
 }) => {
-  const cachedResults = cacheStore.get(`search_${searchTerm}`);
+  const cachedResults = cacheStore.get(`search_exact_${searchTerm}`);
   const [loading, setLoading] = useState(!cachedResults && searchTerm.trim() !== "");
   const [results, setResults] = useState<Procedure[]>(cachedResults || []);
 
@@ -28,18 +28,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         return;
       }
 
-      console.log("🔍 SearchResults: Recherche Hybride (Interne) pour:", searchTerm);
+      console.log("🔍 SearchResults: Recherche par terme exact pour:", searchTerm);
       setLoading(true);
       let successLogged = false;
       let finalProcedures: Procedure[] = [];
 
       try {
-        // 1. RECHERCHE DIRECTE SUPABASE (MATCH EXACT/PARTIEL)
+        // 1. RECHERCHE DIRECTE SUPABASE (MATCH EXACT/PARTIEL SUR TITRE OU CONTENU)
+        // Note: Utilisation de or() pour chercher dans le titre OU le contenu pour être efficace
         const { data: dbMatches, error: dbError } = await supabase
           .from('procedures')
           .select('*')
-          .ilike('title', `%${searchTerm}%`)
-          .limit(10);
+          .or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`)
+          .limit(20);
 
         if (dbError) console.error("❌ Database search error:", dbError);
 
@@ -59,109 +60,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           }));
           
           setResults(finalProcedures);
+          cacheStore.set(`search_exact_${searchTerm}`, finalProcedures);
           setLoading(false);
           successLogged = true;
-          return; // Sortie anticipée si match direct
-        }
-
-        // 2. FALLBACK SÉMANTIQUE (Edge Function interne - RAG)
-        // Anti-Bruit: Si le terme est trop court, on évite le sémantique pour ne pas halluciner
-        if (searchTerm.trim().length <= 3) {
-          console.log("⚠️ Terme trop court pour la recherche sémantique, passage direct aux opportunités.");
-          return;
-        }
-
-        console.log("🤖 Fallback Sémantique: Appel Edge Function pour:", searchTerm);
-        try {
-          const { data, error: functionError } = await supabase.functions.invoke('copilot-assistant', {
-            body: { 
-              question: searchTerm,
-              userName: user.firstName,
-              userId: user.id
-            }
-          });
-
-          if (functionError) throw functionError;
-
-          // Si l'IA renvoie 'uncertain', on ne traite pas cela comme un succès
-          if (data.type === 'uncertain') {
-            console.log("ℹ️ IA incertaine pour ce terme.");
-            return;
-          }
-
-          let semanticProcedures: Procedure[] = [];
-
-          // Mapping Expert (RAG de haute confiance)
-          if (data.type === 'expert' && data.source) {
-            // Dans ce mode, l'IA a trouvé une source très proche (score > 0.82)
-            const { data: proc } = await supabase
-              .from('procedures')
-              .select('*')
-              .ilike('title', `%${data.source}%`)
-              .maybeSingle();
-            
-            if (proc) {
-              semanticProcedures.push({
-                id: proc.file_id || proc.uuid,
-                db_id: proc.uuid,
-                file_id: proc.file_id || proc.uuid,
-                title: proc.title,
-                category: proc.Type,
-                fileUrl: proc.file_url,
-                createdAt: proc.created_at,
-                views: proc.views || 0,
-                status: proc.status || 'validated'
-              } as Procedure);
-            }
-          }
-
-          // Mapping Explorer (RAG de confiance moyenne - 0.45+)
-          if (data.type === 'explorer' && data.groupedSuggestions) {
-            // Pour limiter les hallucinations sur des mots comme "kool", 
-            // on pourrait filtrer par score côté client ici si nécessaire.
-            const titles = data.groupedSuggestions.map((s: any) => s.title);
-            const { data: procs } = await supabase
-              .from('procedures')
-              .select('*')
-              .in('title', titles);
-            
-            if (procs) {
-              procs.forEach(p => {
-                 if (!semanticProcedures.find(fp => fp.id === (p.file_id || p.uuid))) {
-                   semanticProcedures.push({
-                     id: p.file_id || p.uuid,
-                     db_id: p.uuid,
-                     file_id: p.file_id || p.uuid,
-                     title: p.title,
-                     category: p.Type,
-                     fileUrl: p.file_url,
-                     createdAt: p.created_at,
-                     views: p.views || 0,
-                     status: p.status || 'validated'
-                   } as Procedure);
-                 }
-              });
-            }
-          }
-
-          finalProcedures = semanticProcedures;
-
-          if (finalProcedures.length > 0) {
-            setResults(finalProcedures);
-            cacheStore.set(`search_${searchTerm}`, finalProcedures);
-            successLogged = true;
-          }
-        } catch (funcErr) {
-          console.error("❌ Fallback Edge Function Failed:", funcErr);
+          return; 
         }
 
       } catch (err) {
         console.error("❌ Global Search error:", err);
       } finally {
-        // 3. LOG SEARCH OPPORTUNITY (Échec garanti si pas de résultats)
+        // 2. LOG SEARCH OPPORTUNITY (Si aucun résultat exact trouvé)
         if (!successLogged && finalProcedures.length === 0 && searchTerm.length > 2) {
            const normalizedTerm = searchTerm.trim();
-           console.log("⚙️ Tentative de log Search Opportunity pour:", normalizedTerm);
+           console.log("⚙️ Log de manque détecté pour:", normalizedTerm);
            
            try {
               const { data: existingOp } = await supabase
@@ -172,7 +83,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 .maybeSingle();
 
               if (existingOp) {
-                console.log("♻️ Mise à jour d'une opportunité existante");
                 await supabase
                   .from('search_opportunities')
                   .update({ 
@@ -181,8 +91,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   })
                   .eq('id', existingOp.id);
               } else {
-                console.log("🆕 Création d'une nouvelle opportunité");
-                const { error: insertErr } = await supabase
+                await supabase
                   .from('search_opportunities')
                   .insert({
                     term: normalizedTerm,
@@ -190,11 +99,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     status: 'pending',
                     last_searched_at: new Date().toISOString()
                   });
-                if (insertErr) throw insertErr;
-                console.log("✅ Opportunité créée avec succès !");
               }
            } catch (dbLogErr) {
-              console.error("❌ Critical RLS/Database Error for search_opportunities:", dbLogErr);
+              console.error("❌ Database logging failed:", dbLogErr);
            }
         }
         setLoading(false);
@@ -202,7 +109,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     };
 
     performSearch();
-  }, [searchTerm, user.id, user.firstName]);
+  }, [searchTerm]);
 
   return (
     <div className="space-y-8 animate-slide-up pb-12 px-4 md:px-10 py-8 h-full">
@@ -214,7 +121,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         </button>
         <div>
           <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2">
-            Moteur de Recherche Intelligence Artificielle
+            Moteur de Recherche par Terme
           </p>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">
             Résultats pour <span className="text-indigo-600">"{searchTerm}"</span>
@@ -223,7 +130,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       </section>
 
       {loading ? (
-        <LoadingState message="Contextualisation des procédures..." />
+        <LoadingState message="Recherche des correspondances exactes..." />
       ) : (
         <section className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
           {results.length > 0 ? (
@@ -262,13 +169,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-sm animate-bounce-slow">
                 <i className="fa-solid fa-magnifying-glass-minus"></i>
               </div>
-              <h3 className="text-2xl font-black text-slate-800 mb-2">Aucun résultat trouvé</h3>
+              <h3 className="text-2xl font-black text-slate-800 mb-2">Aucun résultat exact trouvé</h3>
               <p className="text-slate-400 max-w-md mx-auto mb-8 font-medium">
-                Aucune procédure n'est remontée dans le contexte interne pour "{searchTerm}".
+                Aucune procédure ne contient précisément le terme "{searchTerm}".
                 <br />
                 <span className="text-indigo-500 font-medium block mt-3 text-sm">
-                  <i className="fa-solid fa-shield-check mr-2"></i>
-                  Nouveau besoin enregistré dans le plan de connaissances.
+                  <i className="fa-solid fa-clipboard-list mr-2"></i>
+                  Besoin enregistré comme opportunité de connaissance.
                 </span>
               </p>
               <button 

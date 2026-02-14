@@ -455,7 +455,7 @@ const Header: React.FC<HeaderProps> = ({
           <form onSubmit={handleSearchSubmit} className="relative group">
             <input
               type="text"
-              placeholder="Rechercher une procédure..."
+              placeholder="Rechercher terme exact..."
               className={`w-full pl-12 py-2.5 rounded-2xl bg-slate-100 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-bold text-slate-700 text-sm shadow-inner ${
                 localSearch.trim() ? 'pr-36' : 'pr-12'
               }`}
