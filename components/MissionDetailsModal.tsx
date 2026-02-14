@@ -59,6 +59,9 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   const [promoteTitle, setPromoteTitle] = useState(mission.title);
   const [promoteCategory, setPromoteCategory] = useState("Missions / Transferts");
 
+  // Security: Signed URL state
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use the shared publisher hook
@@ -154,6 +157,49 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
     }
     setLoadingMessages(false);
   };
+
+  // Generate Signed URL for attachment
+  useEffect(() => {
+    const generateSignedUrl = async () => {
+      if (!attachmentUrl) {
+        setSignedUrl(null);
+        return;
+      }
+
+      // If it's a blob URL (local upload preview), use it directly
+      if (attachmentUrl.startsWith("blob:")) {
+        setSignedUrl(attachmentUrl);
+        return;
+      }
+
+      try {
+        // Extract path from public URL
+        // format: .../mission-attachments/folder/file.pdf
+        const path = attachmentUrl.split("/mission-attachments/")[1];
+        if (!path) {
+           console.warn("Could not extract path from public URL:", attachmentUrl);
+           setSignedUrl(attachmentUrl); // Fallback to public if parsing fails
+           return;
+        }
+
+        const { data, error } = await supabase.storage
+          .from("mission-attachments")
+          .createSignedUrl(decodeURIComponent(path), 3600); // 1 hour validity
+
+        if (error) {
+          console.error("Error signing URL:", error);
+          setSignedUrl(attachmentUrl); // Fallback
+        } else if (data) {
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.error("Error generating signed URL:", err);
+        setSignedUrl(attachmentUrl);
+      }
+    };
+
+    generateSignedUrl();
+  }, [attachmentUrl]);
 
   const subscribeToMessages = () => {
     const channel = supabase
@@ -350,11 +396,13 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
         // 1. Download the file from mission attachments as a File object
         // This is needed for useProcedurePublisher.publishFile
-        const fileResponse = await fetch(attachmentUrl);
+        const fileResponse = await fetch(signedUrl || attachmentUrl);
         const fileBlob = await fileResponse.blob();
         
         // Get correct extension from URL or fallback to original attachment naming
-        const urlParts = attachmentUrl.split('?')[0].split('.');
+        // Use signedUrl or attachmentUrl appropriately
+        const urlToParse = signedUrl || attachmentUrl;
+        const urlParts = urlToParse.split('?')[0].split('.');
         const fileExt = urlParts.length > 1 ? urlParts.pop()?.toLowerCase() : 'pdf';
         
         const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${fileExt}`;
@@ -761,54 +809,77 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                       <i className="fa-regular fa-eye"></i> Aperçu du document
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <a
-                         href={attachmentUrl}
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
-                         title="Ouvrir dans un nouvel onglet"
-                      >
-                         <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                      </a>
-                      <a
-                        href={`${attachmentUrl}${attachmentUrl.includes("?") ? "&" : "?"}download=`}
-                        download
-                        className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
-                        title="Télécharger">
-                        <i className="fa-solid fa-download text-xs"></i>
-                      </a>
-                    </div>
+                    
+                    {signedUrl ? (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={signedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                          title="Ouvrir dans un nouvel onglet"
+                        >
+                          <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                        </a>
+                        <a
+                          href={`${signedUrl}${signedUrl.includes("?") ? "&" : "?"}download=`}
+                          download
+                          className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                          title="Télécharger">
+                          <i className="fa-solid fa-download text-xs"></i>
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 opacity-50">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                          <i className="fa-solid fa-circle-notch fa-spin text-xs text-slate-400"></i>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 overflow-hidden p-4 flex flex-col relative">
                     <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative">
-                      {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
-                        <img
-                          src={attachmentUrl}
-                          alt="Preview"
-                          className="w-full h-full object-contain"
-                        />
-                      ) : attachmentUrl.toLowerCase().endsWith(".pdf") ? (
-                        iframeReady ? (
-                          <iframe
-                            key={`${attachmentUrl}-${iframeReady}`}
-                            src={`${attachmentUrl}#toolbar=0`}
-                            className="w-full h-full border-none block"
-                            allow="fullscreen"
-                            title="PDF Preview"></iframe>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                            <i className="fa-solid fa-circle-notch fa-spin text-slate-300 text-3xl"></i>
-                          </div>
-                        )
+                      {signedUrl ? (
+                         <>
+                           {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+                             <img
+                               src={signedUrl}
+                               alt="Preview"
+                               className="w-full h-full object-contain"
+                             />
+                           ) : attachmentUrl.toLowerCase().endsWith(".pdf") ? (
+                             iframeReady ? (
+                               <iframe
+                                 key={`${signedUrl}-${iframeReady}`}
+                                 src={`${signedUrl}#toolbar=0`}
+                                 className="w-full h-full border-none block"
+                                 allow="fullscreen"
+                                 title="PDF Preview"></iframe>
+                             ) : (
+                               <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                                 <i className="fa-solid fa-circle-notch fa-spin text-slate-300 text-3xl"></i>
+                               </div>
+                             )
+                           ) : (
+                             <iframe
+                               src={`https://docs.google.com/viewer?url=${encodeURIComponent(signedUrl)}&embedded=true`}
+                               className="w-full h-full border-none"
+                               onLoad={() => setIframeReady(true)}
+                               title="Document Preview"></iframe>
+                           )}
+                         </>
                       ) : (
-                        <iframe
-                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(attachmentUrl)}&embedded=true`}
-                          className="w-full h-full border-none"
-                          onLoad={() => setIframeReady(true)}
-                          title="Document Preview"></iframe>
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                             <div className="flex flex-col items-center gap-4">
+                               <i className="fa-solid fa-shield-halved text-indigo-400 text-3xl animate-pulse"></i>
+                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                 Sécurisation du document...
+                               </p>
+                             </div>
+                        </div>
                       )}
-                      {!iframeReady && !attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) && (
+
+                      {!iframeReady && !attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) && signedUrl && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
                           <div className="flex flex-col items-center gap-4">
                             <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl"></i>
