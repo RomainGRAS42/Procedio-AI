@@ -816,8 +816,8 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                           href={signedUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
-                          title="Ouvrir dans un nouvel onglet"
+                          className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm group relative"
+                          title="Lien sécurisé (valide 1h)"
                         >
                           <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                         </a>
@@ -825,7 +825,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                           href={`${signedUrl}${signedUrl.includes("?") ? "&" : "?"}download=`}
                           download
                           className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
-                          title="Télécharger">
+                          title="Télécharger (Lien sécurisé 1h)">
                           <i className="fa-solid fa-download text-xs"></i>
                         </a>
                       </div>
