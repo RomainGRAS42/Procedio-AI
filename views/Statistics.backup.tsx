@@ -153,22 +153,17 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
   const fetchSearchSuccessRate = async () => {
     try {
-      // RESET DATE: 2026-02-14T09:00:00.000Z
-      const RESET_DATE = '2026-02-14T09:00:00.000Z';
-
-      // Count total searches (all LOG_SEARCH_* entries) AFTER Reset Date
+      // Count total searches (all LOG_SEARCH_* entries)
       const { count: totalSearches } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_%')
-        .gte('created_at', RESET_DATE);
+        .ilike('title', 'LOG_SEARCH_%');
 
-      // Count failed searches AFTER Reset Date
+      // Count failed searches
       const { count: failedSearches } = await supabase
         .from('notes')
         .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_FAIL_%')
-        .gte('created_at', RESET_DATE);
+        .ilike('title', 'LOG_SEARCH_FAIL_%');
 
       const successRate = totalSearches && totalSearches > 0 
         ? Math.round(((totalSearches - (failedSearches || 0)) / totalSearches) * 100)
@@ -804,92 +799,87 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
            grid gap-6 transition-all duration-500 ease-in-out
            ${layoutMode === 'focus' ? 'grid-cols-1' : ''}
            ${layoutMode === 'split' ? 'grid-cols-1 lg:grid-cols-2' : ''}
-           ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : ''}
+           ${layoutMode === 'grid' ? 'grid-cols-1 lg:grid-cols-3' : ''}
         `}>
-           {layoutMode === 'focus' ? (
-              // Focus Mode: Show only 1st slot, full width
-              <div className="col-span-1 h-[600px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
-                 {renderKPIContent(selectedSlots[0], 0)}
-              </div>
-           ) : layoutMode === 'split' ? (
-              // Split Mode: Show 2 slots
-              <>
-                <div className="h-[500px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
-                   {renderKPIContent(selectedSlots[0], 0)}
-                </div>
-                <div className="h-[500px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
-                   {renderKPIContent(selectedSlots[1], 1)}
-                </div>
-              </>
-           ) : (
-              // Grid Mode: Show 3 slots
-              <>
-                 <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
-                    {renderKPIContent(selectedSlots[0], 0)}
-                 </div>
-                 <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
-                    {renderKPIContent(selectedSlots[1], 1)}
-                 </div>
-                 <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
-                    {renderKPIContent(selectedSlots[2], 2)}
-                 </div>
-              </>
+           
+           {/* SLOT 1: Always visible */}
+           <div className={`bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] overflow-hidden ${selectedSlots[0] ? '' : 'flex flex-col'}`}>
+              {renderKPIContent(selectedSlots[0], 0)}
+           </div>
+
+           {/* SLOT 2: Visible in Split & Grid */}
+           {layoutMode !== 'focus' && (
+             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] overflow-hidden">
+                {renderKPIContent(selectedSlots[1], 1)}
+             </div>
            )}
+
+           {/* SLOT 3: Visible in Grid */}
+           {layoutMode === 'grid' && (
+             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40 min-h-[500px] overflow-hidden">
+                {renderKPIContent(selectedSlots[2], 2)}
+             </div>
+           )}
+
         </div>
       )}
-
-      {/* Modal Zone Rouge */}
-      {modalConfig && (
-        <KPIDetailsModal
-          onClose={() => setModalConfig(null)}
-          title={modalConfig.title}
-          type={modalConfig.type}
-          items={modalConfig.items}
-        />
+      
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <CustomToast 
+            message={toast.message} 
+            type={toast.type} 
+            visible={true}
+            onClose={() => setToast(null)} 
+          />
+        </div>
       )}
       
-      {/* Toast */}
-      {toast && (
-        <CustomToast 
-          visible={!!toast}
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
-        />
-      )}
+      {/* Mission Creation Modal */}
+
     </div>
   );
 };
 
-// Sub-component for KPI Cards in Header
-const KPICard = ({ label, value, icon, color, bg, tooltip, isActive, onClick, align = 'left' }: any) => (
-  <button 
-    onClick={onClick}
-    className={`
-      relative overflow-hidden rounded-2xl p-4 border text-left transition-all duration-300 group
-      ${isActive 
-         ? 'bg-white border-indigo-500 shadow-md ring-1 ring-indigo-500 transform scale-105' 
-         : 'bg-white border-slate-100 hover:border-indigo-300 hover:shadow-sm'
-      }
-    `}
-  >
-     <div className="flex items-center justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${bg} ${color}`}>
-           <i className={`fa-solid ${icon}`}></i>
+// Sub-component for KPI Cards (Updated for Active State)
+const KPICard = ({ label, value, unit, icon, color, bg, tooltip, align, onClick, isActive }: any) => {
+  return (
+    <div 
+      onClick={onClick}
+      className={`
+        relative p-6 rounded-[2.5rem] border transition-all duration-300 group flex items-center gap-5 cursor-pointer
+        ${isActive 
+          ? `bg-white border-indigo-500 ring-4 ring-indigo-500/10 shadow-xl shadow-indigo-500/20 scale-[1.02] z-10` 
+          : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200 hover:scale-[1.01]'
+        }
+      `}
+    >
+      {/* Icon Section - Left */}
+      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-inner transition-colors duration-300
+        ${isActive ? 'bg-indigo-600 text-white' : `${bg} ${color}`}
+      `}>
+        <i className={`fa-solid ${icon}`}></i>
+      </div>
+
+      {/* Content Section - Right */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 mb-0.5">
+          <p className={`text-3xl font-black tracking-tighter leading-none transition-colors duration-300 ${isActive ? 'text-indigo-900' : 'text-slate-900'}`}>
+            {value}
+            {unit && <span className="text-xs font-bold text-slate-400 ml-1">{unit}</span>}
+          </p>
         </div>
-        {isActive && <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>}
-     </div>
-     <div>
-        <span className="block text-2xl font-black text-slate-800 tracking-tight">{value}</span>
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</span>
-     </div>
-     
-     {/* Tooltip on Hover */}
-     <div className="absolute inset-0 bg-slate-900/90 text-white p-4 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm z-10">
-        <i className={`fa-solid ${icon} text-2xl mb-2 text-indigo-400`}></i>
-        <p className="text-xs font-medium leading-relaxed">{tooltip}</p>
-     </div>
-  </button>
-);
+        <p className={`text-[10px] font-black uppercase tracking-[0.2em] truncate transition-colors duration-300 ${isActive ? 'text-indigo-500' : 'text-slate-400'}`}>
+          {label}
+        </p>
+      </div>
+      
+      {/* Active Indicator Arrow */}
+      {isActive && (
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border-b border-r border-indigo-100 rotate-45 transform z-20 hidden lg:block"></div>
+      )}
+    </div>
+  );
+};
 
 export default Statistics;
