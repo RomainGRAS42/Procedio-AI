@@ -528,20 +528,22 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                       <button 
                         onClick={async () => {
                           try {
+                            // Permanently delete from database
                             await supabase
                               .from('search_opportunities')
-                              .update({ status: 'dismissed' })
+                              .delete()
                               .eq('term', opp.term);
                             
+                            // Refresh the list to remove from UI
                             await fetchMissedOpportunities();
-                            setToast({ message: 'Opportunité supprimée', type: 'success' });
+                            setToast({ message: 'Opportunité supprimée définitivement', type: 'success' });
                           } catch (error) {
-                            console.error('Error dismissing opportunity:', error);
+                            console.error('Error deleting opportunity:', error);
                             setToast({ message: 'Erreur lors de la suppression', type: 'error' });
                           }
                         }}
                         className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white border border-rose-200 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all flex items-center justify-center shadow-sm z-20"
-                        title="Supprimer cette opportunité"
+                        title="Supprimer définitivement cette opportunité"
                       >
                         <i className="fa-solid fa-xmark text-xs"></i>
                       </button>
