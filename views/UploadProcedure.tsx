@@ -49,8 +49,13 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
   };
 
   const triggerFolderPicker = () => {
-    folderInputRef.current?.click();
+    // We close the modal first
     setShowFolderWarning(false);
+    // Then we trigger the picker after a tiny delay to ensure the browser 
+    // doesn't block it due to the modal disappearing
+    setTimeout(() => {
+      folderInputRef.current?.click();
+    }, 100);
   };
 
   const handlePublish = async () => {
@@ -170,7 +175,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
                       directory: "" 
                     } as any)}
                     multiple
-                    className="hidden" 
+                    className="opacity-0 absolute inset-0 w-0 h-0 pointer-events-none" 
                     onChange={handleFolderChange} 
                   />
                 </div>
@@ -373,7 +378,7 @@ const UploadProcedure: React.FC<UploadProcedureProps> = ({ onBack, user, activeT
 
               <div className="space-y-4">
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Vous allez importer un dossier complet. Pour des raisons de sécurité, votre navigateur va vous demander de confirmer l'accès à vos fichiers <span className="text-indigo-600 font-bold">par l'application Procedio</span>.
+                  Vous allez importer un dossier complet. Pour des raisons de sécurité, votre navigateur va vous demander de confirmer l'accès à vos fichiers <span className="text-indigo-600 font-bold">via la plateforme sécurisée Procedio</span>.
                 </p>
                 
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex gap-4">
