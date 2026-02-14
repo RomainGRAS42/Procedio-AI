@@ -564,15 +564,14 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       if (!procData) throw new Error("Procédure introuvable");
       setQuizProcedure(procData);
 
-      const { error: fnError } = await supabase.functions.invoke('generate-mastery-quiz', {
+      // Trigger invocation but don't crash on timeout (500) because DB might still update
+      supabase.functions.invoke('generate-mastery-quiz', {
         body: { 
           procedure_id: mission.procedure_id, 
           request_id: requestData.id,
           manager_name: "Système" 
         }
-      });
-
-      if (fnError) throw fnError;
+      }).catch(err => console.warn("Function trigger warning (might be timeout):", err));
 
       // 4. Poll for Quiz Data
       let attempts = 0;
