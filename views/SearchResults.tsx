@@ -145,27 +145,33 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           
           if (searchTerm.length > 2) {
              const normalizedTerm = searchTerm.trim();
+             console.log("⚙️ Tentative de log Search Opportunity pour:", normalizedTerm);
              
              // Check if opportunity already exists
-             const { data: existingOp } = await supabase
+             const { data: existingOp, error: fetchError } = await supabase
                .from('search_opportunities')
                .select('id, search_count')
                .ilike('term', normalizedTerm)
                .eq('status', 'pending')
-               .single();
+               .maybeSingle();
+
+             if (fetchError) console.error("❌ Erreur fetch opportunity:", fetchError);
 
              if (existingOp) {
-               // Update existing
-               await supabase
+               console.log("📝 Mise à jour de l'opportunité existante:", existingOp.id);
+               const { error: updateError } = await supabase
                  .from('search_opportunities')
                  .update({ 
                    search_count: (existingOp.search_count || 0) + 1,
                    last_searched_at: new Date().toISOString()
                  })
                  .eq('id', existingOp.id);
+               
+               if (updateError) console.error("❌ Erreur update opportunity:", updateError);
+               else console.log("✅ Opportunity mise à jour (+1)");
              } else {
-               // Create new
-               await supabase
+               console.log("📝 Création d'une nouvelle opportunité pour:", normalizedTerm);
+               const { error: insertError } = await supabase
                  .from('search_opportunities')
                  .insert({
                    term: normalizedTerm,
@@ -173,10 +179,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                    status: 'pending',
                    last_searched_at: new Date().toISOString()
                  });
+               
+               if (insertError) console.error("❌ Erreur insert opportunity:", insertError);
+               else console.log("✅ Nouvelle opportunity créée");
              }
 
-             // Also log a general search fail note for audit history (one line)
-             await supabase.from('notes').insert({
+             // Also log a general search fail note for audit history
+             const { error: logError } = await supabase.from('notes').insert({
                user_id: user.id,
                title: `LOG_SEARCH_FAIL_${normalizedTerm.toUpperCase()}`,
                content: `Échec de recherche pour "${normalizedTerm}" (Table search_opportunities mise à jour).`,
@@ -184,7 +193,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                status: 'private',
                category: 'general'
              });
-
+             
+             if (logError) console.error("❌ Erreur log search fail (notes):", logError);
           }
         }
       } catch (err) {
