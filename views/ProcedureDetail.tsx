@@ -1032,10 +1032,23 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   {procedure?.category}
                 </span>
                 {referentExpert && (
-                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 flex items-center gap-2">
-                    <i className="fa-solid fa-certificate text-[8px]"></i>
-                    Expert : {referentExpert.first_name} {referentExpert.last_name}
-                  </span>
+                  <div 
+                    className="flex items-center gap-2 bg-slate-100 pl-1 pr-3 py-1 rounded-full border border-slate-200"
+                    title={`Référent : ${referentExpert.first_name} ${referentExpert.last_name}`}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-white shadow-sm">
+                       {referentExpert.avatar_url ? (
+                          <img src={referentExpert.avatar_url} className="w-full h-full object-cover" alt="Referent Avatar" />
+                       ) : (
+                          <span className="text-[9px] font-black text-slate-500 uppercase">
+                             {referentExpert.first_name[0]}{referentExpert.last_name[0]}
+                          </span>
+                       )}
+                    </div>
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                        {referentExpert.first_name} {referentExpert.last_name}
+                    </span>
+                  </div>
                 )}
                 {/* Badge MAITRISE pour l'utilisateur courant s'il a réussi */}
                 {masteryRequest?.status === 'completed' && (masteryRequest.score || 0) >= 70 && (

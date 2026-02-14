@@ -36,7 +36,7 @@ interface DashboardProps {
   onQuickNote: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
   onViewComplianceHistory: () => void;
-  targetAction?: { type: 'suggestion' | 'read' | 'mastery', id: string } | null;
+  targetAction?: { type: 'suggestion' | 'read' | 'mastery' | 'mastery_result', id: string } | null;
   onActionHandled?: () => void;
   onUploadClick: () => void;
   onNavigate?: (view: string) => void;
@@ -392,24 +392,33 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Support for deep linking to suggestions or mastery exams
   useEffect(() => {
-    if (targetAction && (pendingSuggestions.length > 0 || approvedExams.length > 0)) {
-      if (targetAction.type === 'suggestion') {
+    if (targetAction) {
+      if (targetAction.type === 'suggestion' && pendingSuggestions.length > 0) {
         const sugg = pendingSuggestions.find(s => s.id === targetAction.id);
         if (sugg) {
           setSelectedSuggestion(sugg);
           setShowSuggestionModal(true);
           onActionHandled?.();
         }
-      } else if (targetAction.type === 'mastery') {
+      } else if (targetAction.type === 'mastery' && approvedExams.length > 0) {
+        // For Technician: Launch Quiz
         const exam = approvedExams.find(e => e.id === targetAction.id);
         if (exam) {
           setActiveQuizRequest(exam);
           setShowDashboardQuiz(true);
           onActionHandled?.();
         }
+      } else if (targetAction.type === 'mastery_result' && masteryClaims.length > 0) {
+        // For Manager: View Result Details
+        const claim = masteryClaims.find(c => c.id === targetAction.id);
+        if (claim) {
+          setSelectedMasteryClaim(claim);
+          setShowMasteryDetail(true);
+          onActionHandled?.();
+        }
       }
     }
-  }, [targetAction, pendingSuggestions, approvedExams]);
+  }, [targetAction, pendingSuggestions, approvedExams, masteryClaims]);
 
   const fetchPersonalStats = async () => {
     try {
@@ -1061,6 +1070,39 @@ const Dashboard: React.FC<DashboardProps> = ({
        setIsSubmittingCompletion(false);
     }
   };
+  
+  const handleUpdateReferent = async (procedureId: string, userId: string, action: 'assign' | 'revoke') => {
+    try {
+        if (action === 'assign') {
+            const { error } = await supabase.from('procedure_referents').insert({ procedure_id: procedureId, user_id: userId });
+            if (error) throw error;
+            setToast({ message: "Référent nommé avec succès !", type: "success" });
+            
+            // Log for activity
+            await supabase.from('notes').insert({
+               user_id: user.id,
+               title: `LOG_REFERENT_ASSIGN_${procedureId}`,
+               content: `a nommé un nouveau référent pour la procédure.`,
+               category: 'team_log',
+               is_protected: false
+            });
+
+        } else {
+            const { error } = await supabase.from('procedure_referents').delete().match({ procedure_id: procedureId, user_id: userId });
+            if (error) throw error;
+            setToast({ message: "Référent révoqué.", type: "info" });
+        }
+        
+        // Refresh workload
+        fetchReferentWorkload();
+        // Refresh KPIs 
+        if (user.role === UserRole.MANAGER) fetchManagerKPIs();
+
+    } catch (err: any) {
+        console.error("Error updating referent:", err);
+        setToast({ message: "Erreur lors de la mise à jour du référent.", type: "error" });
+    }
+  };
 
   if (!user) return <LoadingState />;
 
@@ -1274,6 +1316,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         isOpen={showMasteryDetail}
         onClose={() => setShowMasteryDetail(false)}
         claim={selectedMasteryClaim}
+        onUpdateReferent={handleUpdateReferent}
       />
 
       {modalConfig && (

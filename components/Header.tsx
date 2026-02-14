@@ -17,7 +17,7 @@ interface HeaderProps {
   onSelectProcedure?: (procedure: any) => void; // New Prop for Direct Navigation
   onLogout: () => void;
   onNavigate: (view: any) => void;
-  onNotificationClick?: (type: 'suggestion' | 'read' | 'mastery', id: string) => void;
+  onNotificationClick?: (type: 'suggestion' | 'read' | 'mastery' | 'mastery_result', id: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -612,9 +612,12 @@ const Header: React.FC<HeaderProps> = ({
                             if (isSuggestion) {
                               const suggestionId = log.title.replace("LOG_SUGGESTION_", "");
                               onNotificationClick?.('suggestion', suggestionId);
+                            } else if (log.title.startsWith("CLAIM_MASTERY_RESULT_")) {
+                               const requestId = log.title.replace("CLAIM_MASTERY_RESULT_", "");
+                               onNotificationClick?.('mastery_result', requestId);
                             } else if (log.title.startsWith("CLAIM_MASTERY_")) {
                                const requestId = log.title.replace("CLAIM_MASTERY_", "");
-                               onNotificationClick?.('mastery', requestId);
+                               onNotificationClick?.('mastery_result', requestId);
                             } else if (log.title.startsWith("MASTERY_APPROVED_")) {
                                const requestId = log.title.replace("MASTERY_APPROVED_", "");
                                onNotificationClick?.('mastery', requestId);

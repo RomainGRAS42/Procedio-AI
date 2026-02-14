@@ -39,7 +39,7 @@ const App: React.FC = () => {
     "loading"
   );
   const [initError, setInitError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<{type: 'suggestion' | 'read', id: string} | null>(null);
+  const [pendingAction, setPendingAction] = useState<{type: 'suggestion' | 'read' | 'mastery' | 'mastery_result', id: string} | null>(null);
   const [pendingFlashNotesCount, setPendingFlashNotesCount] = useState(0);
   // Renamed to generic alert count for Dashboard (Suggestions + Mastery)
   const [dashboardAlertCount, setDashboardAlertCount] = useState(0);
