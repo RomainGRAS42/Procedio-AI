@@ -710,7 +710,15 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           } opacity-20`}></div>
 
         <div className="flex justify-between items-start mb-6">
-          <UrgencyBadge urgency={mission.urgency} />
+          <div className="flex gap-2">
+            <UrgencyBadge urgency={mission.urgency} />
+            {mission.title.startsWith("Opportunité Manquée") && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-[9px] font-black uppercase tracking-widest border border-amber-100/50">
+                 <i className="fa-solid fa-magnifying-glass-chart"></i>
+                 Opportunité Manquée
+              </span>
+            )}
+          </div>
           <StatusBadge status={mission.status} />
         </div>
 
@@ -909,6 +917,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
               ? `${mission.assignee.first_name} ${mission.assignee.last_name || ""}`
               : mission.assignee_name || "Toute l'équipe"}
           </p>
+
+          {mission.title.startsWith("Opportunité Manquée") && (
+              <span className="mt-1 flex items-center gap-1.5 w-fit px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[8px] font-black uppercase tracking-widest border border-amber-100/50">
+                 <i className="fa-solid fa-magnifying-glass-chart"></i>
+                 Opportunité Manquée
+              </span>
+          )}
         </div>
 
         <div className="flex items-center gap-6 shrink-0">

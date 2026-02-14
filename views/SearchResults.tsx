@@ -114,18 +114,65 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         setResults(foundProcedures);
         cacheStore.set(`search_${searchTerm}`, foundProcedures);
 
+
+
         // Log si aucun résultat global
         if (foundProcedures.length === 0) {
           console.log("⚠️ Aucune procédure trouvée au total pour:", searchTerm);
+          
           if (searchTerm.length > 2) {
-            await supabase.from('notes').insert({
-              user_id: user.id,
-              title: `LOG_SEARCH_FAIL_${searchTerm.toUpperCase()}`,
-              content: `Recherche hybride sans résultat pour l'utilisateur ${user.firstName}.`,
-              tags: ['system_log', 'search_fail'],
-              status: 'private',
-              category: 'general'
-            });
+             const normalizedTerm = searchTerm.trim().toUpperCase();
+             const logTitle = `LOG_SEARCH_FAIL_${normalizedTerm}`;
+
+             // 1. Log the current failure
+             await supabase.from('notes').insert({
+               user_id: user.id,
+               title: logTitle,
+               content: `Recherche hybride sans résultat pour l'utilisateur ${user.firstName}.`,
+               tags: ['system_log', 'search_fail'],
+               status: 'private',
+               category: 'general'
+             });
+
+             // 2. Intelligence: Check "3 Strikes" Rule
+             // Count how many times this search failed in the last 30 days
+             const thirtyDaysAgo = new Date();
+             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+             const { count, error: countError } = await supabase
+               .from('notes')
+               .select('*', { count: 'exact', head: true })
+               .eq('title', logTitle)
+               .gte('updatedAt', thirtyDaysAgo.toISOString()); // Assuming created_at is not available, check schema
+
+             if (!countError && count !== null) {
+                console.log(`📊 Echecs pour "${searchTerm}": ${count}`);
+                
+                // If 3 or more failures (including the one just added), trigger alert mission
+                if (count >= 3) {
+                   const missionTitle = `Opportunité Manquée : ${searchTerm.trim()}`;
+                   
+                   // Check if active mission already exists
+                   const { data: existingMissions } = await supabase
+                     .from('missions')
+                     .select('id')
+                     .eq('title', missionTitle)
+                     .neq('status', 'completed') // Don't duplicate if active
+                     .limit(1);
+
+                   if (!existingMissions || existingMissions.length === 0) {
+                      console.log("🚨 Creating Missed Opportunity Mission for:", searchTerm);
+                      await supabase.from('missions').insert({
+                        title: missionTitle,
+                        description: `L'expression "${searchTerm}" a été recherchée plus de 3 fois sans résultat ce mois-ci.\nUne procédure semble manquante.\n\nActions recommandées :\n1. Créer la procédure.\n2. L'ajouter aux synonymes si elle existe déjà.`,
+                        status: 'open',
+                        priority: 'high',
+                        user_id: null, // Open to all
+                        category: 'Opportunité'
+                      });
+                   }
+                }
+             }
           }
         }
       } catch (err) {
