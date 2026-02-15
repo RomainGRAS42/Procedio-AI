@@ -289,14 +289,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   ] : [
     {
       label: "Rang d'Expertise",
-      value: (() => {
-        const level = personalStats.level;
-        if (level >= 5) return "Oracle";
-        if (level >= 4) return "Mentor";
-        if (level >= 3) return "Pilote";
-        if (level >= 2) return "Acteur";
-        return "Éclaireur";
-      })(),
+      value: getLevelTitle(personalStats.level),
       icon: "fa-award",
       color: "text-indigo-600",
       bg: "bg-indigo-50",
