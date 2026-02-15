@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { User, UserRole } from "../types";
-import UserProfileModal from "../components/UserProfileModal";
+import RadarChart from "../components/RadarChart";
 
 interface TeamProps {
   user: User;
@@ -34,7 +34,10 @@ const Team: React.FC<TeamProps> = ({ user }) => {
     msg: string;
     type: "success" | "error";
   } | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [profileDetails, setProfileDetails] = useState<any>(null);
+  const [referentProcedures, setReferentProcedures] = useState<any[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -98,6 +101,71 @@ const Team: React.FC<TeamProps> = ({ user }) => {
     }
   };
 
+  const handleToggleExpand = async (userId: string) => {
+    if (expandedUserId === userId) {
+      setExpandedUserId(null);
+      return;
+    }
+
+    setExpandedUserId(userId);
+    setLoadingDetails(true);
+    setProfileDetails(null);
+    setReferentProcedures([]);
+
+    try {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      
+      if (profile) setProfileDetails(profile);
+
+      const { data: refs } = await supabase
+        .from("procedure_referents")
+        .select(`
+          id,
+          procedure_id,
+          assigned_at,
+          procedure:procedures(title, category)
+        `)
+        .eq("user_id", userId);
+      
+      if (refs) setReferentProcedures(refs);
+    } catch (err) {
+      console.error("Error fetching details:", err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleRemoveReferent = async (procedureId: string, userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("procedure_referents")
+        .delete()
+        .eq("procedure_id", procedureId)
+        .eq("user_id", userId);
+
+      if (!error) {
+        setReferentProcedures((prev) => prev.filter((r) => r.procedure_id !== procedureId));
+        // Mettre à jour le compteur dans la liste principale
+        setMembers(prev => prev.map(m => {
+          if (m.id === userId) {
+            const currentCount = m.procedure_referents?.[0]?.count || 0;
+            return {
+              ...m,
+              procedure_referents: [{ count: Math.max(0, currentCount - 1) }]
+            };
+          }
+          return m;
+        }));
+      }
+    } catch (err) {
+      console.error("Error removing referent:", err);
+    }
+  };
+
   const handleResetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -119,7 +187,7 @@ const Team: React.FC<TeamProps> = ({ user }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Gestion d'Équipe</h2>
@@ -202,107 +270,194 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                 {activeTab === "members" ? (
                   members.length > 0 ? (
                     members.map((member) => (
-                      <tr
-                        key={member.id}
-                        className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
-                        onClick={() => setSelectedUserId(member.id)}>
-                        <td className="p-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
-                              <img
-                                src={
-                                  member.avatar_url ||
-                                  `https://ui-avatars.com/api/?name=${member.first_name || "U"}&background=random`
-                                }
-                                alt="avatar"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-slate-900">
-                                {member.first_name} {member.last_name}
-                              </p>
-                              <p className="text-[10px] text-slate-400">{member.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <span
-                            className={`inline-flex px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                              member.role === "MANAGER"
-                                ? "bg-amber-50 text-amber-600 border-amber-100"
-                                : "bg-indigo-50 text-indigo-600 border-indigo-100"
-                            }`}>
-                            {member.role}
-                          </span>
-                        </td>
-                        <td className="p-6">
-                          <span className="flex items-center gap-2 text-[10px] font-bold text-emerald-600">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Actif
-                          </span>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black text-indigo-600 tabular-nums">
-                                  {member.xp_points || 0} XP
-                                </span>
-                                <span className="text-[8px] font-bold text-slate-400 uppercase">
-                                  Niv. {Math.floor((member.xp_points || 0) / 100) + 1}
-                                </span>
-                              </div>
-                              <div className="w-20 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
-                                <div 
-                                  className="h-full bg-indigo-500" 
-                                  style={{ width: `${(member.xp_points || 0) % 100}%` }}
+                      <React.Fragment key={member.id}>
+                        <tr
+                          className={`group hover:bg-slate-50/50 transition-colors cursor-pointer ${expandedUserId === member.id ? 'bg-slate-50/80 shadow-inner' : ''}`}
+                          onClick={() => handleToggleExpand(member.id)}>
+                          <td className="p-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+                                <img
+                                  src={
+                                    member.avatar_url ||
+                                    `https://ui-avatars.com/api/?name=${member.first_name || "U"}&background=random`
+                                  }
+                                  alt="avatar"
+                                  className="w-full h-full object-cover"
                                 />
                               </div>
+                              <div>
+                                <p className="text-xs font-bold text-slate-900">
+                                  {member.first_name} {member.last_name}
+                                </p>
+                                <p className="text-[10px] text-slate-400">{member.email}</p>
+                              </div>
                             </div>
-                            <div className="flex flex-col ml-4 pl-4 border-l border-slate-100">
-                              <span className="text-[10px] font-black text-amber-600 tabular-nums">
-                                {(member.procedure_referents?.[0]?.count || 0)} RÉF.
-                              </span>
-                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
-                                Gardien
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-6 text-right relative">
-                          {user.id !== member.id && (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveMenuId(activeMenuId === member.id ? null : member.id);
-                                }}
-                                className={`text-slate-300 hover:text-slate-600 transition-colors w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center ${
-                                  activeMenuId === member.id ? "bg-slate-100 text-slate-600" : ""
-                                }`}>
-                                <i className="fa-solid fa-ellipsis"></i>
-                              </button>
-
-                              {activeMenuId === member.id && (
-                                <div className="absolute right-6 top-12 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                      Actions
-                                    </p>
-                                  </div>
-                                  <button
-                                    onClick={() => handleResetPassword(member.email)}
-                                    className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors">
-                                    <i className="fa-solid fa-key w-4 text-center"></i>
-                                    Renvoyer accès
-                                  </button>
+                          </td>
+                          <td className="p-6">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+                                member.role === "MANAGER"
+                                  ? "bg-amber-50 text-amber-600 border-amber-100"
+                                  : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                              }`}>
+                              {member.role}
+                            </span>
+                          </td>
+                          <td className="p-6">
+                            <span className="flex items-center gap-2 text-[10px] font-bold text-emerald-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Actif
+                            </span>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black text-indigo-600 tabular-nums">
+                                    {member.xp_points || 0} XP
+                                  </span>
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase">
+                                    Niv. {Math.floor((member.xp_points || 0) / 100) + 1}
+                                  </span>
                                 </div>
+                                <div className="w-20 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                  <div 
+                                    className="h-full bg-indigo-500" 
+                                    style={{ width: `${(member.xp_points || 0) % 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex flex-col ml-4 pl-4 border-l border-slate-100">
+                                <span className="text-[10px] font-black text-amber-600 tabular-nums">
+                                  {(member.procedure_referents?.[0]?.count || 0)} RÉF.
+                                </span>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
+                                  Gardien
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-6 text-right relative">
+                            <div className="flex items-center justify-end gap-2">
+                              <i className={`fa-solid fa-chevron-down text-[10px] text-slate-300 transition-transform duration-300 ${expandedUserId === member.id ? 'rotate-180' : ''}`}></i>
+                              {user.id !== member.id && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMenuId(activeMenuId === member.id ? null : member.id);
+                                  }}
+                                  className={`text-slate-300 hover:text-slate-600 transition-colors w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center ${
+                                    activeMenuId === member.id ? "bg-slate-100 text-slate-600" : ""
+                                  }`}>
+                                  <i className="fa-solid fa-ellipsis"></i>
+                                </button>
                               )}
-                            </>
-                          )}
-                        </td>
-                      </tr>
+                            </div>
+
+                            {activeMenuId === member.id && (
+                              <div className="absolute right-6 top-12 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                    Actions
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleResetPassword(member.email);
+                                  }}
+                                  className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition-colors">
+                                  <i className="fa-solid fa-key w-4 text-center"></i>
+                                  Renvoyer accès
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+
+                        {expandedUserId === member.id && (
+                          <tr className="bg-slate-50/80">
+                            <td colSpan={5} className="p-0 border-b border-slate-100">
+                              <div className="p-8 animate-in slide-in-from-top-2 duration-300">
+                                {loadingDetails ? (
+                                  <div className="flex items-center justify-center py-8">
+                                    <i className="fa-solid fa-circle-notch animate-spin text-xl text-indigo-400"></i>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    {/* XP & Level */}
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-4">Expérience & Maîtrise</p>
+                                      <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-100 text-xl font-black">
+                                          {Math.floor((member.xp_points || 0) / 100) + 1}
+                                        </div>
+                                        <div>
+                                          <p className="text-xl font-black text-slate-900">{member.xp_points || 0} XP</p>
+                                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Points accumulés</p>
+                                        </div>
+                                      </div>
+                                      <div className="w-full h-2 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${(member.xp_points || 0) % 100}%` }} />
+                                      </div>
+                                      <p className="text-[8px] text-slate-400 font-bold text-center mt-2 lowercase">PROGRES : {(member.xp_points || 0) % 100}%</p>
+                                    </div>
+
+                                    {/* Referent Workload */}
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Expertise & Gardiennage</p>
+                                      {referentProcedures.length > 0 ? (
+                                        <div className="space-y-2 overflow-y-auto max-h-48 pr-2 custom-scrollbar">
+                                          {referentProcedures.map((ref: any) => (
+                                            <div key={ref.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100 group/ref">
+                                              <div className="truncate pr-2">
+                                                <p className="text-[10px] font-bold text-slate-800 truncate">{ref.procedure[0]?.title}</p>
+                                                <p className="text-[8px] text-slate-400 font-bold uppercase">{ref.procedure[0]?.category}</p>
+                                              </div>
+                                              {user.role === UserRole.MANAGER && (
+                                                <button 
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveReferent(ref.procedure_id, member.id);
+                                                  }}
+                                                  title="Retirer ce référent"
+                                                  className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-90">
+                                                  <i className="fa-solid fa-trash-can text-[10px]"></i>
+                                                </button>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
+                                          <i className="fa-solid fa-certificate text-2xl mb-2 text-slate-300"></i>
+                                          <p className="text-[10px] font-bold uppercase text-slate-400">Aucune référence</p>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Skills Radar */}
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center justify-center">
+                                      <div className="w-full h-full min-h-[160px]">
+                                        <RadarChart 
+                                          data={Object.entries(profileDetails?.stats_by_category || {}).map(([category, stats]: [string, any]) => ({
+                                            subject: category,
+                                            value: stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0,
+                                            fullMark: 100,
+                                          }))}
+                                          color="#4f46e5"
+                                          height={160}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))
                   ) : (
                     <tr>
@@ -372,14 +527,6 @@ const Team: React.FC<TeamProps> = ({ user }) => {
         )}
       </div>
 
-      {/* Modal de profil utilisateur */}
-      {selectedUserId && (
-        <UserProfileModal
-          userId={selectedUserId}
-          onClose={() => setSelectedUserId(null)}
-          currentUserRole={user.role}
-        />
-      )}
 
       {/* Modal d'invitation */}
       {showInviteModal && (
