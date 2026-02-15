@@ -1033,20 +1033,20 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 </span>
                 {referentExpert && (
                   <div 
-                    className="flex items-center gap-2 bg-slate-100 pl-1 pr-3 py-1 rounded-full border border-slate-200"
+                    className="flex items-center gap-2 bg-indigo-50/50 pl-1 pr-3 py-1.5 rounded-full border border-indigo-100/50 shadow-sm"
                     title={`Référent : ${referentExpert.first_name} ${referentExpert.last_name}`}
                   >
-                    <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-white shadow-sm">
+                    <div className="w-6 h-6 rounded-full bg-white overflow-hidden flex items-center justify-center shrink-0 border border-indigo-200 shadow-sm">
                        {referentExpert.avatar_url ? (
                           <img src={referentExpert.avatar_url} className="w-full h-full object-cover" alt="Referent Avatar" />
                        ) : (
-                          <span className="text-[9px] font-black text-slate-500 uppercase">
+                          <span className="text-[10px] font-black text-indigo-600 uppercase">
                              {referentExpert.first_name[0]}{referentExpert.last_name[0]}
                           </span>
                        )}
                     </div>
                     <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest pl-1">
-                        Référent : <span className="text-indigo-600">{referentExpert.first_name} {referentExpert.last_name}</span>
+                        Gardien : <span className="text-indigo-600 font-black">{referentExpert.first_name} {referentExpert.last_name}</span>
                     </span>
                   </div>
                 )}
@@ -1068,32 +1068,10 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               <span>{isChatOpen ? "Fermer IA" : "Discuter avec le PDF"}</span>
             </button>
 
-            {/* Mastery Button Workflow */}
+            {/* Mastery Button Workflow - Always visible for non-managers */}
             {user.role !== UserRole.MANAGER && (
               <>
-                {/* 🛡️ SINGLE REFERENT LOGIC */}
-                {referentExpert && referentExpert.id !== user.id ? (
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-slate-200 transition-all">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm border-2 border-white shadow-sm">
-                                {referentExpert.avatar_url ? (
-                                    <img src={referentExpert.avatar_url} alt="Referent" className="w-full h-full rounded-full object-cover" />
-                                ) : (
-                                    <span className="font-black">{referentExpert.first_name[0]}{referentExpert.last_name[0]}</span>
-                                )}
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Gardien de la Procédure</h4>
-                                <p className="text-[10px] font-bold text-slate-400">Cette procédure est sous la responsabilité de <span className="text-indigo-600">{referentExpert.first_name} {referentExpert.last_name}</span>.</p>
-                            </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-xl bg-white text-slate-300 flex items-center justify-center shadow-sm">
-                            <i className="fa-solid fa-lock"></i>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        {masteryRequest?.status === 'approved' ? (
+                {masteryRequest?.status === 'approved' ? (
                   <button
                     onClick={() => setIsMasteryModalOpen(true)}
                     className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce"
@@ -1152,9 +1130,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                     <i className="fa-solid fa-certificate"></i>
                     <span className="hidden xl:inline">Demander Maîtrise</span>
                   </button>
-                        )}
-                      </>
-                    )}
+                )}
               </>
             )}
 
@@ -1163,8 +1139,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             <button
               onClick={() => setIsSuggestionModalOpen(true)}
               className="px-4 py-3 h-10 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm flex items-center gap-2">
-              <i className="fa-regular fa-lightbulb text-sm"></i>
-              <span className="hidden sm:inline">Suggérer une modif</span>
+              <i className={`fa-solid ${referentExpert ? 'fa-lock text-[8px] opacity-40' : 'fa-regular fa-lightbulb text-sm'}`}></i>
+              <span className="hidden sm:inline">{referentExpert ? "Soumettre Amélioration" : "Suggérer une modif"}</span>
             </button>
 
             {/* Open in New Tab Button (Full Text) */}
