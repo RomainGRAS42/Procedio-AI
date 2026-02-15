@@ -212,10 +212,23 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
             </div>
           ))
         ) : (
-          <div className="h-full flex flex-col items-center justify-center py-10 text-center opacity-50">
-             <i className="fa-solid fa-newspaper text-3xl text-slate-200 mb-3"></i>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucun article à afficher</p>
-             <p className="text-[8px] font-bold text-slate-300 uppercase mt-1">Ajoutez un flux pour commencer</p>
+          <div className="h-full flex flex-col items-center justify-center py-12 text-center group/empty animate-fade-in">
+             <div className="w-20 h-20 rounded-[2rem] bg-orange-50/50 flex items-center justify-center text-orange-400 text-4xl mb-6 border border-orange-100/50 group-hover/empty:scale-110 group-hover/empty:bg-orange-50 group-hover/empty:rotate-12 transition-all duration-700 shadow-sm relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-orange-100/20"></div>
+                <i className="fa-solid fa-satellite-dish relative"></i>
+             </div>
+             <div className="space-y-2">
+                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Ta fenêtre sur l'actualité</p>
+                <p className="text-[10px] font-medium text-slate-400 max-w-[240px] leading-relaxed italic">
+                  Connecte tes flux préférés pour transformer ce bloc en ton cockpit de veille technologique.
+                </p>
+             </div>
+             <button 
+                onClick={() => setShowManageModal(true)}
+                className="mt-6 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest hover:border-orange-200 hover:text-orange-600 hover:shadow-lg hover:shadow-orange-50 transition-all"
+             >
+                Ajouter une source
+             </button>
           </div>
         )}
       </div>

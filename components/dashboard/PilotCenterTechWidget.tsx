@@ -88,10 +88,19 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                 </div>
               ))
             ) : (
-              <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 opacity-60">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucune mission active</p>
+              <div className="p-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 animate-fade-in flex flex-col items-center justify-center gap-4 group">
+                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-indigo-400 text-2xl shadow-sm border border-slate-100 group-hover:scale-110 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all duration-500">
+                  <i className="fa-solid fa-mug-hot"></i>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">Mission accomplie !</p>
+                  <p className="text-[9px] font-medium text-slate-400 max-w-[200px] leading-relaxed italic">
+                    Tout est à jour pour le moment. Profite-en pour explorer de nouvelles fiches ou prendre une pause bien méritée.
+                  </p>
+                </div>
               </div>
             )}
+
           </div>
         </div>
 
