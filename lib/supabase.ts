@@ -9,11 +9,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Safety check to prevent blank page and provide clear error in console
+// Safety check to prevent blank page
 if (!supabaseUrl || !supabaseKey) {
-  const errorMsg = "FATAL: Supabase configuration missing. Check environment variables.";
-  console.error(errorMsg, { url: supabaseUrl, hasKey: !!supabaseKey });
-  // In development, this helps catch the issue immediately
+  console.error("Supabase configuration missing.");
 }
 
 export const supabase = createClient(supabaseUrl || 'https://placeholder-url.supabase.co', supabaseKey || 'placeholder-key', {
