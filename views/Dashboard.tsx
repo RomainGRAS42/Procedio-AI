@@ -960,8 +960,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               <StatsSummaryWidget stats={filteredStats} />
             </div>
 
-            {/* ROW 2: Pilot Center (8/12) + Badges (4/12) */}
-            <div className="col-span-12 lg:col-span-8">
+            {/* ROW 2: Pilot Center (Full Width) */}
+            <div className="col-span-12">
               <PilotCenterTechWidget 
                 missions={activeMissions.filter(m => m.assigned_to === user.id)}
                 activities={activities}
@@ -969,18 +969,18 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onNavigate={onNavigate}
               />
             </div>
+
+            {/* ROW 3: Mastery (8/12) + Badges (4/12) */}
+            <div className="col-span-12 lg:col-span-8">
+               <MasteryWidget 
+                 personalStats={personalStats} 
+               />
+            </div>
             <div className="col-span-12 lg:col-span-4">
               <BadgesWidget 
                 earnedBadges={earnedBadges} 
                 onNavigate={onNavigate}
               />
-            </div>
-
-            {/* ROW 3: Mastery (Full Width) */}
-            <div className="col-span-12">
-               <MasteryWidget 
-                 personalStats={personalStats} 
-               />
             </div>
 
             {/* ROW 4: RSS (Full Width) */}
