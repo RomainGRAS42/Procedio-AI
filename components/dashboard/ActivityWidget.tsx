@@ -80,7 +80,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
                   <p className="text-xs font-black text-slate-800 truncate">{actorName}</p>
-                  <span className="text-[10px] font-bold text-slate-400">{time}</span>
+                  <span className="text-xs font-black text-slate-500">{time}</span>
                 </div>
                 <p className="text-[11px] font-medium text-slate-500 leading-tight mt-0.5 line-clamp-2">
                   {act.content}

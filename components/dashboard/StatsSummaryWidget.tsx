@@ -44,7 +44,7 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats, isClicka
                  align={idx >= 2 ? 'right' : 'center'} 
                />
              </div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{stat.label}</p>
+             <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{stat.label}</p>
           </div>
         </div>
       ))}

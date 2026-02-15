@@ -18,7 +18,7 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
           <i className="fa-solid fa-chart-line text-xl"></i>
         </div>
         <p className="text-slate-500 font-bold text-sm">Exploration en cours...</p>
-        <p className="text-slate-400 text-[10px] mt-1">Consultez des procédures pour développer votre expertise.</p>
+        <p className="text-slate-500 text-xs mt-1">Consultez des procédures pour développer votre expertise.</p>
       </div>
     );
   }
@@ -53,10 +53,10 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                     {item.subject}
                   </h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
+                    <span className="text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
                       Niveau {Math.floor(item.A / 10) + 1}
                     </span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                       • {item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}
                     </span>
                   </div>
@@ -66,7 +66,7 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                 <span className="text-sm font-black text-slate-900 tracking-tighter">
                   {percentage}%
                 </span>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Maîtrise</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Maîtrise</p>
               </div>
             </div>
             

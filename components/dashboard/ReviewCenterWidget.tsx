@@ -53,7 +53,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
           </h3>
         </div>
         <div className="flex items-center gap-4">
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${alertCount > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
+          <span className={`text-[11px] font-bold uppercase tracking-widest ${alertCount > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-500'}`}>
             {alertCount} alertes
           </span>
           {alertCount > 0 && onMarkAllRead && (
@@ -131,17 +131,17 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full ${
+                      <div className={`w-2 h-2 rounded-full ${
                         !isRead ? 'bg-indigo-600 ring-2 ring-indigo-100 ring-offset-1' : 
                         isPending ? 'bg-orange-400' : 
                         isApproved ? 'bg-indigo-400' : 
                         (isSuccess ? 'bg-emerald-400' : 'bg-rose-400')
                       }`}></div>
-                      <span className={`text-[10px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-indigo-900' : 'font-bold text-slate-400'}`}>
+                      <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-indigo-900' : 'font-bold text-slate-500'}`}>
                         {isCompleted ? 'Examen' : 'Expertise'}
                       </span>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-300">
+                    <span className="text-[10px] font-black text-slate-400">
                       {new Date(claim.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -153,7 +153,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                       }`}>
                         {claim.title}
                       </h4>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                      <p className="text-[11px] font-bold text-slate-500 mt-0.5">
                         {claim.user?.first_name} {claim.user?.last_name}
                       </p>
                     </div>
@@ -164,17 +164,17 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                           isSuccess ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
                         }`}>
                           <span className="text-[11px] font-black">{score}%</span>
-                          <i className={`fa-solid ${isSuccess ? 'fa-check' : 'fa-xmark'} text-[10px]`}></i>
+                          <i className={`fa-solid ${isSuccess ? 'fa-check' : 'fa-xmark'} text-xs`}></i>
                         </div>
                       ) : generatingExamId === claim.id ? (
                         <div className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center gap-2">
-                           <i className="fa-solid fa-circle-notch animate-spin text-[10px]"></i>
-                           <span className="text-[9px] font-black uppercase tracking-widest">IA...</span>
+                           <i className="fa-solid fa-circle-notch animate-spin text-xs"></i>
+                         <span className="text-[10px] font-black uppercase tracking-widest">IA...</span>
                         </div>
                       ) : isApproved ? (
                         <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center gap-2">
                           <i className="fa-solid fa-paper-plane text-[10px]"></i>
-                          <span className="text-[9px] font-black uppercase tracking-widest">Envoyé</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">Envoyé</span>
                         </div>
                       ) : (
                         <button 
@@ -183,7 +183,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                               if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
                               onApproveMastery?.(claim.id);
                           }}
-                          className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
+                          className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
                         >
                           VALIDER
                         </button>
@@ -216,9 +216,9 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${!isRead ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                        <span className={`text-[9px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-amber-600' : 'font-bold text-slate-400'}`}>Suggestion</span>
+                        <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-amber-600' : 'font-bold text-slate-500'}`}>Suggestion</span>
                       </div>
-                      <span className="text-[9px] font-bold text-slate-300">
+                      <span className="text-[10px] font-black text-slate-400">
                         {new Date(sugg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -228,7 +228,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                     }`}>
                       {sugg.title}
                     </h4>
-                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                    <p className="text-[11px] font-bold text-slate-500 mt-0.5">
                       {sugg.userName}
                     </p>
                   </div>
@@ -237,12 +237,12 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                     {isApproved ? (
                         <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center gap-2">
                             <i className="fa-solid fa-check text-[10px]"></i>
-                            <span className="text-[9px] font-black uppercase tracking-widest">Validé</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Validé</span>
                         </div>
                     ) : isRejected ? (
                         <div className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center gap-2">
                             <i className="fa-solid fa-xmark text-[10px]"></i>
-                            <span className="text-[9px] font-black uppercase tracking-widest">Refusé</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Refusé</span>
                         </div>
                     ) : (
                         <>

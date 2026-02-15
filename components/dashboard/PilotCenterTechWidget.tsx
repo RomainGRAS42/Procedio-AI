@@ -56,11 +56,11 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
         {/* Missions Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <p className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <i className="fa-solid fa-rocket text-indigo-500"></i> Mes Missions
             </p>
             {missions.length > 5 && (
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Voir tout
               </span>
             )}
@@ -74,14 +74,14 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                   className="p-4 bg-slate-50 rounded-2xl border border-transparent transition-all cursor-default group"
                 >
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</span>
-                    <span className="text-[9px] font-black text-indigo-600 shrink-0 ml-4">{mission.xp_reward} XP</span>
+                    <span className="text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</span>
+                    <span className="text-[10px] font-black text-indigo-600 shrink-0 ml-4">{mission.xp_reward} XP</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-1 flex-1 bg-slate-200 rounded-full overflow-hidden">
                       <div className={`h-full bg-indigo-500 ${mission.status === 'awaiting_validation' ? 'w-full' : 'w-1/2'}`}></div>
                     </div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0">
                       {mission.status === 'awaiting_validation' ? 'Valid.' : 'En cours'}
                     </span>
                   </div>
@@ -93,8 +93,8 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                   <i className="fa-solid fa-mug-hot"></i>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">Mission accomplie !</p>
-                  <p className="text-[9px] font-medium text-slate-400 max-w-[200px] leading-relaxed italic">
+                  <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Mission accomplie !</p>
+                  <p className="text-xs font-medium text-slate-600 max-w-[280px] leading-relaxed italic">
                     Tout est à jour pour le moment. Profite-en pour explorer de nouvelles fiches ou prendre une pause bien méritée.
                   </p>
                 </div>
@@ -106,7 +106,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
 
         {/* Activity Section */}
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
              <i className="fa-solid fa-clock-rotate-left text-rose-500"></i> Mon Activité
           </p>
           <div className="space-y-3">
@@ -117,10 +117,10 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                     <i className={`fa-solid ${getActionIcon(act.title || '')} text-xs`}></i>
                   </div>
                   <div className="flex-1 min-w-0">
-                     <p className="text-[11px] font-medium text-slate-800 leading-tight line-clamp-2">
+                     <p className="text-xs font-medium text-slate-800 leading-tight line-clamp-2">
                         {act.content}
                      </p>
-                     <span className="text-[9px] font-bold text-slate-400">
+                     <span className="text-[10px] font-bold text-slate-500">
                         {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                      </span>
                   </div>
@@ -128,7 +128,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               ))
             ) : (
               <div className="p-6 text-center opacity-40">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rien à signaler</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Rien à signaler</p>
               </div>
             )}
           </div>

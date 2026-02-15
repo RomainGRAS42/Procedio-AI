@@ -88,14 +88,14 @@ const TeamSynergyWidget: React.FC = () => {
               <InfoTooltip text="Évolution collective basée sur l'XP cumulée de tous les techniciens." />
             </div>
             <div className="flex items-center gap-2 mt-1">
-                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest">Niveau {levelInfo.level}</span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">• {levelInfo.title}</span>
+                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-xs font-black uppercase tracking-widest">Niveau {levelInfo.level}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">• {levelInfo.title}</span>
             </div>
           </div>
         </div>
         <div className="text-right hidden sm:block">
              <span className="text-3xl font-black text-slate-900 tracking-tighter">{totalXP.toLocaleString()}</span>
-             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Points XP Cumulés</p>
+             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Points XP Cumulés</p>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ const TeamSynergyWidget: React.FC = () => {
       <div className="flex justify-between items-center px-1">
          <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{Math.round(progress)}% Progression</span>
+            <span className="text-xs font-black text-amber-600 uppercase tracking-widest">{Math.round(progress)}% Progression</span>
          </div>
          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
             Prochain Grade : <span className="text-slate-600">+{remainingXP.toLocaleString()} XP</span> 🚀

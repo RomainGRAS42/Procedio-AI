@@ -49,33 +49,33 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                   <i className="fa-solid fa-circle-info text-[0.8rem]"></i>
                 </button>
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none text-left">
-                  <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>
+                  <p className="text-[11px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment gagner de l'XP ?</p>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] pb-1 border-b border-white/5 opacity-50 font-black">
+                    <div className="flex justify-between text-[11px] pb-1 border-b border-white/5 opacity-50 font-black">
                       <span>ACTION</span>
                       <span>GAIN</span>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold">
+                    <div className="flex justify-between text-[11px] font-bold">
                       <span>Lecture procédure</span>
                       <span className="text-emerald-400">+5 XP</span>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold">
+                    <div className="flex justify-between text-[11px] font-bold">
                       <span>Lecture flash note</span>
                       <span className="text-emerald-400">+5 XP</span>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold">
+                    <div className="flex justify-between text-[11px] font-bold">
                       <span>Mission acceptée</span>
                       <span className="text-indigo-400">+10 XP</span>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold">
+                    <div className="flex justify-between text-[11px] font-bold">
                       <span>Rendu de mission</span>
                       <span className="text-indigo-400">+10 XP</span>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold border-t border-white/5 pt-1">
+                    <div className="flex justify-between text-[11px] font-bold border-t border-white/5 pt-1">
                       <span>Mission accomplie</span>
                       <span className="text-emerald-400">+50 XP</span>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold">
+                    <div className="flex justify-between text-[11px] font-bold">
                       <span>Suggestion approuvée</span>
                       <span className="text-amber-400">+50 XP</span>
                     </div>
@@ -84,7 +84,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                 </div>
               </div>
             </div>
-            <div className="inline-flex mt-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[8px] font-black uppercase tracking-widest">
+            <div className="inline-flex mt-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest">
               {earnedBadges.length} Obtenus
             </div>
           </div>
@@ -93,7 +93,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
 
       <div className="flex-1 space-y-6">
         <div>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Collection active</p>
+          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Collection active</p>
           <div className="flex flex-wrap gap-3">
             {earnedBadges.length > 0 ? (
               earnedBadges.map((ub) => {
@@ -102,7 +102,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                   <div key={ub.id} className="group relative">
                     <div className={`w-14 h-14 rounded-2xl ${style.bg} border ${style.border} flex flex-col items-center justify-center gap-1 hover:bg-white hover:scale-110 transition-all cursor-help transform shadow-sm ${style.shadow}`}>
                       <i className={`fa-solid ${ub.badges.icon} text-lg ${style.icon}`}></i>
-                      <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter truncate w-10 text-center">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter truncate w-10 text-center leading-none">
                         {ub.badges.name}
                       </span>
                     </div>
@@ -116,27 +116,27 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
               })
             ) : (
               <div className="w-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Aucun badge débloqué</p>
+                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Aucun badge débloqué</p>
               </div>
             )}
           </div>
         </div>
 
         <div className="pt-6 border-t border-slate-100">
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Prochain Défi</p>
+           <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Prochain Défi</p>
            <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-300 flex items-center justify-center text-sm group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500 transition-colors">
                   <i className="fa-solid fa-book-bookmark"></i>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-700 uppercase leading-none mb-1">Lecteur Assidu</p>
+                  <p className="text-xs font-black text-slate-700 uppercase leading-none mb-1">Lecteur Assidu</p>
                   <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
                     <div className="h-full bg-amber-400 w-3/4 animate-pulse"></div>
                   </div>
                 </div>
               </div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">75%</span>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">75%</span>
            </div>
         </div>
       </div>

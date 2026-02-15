@@ -176,7 +176,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
         {loading ? (
           <div className="h-full flex items-center justify-center py-10 gap-3">
              <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-             <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Récupération des flux...</span>
+             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Récupération des flux...</span>
           </div>
         ) : items.length > 0 ? (
           items.map((item, idx) => (
@@ -185,11 +185,11 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
               className="group block p-4 bg-slate-50/50 hover:bg-white border border-transparent hover:border-indigo-100 rounded-2xl transition-all relative"
             >
               <div className="flex justify-between items-start mb-2">
-                <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                   {item.source}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-bold text-slate-400">
+                  <span className="text-[10px] font-bold text-slate-500">
                     {new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <a 
@@ -206,7 +206,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
               <h4 className="font-bold text-slate-800 text-[13px] leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors mb-2">
                 {item.title}
               </h4>
-              <p className="text-[11px] text-slate-500 line-clamp-3 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+              <p className="text-xs text-slate-600 line-clamp-3 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
                 {item.description}
               </p>
             </div>
@@ -217,18 +217,18 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                 <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-orange-100/20"></div>
                 <i className="fa-solid fa-satellite-dish relative"></i>
              </div>
-             <div className="space-y-2">
-                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Ta fenêtre sur l'actualité</p>
-                <p className="text-[10px] font-medium text-slate-400 max-w-[240px] leading-relaxed italic">
+              <div className="space-y-2">
+                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Ta fenêtre sur l'actualité</p>
+                <p className="text-xs font-medium text-slate-500 max-w-[280px] leading-relaxed italic">
                   Connecte tes flux préférés pour transformer ce bloc en ton cockpit de veille technologique.
                 </p>
-             </div>
-             <button 
-                onClick={() => setShowManageModal(true)}
-                className="mt-6 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest hover:border-orange-200 hover:text-orange-600 hover:shadow-lg hover:shadow-orange-50 transition-all"
-             >
-                Ajouter une source
-             </button>
+              </div>
+              <button 
+                 onClick={() => setShowManageModal(true)}
+                 className="mt-6 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-500 uppercase tracking-widest hover:border-orange-200 hover:text-orange-600 hover:shadow-lg hover:shadow-orange-50 transition-all"
+              >
+                 Ajouter une source
+              </button>
           </div>
         )}
       </div>
@@ -239,12 +239,12 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
       >
          <div className="flex -space-x-2">
             {feeds.slice(0, 3).map(f => (
-              <div key={f.id} className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 shadow-sm group-hover/manage:border-indigo-300 transition-colors" title={f.title}>
+              <div key={f.id} className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs text-slate-500 shadow-sm group-hover/manage:border-indigo-300 transition-colors" title={f.title}>
                  <i className={`fa-solid ${f.icon}`}></i>
               </div>
             ))}
             {feeds.length > 3 && (
-              <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400 group-hover/manage:bg-indigo-50 transition-colors">
+              <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover/manage:bg-indigo-50 transition-colors">
                 +{feeds.length - 3}
               </div>
             )}
@@ -252,7 +252,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
               <i className="fa-solid fa-plus-circle text-[10px]"></i>
             </div>
          </div>
-         <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest group-hover/manage:text-indigo-400 transition-colors">Gérer les sources</span>
+         <span className="text-xs font-black text-slate-400 uppercase tracking-widest group-hover/manage:text-indigo-400 transition-colors">Gérer les sources</span>
       </div>
 
       {/* Modal Gestion Flux */}
@@ -273,7 +273,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
 
              <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-4">
                 <div className="space-y-2">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Sources Actives</p>
+                   <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Sources Actives</p>
                    {feeds.map((feed) => (
                       <div key={feed.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group/feed hover:bg-white transition-all">
                          <div className="flex items-center gap-4">
@@ -281,11 +281,11 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                                <i className={`fa-solid ${feed.icon}`}></i>
                             </div>
                             <div className="min-w-0">
-                               <p className="text-[11px] font-black text-slate-700 truncate capitalize">{feed.title}</p>
+                               <p className="text-xs font-black text-slate-700 truncate capitalize">{feed.title}</p>
                                <div className="flex items-center gap-2">
-                                  <p className="text-[8px] font-bold text-slate-400 truncate max-w-[150px]">{feed.url}</p>
+                                  <p className="text-[10px] font-bold text-slate-500 truncate max-w-[150px]">{feed.url}</p>
                                   {feed.is_global && (
-                                     <span className="text-[7px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">Global</span>
+                                     <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">Global</span>
                                   )}
                                </div>
                             </div>
@@ -301,7 +301,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                    ))}
                    {feeds.length === 0 && (
                       <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aucun flux enregistré</p>
+                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Aucun flux enregistré</p>
                       </div>
                    )}
                 </div>
@@ -309,16 +309,16 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                 {!isAdding ? (
                    <button 
                      onClick={() => setIsAdding(true)}
-                     className="w-full py-4 mt-4 border-2 border-dashed border-slate-200 rounded-2xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-3"
+                     className="w-full py-4 mt-4 border-2 border-dashed border-slate-200 rounded-2xl text-xs font-black text-slate-500 uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-3"
                    >
                       <i className="fa-solid fa-plus-circle"></i>
                       Ajouter une nouvelle source
                    </button>
                 ) : (
                    <div className="bg-white border-t border-slate-100 pt-6 mt-6 animate-fade-in space-y-4">
-                      <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-4">Nouvelle Source</p>
+                      <p className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-4">Nouvelle Source</p>
                       <div>
-                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">URL du flux</label>
+                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5 block">URL du flux</label>
                          <input 
                            type="text" 
                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none text-xs font-bold text-slate-700 transition-all"
@@ -328,7 +328,7 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                          />
                       </div>
                       <div>
-                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nom (Optionnel)</label>
+                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Nom (Optionnel)</label>
                          <input 
                            type="text" 
                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none text-xs font-bold text-slate-700 transition-all"
@@ -345,17 +345,17 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
                              className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all w-full ${newFeed.is_global ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
                            >
                               <i className={`fa-solid ${newFeed.is_global ? 'fa-check-circle' : 'fa-circle'}`}></i>
-                              <span className="text-[10px] font-black uppercase tracking-widest">Diffuser à l'équipe</span>
+                              <span className="text-xs font-black uppercase tracking-widest">Diffuser à l'équipe</span>
                            </button>
                         </div>
                       )}
 
                       <div className="flex gap-3 mt-4">
-                         <button onClick={() => setIsAdding(false)} className="flex-1 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all font-inter">Annuler</button>
+                         <button onClick={() => setIsAdding(false)} className="flex-1 py-3 text-xs font-black text-slate-500 uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all font-inter">Annuler</button>
                          <button 
                            onClick={handleAddFeed}
                            disabled={!newFeed.url}
-                           className="flex-1 py-3 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all disabled:opacity-50"
+                           className="flex-1 py-3 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all disabled:opacity-50"
                           >
                             Ajouter
                           </button>
