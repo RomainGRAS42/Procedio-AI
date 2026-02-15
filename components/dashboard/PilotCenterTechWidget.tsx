@@ -53,36 +53,6 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
       </div>
 
       <div className="space-y-8 flex-1 overflow-y-auto pr-1 scrollbar-thin">
-        {/* Activity Section */}
-        <div>
-          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-             <i className="fa-solid fa-clock-rotate-left text-rose-500"></i> Mon Activité
-          </p>
-          <div className="space-y-3">
-            {activities.length > 0 ? (
-              activities.slice(0, 5).map((act) => (
-                <div key={act.id} className="flex gap-4 items-start p-3 hover:bg-slate-50 rounded-2xl transition-all group">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${getActionColor(act.title || '')}`}>
-                    <i className={`fa-solid ${getActionIcon(act.title || '')} text-xs`}></i>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                     <p className="text-xs font-medium text-slate-800 leading-tight line-clamp-2">
-                        {act.content}
-                     </p>
-                     <span className="text-xs font-black text-slate-500">
-                        {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                     </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-6 text-center opacity-40">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Rien à signaler</p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Missions Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -90,7 +60,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               <i className="fa-solid fa-rocket text-indigo-500"></i> Mes Missions
             </p>
             {missions.length > 5 && (
-              <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+              <span className="text-xs font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors">
                 Voir tout
               </span>
             )}
@@ -118,16 +88,46 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 animate-fade-in flex flex-col items-center justify-center gap-4 group">
-                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-indigo-400 text-2xl shadow-sm border border-slate-100 group-hover:scale-110 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all duration-500">
-                  <i className="fa-solid fa-mug-hot"></i>
+              <div className="py-4 px-6 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4 group transition-all hover:bg-emerald-50">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-emerald-500 text-lg shadow-sm border border-emerald-50 shrink-0">
+                  <i className="fa-solid fa-check"></i>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Mission accomplie !</p>
-                  <p className="text-xs font-medium text-slate-600 max-w-[280px] leading-relaxed italic">
-                    Tout est à jour pour le moment. Profite-en pour explorer de nouvelles fiches ou prendre une pause bien méritée.
-                  </p>
+                <div>
+                   <p className="text-xs font-black text-emerald-900 uppercase tracking-tight">Mission accomplie !</p>
+                   <p className="text-[11px] font-medium text-emerald-700/80 leading-tight italic">
+                     Tout est à jour. Une pause bien méritée ?
+                   </p>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Activity Section */}
+        <div>
+          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+             <i className="fa-solid fa-clock-rotate-left text-rose-500"></i> Mon Activité
+          </p>
+          <div className="space-y-3">
+            {activities.length > 0 ? (
+              activities.slice(0, 5).map((act) => (
+                <div key={act.id} className="flex gap-4 items-start p-3 hover:bg-slate-50 rounded-2xl transition-all group">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${getActionColor(act.title || '')}`}>
+                    <i className={`fa-solid ${getActionIcon(act.title || '')} text-xs`}></i>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                     <p className="text-xs font-medium text-slate-800 leading-tight line-clamp-2">
+                        {act.content}
+                     </p>
+                     <span className="text-xs font-black text-slate-500">
+                        {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                     </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center opacity-40">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Rien à signaler</p>
               </div>
             )}
           </div>
