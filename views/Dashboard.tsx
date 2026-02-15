@@ -955,31 +955,37 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {user.role === UserRole.TECHNICIAN ? (
           <div className="flex flex-col gap-8">
-            {/* KPI + Badges Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-               <div className="lg:col-span-3">
-                 <StatsSummaryWidget stats={filteredStats} />
-               </div>
-               <BadgesWidget 
-                  earnedBadges={earnedBadges} 
-                  onNavigate={onNavigate}
-                />
+            {/* ROW 1: KPIs (Full Width) */}
+            <div className="w-full">
+              <StatsSummaryWidget stats={filteredStats} />
             </div>
 
-            {/* Pilot Center + Mastery Row (50/50) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-               <PilotCenterTechWidget 
-                 missions={activeMissions.filter(m => m.assigned_to === user.id)}
-                 activities={activities}
-                 loading={loadingMissions || loadingActivities}
-                 onNavigate={onNavigate}
-               />
+            {/* ROW 2: Pilot Center (2/3) + Badges (1/3) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               <div className="lg:col-span-2">
+                 <PilotCenterTechWidget 
+                   missions={activeMissions.filter(m => m.assigned_to === user.id)}
+                   activities={activities}
+                   loading={loadingMissions || loadingActivities}
+                   onNavigate={onNavigate}
+                 />
+               </div>
+               <div className="lg:col-span-1">
+                 <BadgesWidget 
+                    earnedBadges={earnedBadges} 
+                    onNavigate={onNavigate}
+                  />
+               </div>
+            </div>
+
+            {/* ROW 3: Mastery (Full Width) */}
+            <div className="w-full">
                <MasteryWidget 
                  personalStats={personalStats} 
                />
             </div>
 
-            {/* RSS Full Width */}
+            {/* ROW 4: RSS (Full Width) */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
                <RSSWidget user={user} />
             </div>
