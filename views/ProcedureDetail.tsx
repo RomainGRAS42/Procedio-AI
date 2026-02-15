@@ -13,6 +13,7 @@ import "@react-pdf-viewer/search/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
 
 import MasteryQuizModal from "../components/MasteryQuizModal";
+import { calculateLevelFromXP } from "../lib/xpSystem";
 
 // 🎨 Custom Styles to hide unwanted "Whole words" option
 const hideWholeWordsStyles = `
@@ -571,7 +572,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               .update({
                 xp_points: currentXP + 5,
                 stats_by_category: newStats,
-                level: Math.floor((currentXP + 5) / 100) + 1, // Niveau = 1 + XP/100
+                level: calculateLevelFromXP(currentXP + 5),
               })
               .eq("id", user.id);
           }

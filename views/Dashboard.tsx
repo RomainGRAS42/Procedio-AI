@@ -24,6 +24,7 @@ import MasteryWidget from '../components/dashboard/MasteryWidget';
 import AnnouncementWidget from '../components/dashboard/AnnouncementWidget';
 import ActivityWidget from '../components/dashboard/ActivityWidget';
 import ReviewCenterWidget from '../components/dashboard/ReviewCenterWidget';
+import PilotCenterTechWidget from '../components/dashboard/PilotCenterTechWidget';
 import RSSWidget from "../components/RSSWidget";
 import MasteryQuizModal from "../components/MasteryQuizModal";
 import MasteryResultDetailModal from "../components/MasteryResultDetailModal";
@@ -147,11 +148,10 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState(cacheStore.get('dash_manager_kpis') || {
-    searchSuccess: 100,
-    health: 0,
-    usage: 0,
     redZone: 0
   });
+
+  const [hasInitialFetchCompleted, setHasInitialFetchCompleted] = useState(false);
 
   const prevLevelRef = React.useRef<number>(0);
   const prevBadgeCountRef = React.useRef<number>(0);
@@ -166,7 +166,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Detection Level Up & Badges
   useEffect(() => {
-    if (user.role !== UserRole.TECHNICIAN || !user.id || loadingBadges) return;
+    if (user.role !== UserRole.TECHNICIAN || !user.id || !hasInitialFetchCompleted || loadingBadges) return;
 
     const newQueue: CelebrationItem[] = [];
     
@@ -490,6 +490,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         cacheStore.set('dash_earned_badges', userBadges);
       }
       setLoadingBadges(false);
+      setHasInitialFetchCompleted(true);
     } catch (err) {
       console.error("Erreur stats personnelles:", err);
     }
@@ -671,7 +672,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchActivities = async () => {
     setLoadingActivities(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('notes')
         .select(`
           id, 
@@ -681,11 +682,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           user:user_id (first_name, last_name)
         `)
         .or('title.ilike.CONSULTATION%,title.ilike.LOG_SUGGESTION%,title.ilike.CLAIM_MASTERY%,title.ilike.MISSION_%')
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (user.role === UserRole.TECHNICIAN) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query.limit(20);
       
+      if (error) throw error;
       if (data) {
         setActivities(data);
         cacheStore.set('dash_activities', data);
@@ -948,87 +953,103 @@ const Dashboard: React.FC<DashboardProps> = ({
           formatDate={(d) => new Date(d).toLocaleDateString()}
         />
 
-        {user.role === UserRole.MANAGER && (
-          <section className="mb-8">
-            <TeamSynergyWidget />
-          </section>
-        )}
-
-        <section className="mb-8">
-          <StatsSummaryWidget stats={filteredStats} />
-        </section>
-
-        <div className="flex flex-col gap-8">
-            
-            {/* ROW 1: Centre de Pilotage | Podium | Pouls */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-               
-               {/* Col 1: Centre de Pilotage */}
-               <div className="space-y-8">
-                 <ReviewCenterWidget 
-                   pendingSuggestions={pendingSuggestions || []}
-                   masteryClaims={masteryClaims || []}
-                   onSelectSuggestion={(sugg) => {
-                       setSelectedSuggestion(sugg);
-                       setShowSuggestionModal(true);
-                   }}
-                   onNavigateToStatistics={() => onNavigate?.('/statistics')}
-                   onApproveMastery={handleApproveMastery}
-                   onViewMasteryDetail={(claim) => {
-                       setSelectedMasteryClaim(claim);
-                       setShowMasteryDetail(true);
-                   }}
-                   generatingExamId={generatingExamId}
-                   onToggleReadStatus={handleToggleReadStatus}
-                 />
+        {user.role === UserRole.TECHNICIAN ? (
+          <div className="flex flex-col gap-8">
+            {/* KPI + Badges Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+               <div className="lg:col-span-3">
+                 <StatsSummaryWidget stats={filteredStats} />
                </div>
+               <BadgesWidget 
+                  earnedBadges={earnedBadges} 
+                  onNavigate={onNavigate}
+                />
+            </div>
 
-               {/* Col 2: Podium (Manager) or Mastery (Technician) */}
-               <div className="space-y-8">
-                  {user.role === UserRole.MANAGER ? (
-                    <TeamPodium />
-                  ) : (
-                    <MasteryWidget 
-                      personalStats={personalStats} 
-                    />
-                  )}
+            {/* Pilot Center + Mastery Row (50/50) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+               <PilotCenterTechWidget 
+                 missions={activeMissions.filter(m => m.assigned_to === user.id)}
+                 activities={activities}
+                 loading={loadingMissions || loadingActivities}
+                 onNavigate={onNavigate}
+               />
+               <MasteryWidget 
+                 personalStats={personalStats} 
+               />
+            </div>
 
-                  <MissionsWidget 
-                    activeMissions={activeMissions}
-                    userRole={user.role}
-                    viewMode="team"
-                    onNavigate={onNavigate}
-                    loading={loadingMissions}
-                  />
-               </div>
+            {/* RSS Full Width */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
+               <RSSWidget user={user} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-8">
+              {/* MANAGER SYNERGY */}
+              <section className="mb-4">
+                <TeamSynergyWidget />
+              </section>
 
-               {/* Col 3: Pouls de l'Équipe (Activity) */}
-               <div className="space-y-8">
-                 <ActivityWidget 
-                   activities={activities} 
-                   loadingActivities={loadingActivities}
-                   onRefresh={fetchActivities}
-                 />
-
-                 {user.role === UserRole.TECHNICIAN && (
-                   <BadgesWidget 
-                     earnedBadges={earnedBadges} 
-                     onNavigate={onNavigate}
+              {/* MANAGER KPIs */}
+              <section className="mb-4">
+                <StatsSummaryWidget stats={filteredStats} />
+              </section>
+              
+              {/* MANAGER ROW 1: Centre de Pilotage | Podium | Pouls */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                 
+                 {/* Col 1: Centre de Pilotage */}
+                 <div className="space-y-8">
+                   <ReviewCenterWidget 
+                     pendingSuggestions={pendingSuggestions || []}
+                     masteryClaims={masteryClaims || []}
+                     onSelectSuggestion={(sugg) => {
+                         setSelectedSuggestion(sugg);
+                         setShowSuggestionModal(true);
+                     }}
+                     onNavigateToStatistics={() => onNavigate?.('/statistics')}
+                     onApproveMastery={handleApproveMastery}
+                     onViewMasteryDetail={(claim) => {
+                         setSelectedMasteryClaim(claim);
+                         setShowMasteryDetail(true);
+                     }}
+                     generatingExamId={generatingExamId}
+                     onToggleReadStatus={handleToggleReadStatus}
                    />
-                 )}
-               </div>
+                 </div>
 
-            </div>
+                 {/* Col 2: Podium (Manager) */}
+                 <div className="space-y-8">
+                    <TeamPodium />
+                    <MissionsWidget 
+                      activeMissions={activeMissions}
+                      userRole={user.role}
+                      viewMode="team"
+                      onNavigate={onNavigate}
+                      loading={loadingMissions}
+                    />
+                 </div>
 
-            {/* ROW 2: RSS (Veille Info) */}
-            <div className="space-y-8">
-               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
-                  <RSSWidget user={user} />
-               </div>
-            </div>
+                 {/* Col 3: Pouls de l'Équipe (Activity) */}
+                 <div className="space-y-8">
+                   <ActivityWidget 
+                     activities={activities} 
+                     loadingActivities={loadingActivities}
+                     onRefresh={fetchActivities}
+                   />
+                 </div>
 
+              </div>
 
-        </div>
+              {/* MANAGER ROW 2: RSS (Veille Info) */}
+              <div className="space-y-8">
+                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
+                    <RSSWidget user={user} />
+                 </div>
+              </div>
+          </div>
+        )}
 
       </div>
       

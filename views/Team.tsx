@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { User, UserRole } from "../types";
 import RadarChart from "../components/RadarChart";
+import { calculateLevelFromXP } from "../lib/xpSystem";
 
 interface TeamProps {
   user: User;
@@ -173,7 +174,11 @@ const Team: React.FC<TeamProps> = ({ user }) => {
         // Add XP reward
         const { data: profile } = await supabase.from("user_profiles").select("xp_points").eq("id", app.user_id).single();
         if (profile) {
-          await supabase.from("user_profiles").update({ xp_points: (profile.xp_points || 0) + 100 }).eq("id", app.user_id);
+          const newXP = (profile.xp_points || 0) + 100;
+          await supabase.from("user_profiles").update({ 
+            xp_points: newXP,
+            level: calculateLevelFromXP(newXP)
+          }).eq("id", app.user_id);
         }
 
         setNotification({ msg: "Candidature approuvée !", type: "success" });
