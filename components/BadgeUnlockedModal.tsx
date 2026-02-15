@@ -75,15 +75,15 @@ const BadgeUnlockedModal: React.FC<BadgeUnlockedModalProps> = ({ badge, onClose,
              <i className={`fa-solid ${badge.icon || 'fa-award'} text-amber-500`}></i>
           </div>
 
-          <p className="text-amber-600 font-black text-xs uppercase tracking-[0.4em] mb-4">Nouveau Badge Débloqué !</p>
+          <p className="text-amber-600 font-black text-xs uppercase tracking-[0.4em] mb-4">Trophée de Prestige</p>
           
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4 leading-tight">
-            {badge.name}
+            Exploit Accompli !
           </h2>
 
           <div className="bg-amber-50/50 rounded-2xl p-6 mb-10 border border-amber-100/30">
             <p className="text-slate-600 text-sm font-medium leading-relaxed italic">
-              "{badge.description}"
+              "Vous recevez le titre de **{badge.name}**. <br/> {badge.description}"
             </p>
           </div>
 

@@ -43,7 +43,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Badges</h3>
+              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Mes Trophées</h3>
               <div className="relative group/xp-info">
                 <button className="text-slate-300 hover:text-orange-500 transition-colors cursor-help ml-1">
                   <i className="fa-solid fa-circle-info text-[0.8rem]"></i>

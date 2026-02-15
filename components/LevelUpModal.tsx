@@ -47,17 +47,18 @@ const LevelUpModal: React.FC<LevelUpModalProps> = ({ level, title, onClose }) =>
             {level}
           </div>
 
-          <p className="text-indigo-600 font-black text-xs uppercase tracking-[0.4em] mb-4">Nouveau Niveau Atteint !</p>
+          <p className="text-indigo-600 font-black text-xs uppercase tracking-[0.4em] mb-4">Nouvelle Certification Pro</p>
           
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-2 leading-tight">
-            Félicitations !
+            Promotion !
           </h2>
-          <h3 className="text-xl font-bold text-slate-500 mb-8 font-mono">
-            Vous êtes désormais <span className="text-indigo-600 font-black tracking-tight">{title}</span>
+          <h3 className="text-xl font-bold text-slate-500 mb-8">
+            Vous avez atteint le grade de <br/>
+            <span className="text-indigo-600 font-black tracking-tight">{title}</span>
           </h3>
 
           <p className="text-slate-500 text-sm font-medium mb-10 leading-relaxed max-w-[280px] mx-auto">
-            Votre expertise grandit ! De nouveaux badges et missions complexes vous attendent.
+            Votre statut au sein de l'entreprise a évolué. Continuez à valider vos compétences !
           </p>
 
           <button
