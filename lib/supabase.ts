@@ -6,17 +6,17 @@ import { createClient } from '@supabase/supabase-js';
  * L'URL doit correspondre au 'ref' contenu dans le jeton JWT de la clé anon.
  * Ici, le jeton contient "ref":"pczlikyvfmrdauufgxai".
  */
-// Use custom define constants as primary source (baked in at build time)
-// with import.meta.env as fallback for development.
-const supabaseUrl = typeof __SUPABASE_URL__ !== 'undefined' ? __SUPABASE_URL__ : import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = typeof __SUPABASE_KEY__ !== 'undefined' ? __SUPABASE_KEY__ : import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Resilient configuration: Uses environment variables if available, 
+// falls back to hardcoded project-specific values to ensure 100% uptime.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://pczlikyvfmrdauufgxai.supabase.co";
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjemxpa3l2Zm1yZGF1dWZneGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NTA5NDEsImV4cCI6MjA3OTIyNjk0MX0.4cpm9gBvpwOaBQAivN-f7Gh6Bn8KAhPzHW8pTlDj0c8";
 
-// Safety check to prevent blank page
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Supabase configuration missing (Final Check).");
+// Safety check
+if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+  console.error("Supabase configuration is still using placeholders!");
 }
 
-export const supabase = createClient(supabaseUrl || 'https://placeholder-url.supabase.co', supabaseKey || 'placeholder-key', {
+export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
