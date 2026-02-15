@@ -1202,7 +1202,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                    onToggleReadStatus={handleToggleReadStatus}
                  />
 
-                 {isReferent && (
+                 {isReferent && pendingReviews.length > 0 && (
                    <ExpertReviewWidget 
                      pendingReviews={pendingReviews}
                      onSelectProcedure={onSelectProcedure}
