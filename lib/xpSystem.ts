@@ -28,17 +28,17 @@ export const calculateLevelFromXP = (xp: number): number => {
 
 export const getLevelTitle = (level: number): string => {
   switch(level) {
-    case 1: return "Vagabond";
-    case 2: return "Explorateur";
-    case 3: return "Initié";
-    case 4: return "Adepte";
-    case 5: return "Praticien";
+    case 1: return "Recrue";
+    case 2: return "Apprenti";
+    case 3: return "Intervenant";
+    case 4: return "Confirmé";
+    case 5: return "Référent";
     case 6: return "Expert";
-    case 7: return "Virtuose";
-    case 8: return "Maître";
-    case 9: return "Grand Maître";
-    case 10: return "Légende Vivante";
-    default: return level > 10 ? "Dieu de la Machine" : "Vagabond";
+    case 7: return "Spécialiste";
+    case 8: return "Maître d'Armes";
+    case 9: return "Consultant Élite";
+    case 10: return "Légende Industrielle";
+    default: return level > 10 ? "Oracle de la Maintenance" : "Recrue";
   }
 };
 
