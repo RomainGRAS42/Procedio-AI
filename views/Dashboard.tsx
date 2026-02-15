@@ -1141,9 +1141,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center gap-3">
              {/* Toggle Removed */}
 
-             <button 
+            <button 
               onClick={onUploadClick}
-              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg shadow-slate-200 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-3 font-bold text-sm"
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-3 font-bold text-sm"
             >
               <i className="fa-solid fa-plus"></i>
               <span>{user.role === UserRole.MANAGER ? "Nouvelle Procédure" : "Contribuer"}</span>
