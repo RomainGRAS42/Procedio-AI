@@ -20,7 +20,6 @@ import TeamSynergyWidget from '../components/dashboard/TeamSynergyWidget';
 import ActiveMissionWidget from '../components/dashboard/ActiveMissionWidget';
 import MissionsWidget from '../components/dashboard/MissionsWidget';
 import BadgesWidget from '../components/dashboard/BadgesWidget';
-import BadgesWidget from '../components/dashboard/BadgesWidget';
 import MasteryWidget from '../components/dashboard/MasteryWidget';
 import AnnouncementWidget from '../components/dashboard/AnnouncementWidget';
 import ActivityWidget from '../components/dashboard/ActivityWidget';
@@ -75,7 +74,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [managerResponse, setManagerResponse] = useState("");
 
-  const [announcement, setAnnouncement] = useState<Announcement | null>(cacheStore.get('dash_announcement') || null);
 
   // Suggestions (Manager Only)
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>(cacheStore.get('dash_suggestions') || []);
@@ -100,7 +98,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [completionNotes, setCompletionNotes] = useState("");
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   
-  const [completingMission, setCompletingMission] = useState<Mission | null>(null);
 
   // Mastery Claims (Manager Only)
   const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
@@ -340,7 +337,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (user.role === UserRole.MANAGER) {
         fetchSuggestions();
-        fetchManagerKPIs();
         fetchMasteryClaims();
         fetchPendingFlashNotes();
       } else {
