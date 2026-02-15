@@ -6,12 +6,14 @@ import { createClient } from '@supabase/supabase-js';
  * L'URL doit correspondre au 'ref' contenu dans le jeton JWT de la clé anon.
  * Ici, le jeton contient "ref":"pczlikyvfmrdauufgxai".
  */
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use custom define constants as primary source (baked in at build time)
+// with import.meta.env as fallback for development.
+const supabaseUrl = typeof __SUPABASE_URL__ !== 'undefined' ? __SUPABASE_URL__ : import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = typeof __SUPABASE_KEY__ !== 'undefined' ? __SUPABASE_KEY__ : import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Safety check to prevent blank page
 if (!supabaseUrl || !supabaseKey) {
-  console.error("Supabase configuration missing.");
+  console.error("Supabase configuration missing (Final Check).");
 }
 
 export const supabase = createClient(supabaseUrl || 'https://placeholder-url.supabase.co', supabaseKey || 'placeholder-key', {
