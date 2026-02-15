@@ -411,10 +411,18 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                                         <div className="space-y-2 overflow-y-auto max-h-48 pr-2 custom-scrollbar">
                                           {referentProcedures.map((ref: any) => (
                                             <div key={ref.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100 group/ref">
-                                              <div className="truncate pr-2">
-                                                <p className="text-[10px] font-bold text-slate-800 truncate">{ref.procedure[0]?.title}</p>
-                                                <p className="text-[8px] text-slate-400 font-bold uppercase">{ref.procedure[0]?.category}</p>
-                                              </div>
+                                                <div className="truncate pr-2">
+                                                  <p className="text-[10px] font-bold text-slate-800 truncate">
+                                                    {Array.isArray(ref.procedure) 
+                                                      ? ref.procedure[0]?.title 
+                                                      : (ref.procedure as any)?.title || "Sans titre"}
+                                                  </p>
+                                                  <p className="text-[8px] text-slate-400 font-bold uppercase">
+                                                    {Array.isArray(ref.procedure) 
+                                                      ? ref.procedure[0]?.category 
+                                                      : (ref.procedure as any)?.category || "Divers"}
+                                                  </p>
+                                                </div>
                                               {user.role === UserRole.MANAGER && (
                                                 <button 
                                                   onClick={(e) => {
@@ -438,16 +446,21 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                                     </div>
 
                                     {/* Skills Radar */}
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center justify-center">
-                                      <div className="w-full h-full min-h-[160px]">
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center justify-center min-h-[200px]">
+                                      <div className="w-full" key={`${expandedUserId}-${loadingDetails}`}>
                                         <RadarChart 
-                                          data={Object.entries(profileDetails?.stats_by_category || {}).map(([category, stats]: [string, any]) => ({
-                                            subject: category,
-                                            value: stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0,
-                                            fullMark: 100,
-                                          }))}
+                                          data={Object.entries(profileDetails?.stats_by_category || {}).map(([category, stats]: [string, any]) => {
+                                            const value = typeof stats === 'number' 
+                                              ? stats 
+                                              : (stats?.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0);
+                                            return {
+                                              subject: category,
+                                              value: value,
+                                              fullMark: 100,
+                                            };
+                                          })}
                                           color="#4f46e5"
-                                          height={160}
+                                          height={180}
                                         />
                                       </div>
                                     </div>
