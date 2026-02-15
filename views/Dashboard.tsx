@@ -931,6 +931,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </header>
 
+        {user.role === UserRole.TECHNICIAN && (
+          <div className="animate-slide-up">
+            <XPProgressBar 
+              currentXP={personalStats.xp} 
+              currentLevel={personalStats.level} 
+            />
+          </div>
+        )}
+
         <AnnouncementWidget
           user={user}
           announcement={announcement}
