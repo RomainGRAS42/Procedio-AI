@@ -256,7 +256,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                   onClick={() => setShowPasswordModal(true)}
                   className="flex-1 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-50 transition-all active:scale-95"
                 >
-                  <i className="fa-solid fa-key mr-2 text-indigo-600"></i> Sécurité
+                  <i className="fa-solid fa-key mr-2 text-indigo-600"></i> Changer mon mot de passe
                 </button>
               </div>
             </section>
@@ -281,8 +281,8 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                 <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
                   <i className="fa-solid fa-shield-halved text-2xl"></i>
                 </div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Sécurité</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Mise à jour du mot de passe</p>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Accès & Sécurité</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Mise à jour de vos identifiants</p>
               </div>
 
               <form onSubmit={handleUpdatePassword} className="space-y-6 relative z-10">
