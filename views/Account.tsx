@@ -160,13 +160,13 @@ const Account: React.FC<AccountProps> = ({ user }) => {
         )}
 
         {/* MAIN PROFILE CARD */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* LEFT COLUMN: AVATAR & STATS */}
-          <div className="lg:col-span-4 space-y-8">
-            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-xl shadow-indigo-500/5 flex flex-col items-center gap-8 group">
+          <div className="lg:col-span-4">
+            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-xl shadow-indigo-500/5 flex flex-col items-center justify-center gap-10 h-full group">
               <div className="relative">
-                <div className="w-48 h-48 rounded-[3.5rem] overflow-hidden ring-[16px] ring-slate-50 shadow-2xl transition-all duration-500 group-hover:scale-105 border border-slate-100">
+                <div className="w-56 h-56 rounded-[3.5rem] overflow-hidden ring-[16px] ring-slate-50 shadow-2xl transition-all duration-500 group-hover:scale-105 border border-slate-100">
                   <img 
                     src={avatarUrl || `https://ui-avatars.com/api/?name=${displayName}&background=random`} 
                     className="w-full h-full object-cover" 
@@ -184,9 +184,9 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                 </label>
               </div>
 
-              <div className="text-center space-y-3">
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{displayName}</h3>
-                <div className={`inline-flex px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${
+              <div className="text-center space-y-4">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">{displayName}</h3>
+                <div className={`inline-flex px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
                   user.role === UserRole.MANAGER ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'
                 }`}>
                   {user.role}
@@ -194,33 +194,25 @@ const Account: React.FC<AccountProps> = ({ user }) => {
               </div>
 
               {/* MINI STATS STRIP */}
-              <div className="grid grid-cols-3 gap-4 w-full pt-4 border-t border-slate-50">
+              <div className="grid grid-cols-3 gap-6 w-full pt-8 border-t border-slate-50">
                 <div className="text-center">
-                  <p className="text-[14px] font-black text-slate-900">{personalStats.xp}</p>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">XP</p>
+                  <p className="text-[16px] font-black text-slate-900">{personalStats.xp}</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">XP</p>
                 </div>
                 <div className="text-center border-x border-slate-100">
-                  <p className="text-[14px] font-black text-slate-900">{personalStats.level}</p>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">LVL</p>
+                  <p className="text-[16px] font-black text-slate-900">{personalStats.level}</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">LVL</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[14px] font-black text-slate-900">{personalStats.badgesCount}</p>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Badges</p>
+                  <p className="text-[16px] font-black text-slate-900">{personalStats.badgesCount}</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Badges</p>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* RIGHT COLUMN: PROGRESSION & SETTINGS */}
+          {/* RIGHT COLUMN: SETTINGS & PROGRESSION */}
           <div className="lg:col-span-8 space-y-8">
-            {/* PROGRESSION CARD */}
-            {user.role === UserRole.TECHNICIAN && (
-              <XPProgressBar 
-                currentXP={personalStats.xp} 
-                currentLevel={personalStats.level} 
-              />
-            )}
-
             {/* SETTINGS CARD */}
             <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-xl shadow-indigo-500/5 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -268,6 +260,14 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                 </button>
               </div>
             </section>
+
+            {/* PROGRESSION CARD */}
+            {user.role === UserRole.TECHNICIAN && (
+              <XPProgressBar 
+                currentXP={personalStats.xp} 
+                currentLevel={personalStats.level} 
+              />
+            )}
           </div>
         </div>
 
