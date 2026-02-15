@@ -20,12 +20,11 @@ import TeamSynergyWidget from '../components/dashboard/TeamSynergyWidget';
 import ActiveMissionWidget from '../components/dashboard/ActiveMissionWidget';
 import MissionsWidget from '../components/dashboard/MissionsWidget';
 import BadgesWidget from '../components/dashboard/BadgesWidget';
+import BadgesWidget from '../components/dashboard/BadgesWidget';
 import MasteryWidget from '../components/dashboard/MasteryWidget';
-import RecentProceduresWidget from '../components/dashboard/RecentProceduresWidget';
 import AnnouncementWidget from '../components/dashboard/AnnouncementWidget';
 import ActivityWidget from '../components/dashboard/ActivityWidget';
 import ReviewCenterWidget from '../components/dashboard/ReviewCenterWidget';
-import ExpertReviewWidget from '../components/dashboard/ExpertReviewWidget';
 import RSSWidget from "../components/RSSWidget";
 import MasteryQuizModal from "../components/MasteryQuizModal";
 import MasteryResultDetailModal from "../components/MasteryResultDetailModal";
@@ -76,8 +75,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [managerResponse, setManagerResponse] = useState("");
 
-  const [recentProcedures, setRecentProcedures] = useState<Procedure[]>(cacheStore.get('dash_recent_procs') || []);
-  const [loadingProcedures, setLoadingProcedures] = useState(!cacheStore.has('dash_recent_procs'));
+  const [announcement, setAnnouncement] = useState<Announcement | null>(cacheStore.get('dash_announcement') || null);
 
   // Suggestions (Manager Only)
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>(cacheStore.get('dash_suggestions') || []);
@@ -102,10 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [completionNotes, setCompletionNotes] = useState("");
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   
-  // Referent System
-  const [isReferent, setIsReferent] = useState(false);
-  const [pendingReviews, setPendingReviews] = useState<Procedure[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [completingMission, setCompletingMission] = useState<Mission | null>(null);
 
   // Mastery Claims (Manager Only)
   const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
@@ -338,10 +333,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   useEffect(() => {
     if (user?.id) {
-      fetchRecentProcedures();
       fetchActivities();
       fetchPersonalStats();
-      fetchTrendProcedure();
       fetchLatestAnnouncement();
       fetchActiveMissions();
 
@@ -354,7 +347,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         fetchApprovedExams();
       }
       
-      fetchReferentWorkload();
 
     }
   }, [user?.id, user?.role]);
@@ -507,137 +499,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const fetchTrendProcedure = async () => {
-    try {
-      const { data } = await supabase
-        .from('procedures')
-        .select('*')
-        .eq('is_trend', true)
-        .limit(1)
-        .maybeSingle();
-      if (data) {
-        setTrendProcedure({
-          id: data.uuid,
-          uuid: data.uuid,
-          file_id: data.file_id || data.uuid,
-          title: data.title || "Sans titre",
-          category: data.Type || "GÉNÉRAL",
-          fileUrl: data.file_url,
-          createdAt: data.created_at,
-          views: data.views || 0,
-          status: data.status || "validated",
-          is_trend: true
-        });
-      }
-    } catch (err) {
-      // Pas de grave erreur si pas de trend
-    }
-  };
 
-  const fetchManagerKPIs = async () => {
-    try {
-      // 1. Calculate Search Success Rate
-      // RESET DATE: 2026-02-14T09:00:00.000Z
-      const RESET_DATE = '2026-02-14T09:00:00.000Z';
-
-      // Count total searches (all LOG_SEARCH_* entries) AFTER Reset Date
-      const { count: totalSearches } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_%')
-        .gte('created_at', RESET_DATE);
-
-      // Count failed searches using search_opportunities table (sum of counts for pending status)
-      const { data: opSums } = await supabase
-        .from('search_opportunities')
-        .select('search_count')
-        .eq('status', 'pending');
-        
-      const totalFailedCount = opSums?.reduce((acc, curr) => acc + (curr.search_count || 0), 0) || 0;
-
-      const successRate = totalSearches && totalSearches > 0 
-        ? Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100)
-        : 100;
-
-      const finalSuccessRate = Math.max(0, Math.min(100, successRate));
-
-      // 2. Calculate Health % and Usage
-      const { data: procs } = await supabase
-        .from('procedures')
-        .select('views, updated_at, created_at');
-
-      let totalViews = 0;
-      let healthPct = 0;
-
-      if (procs) {
-        totalViews = procs.reduce((acc, p) => acc + (p.views || 0), 0);
-        
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-        
-        const freshCount = procs.filter(p => new Date(p.updated_at || p.created_at) > sixMonthsAgo).length;
-        healthPct = procs.length > 0 ? Math.round((freshCount / procs.length) * 100) : 0;
-      }
-
-      // 3. Zone Rouge: Procédures sans référent
-      const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
-      
-      const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
-      const { data: allIds } = await supabase.from('procedures').select('uuid');
-      const redZoneCount = allIds?.filter(p => !referentSet.has(p.uuid)).length || 0;
-
-      const kpis = {
-        searchSuccess: finalSuccessRate,
-        health: healthPct,
-        usage: totalViews,
-        redZone: redZoneCount
-      };
-      setManagerKPIs(kpis);
-      cacheStore.set('dash_manager_kpis', kpis);
-
-    } catch (err) {
-      console.error("Erreur KPIs Manager:", err);
-    }
-  };
-
-  const fetchReferentWorkload = async () => {
-    setLoadingReviews(true);
-    try {
-      const { data: referentSpecs } = await supabase
-        .from('procedure_referents')
-        .select('procedure_id')
-        .eq('user_id', user.id);
-      
-      const procedureIds = referentSpecs?.map(r => r.procedure_id) || [];
-
-      if (procedureIds.length > 0) {
-        setIsReferent(true);
-        const { data: procs } = await supabase
-          .from('procedures')
-          .select('*')
-          .in('uuid', procedureIds)
-          .eq('status', 'draft') 
-          .order('created_at', { ascending: false });
-        
-        if (procs) {
-          setPendingReviews(procs.map(p => ({
-            ...p,
-            id: p.uuid,
-            file_id: p.file_id || p.uuid,
-            title: p.title || "Sans titre",
-            category: p.Type || "GÉNÉRAL",
-            fileUrl: p.file_url,
-            createdAt: p.created_at,
-            status: p.status
-          })));
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching referent workload:", err);
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
 
   const fetchMasteryClaims = async () => {
     if (user.role !== UserRole.MANAGER) return;
@@ -760,52 +622,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  const fetchRecentProcedures = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('procedures')
-        .select(`
-          uuid,
-          file_id,
-          title,
-          Type,
-          file_url,
-          created_at,
-          views,
-          status,
-          user_profiles!left (
-             first_name,
-             last_name
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) console.error("Error fetching procs:", error);
-      else if (data) {
-         const mapped = data.map(d => ({
-           id: d.uuid,
-           db_id: d.uuid,
-           file_id: d.file_id || d.uuid,
-           title: d.title || "Sans titre",
-           category: d.Type || "GÉNÉRAL",
-           fileUrl: d.file_url,
-           createdAt: d.created_at,
-           views: d.views || 0,
-           status: d.status || 'validated',
-           author: Array.isArray(d.user_profiles) && d.user_profiles[0] 
-             ? `${d.user_profiles[0].first_name} ${d.user_profiles[0].last_name}` 
-             : 'Système'
-         }));
-         setRecentProcedures(mapped);
-         cacheStore.set('dash_recent_procs', mapped);
-      }
-    } catch (err) {
-      console.error("Fetch recent procedures error:", err);
-    } finally {
-      setLoadingProcedures(false);
-    }
-  };
 
 
 
@@ -1071,38 +887,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
   
-  const handleUpdateReferent = async (procedureId: string, userId: string, action: 'assign' | 'revoke') => {
-    try {
-        if (action === 'assign') {
-            const { error } = await supabase.from('procedure_referents').insert({ procedure_id: procedureId, user_id: userId });
-            if (error) throw error;
-            setToast({ message: "Référent nommé avec succès !", type: "success" });
-            
-            // Log for activity
-            await supabase.from('notes').insert({
-               user_id: user.id,
-               title: `LOG_REFERENT_ASSIGN_${procedureId}`,
-               content: `a nommé un nouveau référent pour la procédure.`,
-               category: 'team_log',
-               is_protected: false
-            });
-
-        } else {
-            const { error } = await supabase.from('procedure_referents').delete().match({ procedure_id: procedureId, user_id: userId });
-            if (error) throw error;
-            setToast({ message: "Référent révoqué.", type: "info" });
-        }
-        
-        // Refresh workload
-        fetchReferentWorkload();
-        // Refresh KPIs 
-        if (user.role === UserRole.MANAGER) fetchManagerKPIs();
-
-    } catch (err: any) {
-        console.error("Error updating referent:", err);
-        setToast({ message: "Erreur lors de la mise à jour du référent.", type: "error" });
-    }
-  };
 
   if (!user) return <LoadingState />;
 
@@ -1201,13 +985,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                    generatingExamId={generatingExamId}
                    onToggleReadStatus={handleToggleReadStatus}
                  />
-
-                 {isReferent && pendingReviews.length > 0 && (
-                   <ExpertReviewWidget 
-                     pendingReviews={pendingReviews}
-                     onSelectProcedure={onSelectProcedure}
-                   />
-                 )}
                </div>
 
                {/* Col 2: Podium (Manager) or Mastery (Technician) */}
@@ -1243,15 +1020,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                      onNavigate={onNavigate}
                    />
                  )}
-
-                 <RecentProceduresWidget 
-                    recentProcedures={recentProcedures} 
-                    userRole={user.role}
-                    viewMode="team"
-                    onSelectProcedure={onSelectProcedure}
-                    onShowHistory={() => onNavigate?.('/history')}
-                    formatDate={(d) => new Date(d).toLocaleDateString()}
-                 />
                </div>
 
             </div>
@@ -1311,12 +1079,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         }}
       />
 
-       <MasteryResultDetailModal
-        isOpen={showMasteryDetail}
-        onClose={() => setShowMasteryDetail(false)}
-        claim={selectedMasteryClaim}
-        onUpdateReferent={handleUpdateReferent}
-      />
 
       {modalConfig && (
         <KPIDetailsModal
