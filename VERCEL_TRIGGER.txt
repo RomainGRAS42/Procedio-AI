@@ -1,3 +1,0 @@
-Triggering VercDeployment Trigger: 2026-02-12 08:55:00 - Final fix for source_id issues.
-Current Commit: Force update
-New publish request from user.

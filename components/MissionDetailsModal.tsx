@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { supabase } from "../lib/supabase";
 import { Mission, User, UserRole, MissionStatus, ActiveTransfer } from "../types";
 import { useProcedurePublisher } from "../hooks/useProcedurePublisher";
+import MissionStatusBadge from "./MissionStatusBadge";
+import MissionChat, { MissionMessage } from "./MissionChat";
 
 interface MissionDetailsModalProps {
   mission: Mission;
@@ -18,20 +20,6 @@ interface MissionDetailsModalProps {
   onStartQuiz?: (mission: Mission) => void;
 }
 
-interface MissionMessage {
-  id: string;
-  mission_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  tempId?: string;
-  user?: {
-    first_name: string;
-    last_name: string;
-    role: string;
-  };
-}
-
 const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   mission,
   user,
@@ -41,83 +29,26 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   onStartQuiz,
 }) => {
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
+  const [completionNotes, setCompletionNotes] = useState(mission.completion_notes || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [messages, setMessages] = useState<MissionMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  // Status Actions State
-  const [completionNotes, setCompletionNotes] = useState(mission.completion_notes || "");
-  const [attachmentUrl, setAttachmentUrl] = useState(mission.attachment_url || "");
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(mission.attachment_url || null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [iframeReady, setIframeReady] = useState(false);
-  const [showPromoteConfirmation, setShowPromoteConfirmation] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState<"promote" | "submit" | false>(false);
-
-  // Promote Form State
-  const [promoteTitle, setPromoteTitle] = useState(mission.title);
-  const [promoteCategory, setPromoteCategory] = useState("Missions / Transferts");
-
-  // Security: Signed URL state
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState<string | null>(null);
+  const [showPromoteConfirmation, setShowPromoteConfirmation] = useState(false);
+  const [promoteTitle, setPromoteTitle] = useState(mission.title);
+  const [promoteCategory, setPromoteCategory] = useState("GÉNÉRAL");
 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use the shared publisher hook
-  const { publishFile } = useProcedurePublisher({
-    user,
-    setActiveTransfer: setActiveTransfer || (() => {}), // Fallback if not provided
-    onSuccess: async (fileId) => {
-      // 1. Validate the mission (XP + Status)
-      const { error: validateError } = await supabase.rpc("validate_mission_completion", {
-        mission_id: mission.id,
-        feedback: completionNotes || "Excellent travail, promu en procédure.",
-      });
+  const { publishFile } = useProcedurePublisher({ user: { id: user.id }, setActiveTransfer: setActiveTransfer || (() => {}) });
 
-      if (validateError) {
-        console.error("Error validating mission:", validateError);
-        alert("La procédure est créée mais la validation de la mission a échoué.");
-        return;
-      }
-
-      const { error: updateError } = await supabase
-        .from("missions")
-        .update({
-          procedure_id: fileId, 
-          completion_notes: completionNotes || "Mission validée et promue en procédure.",
-        })
-        .eq("id", mission.id);
-
-      if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
-
-      if (updateError) console.error("Warning: Could not link procedure to mission", updateError);
-
-      setShowSuccessModal("promote");
-      
-      // Modal remains open but shows success state.
-      console.log("Mission promoted and validated successfully in background.");
-    }
-  });
-
-  const PREDEFINED_CATEGORIES = [
-    "LOGICIEL",
-    "MATERIEL",
-    "UTILISATEUR",
-    "INFRASTRUCTURE",
-    "Missions / Transferts",
-  ];
-
-  // Delay iframe rendering to fix white screen issue on initial load (animation timing)
-  useEffect(() => {
-    if (activeTab === "details") {
-      setIframeReady(false);
-      const timer = setTimeout(() => setIframeReady(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab]);
-
-  // For managers on awaiting_validation, we want a fresh notes field for feedback
+  // Logic for resetting notes based on status
   useEffect(() => {
     if (
       mission.status === "awaiting_validation" &&
@@ -134,88 +65,66 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (activeTab === "chat") scrollToBottom();
   }, [messages, activeTab]);
 
   const fetchMessages = async () => {
     setLoadingMessages(true);
     const { data, error } = await supabase
       .from("mission_messages")
-      .select(
-        `
+      .select(`
         *,
         user:user_profiles!mission_messages_user_id_fkey_profiles(first_name, last_name, role)
-      `
-      )
+      `)
       .eq("mission_id", mission.id)
       .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching messages:", error);
-    } else {
-      setMessages(data || []);
-    }
+    if (!error) setMessages(data || []);
     setLoadingMessages(false);
   };
 
-  // Generate Signed URL for attachment
   useEffect(() => {
     const generateSignedUrl = async () => {
       if (!attachmentUrl) {
         setSignedUrl(null);
         return;
       }
-
-      // If it's a blob URL (local upload preview), use it directly
       if (attachmentUrl.startsWith("blob:")) {
         setSignedUrl(attachmentUrl);
         return;
       }
-
       try {
-        // Extract path from public URL
-        // format: .../mission-attachments/folder/file.pdf
         const path = attachmentUrl.split("/mission-attachments/")[1];
         if (!path) {
-           console.warn("Could not extract path from public URL:", attachmentUrl);
-           setSignedUrl(attachmentUrl); // Fallback to public if parsing fails
+           setSignedUrl(attachmentUrl);
            return;
         }
-
         const { data, error } = await supabase.storage
           .from("mission-attachments")
-          .createSignedUrl(decodeURIComponent(path), 3600); // 1 hour validity
-
-        if (error) {
-          console.error("Error signing URL:", error);
-          setSignedUrl(attachmentUrl); // Fallback
-        } else if (data) {
-          setSignedUrl(data.signedUrl);
-        }
+          .createSignedUrl(decodeURIComponent(path), 3600);
+        if (!error && data) setSignedUrl(data.signedUrl);
+        else setSignedUrl(attachmentUrl);
       } catch (err) {
-        console.error("Error generating signed URL:", err);
         setSignedUrl(attachmentUrl);
       }
     };
-
     generateSignedUrl();
   }, [attachmentUrl]);
 
-  const subscribeToMessages = () => {
-    const channel = supabase
-      .channel(`mission_chat:${mission.id}`)
-      .on(
-        "postgres_changes",
-        {
+  useEffect(() => {
+    fetchMessages();
+  }, [mission.id]);
+
+  useEffect(() => {
+    if (activeTab === "chat") {
+      const channel = supabase
+        .channel(`mission_chat:${mission.id}`)
+        .on("postgres_changes", {
           event: "INSERT",
           schema: "public",
           table: "mission_messages",
           filter: `mission_id=eq.${mission.id}`,
-        },
-        async (payload) => {
-          console.log("New message payload:", payload);
-
-          // Fetch user details for the new message to match the state structure
+        }, async (payload) => {
           const { data: userData } = await supabase
             .from("user_profiles")
             .select("first_name, last_name, role")
@@ -228,893 +137,230 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
           } as MissionMessage;
 
           setMessages((prev) => {
-            const exists = prev.find(
-              (m: MissionMessage) =>
-                m.id === newMsg.id ||
-                (m.tempId && m.content === newMsg.content && m.user_id === newMsg.user_id)
-            );
-
-            if (exists) {
-              if (exists.tempId && exists.id !== newMsg.id) {
-                return prev.map((m: MissionMessage) => (m.tempId === exists.tempId ? newMsg : m));
-              }
-              return prev;
-            }
-
-            return [...prev, newMsg];
+            const exists = prev.find(m => m.id === newMsg.id || (m.tempId && m.content === newMsg.content));
+            return exists ? prev : [...prev, newMsg];
           });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  // Fetch messages once on mount to get the count for the tab badge
-  useEffect(() => {
-    fetchMessages();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "chat") {
-      const cleanup = subscribeToMessages();
-      return () => {
-        cleanup();
-      };
+        })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
     }
-  }, [activeTab]);
+  }, [activeTab, mission.id]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
-    const messageContent = newMessage.trim();
+    const content = newMessage.trim();
     const tempId = "temp-" + Date.now();
-
-    // Optimistic message
     const optimisticMsg: MissionMessage = {
       id: tempId,
-      tempId: tempId,
+      tempId,
       mission_id: mission.id,
       user_id: user.id,
-      content: messageContent,
+      content,
       created_at: new Date().toISOString(),
-      user: {
-        first_name: user.firstName || "Moi",
-        last_name: user.lastName || "",
-        role: user.role,
-      },
+      user: { first_name: user.firstName, last_name: user.lastName || "", role: user.role },
     };
-
-    setMessages((prev) => [...prev, optimisticMsg]);
+    setMessages(prev => [...prev, optimisticMsg]);
     setNewMessage("");
-
     try {
-      const { data, error } = await supabase
-        .from("mission_messages")
-        .insert({
-          mission_id: mission.id,
-          user_id: user.id,
-          content: messageContent,
-        })
-        .select()
-        .single();
-
+      const { data, error } = await supabase.from("mission_messages").insert({ mission_id: mission.id, user_id: user.id, content }).select().single();
       if (error) throw error;
-
-      if (data) {
-        setMessages((prev) =>
-          prev.map((m) => (m.tempId === tempId ? { ...data, user: optimisticMsg.user } : m))
-        );
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages((prev) => prev.filter((m) => m.tempId !== tempId));
+      if (data) setMessages(prev => prev.map(m => m.tempId === tempId ? { ...data, user: optimisticMsg.user } : m));
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.tempId !== tempId));
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      // Sanitize filename: remove spaces and special characters
-      const cleanName = file.name
-        .split(".")[0]
-        .replace(/[^a-z0-9]/gi, "_")
-        .toLowerCase();
-      const fileName = `${mission.id}/${Date.now()}_${cleanName}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("mission-attachments")
-        .upload(filePath, file, {
-          upsert: true,
-          cacheControl: "3600",
-        });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("mission-attachments").getPublicUrl(filePath);
-
+      const fileName = `${mission.id}/${Date.now()}_${file.name.replace(/[^a-z0-9]/gi, "_")}.${fileExt}`;
+      const { error } = await supabase.storage.from("mission-attachments").upload(fileName, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("mission-attachments").getPublicUrl(fileName);
       setAttachmentUrl(publicUrl);
-    } catch (error: any) {
-      console.error("Error uploading file (Full details):", {
-        error,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      });
-      alert(`Erreur lors de l'envoi du fichier : ${error.message || "Erreur inconnue"}`);
+    } catch (err: any) {
+      alert(`Erreur d'envoi : ${err.message}`);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleAction = async (action: "claim" | "start" | "complete" | "cancel" | "promote") => {
+  const handleAction = async (action: string) => {
     setIsSubmitting(true);
-
     try {
       if (action === "complete") {
-        // If technician is submitting, status goes to 'awaiting_validation'
-        // If manager is validating, status goes to 'completed'
-        const newStatus: MissionStatus =
-          user.role === UserRole.MANAGER || (user.role as any) === "manager"
-            ? "completed"
-            : "awaiting_validation";
-
-        onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl);
+        const newStatus: MissionStatus = (user.role as any) === "manager" ? "completed" : "awaiting_validation";
+        onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl || undefined);
+        if (newStatus === "completed") onClose();
+        else setShowSuccessModal("submit");
       } else if (action === "start") {
         onUpdateStatus(mission.id, "in_progress");
       } else if (action === "cancel") {
-        // Refusal: Back to in_progress so tech can work on it again
         onUpdateStatus(mission.id, "in_progress", completionNotes);
-
-        // Auto-send a chat message with the reason
-        // If Manager provided a reason in the textarea, use it.
-        const refusalReason = completionNotes || "Merci de revoir votre copie.";
-
-        await supabase.from("mission_messages").insert({
-          mission_id: mission.id,
-          user_id: user.id,
-          content: `❌ Mission refusée. Motif : ${refusalReason}`,
-        });
-
-        // Clear notes after refusal to avoid confusion
+        await supabase.from("mission_messages").insert({ mission_id: mission.id, user_id: user.id, content: `❌ Mission refusée. Motif : ${completionNotes || "Revoir la copie."}` });
         setCompletionNotes("");
+        onClose();
       } else if (action === "promote") {
-        if (!attachmentUrl) {
-          alert("Aucun fichier à promouvoir.");
-          return;
-        }
-
-        // 1. Download the file from mission attachments as a File object
-        // This is needed for useProcedurePublisher.publishFile
-        const fileResponse = await fetch(signedUrl || attachmentUrl);
-        const fileBlob = await fileResponse.blob();
-        
-        // Get correct extension from URL or fallback to original attachment naming
-        // Use signedUrl or attachmentUrl appropriately
-        const urlToParse = signedUrl || attachmentUrl;
-        const urlParts = urlToParse.split('?')[0].split('.');
-        const fileExt = urlParts.length > 1 ? urlParts.pop()?.toLowerCase() : 'pdf';
-        
-        const fileName = `${promoteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${fileExt}`;
-        const file = new File([fileBlob], fileName, { type: fileBlob.type });
-
-        // 2. Use the unified publisher hook - FIRE AND FORGET
-        // We don't await here so the modal closes immediately. 
-        // The global ActiveTransfer UI handles the progress feedback.
-        publishFile(file, promoteTitle, promoteCategory, mission.id).catch(err => {
-          console.error("Background promotion failed:", err);
-          alert("Erreur lors de la promotion en arrière-plan. Vérifiez la console.");
-        });
-        
-        onClose();
-        return;
-      }
-
-      if (action !== 'start' && action !== 'complete') {
+        const res = await fetch(signedUrl || attachmentUrl!);
+        const blob = await res.blob();
+        const file = new File([blob], `${promoteTitle}.pdf`, { type: blob.type });
+        publishFile(file, promoteTitle, promoteCategory, mission.id);
         onClose();
       }
-      
-      if (action === 'complete') {
-        const finalStatus = user.role === UserRole.MANAGER || (user.role as any) === "manager" ? "completed" : "awaiting_validation";
-        if (finalStatus === "completed") {
-          onClose();
-        } else {
-          // Technician submission
-          setShowSuccessModal("submit");
-        }
-      }
-    } catch (err: any) {
-      console.error("Action error:", err);
-      alert(`Une erreur est survenue : ${err.message || "Erreur inconnue"}`);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Helper for status badge
-  const StatusBadge = ({ status }: { status: string }) => {
-    const styles = {
-      open: "bg-emerald-50 text-emerald-600",
-      assigned: "bg-amber-50 text-amber-600",
-      in_progress: "bg-indigo-50 text-indigo-600",
-      completed: "bg-slate-50 text-slate-500",
-      cancelled: "bg-rose-50 text-rose-500",
-      awaiting_validation: "bg-amber-500 text-white shadow-lg shadow-amber-500/20",
-    } as any;
-
-    const labels = {
-      open: "Disponible",
-      assigned: "Assignée",
-      in_progress: "En Cours",
-      completed: "TERMINEE",
-      cancelled: "Annulée",
-      awaiting_validation: "EN ATTENTE DE VALIDATION",
-    } as any;
-
-    return (
-      <span
-        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${styles[status] || "bg-gray-50 text-gray-500"}`}>
-        {labels[status] || status}
-      </span>
-    );
-  };
-
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-6xl h-[90vh] shadow-2xl animate-scale-up flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-8 border-b border-slate-100 flex items-start justify-between bg-white z-10">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-6xl h-[90vh] shadow-2xl flex flex-col overflow-hidden">
+        <div className="p-8 border-b border-slate-100 flex items-start justify-between">
           <div className="flex gap-6">
-            <div
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-lg ${
-                mission.urgency === "critical"
-                  ? "bg-rose-500 text-white shadow-rose-500/30"
-                  : mission.urgency === "high"
-                    ? "bg-orange-500 text-white shadow-orange-500/30"
-                    : "bg-indigo-600 text-white shadow-indigo-500/30"
-              }`}>
-              <i
-                className={`fa-solid ${mission.urgency === "critical" ? "fa-triangle-exclamation" : "fa-rocket"}`}></i>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-lg ${mission.urgency === "critical" ? "bg-rose-500 text-white" : "bg-indigo-600 text-white"}`}>
+              <i className={`fa-solid ${mission.urgency === "critical" ? "fa-triangle-exclamation" : "fa-rocket"}`}></i>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <StatusBadge status={mission.status} />
-                {mission.deadline && (
-                  <span className="text-[10px] font-bold text-rose-500 flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg">
-                    <i className="fa-solid fa-clock"></i>
-                    {new Date(mission.deadline).toLocaleDateString()}
-                  </span>
-                )}
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <MissionStatusBadge status={mission.status} />
               </div>
-              <h2 className="text-3xl font-black text-slate-900 leading-tight">{mission.title}</h2>
+              <h2 className="text-3xl font-black text-slate-900">{mission.title}</h2>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-all">
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:text-rose-500 transition-all">
             <i className="fa-solid fa-xmark text-xl"></i>
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="px-8 border-b border-slate-100 flex gap-8">
-          <button
-            onClick={() => setActiveTab("details")}
-            className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === "details" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            Détails de la mission
-          </button>
-          <button
-            onClick={() => setActiveTab("chat")}
-            className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === "chat" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            Discussion{" "}
-            <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[9px]">
-              {messages.length}
-            </span>
-          </button>
+          {["details", "chat"].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+              {tab === "details" ? "Détails" : "Discussion"} {tab === "chat" && <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[9px]">{messages.length}</span>}
+            </button>
+          ))}
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-hidden bg-slate-50 relative flex flex-col">
           {activeTab === "details" ? (
             <div className="flex flex-col lg:flex-row h-full">
-              {/* LEFT COLUMN: Context & Actions (Scrollable) */}
-              <div
-                className={`flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar ${attachmentUrl ? "lg:w-[45%] lg:border-r border-slate-200" : "w-full max-w-5xl mx-auto"}`}>
-                {/* Meta Info Bar */}
-                <div className="flex flex-wrap items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className={`flex-1 overflow-y-auto p-8 space-y-8 ${attachmentUrl ? "lg:w-[45%] lg:border-r border-slate-200" : "w-full max-w-5xl mx-auto"}`}>
+                <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                   <div className="flex items-center gap-3 pr-6 border-r border-slate-100">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
                       <i className="fa-solid fa-trophy"></i>
                     </div>
                     <div>
                       <div className="text-xl font-black text-slate-900">{mission.xp_reward}</div>
-                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        Points XP
-                      </div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider text-left">Points XP</div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3 px-4 border-l border-slate-100 pl-6 ml-2">
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                      Assigné à
-                    </div>
+                  <div className="flex items-center gap-3 px-4 pl-6">
+                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Assigné à</div>
                     {mission.assignee ? (
-                      <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100">
-                        <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px]">
-                          {mission.assignee.first_name[0]}
-                          {mission.assignee.last_name[0]}
-                        </div>
-                        <span className="font-bold text-indigo-900 text-xs">
-                          {mission.assignee.first_name} {mission.assignee.last_name}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic bg-slate-50 px-3 py-1 rounded-lg">
-                        Non assigné
+                      <span className="font-bold text-indigo-900 text-xs bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100">
+                        {mission.assignee.first_name} {mission.assignee.last_name}
                       </span>
-                    )}
+                    ) : <span className="text-xs text-slate-400 italic">Non assigné</span>}
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <i className="fa-solid fa-align-left"></i> Description
                   </h3>
-                  <p className="text-slate-600 leading-relaxed whitespace-pre-wrap font-medium text-sm">
-                    {mission.description}
-                  </p>
+                  <p className="text-slate-600 leading-relaxed whitespace-pre-wrap font-medium text-sm text-left">{mission.description}</p>
                 </div>
 
-                {/* Action Zone */}
-                {(user.role === UserRole.TECHNICIAN ||
-                  user.role === UserRole.MANAGER ||
-                  (user.role as any) === "technicien") && (
-                  <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-md space-y-6 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <i className="fa-solid fa-briefcase"></i>{" "}
-                      {mission.status === "completed" ? "Rapport de Mission" : "Espace de Travail"}
-                    </h3>
-
-                    {mission.status === "completed" ? (
-                      <div className="space-y-4">
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                          <p className="text-emerald-700 italic text-sm">
-                            {mission.completion_notes || "Aucune note de complétion."}
-                          </p>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-md space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i className="fa-solid fa-briefcase"></i> {mission.status === "completed" ? "Rapport" : "Espace de Travail"}
+                  </h3>
+                  
+                  {mission.status === "completed" ? (
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 italic text-sm text-emerald-700 text-left">
+                      {mission.completion_notes || "Aucune note."}
+                    </div>
+                  ) : (mission.status === "in_progress" && mission.assigned_to === user.id) || (mission.status === "awaiting_validation" && user.role === UserRole.MANAGER) ? (
+                    <div className="space-y-4">
+                      {mission.status === "awaiting_validation" && user.role === UserRole.MANAGER && (
+                        <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 text-left">
+                          <p className="text-[10px] font-bold text-indigo-400 uppercase mb-2">Notes du technicien</p>
+                          <p className="text-sm text-indigo-900 font-medium">{mission.completion_notes || "Pas de notes."}</p>
                         </div>
-                        {/* Manager retroactive actions */}
-                        {(user.role === UserRole.MANAGER || (user.role as any) === "manager") && (
-                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                            <button
-                              onClick={() => handleAction("complete")}
-                              className="py-3 bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
-                              <i className="fa-solid fa-check"></i> Valider
-                            </button>
-                            <button
-                              onClick={() => handleAction("cancel")}
-                              className="py-3 bg-white text-rose-500 border border-rose-200 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-rose-50 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                              <i className="fa-solid fa-rotate-left"></i> Révision
-                            </button>
-                          </div>
-                        )}
+                      )}
+                      <textarea
+                        className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none shadow-inner text-sm"
+                        placeholder="Notes de réalisation..."
+                        value={completionNotes}
+                        onChange={(e) => setCompletionNotes(e.target.value)}
+                      />
+                      {user.role !== UserRole.MANAGER && (
+                         <div className="pt-2">
+                           <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                           <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`w-full flex items-center justify-center gap-3 p-4 border-2 border-dashed rounded-2xl transition-all ${attachmentUrl ? "border-emerald-200 bg-emerald-50 text-emerald-600" : "border-slate-200 text-slate-400 hover:border-indigo-300"}`}>
+                             <i className={`fa-solid ${isUploading ? 'fa-spin fa-circle-notch' : attachmentUrl ? 'fa-check' : 'fa-cloud-arrow-up'}`}></i>
+                             <span className="text-xs font-black uppercase tracking-widest">{isUploading ? "Envoi..." : attachmentUrl ? "Fichier ajouté" : "Ajouter un fichier"}</span>
+                           </button>
+                         </div>
+                      )}
+                      <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
+                         {user.role === UserRole.MANAGER ? (
+                           <>
+                             <button onClick={() => handleAction("complete")} disabled={!completionNotes.trim()} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 disabled:opacity-50">Valider la mission</button>
+                             <button onClick={() => handleAction("cancel")} disabled={!completionNotes.trim()} className="w-full py-3 border border-rose-200 text-rose-500 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-50 disabled:opacity-50">Refuser / Correction</button>
+                           </>
+                         ) : (
+                           <button onClick={() => handleAction("complete")} disabled={!completionNotes.trim() && !attachmentUrl} className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl disabled:opacity-50">Soumettre mon travail</button>
+                         )}
                       </div>
-                    ) : (mission.status === "in_progress" && mission.assigned_to === user.id) ||
-                      (mission.status === "awaiting_validation" &&
-                        (user.role === UserRole.MANAGER || (user.role as any) === "manager")) ? (
-                      <div className="space-y-4">
-                        {/* Tech Notes Display for Manager */}
-                        {mission.status === "awaiting_validation" &&
-                          (user.role === UserRole.MANAGER || (user.role as any) === "manager") && (
-                            <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-2">
-                              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-2">
-                                Notes du technicien
-                              </p>
-                              <p className="text-sm text-indigo-900 font-medium">
-                                {mission.completion_notes || "Pas de notes."}
-                              </p>
-                            </div>
-                          )}
-
-                        {/* Input Area */}
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-700 ml-1">
-                            {user.role === UserRole.MANAGER || (user.role as any) === "manager"
-                              ? "Feedback / Motif (Requis)"
-                              : "Notes de réalisation"}
-                          </label>
-                          <textarea
-                            className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none shadow-inner text-sm"
-                            placeholder={
-                              user.role === UserRole.MANAGER || (user.role as any) === "manager"
-                                ? "Indiquez votre feedback pour valider ou la raison du refus..."
-                                : "Décrivez le travail réalisé..."
-                            }
-                            value={completionNotes}
-                            onChange={(e) => setCompletionNotes(e.target.value)}
-                          />
-                        </div>
-
-                        {/* File Upload for Tech */}
-                        {user.role !== UserRole.MANAGER && (
-                          <div className="pt-2">
-                            <input
-                              type="file"
-                              ref={fileInputRef}
-                              onChange={handleFileUpload}
-                              className="hidden"
-                              accept=".pdf,.docx,.jpg,.jpeg,.png"
-                            />
-                            <button
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={isUploading}
-                              className={`w-full flex items-center justify-center gap-3 p-4 border-2 border-dashed rounded-2xl transition-all group ${
-                                attachmentUrl
-                                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                                  : "border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30"
-                              }`}>
-                              {isUploading ? (
-                                <i className="fa-solid fa-circle-notch fa-spin"></i>
-                              ) : (
-                                <i
-                                  className={`fa-solid ${attachmentUrl ? "fa-check-circle" : "fa-cloud-arrow-up group-hover:scale-110 transition-transform"}`}></i>
-                              )}
-                              <span className="text-xs font-black uppercase tracking-widest">
-                                {isUploading
-                                  ? "Envoi..."
-                                  : attachmentUrl
-                                    ? "Fichier ajouté (Changer)"
-                                    : "Ajouter un fichier"}
-                              </span>
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
-                          {user.role === UserRole.MANAGER || (user.role as any) === "manager" ? (
-                            <>
-                              <div className="space-y-3">
-                                {/* Option 1: Simple Validation */}
-                                <button
-                                  onClick={() => handleAction("complete")}
-                                  disabled={!completionNotes.trim()}
-                                  className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                                    !completionNotes.trim()
-                                      ? "bg-emerald-100 text-emerald-300 cursor-not-allowed"
-                                      : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
-                                  }`}>
-                                  <i className="fa-solid fa-check"></i> Valider la mission
-                                </button>
-
-                                {/* Option 2: Promote (Validation + Procedure) - Only if attachment */}
-                                {attachmentUrl && (
-                                  <button
-                                    onClick={() => setShowPromoteConfirmation(true)}
-                                    disabled={!completionNotes.trim()}
-                                    className={`w-full py-4 bg-amber-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 ${
-                                      !completionNotes.trim()
-                                        ? "opacity-50 cursor-not-allowed"
-                                        : "active:scale-[0.98]"
-                                    }`}>
-                                    <i className="fa-solid fa-star"></i> Valider & Créer une
-                                    Procédure
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Option 3: Reject */}
-                              <button
-                                onClick={() => handleAction("cancel")}
-                                disabled={!completionNotes.trim()}
-                                className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${
-                                  !completionNotes.trim()
-                                    ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                                    : "bg-white text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
-                                }`}>
-                                <i className="fa-solid fa-xmark"></i> Refuser / Demander correction
-                              </button>
-
-                              {/* Feedback required indicator */}
-                              <div className="flex justify-center">
-                                {!completionNotes.trim() && (
-                                  <span className="text-[9px] font-black text-slate-400 uppercase animate-pulse flex items-center gap-1">
-                                    <i className="fa-solid fa-circle-info text-indigo-400"></i>{" "}
-                                    Feedback requis pour toute action
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => handleAction("complete")}
-                              disabled={!completionNotes.trim() && !attachmentUrl}
-                              className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                              <i className="fa-solid fa-paper-plane"></i> Soumettre mon travail
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-3xl text-slate-300">
-                          <i className="fa-solid fa-lock"></i>
-                        </div>
-                        <p className="text-sm text-slate-500 font-medium">
-                          {mission.status === "open"
-                            ? "Réclamez cette mission pour commencer."
-                            : mission.status === "assigned"
-                              ? "Démarrez la mission pour activer l'espace."
-                              : "En attente d'action."}
-                        </p>
-
-                        {mission.status === "open" && (
-                          <button
-                            onClick={() => {
-                              onUpdateStatus(mission.id, "assigned");
-                              onClose();
-                            }}
-                            className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg">
-                            Réclamer la mission
-                          </button>
-                        )}
-                        {mission.status === "assigned" && mission.assigned_to === user.id && (
-                          <>
-                           {mission.title.startsWith("Devenir Référent") && onStartQuiz ? (
-                             <button
-                               onClick={() => onStartQuiz(mission)}
-                               className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2">
-                               <i className="fa-solid fa-file-signature"></i>
-                               Passer l'Examen
-                             </button>
-                           ) : (
-                             <button
-                               onClick={() => handleAction("start")}
-                               className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30">
-                               Démarrer
-                             </button>
-                           )}
-                          </>
-                        )}
-                        {mission.status === "in_progress" && mission.assigned_to === user.id && mission.title.startsWith("Devenir Référent") && onStartQuiz && (
-                             <button
-                               onClick={() => onStartQuiz(mission)}
-                               className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2">
-                               <i className="fa-solid fa-file-signature"></i>
-                               Passer l'Examen
-                             </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center py-8 text-center space-y-4">
+                       <p className="text-sm text-slate-500 font-medium">{mission.status === "open" ? "Réclamez cette mission." : "En attente."}</p>
+                       {mission.status === "open" && <button onClick={() => onUpdateStatus(mission.id, "assigned")} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest">Réclamer</button>}
+                       {mission.status === "assigned" && mission.assigned_to === user.id && <button onClick={() => handleAction("start")} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg">Démarrer</button>}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* RIGHT COLUMN: Document Preview (Fixed/Sticky) */}
               {attachmentUrl && (
-                <div className="hidden lg:flex lg:w-[55%] flex-col bg-slate-100 h-full border-l border-white shadow-inner relative z-0">
-                  <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-slate-200">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <i className="fa-regular fa-eye"></i> Aperçu du document
-                    </h3>
-                    
-                    {signedUrl ? (
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={signedUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm group relative"
-                          title="Lien sécurisé (valide 1h)"
-                        >
-                          <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                        </a>
-                        <a
-                          href={`${signedUrl}${signedUrl.includes("?") ? "&" : "?"}download=`}
-                          download
-                          className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
-                          title="Télécharger (Lien sécurisé 1h)">
-                          <i className="fa-solid fa-download text-xs"></i>
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 opacity-50">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                          <i className="fa-solid fa-circle-notch fa-spin text-xs text-slate-400"></i>
-                        </div>
-                      </div>
-                    )}
+                <div className="hidden lg:flex lg:w-[55%] flex-col bg-slate-100 h-full border-l border-white relative z-0">
+                  <div className="p-4 bg-white/80 border-b border-slate-200 flex justify-between">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><i className="fa-regular fa-eye"></i> Aperçu</h3>
+                    {signedUrl && <a href={signedUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white border flex items-center justify-center text-slate-600 hover:bg-indigo-600 hover:text-white transition-all"><i className="fa-solid fa-arrow-up-right-from-square text-xs"></i></a>}
                   </div>
-                  <div className="flex-1 overflow-hidden p-4 flex flex-col relative">
-                    <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative">
+                  <div className="flex-1 p-4">
+                    <div className="w-full h-full bg-white rounded-xl shadow-sm border overflow-hidden">
                       {signedUrl ? (
-                         <>
-                           {attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
-                             <img
-                               src={signedUrl}
-                               alt="Preview"
-                               className="w-full h-full object-contain"
-                             />
-                           ) : attachmentUrl.toLowerCase().endsWith(".pdf") ? (
-                             iframeReady ? (
-                               <iframe
-                                 key={`${signedUrl}-${iframeReady}`}
-                                 src={`${signedUrl}#toolbar=0`}
-                                 className="w-full h-full border-none block"
-                                 allow="fullscreen"
-                                 title="PDF Preview"></iframe>
-                             ) : (
-                               <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                                 <i className="fa-solid fa-circle-notch fa-spin text-slate-300 text-3xl"></i>
-                               </div>
-                             )
-                           ) : (
-                             <iframe
-                               src={`https://docs.google.com/viewer?url=${encodeURIComponent(signedUrl)}&embedded=true`}
-                               className="w-full h-full border-none"
-                               onLoad={() => setIframeReady(true)}
-                               title="Document Preview"></iframe>
-                           )}
-                         </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                             <div className="flex flex-col items-center gap-4">
-                               <i className="fa-solid fa-shield-halved text-indigo-400 text-3xl animate-pulse"></i>
-                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                 Sécurisation du document...
-                               </p>
-                             </div>
-                        </div>
-                      )}
-
-                      {!iframeReady && !attachmentUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) && signedUrl && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
-                          <div className="flex flex-col items-center gap-4">
-                            <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl"></i>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement de l'aperçu...</p>
-                          </div>
-                        </div>
-                      )}
+                         attachmentUrl.toLowerCase().endsWith(".pdf") ? (
+                           <iframe src={`${signedUrl}#toolbar=0`} className="w-full h-full border-none" title="PDF" onLoad={() => setIframeReady(true)}></iframe>
+                         ) : <img src={signedUrl} className="w-full h-full object-contain" alt="Preview" />
+                      ) : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Chargement sécurisé...</div>}
                     </div>
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            // Chat Tab
-            <div className="flex flex-col h-full bg-white">
-              <div className="flex-1 overflow-y-auto p-8 space-y-6" ref={chatContainerRef}>
-                {messages.length === 0 && !loadingMessages ? (
-                  <div className="text-center py-20 text-slate-300">
-                    <i className="fa-regular fa-comments text-4xl mb-4"></i>
-                    <p>Aucun message. Commencez la discussion !</p>
-                  </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isMe = msg.user_id === user.id;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                        <div
-                          className={`max-w-[70%] ${isMe ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-800"} p-4 rounded-2xl rounded-tr-sm shadow-sm`}>
-                          <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
-                          <div className="mt-2 flex items-center justify-between gap-4 opacity-70">
-                            <span className="text-[10px] uppercase font-bold tracking-wider">
-                              {msg.user?.first_name || "Utilisateur"}
-                            </span>
-                            <span className="text-[10px]">
-                              {new Date(msg.created_at).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                {loadingMessages && (
-                  <div className="text-center py-10 text-slate-400 italic">Chargement...</div>
-                )}
-              </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-4">
-                <input
-                  type="text"
-                  className="flex-1 p-4 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none shadow-sm font-medium text-slate-700"
-                  placeholder="Écrivez votre message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="w-14 h-14 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center">
-                  <i className="fa-solid fa-paper-plane"></i>
-                </button>
-              </div>
-            </div>
+            <MissionChat
+              messages={messages}
+              userId={user.id}
+              loadingMessages={loadingMessages}
+              newMessage={newMessage}
+              onNewMessageChange={setNewMessage}
+              onSendMessage={handleSendMessage}
+              chatContainerRef={chatContainerRef}
+            />
           )}
         </div>
-
-        {/* Confirmation Modal Overlay */}
-        {showPromoteConfirmation && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-slate-800 border border-slate-700 w-full max-w-2xl p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden flex flex-col max-h-[90vh]">
-              {/* Header */}
-              <div className="relative z-10 text-center mb-8">
-                <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-amber-500/20 shadow-lg shadow-amber-500/10">
-                  <i className="fa-solid fa-star"></i>
-                </div>
-                <h3 className="text-white font-black text-2xl mb-2">Promouvoir en Procédure</h3>
-                <p className="text-slate-400 text-sm font-medium">
-                  Transformez cette mission validée en une procédure réutilisable pour toute
-                  l'équipe.
-                </p>
-              </div>
-
-              {/* Form Content */}
-              <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar px-2 space-y-6">
-                {/* Title Input */}
-                <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
-                    Titre de la procédure
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <i className="fa-solid fa-heading text-slate-500 group-focus-within:text-amber-500 transition-colors"></i>
-                    </div>
-                    <input
-                      type="text"
-                      value={promoteTitle}
-                      onChange={(e) => setPromoteTitle(e.target.value)}
-                      className="w-full bg-slate-900/50 border border-slate-600 text-white pl-12 pr-4 py-4 rounded-xl focus:border-amber-500 focus:bg-slate-900 outline-none transition-all font-bold shadow-inner"
-                      placeholder="Titre de la procédure..."
-                    />
-                  </div>
-                </div>
-
-                {/* Category Selection */}
-                <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
-                    Dossier de destination
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {PREDEFINED_CATEGORIES.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setPromoteCategory(cat)}
-                        className={`p-4 rounded-xl border transition-all text-left relative overflow-hidden group ${
-                          promoteCategory === cat
-                            ? "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20"
-                            : "bg-slate-900/30 text-slate-400 border-slate-700 hover:border-slate-500 hover:bg-slate-800"
-                        }`}>
-                        <div className="relative z-10 flex flex-col gap-2">
-                          <i
-                            className={`fa-solid ${
-                              cat === "LOGICIEL"
-                                ? "fa-laptop-code"
-                                : cat === "MATERIEL"
-                                  ? "fa-microchip"
-                                  : cat === "UTILISATEUR"
-                                    ? "fa-users"
-                                    : cat === "INFRASTRUCTURE"
-                                      ? "fa-server"
-                                      : "fa-folder-open"
-                            } text-lg ${promoteCategory === cat ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}></i>
-                          <span className="text-[10px] font-black uppercase tracking-wider truncate">
-                            {cat}
-                          </span>
-                        </div>
-                        {promoteCategory === cat && (
-                          <div className="absolute top-2 right-2">
-                            <i className="fa-solid fa-check-circle text-white/50"></i>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Info Box */}
-                <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex gap-3">
-                  <i className="fa-solid fa-circle-info text-indigo-400 mt-0.5"></i>
-                  <div className="text-xs text-indigo-200 leading-relaxed">
-                    <p>
-                      La procédure sera créée automatiquement, le fichier PDF attaché sera indexé
-                      par l'IA (RAG), et la mission sera marquée comme validée.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="relative z-10 pt-8 mt-4 border-t border-slate-700 flex gap-4">
-                <button
-                  onClick={() => setShowPromoteConfirmation(false)}
-                  className="flex-1 py-4 rounded-xl border border-slate-600 text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all">
-                  Annuler
-                </button>
-                <button
-                  onClick={() => {
-                    if (!promoteTitle.trim()) {
-                      alert("Le titre est obligatoire");
-                      return;
-                    }
-                    setShowPromoteConfirmation(false);
-                    handleAction("promote");
-                  }}
-                  disabled={!promoteTitle.trim()}
-                  className="flex-[2] py-4 rounded-xl bg-amber-500 text-white font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                  <i className="fa-solid fa-wand-magic-sparkles"></i> Valider & Créer
-                </button>
-              </div>
-
-              {/* Decorative background glow */}
-              <div className="absolute -top-32 -right-32 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-              <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-800 border border-slate-700 w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-scale-up relative overflow-hidden text-center">
-            <div className="relative z-10">
-              <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 border border-emerald-500/20 shadow-lg shadow-emerald-500/10 animate-bounce-subtle">
-                <i className={`fa-solid ${showSuccessModal === 'submit' ? 'fa-paper-plane' : 'fa-robot'}`}></i>
-              </div>
-
-              <h3 className="text-white font-black text-2xl mb-4 tracking-tight">
-                {showSuccessModal === 'submit' ? 'Mission Envoyée !' : 'Mission Validée !'}
-              </h3>
-
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700 mb-8">
-                <p className="text-slate-300 text-sm font-medium leading-relaxed">
-                  {showSuccessModal === 'submit' ? (
-                    <>
-                      Votre travail a été transmis avec succès. 
-                      <br /> 
-                      <span className="text-indigo-400 font-bold">En attente de validation</span> par le manager.
-                    </>
-                  ) : (
-                    <>
-                      Le document est en cours d'analyse par{" "}
-                      <span className="text-indigo-400 font-bold">l'IA Procedio</span>.
-                      <br />
-                      Il sera bientôt disponible dans la base de connaissances.
-                    </>
-                  )}
-                </p>
-              </div>
-
-              <button
-                onClick={onClose}
-                className="w-full py-4 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
-                Compris
-              </button>
-            </div>
-
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          </div>
-        </div>
-      )}
     </div>,
     document.body
   );
