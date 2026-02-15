@@ -416,16 +416,14 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     try {
       const { data, error } = await supabase
         .from("procedure_referents")
-        .select(
-          `
+        .select(`
           user:user_profiles (id, first_name, last_name, avatar_url)
-        `
-        )
+        `)
         .eq("procedure_id", targetUuid)
-        .maybeSingle();
+        .limit(1);
 
-      if (data && (data as any).user) {
-        setReferentExpert((data as any).user);
+      if (data && data[0] && (data[0] as any).user) {
+        setReferentExpert((data[0] as any).user);
       } else {
         setReferentExpert(null);
       }
@@ -867,10 +865,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
     if (!targetUuid) return;
 
-    setNotification({ msg: "Demande envoyée au manager !", type: "success" });
+    setNotification({ msg: "Candidature envoyée au manager !", type: "success" });
 
     try {
-      // 1. New Table entry
+      // 1. New Table entry - This will use the mastery_requests table as a backend for now
+      // but UI will display it as "Candidature Référent"
       const { data, error } = await supabase
         .from("mastery_requests")
         .insert({
@@ -888,13 +887,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       await supabase.from("notes").insert([
         {
           user_id: user.id,
-          title: `CLAIM_MASTERY_${procedure.title.substring(0, 50)}`,
-          content: `${user.firstName} demande à valider sa maîtrise sur "${procedure.title}"`,
+          title: `APPLY_REFERENT_${procedure.title.substring(0, 50)}`,
+          content: `${user.firstName} souhaite devenir Référent sur "${procedure.title}"`,
           procedure_id: targetUuid,
         },
       ]);
     } catch (err) {
-      console.error("Error requesting mastery:", err);
+      console.error("Error applying for referent:", err);
     }
 
     setTimeout(() => setNotification(null), 3000);
@@ -1096,7 +1095,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 ) : masteryRequest?.status === "pending" ? (
                   <div className="px-4 py-3 h-10 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                     <i className="fa-solid fa-clock animate-pulse"></i>
-                    <span>Examen en attente</span>
+                    <span>Candidature en attente</span>
                   </div>
                 ) : masteryRequest?.status === "completed" ? (
                   (() => {
@@ -1112,8 +1111,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                     retryDate.setDate(retryDate.getDate() + 14);
 
                     if (canRetry) {
-                      // Masquer le bouton de réessai si un référent existe déjà
-                      if (referentExpert) {
+                      if (referentExpert || procedureExperts.length > 0) {
                         return null;
                       }
 
@@ -1121,15 +1119,14 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                         <button
                           onClick={handleRequestMastery}
                           className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center justify-center gap-2"
-                          title="Vous pouvez retenter votre chance !">
+                          title="Postuler à nouveau pour être référent">
                           <i className="fa-solid fa-rotate-right"></i>
-                          <span>Retenter l'examen</span>
+                          <span>Repostuler (Référent)</span>
                         </button>
                       );
                     }
 
-                    // Masquer le statut d'échec / date de réessai si un référent existe
-                    if (!isSuccess && referentExpert) {
+                    if (referentExpert || (procedureExperts.length > 0 && !isSuccess)) {
                       return null;
                     }
 
@@ -1140,11 +1137,11 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                             ? "bg-indigo-50 text-indigo-600 border-indigo-100"
                             : "bg-rose-50 text-rose-600 border-rose-100"
                         }`}>
-                        <i className={`fa-solid ${isSuccess ? "fa-circle-check" : "fa-lock"}`}></i>
+                        <i className={`fa-solid ${isSuccess ? "fa-certificate" : "fa-lock"}`}></i>
                         <span>
                           {isSuccess
-                            ? `Maîtrise validée (${score}%)`
-                            : `Réessai possible le ${retryDate.toLocaleDateString()}`}
+                            ? `Référent Validé`
+                            : `Réessai le ${retryDate.toLocaleDateString()}`}
                         </span>
                       </div>
                     );
@@ -1155,9 +1152,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   <button
                     onClick={handleRequestMastery}
                     className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center justify-center gap-2"
-                    title="Demander à valider la maîtrise sur cette procédure">
-                    <i className="fa-solid fa-certificate"></i>
-                    <span className="hidden xl:inline">Demander Maîtrise</span>
+                    title="Postuler pour devenir référent de cette procédure">
+                    <i className="fa-solid fa-user-plus"></i>
+                    <span className="hidden xl:inline">Postuler (Référent)</span>
                   </button>
                 )}
               </>

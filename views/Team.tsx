@@ -17,9 +17,10 @@ interface Invitation {
 }
 
 const Team: React.FC<TeamProps> = ({ user }) => {
-  const [activeTab, setActiveTab] = useState<"members" | "invitations">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "invitations" | "candidatures">("members");
   const [members, setMembers] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
 
@@ -52,12 +53,23 @@ const Team: React.FC<TeamProps> = ({ user }) => {
           .select("*, procedure_referents(count)")
           .order("created_at", { ascending: false });
         if (data) setMembers(data);
-      } else {
+      } else if (activeTab === "invitations") {
         const { data } = await supabase
           .from("invitations")
           .select("*")
           .order("created_at", { ascending: false });
         if (data) setInvitations(data);
+      } else if (activeTab === "candidatures") {
+        const { data } = await supabase
+          .from("mastery_requests")
+          .select(`
+            *,
+            user:user_profiles(id, first_name, last_name, avatar_url),
+            procedure:procedures(id, title, category)
+          `)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+        if (data) setApplications(data);
       }
     } catch (err) {
       console.error(err);
@@ -136,6 +148,45 @@ const Team: React.FC<TeamProps> = ({ user }) => {
       console.error("Error fetching details:", err);
     } finally {
       setLoadingDetails(false);
+    }
+  };
+
+  const handleApplicationAction = async (applicationId: string, status: "completed" | "rejected") => {
+    try {
+      const app = applications.find(a => a.id === applicationId);
+      if (!app) return;
+
+      const { error } = await supabase
+        .from("mastery_requests")
+        .update({ status, completed_at: new Date().toISOString() })
+        .eq("id", applicationId);
+
+      if (error) throw error;
+
+      if (status === "completed") {
+        // If approved, create the referent record
+        await supabase.from("procedure_referents").insert({
+          procedure_id: app.procedure_id,
+          user_id: app.user_id
+        });
+        
+        // Add XP reward
+        const { data: profile } = await supabase.from("user_profiles").select("xp_points").eq("id", app.user_id).single();
+        if (profile) {
+          await supabase.from("user_profiles").update({ xp_points: (profile.xp_points || 0) + 100 }).eq("id", app.user_id);
+        }
+
+        setNotification({ msg: "Candidature approuvée !", type: "success" });
+      } else {
+        setNotification({ msg: "Candidature refusée", type: "success" });
+      }
+
+      setApplications(prev => prev.filter(a => a.id !== applicationId));
+    } catch (err) {
+      console.error("Error handling application:", err);
+      setNotification({ msg: "Erreur lors de l'action", type: "error" });
+    } finally {
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -236,6 +287,20 @@ const Team: React.FC<TeamProps> = ({ user }) => {
           }`}>
           Invitations en attente
         </button>
+        {user.role === UserRole.MANAGER && (
+          <button
+            onClick={() => setActiveTab("candidatures")}
+            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "candidatures"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-400 hover:text-slate-600"
+            }`}>
+            Candidatures Référents
+            {applications.length > 0 && activeTab !== "candidatures" && (
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
@@ -476,6 +541,76 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                     <tr>
                       <td colSpan={5} className="p-10 text-center text-slate-400 text-xs">
                         Aucun membre trouvé.
+                      </td>
+                    </tr>
+                  )
+                ) : activeTab === "candidatures" ? (
+                  applications.length > 0 ? (
+                    applications.map((app) => (
+                      <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+                              <img
+                                src={app.user?.avatar_url || `https://ui-avatars.com/api/?name=${app.user?.first_name || "U"}&background=random`}
+                                alt="avatar"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">
+                                {app.user?.first_name} {app.user?.last_name}
+                              </p>
+                              <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">
+                                Candidat Référent
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <div>
+                            <p className="text-xs font-black text-slate-800 tracking-tight">
+                              {app.procedure?.title}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                              {app.procedure?.category}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <span className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-500 tracking-widest">
+                            <i className="fa-solid fa-clock animate-pulse"></i>
+                            En attente
+                          </span>
+                        </td>
+                        <td className="p-6">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Postulé le : {new Date(app.created_at).toLocaleDateString()}
+                          </p>
+                        </td>
+                        <td className="p-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleApplicationAction(app.id, "rejected")}
+                              className="px-4 py-2 rounded-xl text-rose-600 font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all">
+                              Refuser
+                            </button>
+                            <button
+                              onClick={() => handleApplicationAction(app.id, "completed")}
+                              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
+                              Approuver
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="p-10 text-center text-slate-400">
+                        <i className="fa-solid fa-user-plus text-2xl mb-3 opacity-20"></i>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">
+                          Aucune candidature pour le moment
+                        </p>
                       </td>
                     </tr>
                   )
