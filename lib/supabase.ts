@@ -6,14 +6,13 @@ import { createClient } from '@supabase/supabase-js';
  * L'URL doit correspondre au 'ref' contenu dans le jeton JWT de la clé anon.
  * Ici, le jeton contient "ref":"pczlikyvfmrdauufgxai".
  */
-// Resilient configuration: Uses environment variables if available, 
-// falls back to hardcoded project-specific values to ensure 100% uptime.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://pczlikyvfmrdauufgxai.supabase.co";
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjemxpa3l2Zm1yZGF1dWZneGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NTA5NDEsImV4cCI6MjA3OTIyNjk0MX0.4cpm9gBvpwOaBQAivN-f7Gh6Bn8KAhPzHW8pTlDj0c8";
+// Hardened configuration: uses build-time global constant __CONFIG__
+// This ensures variables are baked into the bundle even in environments where .env files are tricky.
+const supabaseUrl = typeof __CONFIG__ !== 'undefined' ? __CONFIG__.SUPABASE_URL : import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = typeof __CONFIG__ !== 'undefined' ? __CONFIG__.SUPABASE_KEY : import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Safety check
-if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-  console.error("Supabase configuration is still using placeholders!");
+if (!supabaseUrl || !supabaseKey) {
+  console.error("❌ CRITICAL: Supabase missing. Ensure .env.local exists during build.");
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {

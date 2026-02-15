@@ -9,5 +9,7 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-declare const __SUPABASE_URL__: string;
-declare const __SUPABASE_KEY__: string;
+declare const __CONFIG__: {
+  SUPABASE_URL: string;
+  SUPABASE_KEY: string;
+};

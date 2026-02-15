@@ -4,6 +4,12 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    
+    // Build-time validation: ensures the production bundle is never broken
+    if (mode === 'production' && (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY)) {
+      throw new Error('\n\n❌ ERROR: Supabase environment variables are missing in .env.local!\nBuilding without these will break the app.\n\n');
+    }
+
     return {
       server: {
         port: 3000,
@@ -13,8 +19,10 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        '__SUPABASE_URL__': JSON.stringify(env.VITE_SUPABASE_URL),
-        '__SUPABASE_KEY__': JSON.stringify(env.VITE_SUPABASE_ANON_KEY)
+        '__CONFIG__': JSON.stringify({
+          SUPABASE_URL: env.VITE_SUPABASE_URL,
+          SUPABASE_KEY: env.VITE_SUPABASE_ANON_KEY
+        })
       },
       resolve: {
         alias: {
