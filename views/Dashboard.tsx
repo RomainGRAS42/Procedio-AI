@@ -287,16 +287,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       tooltipDesc: "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour)."
     }
   ] : [
-    {
-      label: "Rang d'Expertise",
-      value: getLevelTitle(personalStats.level),
-      icon: "fa-award",
-      color: "text-indigo-600",
-      bg: "bg-indigo-50",
-      desc: `${personalStats.xp} XP total`,
-      tooltipTitle: "Progression & Savoir",
-      tooltipDesc: `Ton rang évolue avec ton expertise. Tu as accumulé ${personalStats.xp} XP à travers tes lectures (${personalStats.consultations} consultations) et tes contributions.`
-    },
+
     {
       label: "Impact Équipe",
       value: `${personalStats.suggestions * 50} pts`,
