@@ -148,7 +148,10 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Stats dynamiques (Manager)
   const [managerKPIs, setManagerKPIs] = useState(cacheStore.get('dash_manager_kpis') || {
-    redZone: 0
+    redZone: 0,
+    searchSuccess: 100,
+    health: 0,
+    usage: 0
   });
 
   const [hasInitialFetchCompleted, setHasInitialFetchCompleted] = useState(false);
@@ -323,6 +326,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         fetchSuggestions();
         fetchMasteryClaims();
         fetchPendingFlashNotes();
+        fetchManagerKPIs();
       } else {
         fetchApprovedExams();
       }
@@ -803,6 +807,68 @@ const Dashboard: React.FC<DashboardProps> = ({
       setToast({ message: "Mission créée avec succès !", type: "success" });
     } catch (err: any) {
       setToast({ message: "Erreur création mission: " + err.message, type: "error" });
+    }
+  };
+
+  const fetchManagerKPIs = async () => {
+    if (user.role !== UserRole.MANAGER) return;
+    try {
+      // 1. Health & RedZone
+      const { data: procs } = await supabase
+        .from('procedures')
+        .select('uuid, updated_at, created_at, views');
+
+      if (!procs) return;
+
+      const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
+      const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
+
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      let fresh = 0;
+      let redZoneCount = 0;
+      let totalUsage = 0;
+
+      procs.forEach((p: any) => {
+        const date = new Date(p.updated_at || p.created_at);
+        if (date > sixMonthsAgo) fresh++;
+        if (!referentSet.has(p.uuid)) redZoneCount++;
+        totalUsage += (p.views || 0);
+      });
+
+      const healthPct = procs.length > 0 ? Math.round((fresh / procs.length) * 100) : 0;
+
+      // 2. Search Success Rate - Logic adapted from Statistics.tsx
+      const RESET_DATE = '2026-02-14T09:00:00.000Z';
+      const { count: totalSearches } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .ilike('title', 'LOG_SEARCH_%')
+        .gte('created_at', RESET_DATE);
+
+      const { data: opportunities } = await supabase
+        .from('search_opportunities')
+        .select('search_count')
+        .eq('status', 'pending');
+
+      const totalFailedCount = opportunities?.reduce((acc, curr) => acc + (curr.search_count || 0), 0) || 0;
+      
+      const successRate = totalSearches && totalSearches > 0 
+        ? Math.max(0, Math.min(100, Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100)))
+        : 100;
+
+      const kpis = {
+        searchSuccess: successRate,
+        health: healthPct,
+        usage: totalUsage,
+        redZone: redZoneCount
+      };
+
+      setManagerKPIs(kpis);
+      cacheStore.set('dash_manager_kpis', kpis);
+    } catch (err) {
+      console.error("Error fetching manager KPIs:", err);
     }
   };
 
