@@ -1201,6 +1201,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                    generatingExamId={generatingExamId}
                    onToggleReadStatus={handleToggleReadStatus}
                  />
+
+                 {isReferent && (
+                   <ExpertReviewWidget 
+                     pendingReviews={pendingReviews}
+                     onSelectProcedure={onSelectProcedure}
+                   />
+                 )}
                </div>
 
                {/* Col 2: Podium (Manager) or Mastery (Technician) */}
@@ -1229,12 +1236,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                    loadingActivities={loadingActivities}
                    onRefresh={fetchActivities}
                  />
-                  {user.role === UserRole.TECHNICIAN && (
+
+                 {user.role === UserRole.TECHNICIAN && (
                    <BadgesWidget 
                      earnedBadges={earnedBadges} 
                      onNavigate={onNavigate}
                    />
                  )}
+
+                 <RecentProceduresWidget 
+                    recentProcedures={recentProcedures} 
+                    userRole={user.role}
+                    viewMode="team"
+                    onSelectProcedure={onSelectProcedure}
+                    onShowHistory={() => onNavigate?.('/history')}
+                    formatDate={(d) => new Date(d).toLocaleDateString()}
+                 />
                </div>
 
             </div>
@@ -1246,24 +1263,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                </div>
             </div>
 
-            {/* ROW 3: Dernière Procédure en Ligne (Full Width) */}
-            <div className="space-y-8">
-               <RecentProceduresWidget 
-                  recentProcedures={recentProcedures} 
-                  userRole={user.role}
-                  viewMode="team"
-                  onSelectProcedure={onSelectProcedure}
-                  onShowHistory={() => onNavigate?.('/history')}
-                  formatDate={(d) => new Date(d).toLocaleDateString()}
-               />
-               
-               {isReferent && (
-                 <ExpertReviewWidget 
-                   pendingReviews={pendingReviews}
-                   onSelectProcedure={onSelectProcedure}
-                 />
-               )}
-            </div>
 
         </div>
 
