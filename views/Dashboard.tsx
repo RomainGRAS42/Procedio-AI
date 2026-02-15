@@ -1212,6 +1212,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                       personalStats={personalStats} 
                     />
                   )}
+
+                  <MissionsWidget 
+                    activeMissions={activeMissions}
+                    userRole={user.role}
+                    viewMode="team"
+                    onNavigate={onNavigate}
+                    loading={loadingMissions}
+                  />
                </div>
 
                {/* Col 3: Pouls de l'Équipe (Activity) */}
@@ -1231,16 +1239,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             </div>
 
-            {/* ROW 2: Missions (Preserved) & RSS (Veille Info) */}
+            {/* ROW 2: RSS (Veille Info) */}
             <div className="space-y-8">
-               <MissionsWidget 
-                 activeMissions={activeMissions}
-                 userRole={user.role}
-                 viewMode="team"
-                 onNavigate={onNavigate}
-                 loading={loadingMissions}
-               />
-               
                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
                   <RSSWidget user={user} />
                </div>
