@@ -242,7 +242,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 }) => {
   // Ref to prevent race condition between optimistic update and stale fetch
   const justCompletedRef = React.useRef(false);
-  
+
   const cleanTitle = useMemo(() => {
     try {
       if (!procedure?.title) return "Procédure sans titre";
@@ -386,19 +386,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   }, [procedure?.id, procedure?.fileUrl]);
 
   const fetchMasteryStatus = async () => {
-    const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+    const targetUuid =
+      procedure.db_id ||
+      (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
     if (!targetUuid) return;
 
     try {
       const { data } = await supabase
-        .from('mastery_requests')
-        .select('*')
-        .eq('procedure_id', targetUuid)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .from("mastery_requests")
+        .select("*")
+        .eq("procedure_id", targetUuid)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      
+
       setMasteryRequest(data);
     } catch (err) {
       console.error("Error fetching mastery status:", err);
@@ -467,18 +469,22 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   };
 
   const fetchProcedureExperts = async () => {
-    const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+    const targetUuid =
+      procedure.db_id ||
+      (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
     if (!targetUuid) return;
 
     try {
       const { data, error } = await supabase
-        .from('mastery_requests')
-        .select(`
+        .from("mastery_requests")
+        .select(
+          `
           user_profiles:user_id (first_name, last_name)
-        `)
-        .eq('procedure_id', targetUuid)
-        .eq('status', 'completed')
-        .gte('score', 70) // Score minimum pour être considéré expert
+        `
+        )
+        .eq("procedure_id", targetUuid)
+        .eq("status", "completed")
+        .gte("score", 70) // Score minimum pour être considéré expert
         .limit(5);
 
       if (data) {
@@ -541,7 +547,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
               procedure_id: isUUID ? realProcedureId : procedure.db_id || procedure.uuid || null,
               is_protected: false,
-              status: 'public',
+              status: "public",
             },
           ]);
 
@@ -856,23 +862,25 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   };
 
   const handleRequestMastery = async () => {
-    const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+    const targetUuid =
+      procedure.db_id ||
+      (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
     if (!targetUuid) return;
 
     setNotification({ msg: "Demande envoyée au manager !", type: "success" });
-    
+
     try {
       // 1. New Table entry
       const { data, error } = await supabase
-        .from('mastery_requests')
+        .from("mastery_requests")
         .insert({
           user_id: user.id,
           procedure_id: targetUuid,
-          status: 'pending'
+          status: "pending",
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       setMasteryRequest(data);
 
@@ -1032,21 +1040,28 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   {procedure?.category}
                 </span>
                 {referentExpert && (
-                  <div 
+                  <div
                     className="flex items-center gap-2 bg-indigo-50/50 pl-1 pr-3 py-1.5 rounded-full border border-indigo-100/50 shadow-sm"
-                    title={`Référent : ${referentExpert.first_name} ${referentExpert.last_name}`}
-                  >
+                    title={`Référent : ${referentExpert.first_name} ${referentExpert.last_name}`}>
                     <div className="w-6 h-6 rounded-full bg-white overflow-hidden flex items-center justify-center shrink-0 border border-indigo-200 shadow-sm">
-                       {referentExpert.avatar_url ? (
-                          <img src={referentExpert.avatar_url} className="w-full h-full object-cover" alt="Referent Avatar" />
-                       ) : (
-                          <span className="text-[10px] font-black text-indigo-600 uppercase">
-                             {referentExpert.first_name[0]}{referentExpert.last_name[0]}
-                          </span>
-                       )}
+                      {referentExpert.avatar_url ? (
+                        <img
+                          src={referentExpert.avatar_url}
+                          className="w-full h-full object-cover"
+                          alt="Referent Avatar"
+                        />
+                      ) : (
+                        <span className="text-[10px] font-black text-indigo-600 uppercase">
+                          {referentExpert.first_name[0]}
+                          {referentExpert.last_name[0]}
+                        </span>
+                      )}
                     </div>
                     <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest pl-1">
-                        Gardien : <span className="text-indigo-600 font-black">{referentExpert.first_name} {referentExpert.last_name}</span>
+                      Gardien :{" "}
+                      <span className="text-indigo-600 font-black">
+                        {referentExpert.first_name} {referentExpert.last_name}
+                      </span>
                     </span>
                   </div>
                 )}
@@ -1058,7 +1073,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             {/* Context Button */}
             <button
               onClick={() => setIsChatOpen(!isChatOpen)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm h-10
+              className={`px-4 py-3 h-10 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm flex items-center justify-center gap-2
                  ${
                    isChatOpen
                      ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-200"
@@ -1071,61 +1086,75 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             {/* Mastery Button Workflow - Always visible for non-managers */}
             {user.role !== UserRole.MANAGER && (
               <>
-                {masteryRequest?.status === 'approved' ? (
+                {masteryRequest?.status === "approved" ? (
                   <button
                     onClick={() => setIsMasteryModalOpen(true)}
-                    className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce"
-                  >
+                    className="px-4 py-3 h-10 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 animate-bounce">
                     <i className="fa-solid fa-graduation-cap"></i>
                     <span>Lancer l'Examen</span>
                   </button>
-                ) : masteryRequest?.status === 'pending' ? (
+                ) : masteryRequest?.status === "pending" ? (
                   <div className="px-4 py-3 h-10 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                     <i className="fa-solid fa-clock animate-pulse"></i>
                     <span>Examen en attente</span>
                   </div>
-                ) : masteryRequest?.status === 'completed' ? (
+                ) : masteryRequest?.status === "completed" ? (
                   (() => {
                     const score = masteryRequest.score || 0;
                     const isSuccess = score >= 70;
-                    const completedAt = new Date(masteryRequest.completed_at || masteryRequest.created_at);
-                    const daysSinceCompletion = (new Date().getTime() - completedAt.getTime()) / (1000 * 3600 * 24);
+                    const completedAt = new Date(
+                      masteryRequest.completed_at || masteryRequest.created_at
+                    );
+                    const daysSinceCompletion =
+                      (new Date().getTime() - completedAt.getTime()) / (1000 * 3600 * 24);
                     const canRetry = !isSuccess && daysSinceCompletion >= 14;
                     const retryDate = new Date(completedAt);
                     retryDate.setDate(retryDate.getDate() + 14);
 
                     if (canRetry) {
+                      // Masquer le bouton de réessai si un référent existe déjà
+                      if (referentExpert) {
+                        return null;
+                      }
+
                       return (
                         <button
                           onClick={handleRequestMastery}
-                          className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
-                          title="Vous pouvez retenter votre chance !"
-                        >
+                          className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center justify-center gap-2"
+                          title="Vous pouvez retenter votre chance !">
                           <i className="fa-solid fa-rotate-right"></i>
                           <span>Retenter l'examen</span>
                         </button>
                       );
                     }
 
+                    // Masquer le statut d'échec / date de réessai si un référent existe
+                    if (!isSuccess && referentExpert) {
+                      return null;
+                    }
+
                     return (
-                      <div className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                        isSuccess
-                          ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
-                          : "bg-rose-50 text-rose-600 border-rose-100"
-                      }`}>
-                        <i className={`fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-lock'}`}></i>
+                      <div
+                        className={`px-4 py-3 h-10 border rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${
+                          isSuccess
+                            ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                            : "bg-rose-50 text-rose-600 border-rose-100"
+                        }`}>
+                        <i className={`fa-solid ${isSuccess ? "fa-circle-check" : "fa-lock"}`}></i>
                         <span>
                           {isSuccess
-                            ? `Maîtrise validée (${score}%)` 
+                            ? `Maîtrise validée (${score}%)`
                             : `Réessai possible le ${retryDate.toLocaleDateString()}`}
                         </span>
                       </div>
                     );
                   })()
+                ) : referentExpert ? (
+                  null
                 ) : (
                   <button
                     onClick={handleRequestMastery}
-                    className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center gap-2"
+                    className="px-4 py-3 h-10 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 transition-all shadow-sm flex items-center justify-center gap-2"
                     title="Demander à valider la maîtrise sur cette procédure">
                     <i className="fa-solid fa-certificate"></i>
                     <span className="hidden xl:inline">Demander Maîtrise</span>
@@ -1138,15 +1167,18 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
             <button
               onClick={() => setIsSuggestionModalOpen(true)}
-              className="px-4 py-3 h-10 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm flex items-center gap-2">
-              <i className={`fa-solid ${referentExpert ? 'fa-lock text-[8px] opacity-40' : 'fa-regular fa-lightbulb text-sm'}`}></i>
-              <span className="hidden sm:inline">{referentExpert ? "Soumettre Amélioration" : "Suggérer une modif"}</span>
+              className="px-4 py-3 h-10 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm flex items-center justify-center gap-2">
+              <i
+                className={`fa-solid ${referentExpert ? "fa-lock text-[8px] opacity-40" : "fa-regular fa-lightbulb text-sm"}`}></i>
+              <span className="hidden sm:inline">
+                {referentExpert ? "Soumettre Amélioration" : "Suggérer une modif"}
+              </span>
             </button>
 
             {/* Open in New Tab Button (Full Text) */}
             <button
               onClick={() => window.open(docUrl || "", "_blank")}
-              className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-sm flex items-center gap-2"
+              className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-sm flex items-center justify-center gap-2"
               title="Ouvrir le document PDF dans un nouvel onglet">
               <i className="fa-solid fa-arrow-up-right-from-square"></i>
               <span className="hidden sm:inline">Ouvrir dans un onglet</span>
@@ -1419,18 +1451,20 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           </div>
         </div>
       )}
-      
+
       {/* QUIZ MODAL */}
-      <MasteryQuizModal 
+      <MasteryQuizModal
         isOpen={isMasteryModalOpen}
         onClose={async () => {
           setIsMasteryModalOpen(false);
           // Only refetch if we didn't just complete the exam (prevents stale data override)
           if (!justCompletedRef.current) {
-            await fetchMasteryStatus(); 
+            await fetchMasteryStatus();
           }
           // Reset ref after a delay just in case
-          setTimeout(() => { justCompletedRef.current = false; }, 2000);
+          setTimeout(() => {
+            justCompletedRef.current = false;
+          }, 2000);
         }}
         procedure={procedure}
         user={user}
@@ -1438,15 +1472,22 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         masteryRequestId={masteryRequest?.id}
         onSuccess={(score, level) => {
           justCompletedRef.current = true; // Mark as just completed
-          setNotification({ msg: `Examen terminé ! Score: ${score}% - Niveau ${level}`, type: "success" });
-          
+          setNotification({
+            msg: `Examen terminé ! Score: ${score}% - Niveau ${level}`,
+            type: "success",
+          });
+
           // Optimistic Update to immediately remove the "launch" button
-          setMasteryRequest(prev => prev ? ({
-            ...prev,
-            status: 'completed',
-            score: score,
-            completed_at: new Date().toISOString()
-          }) : null);
+          setMasteryRequest((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: "completed",
+                  score: score,
+                  completed_at: new Date().toISOString(),
+                }
+              : null
+          );
         }}
       />
     </div>

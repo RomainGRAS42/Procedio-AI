@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { User, UserRole } from "../types";
+import UserProfileModal from "../components/UserProfileModal";
 
 interface TeamProps {
   user: User;
@@ -33,6 +34,7 @@ const Team: React.FC<TeamProps> = ({ user }) => {
     msg: string;
     type: "success" | "error";
   } | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -44,7 +46,7 @@ const Team: React.FC<TeamProps> = ({ user }) => {
       if (activeTab === "members") {
         const { data } = await supabase
           .from("user_profiles")
-          .select("*")
+          .select("*, procedure_referents(count)")
           .order("created_at", { ascending: false });
         if (data) setMembers(data);
       } else {
@@ -189,7 +191,7 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                     Statut
                   </th>
                   <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                    Date
+                    Expérience / Références
                   </th>
                   <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">
                     Actions
@@ -200,7 +202,10 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                 {activeTab === "members" ? (
                   members.length > 0 ? (
                     members.map((member) => (
-                      <tr key={member.id} className="group hover:bg-slate-50/50 transition-colors">
+                      <tr
+                        key={member.id}
+                        className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
+                        onClick={() => setSelectedUserId(member.id)}>
                         <td className="p-6">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
@@ -237,8 +242,33 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                             Actif
                           </span>
                         </td>
-                        <td className="p-6 text-[10px] text-slate-400 font-medium">
-                          {new Date(member.created_at).toLocaleDateString()}
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-indigo-600 tabular-nums">
+                                  {member.xp_points || 0} XP
+                                </span>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                                  Niv. {Math.floor((member.xp_points || 0) / 100) + 1}
+                                </span>
+                              </div>
+                              <div className="w-20 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                <div 
+                                  className="h-full bg-indigo-500" 
+                                  style={{ width: `${(member.xp_points || 0) % 100}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-col ml-4 pl-4 border-l border-slate-100">
+                              <span className="text-[10px] font-black text-amber-600 tabular-nums">
+                                {(member.procedure_referents?.[0]?.count || 0)} RÉF.
+                              </span>
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
+                                Gardien
+                              </span>
+                            </div>
+                          </div>
                         </td>
                         <td className="p-6 text-right relative">
                           {user.id !== member.id && (
@@ -341,6 +371,15 @@ const Team: React.FC<TeamProps> = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* Modal de profil utilisateur */}
+      {selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+          currentUserRole={user.role}
+        />
+      )}
 
       {/* Modal d'invitation */}
       {showInviteModal && (
