@@ -15,9 +15,10 @@ interface StatItem {
 
 interface StatsSummaryWidgetProps {
   stats: StatItem[];
+  isClickable?: boolean;
 }
 
-const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
+const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats, isClickable = true }) => {
   const navigate = useNavigate();
 
   return (
@@ -25,8 +26,8 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats }) => {
       {stats.map((stat, idx) => (
         <div 
           key={idx} 
-          onClick={() => navigate('/statistics')}
-          className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between gap-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all group relative cursor-pointer"
+          onClick={() => isClickable && navigate('/statistics')}
+          className={`bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between gap-4 transition-all group relative ${isClickable ? 'hover:shadow-lg hover:shadow-slate-200/50 cursor-pointer' : 'cursor-default'}`}
         >
           <div className="flex items-center gap-4 shrink-0">
             <div className={`w-14 h-14 rounded-[1.2rem] ${stat.bg} ${stat.color} flex items-center justify-center text-xl shadow-inner shrink-0`}>

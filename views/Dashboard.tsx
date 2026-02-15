@@ -926,13 +926,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center gap-3">
              {/* Toggle Removed */}
 
-            <button 
-              onClick={onUploadClick}
-              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-3 font-bold text-sm"
-            >
-              <i className="fa-solid fa-plus"></i>
-              <span>{user.role === UserRole.MANAGER ? "Nouvelle Procédure" : "Contribuer"}</span>
-            </button>
+            {user.role === UserRole.MANAGER && (
+              <button 
+                onClick={onUploadClick}
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-3 font-bold text-sm"
+              >
+                <i className="fa-solid fa-plus"></i>
+                <span>Nouvelle Procédure</span>
+              </button>
+            )}
           </div>
         </header>
 
@@ -957,7 +959,10 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="grid grid-cols-12 gap-8">
             {/* ROW 1: KPIs (Full Width) */}
             <div className="col-span-12">
-              <StatsSummaryWidget stats={filteredStats} />
+              <StatsSummaryWidget 
+                stats={filteredStats} 
+                isClickable={false}
+              />
             </div>
 
             {/* ROW 2: Pilot Center (Full Width) */}

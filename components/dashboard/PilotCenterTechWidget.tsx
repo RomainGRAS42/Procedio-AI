@@ -60,9 +60,9 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               <i className="fa-solid fa-rocket text-indigo-500"></i> Mes Missions
             </p>
             {missions.length > 5 && (
-              <button onClick={() => onNavigate?.('missions')} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 Voir tout
-              </button>
+              </span>
             )}
           </div>
           
@@ -71,8 +71,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               missions.slice(0, 3).map((mission) => (
                 <div 
                   key={mission.id} 
-                  onClick={() => onNavigate?.('missions')}
-                  className="p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 hover:bg-white transition-all cursor-pointer group"
+                  className="p-4 bg-slate-50 rounded-2xl border border-transparent transition-all cursor-default group"
                 >
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">{mission.title}</span>
