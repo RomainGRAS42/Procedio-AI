@@ -11,7 +11,7 @@ const MouseTrailEffect: React.FC = () => {
     if (!ctx) return;
 
     let animationFrameId: number;
-    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     let lastMoveTime = Date.now();
     let isIdle = false;
     let isFormationAssigned = false;

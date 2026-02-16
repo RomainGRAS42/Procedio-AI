@@ -83,7 +83,7 @@ const ActiveMissionWidget: React.FC<ActiveMissionWidgetProps> = ({
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor(diff / (1000 * 60 * 60));
     
-    let label = days > 0 ? `${days}j restants` : `${hours}h restantes`;
+    const label = days > 0 ? `${days}j restants` : `${hours}h restantes`;
     let color = "bg-indigo-600";
     if (percent > 80) color = "bg-rose-500";
     else if (percent > 50) color = "bg-amber-500";

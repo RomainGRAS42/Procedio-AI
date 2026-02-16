@@ -55,6 +55,7 @@ const Header: React.FC<HeaderProps> = ({
   } = useSearchSuggestions(localSearch, onSearch, onSelectProcedure);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (searchTerm !== undefined) setLocalSearch(searchTerm);
   }, [searchTerm]);
 

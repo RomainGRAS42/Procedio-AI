@@ -8,18 +8,16 @@ interface MasteryResultDetailModalProps {
 }
 
 const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isOpen, onClose, claim, onUpdateReferent }) => {
-  if (!isOpen || !claim) return null;
-
   const [isReferentLoading, setIsReferentLoading] = React.useState(false);
   const [currentReferentId, setCurrentReferentId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (claim?.procedure_id) {
        // Check if this procedure already has a referent
-       // In a real app we might pass this as prop or fetch it
-       // For now let's assume we can fetch it or we rely on parent to handle logic
     }
   }, [claim]);
+
+  if (!isOpen || !claim) return null;
 
   const handleReferentAction = async (action: 'assign' | 'revoke') => {
     if (!onUpdateReferent) return;

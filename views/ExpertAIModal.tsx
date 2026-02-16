@@ -41,7 +41,7 @@ const ExpertAIModal: React.FC<ExpertAIModalProps> = ({ isOpen, onClose, onSelect
       if (supabaseError) throw supabaseError;
 
       // New unified format handling
-      let foundProcedures: Procedure[] = [];
+      const foundProcedures: Procedure[] = [];
 
       // Case 1: Expert Synthesis (we fetch the main source)
       if (data.type === 'expert' && data.source) {

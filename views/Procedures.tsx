@@ -104,7 +104,7 @@ const Procedures: React.FC<ProceduresProps> = ({
       const allCategories = new Set([
         ...PREDEFINED_CATEGORIES,
         ...mappedProcs.map(p => {
-           let c = p.category.toUpperCase();
+           const c = p.category.toUpperCase();
            return c === 'UTILISATEUR' ? 'UTILISATEURS' : c;
         })
       ]);

@@ -263,7 +263,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         }
       });
 
-      let mapData = synchronizedCategories.map(cat => ({
+      const mapData = synchronizedCategories.map(cat => ({
         subject: cat,
         A: stats[cat].count > 0 ? Math.round(stats[cat].total / stats[cat].count) : 0,
         fullMark: 100,

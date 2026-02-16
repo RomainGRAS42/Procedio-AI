@@ -7,7 +7,13 @@ export default defineConfig(({ mode }) => {
     
     // Build-time validation: ensures the production bundle is never broken
     if (mode === 'production' && (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY)) {
-      throw new Error('\n\n❌ ERROR: Supabase environment variables are missing in .env.local!\nBuilding without these will break the app.\n\n');
+      const missingVars = [];
+      if (!env.VITE_SUPABASE_URL) missingVars.push('VITE_SUPABASE_URL');
+      if (!env.VITE_SUPABASE_ANON_KEY) missingVars.push('VITE_SUPABASE_ANON_KEY');
+      
+      throw new Error(`\n\n❌ ERROR: Supabase environment variables are missing in your environment!
+Missing: ${missingVars.join(', ')}
+Building without these will break the app. Please ensure they are set in .env.local or your deployment environment.\n\n`);
     }
 
     return {
