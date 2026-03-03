@@ -2,10 +2,15 @@ import React from "react";
 
 interface BadgesWidgetProps {
   earnedBadges: any[];
+  totalConsultations?: number;
   onNavigate?: (view: string) => void;
 }
 
-const BadgesWidget: React.FC<BadgesWidgetProps> = ({ earnedBadges, onNavigate }) => {
+const BadgesWidget: React.FC<BadgesWidgetProps> = ({
+  earnedBadges,
+  totalConsultations = 0,
+  onNavigate,
+}) => {
   // Helper to determine badge tier styling
   const getBadgeStyle = (criteriaValue: number) => {
     if (criteriaValue >= 2000)
@@ -193,22 +198,38 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({ earnedBadges, onNavigate })
               </div>
               <div>
                 <p className="text-xs font-black text-slate-700 uppercase leading-none mb-1">
-                  Lecteur Assidu
+                  {totalConsultations >= 50
+                    ? "Expert Visionnaire"
+                    : totalConsultations >= 10
+                      ? "Lecteur Confirmé"
+                      : "Lecteur Assidu"}
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium leading-tight mb-1.5">
-                  Lisez 10 articles pour débloquer ce badge
+                  {totalConsultations >= 50
+                    ? "Atteignez 100 procédures pour le rang ultime"
+                    : totalConsultations >= 10
+                      ? "Consultez 50 procédures pour le prochain badge"
+                      : "Consultez 10 procédures pour débloquer ce badge"}
                 </p>
                 <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-400 w-3/4 animate-pulse"></div>
+                  <div
+                    className="h-full bg-amber-400 animate-pulse transition-all duration-1000"
+                    style={{
+                      width: `${Math.min((totalConsultations >= 50 ? (totalConsultations - 50) / 50 : totalConsultations >= 10 ? (totalConsultations - 10) / 40 : totalConsultations / 10) * 100, 100)}%`,
+                    }}></div>
                 </div>
               </div>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                7 / 10
+                {totalConsultations >= 50
+                  ? `${Math.min(totalConsultations, 100)} / 100`
+                  : totalConsultations >= 10
+                    ? `${totalConsultations} / 50`
+                    : `${totalConsultations} / 10`}
               </span>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                Lectures
+                Procédures
               </span>
             </div>
           </div>

@@ -1112,7 +1112,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               <MasteryWidget personalStats={personalStats} />
             </div>
             <div className="col-span-12 lg:col-span-4">
-              <BadgesWidget earnedBadges={earnedBadges} onNavigate={onNavigate} />
+              <BadgesWidget
+                earnedBadges={earnedBadges}
+                totalConsultations={personalStats.consultations}
+                onNavigate={onNavigate}
+              />
             </div>
 
             {/* ROW 5: RSS (Full Width) */}
