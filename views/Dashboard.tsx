@@ -217,39 +217,43 @@ const Dashboard: React.FC<DashboardProps> = ({
       }
 
       // 3. Self-Healing Badges (Lectures Count Fix)
-      const totalLectures = personalStats.consultations || 0;
-      const missingBadges = [];
+      const checkAndRepairBadges = async () => {
+        const totalLectures = personalStats.consultations || 0;
+        const missingBadges = [];
 
-      if (totalLectures >= 10 && !earnedBadges.some(b => b.badges.name === 'Lecteur Assidu')) {
-         missingBadges.push('Lecteur Assidu');
-      }
-      if (totalLectures >= 50 && !earnedBadges.some(b => b.badges.name === 'Lecteur Confirmé')) {
-         missingBadges.push('Lecteur Confirmé');
-      }
-      if (totalLectures >= 100 && !earnedBadges.some(b => b.badges.name === 'Expert Visionnaire')) {
-         missingBadges.push('Expert Visionnaire');
-      }
-
-      if (missingBadges.length > 0) {
-        // Find badge IDs
-        const { data: badgesDefs } = await supabase
-          .from('badges')
-          .select('id, name')
-          .in('name', missingBadges);
-          
-        if (badgesDefs && badgesDefs.length > 0) {
-           const newBadgesInserts = badgesDefs.map(def => ({
-             user_id: user.id,
-             badge_id: def.id,
-             awarded_at: new Date().toISOString()
-           }));
-           
-           await supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' });
-           
-           // Trigger refresh
-           setTimeout(() => fetchPersonalStats(), 1000);
+        if (totalLectures >= 10 && !earnedBadges.some(b => b.badges.name === 'Lecteur Assidu')) {
+           missingBadges.push('Lecteur Assidu');
         }
-      }
+        if (totalLectures >= 50 && !earnedBadges.some(b => b.badges.name === 'Lecteur Confirmé')) {
+           missingBadges.push('Lecteur Confirmé');
+        }
+        if (totalLectures >= 100 && !earnedBadges.some(b => b.badges.name === 'Expert Visionnaire')) {
+           missingBadges.push('Expert Visionnaire');
+        }
+
+        if (missingBadges.length > 0) {
+          // Find badge IDs
+          const { data: badgesDefs } = await supabase
+            .from('badges')
+            .select('id, name')
+            .in('name', missingBadges);
+            
+          if (badgesDefs && badgesDefs.length > 0) {
+             const newBadgesInserts = badgesDefs.map(def => ({
+               user_id: user.id,
+               badge_id: def.id,
+               awarded_at: new Date().toISOString()
+             }));
+             
+             await supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' });
+             
+             // Trigger refresh
+             fetchPersonalStats();
+          }
+        }
+      };
+      
+      checkAndRepairBadges();
 
       // Mark session as seen
       sessionStorage.setItem(`procedio_session_intro_${user.id}`, "true");
