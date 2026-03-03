@@ -27,14 +27,17 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
       {/* Decorative background - Vibrant & Dynamic */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent blur-[80px] rounded-full -z-10 translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-700"></div>
 
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-6">
-          <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-2xl font-black shadow-xl shadow-indigo-200 border border-slate-800 relative group-hover:scale-105 transition-transform shrink-0">
-            {currentLevel}
-            <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-[10px] flex items-center justify-center border-2 border-white shadow-lg animate-pulse">
-              <i className="fa-solid fa-bolt"></i>
-            </div>
+      <div className="flex items-center gap-5">
+        <div className="relative group">
+          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100 group-hover:scale-105 transition-transform duration-300">
+            <span className="text-xl font-black text-indigo-600 font-mono">{currentLevel}</span>
           </div>
+          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm border border-indigo-100">
+            <i className="fa-solid fa-bolt text-[10px] text-amber-400"></i>
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <span className="text-2xl font-black text-slate-900 tracking-tight uppercase">
@@ -46,54 +49,26 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
               TOTAL DANS LE RANG
             </p>
           </div>
-        </div>
 
-        <div className="text-right flex flex-col items-end hidden md:flex">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-            Prochain Grade
-          </p>
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-            <span className="font-black text-slate-800 text-xs uppercase tracking-tight">
-              {nextTitle}
-            </span>
-            <i className="fa-solid fa-chevron-right text-[8px] text-slate-300"></i>
+          <div className="mt-4 relative">
+            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out relative"
+                style={{ width: `${progressPercentage}%` }}>
+                <div className="absolute inset-0 bg-white/20 w-full animate-pulse"></div>
+              </div>
+            </div>
+
+            <div className="absolute -bottom-6 left-0">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                  {Math.round(progressPercentage)}% Progression
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Progress bar */}
-      <div className="relative">
-        <div className="h-4 bg-slate-100 rounded-full overflow-hidden p-1 border border-slate-200 shadow-inner">
-          <div
-            className="h-full bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-            style={{ width: `${Math.min(progressPercentage, 100)}%` }}>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full animate-shimmer"></div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mt-3 px-1">
-          <div className="flex items-center gap-3">
-            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-black border border-indigo-100/50">
-              {Math.round(progressPercentage)}% PROGRESSION
-            </span>
-          </div>
-          <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
-            Plus que <span className="text-indigo-600 font-black">{xpRemaining} XP</span> pour le
-            rang suivant ! 🚀
-          </p>
-        </div>
-      </div>
-
-      {/* Add shimmer animation to CSS */}
-      <style>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-      `}</style>
     </div>
   );
 };
