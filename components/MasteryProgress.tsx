@@ -60,23 +60,17 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                     {item.subject}
                   </h4>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full shadow-sm text-[10px] font-black text-slate-900 uppercase tracking-tight">
-                      Expertise : {expertiseTitle}
-                    </span>
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <span>
-                        • {item.A} {item.A > 1 ? "Lectures" : "Lecture"}
-                      </span>
-                      {item.certifications && item.certifications > 0 ? (
-                        <>
-                          <span className="mx-1">•</span>
-                          <span className="text-emerald-600 flex items-center gap-1">
-                            <i className="fa-solid fa-certificate text-[9px]"></i>
-                            {item.certifications}{" "}
-                            {item.certifications > 1 ? "Certifications" : "Certification"}
-                          </span>
-                        </>
-                      ) : null}
+                       <span>{item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}</span>
+                       {item.certifications && item.certifications > 0 ? (
+                         <>
+                           <span className="mx-1">•</span>
+                           <span className="text-emerald-600 flex items-center gap-1">
+                             <i className="fa-solid fa-certificate text-[9px]"></i>
+                             {item.certifications} {item.certifications > 1 ? 'Certifs' : 'Certif'}
+                           </span>
+                         </>
+                       ) : null}
                     </span>
                   </div>
                 </div>

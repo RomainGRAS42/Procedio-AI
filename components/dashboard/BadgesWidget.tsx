@@ -231,7 +231,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
               <div>
                 <p className="text-xs font-black text-slate-700 uppercase leading-none mb-1">
                   {totalConsultations >= 50
-                    ? "Expert Visionnaire"
+                    ? "Visionnaire"
                     : totalConsultations >= 10
                       ? "Lecteur Confirmé"
                       : "Lecteur Assidu"}
