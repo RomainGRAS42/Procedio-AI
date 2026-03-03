@@ -72,20 +72,17 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
             <span className="text-xs font-black text-slate-400 uppercase">XP pour le grade</span>
           </div>
         </div>
-        <div className="flex flex-col text-right items-end">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              Rappel Objectif Global
-            </span>
-            <InfoTooltip
-              text={`Atteindre le Grade ${nextLevel} (${nextLevelTitle}) débloque de nouveaux privilèges et badges d'expertise sur toute la plateforme.`}
-            />
-          </div>
+        <div className="flex flex-col text-right items-end justify-end">
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                PROCHAIN GRADE
-              </span>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  PROCHAIN GRADE
+                </span>
+                <InfoTooltip
+                  text={`Atteindre le Grade ${nextLevel} (${nextLevelTitle}) débloque de nouveaux privilèges et badges d'expertise sur toute la plateforme.`}
+                />
+              </div>
               <span className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
                 {nextLevelTitle}
               </span>
