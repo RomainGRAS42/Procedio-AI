@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, UserRole } from '../../types';
+import React from "react";
+import { User, UserRole } from "../../types";
 
 interface AnnouncementWidgetProps {
   user: User;
@@ -34,98 +34,103 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
   handleSaveAnnouncement,
   handleMarkAsRead,
   formatDate,
-  embedded = false
+  embedded = false,
 }) => {
-  const containerClasses = embedded 
-    ? "flex flex-col justify-center h-full animate-fade-in" 
-    : `bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-indigo-500/5 flex flex-col justify-center min-h-full animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100/50 shadow-indigo-500/10"}`;
+  const containerClasses = embedded
+    ? "flex flex-col justify-center h-full animate-fade-in"
+    : `bg-white rounded-[2rem] p-4 md:p-5 border border-slate-100 shadow-lg shadow-indigo-500/5 flex flex-col justify-center animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100/50 shadow-indigo-500/10"}`;
 
   return (
     <section className={containerClasses}>
       {loadingAnnouncement ? (
-        <div className="flex items-center justify-center gap-4 py-8">
-          <div className="w-6 h-6 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Chargement...</span>
+        <div className="flex items-center justify-center gap-3 py-4">
+          <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            Chargement...
+          </span>
         </div>
       ) : isEditing ? (
-          <div className="w-full space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">
-                Édition du message manager
-              </h4>
-              <button onClick={() => setIsEditing(false)} className="text-slate-500 hover:text-rose-500 transition-colors">
-                <i className="fa-solid fa-xmark"></i>
+        <div className="w-full space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+              Édition du message manager
+            </h4>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="text-slate-400 hover:text-rose-500 transition-colors">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <textarea
+              className="flex-1 h-20 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="Écrivez votre message à l'équipe ici..."
+            />
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${requiresConfirmation ? "bg-amber-50 border-amber-200 text-amber-600 shadow-sm" : "bg-white border-slate-100 text-slate-300"}`}
+                title="Demander confirmation de lecture">
+                <i
+                  className={`fa-solid ${requiresConfirmation ? "fa-bell text-xs" : "fa-bell-slash text-xs"}`}></i>
+              </button>
+              <button
+                onClick={handleSaveAnnouncement}
+                disabled={saving || !editContent.trim()}
+                className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-slate-900 transition-all disabled:opacity-50">
+                <i className="fa-solid fa-paper-plane text-xs"></i>
               </button>
             </div>
-            <div className="flex gap-4">
-              <textarea
-                  className="flex-1 h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  placeholder="Écrivez votre message à l'équipe ici..."
-              />
-              <div className="flex flex-col gap-2">
-                   <button
-                      onClick={() => setRequiresConfirmation(!requiresConfirmation)}
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all ${requiresConfirmation ? "bg-amber-50 border-amber-200 text-amber-600 shadow-sm" : "bg-white border-slate-100 text-slate-300"}`}
-                      title="Demander confirmation de lecture"
-                   >
-                      <i className={`fa-solid ${requiresConfirmation ? "fa-bell" : "fa-bell-slash"}`}></i>
-                   </button>
-                   <button
-                      onClick={handleSaveAnnouncement}
-                      disabled={saving || !editContent.trim()}
-                      className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-slate-900 transition-all disabled:opacity-50"
-                   >
-                      <i className="fa-solid fa-paper-plane"></i>
-                   </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-lg border border-indigo-100 shadow-sm">
+              {announcement?.author_initials || "??"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                  {user.role === UserRole.MANAGER ? "Message à l'équipe" : "Message du manager"}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                  {announcement ? formatDate(announcement.created_at) : ""}
+                </span>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-sm font-bold text-slate-800 tracking-tight leading-relaxed italic">
+                  "{announcement?.content || "Aucun message pour le moment."}"
+                </p>
+
+                <div className="flex items-center gap-2">
+                  {user.role === UserRole.MANAGER ? (
+                    <button
+                      onClick={() => {
+                        setEditContent(announcement?.content || "");
+                        setIsEditing(true);
+                      }}
+                      className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center border border-slate-100">
+                      <i className="fa-solid fa-pen-to-square text-xs"></i>
+                    </button>
+                  ) : (
+                    announcement &&
+                    !isRead && (
+                      <button
+                        onClick={handleMarkAsRead}
+                        className="bg-indigo-600 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 shrink-0 active:scale-95">
+                        <i className="fa-solid fa-check"></i>
+                        Compris
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </div>
-      ) : (
-        <div className="flex flex-col gap-6">
-           <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-xl border border-indigo-100 shadow-sm">
-                {announcement?.author_initials || "??"}
-              </div>
-              <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
-                       {user.role === UserRole.MANAGER ? "Message à l'équipe" : "Message du manager"}
-                     </span>
-                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
-                       {announcement ? formatDate(announcement.created_at) : ""}
-                     </span>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 leading-tight tracking-tight">
-                    "{announcement?.content}"
-                  </h3>
-              </div>
-           </div>
-           
-           <div className="flex items-center justify-end gap-3 pt-2">
-              {user.role === UserRole.MANAGER && (
-                  <button onClick={() => setIsEditing(true)} className="w-10 h-10 rounded-xl bg-slate-50 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-100 transition-all flex items-center justify-center shadow-sm active:scale-95">
-                      <i className="fa-solid fa-pen text-xs"></i>
-                  </button>
-              )}
-
-              {user.role === UserRole.TECHNICIAN && !isRead && announcement?.requires_confirmation && (
-                  <button
-                    onClick={handleMarkAsRead}
-                    className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2"
-                  >
-                    <span>Lu et compris</span>
-                    <i className="fa-solid fa-check"></i>
-                  </button>
-              )}
-              {isRead && (
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center shadow-sm" title={`Lu le ${formatDate(new Date().toISOString())}`}>
-                      <i className="fa-solid fa-check-double text-xs"></i>
-                  </div>
-              )}
-           </div>
         </div>
       )}
     </section>
