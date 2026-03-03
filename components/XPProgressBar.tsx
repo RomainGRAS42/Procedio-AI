@@ -38,19 +38,32 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
         </div>
 
         <div className="flex-1 min-w-0">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-                {currentTitle}
-              </span>
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <span className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+                  {currentTitle}
+                </span>
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <span className="text-slate-900">{xpInCurrentLevel}</span> / {xpNeededForNextLevel}{" "}
+                XP TOTAL DANS LE RANG
+              </p>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <span className="text-slate-900">{xpInCurrentLevel}</span> / {xpNeededForNextLevel} XP
-              TOTAL DANS LE RANG
-            </p>
+
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                PROCHAIN GRADE
+              </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full shadow-sm">
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                  {nextTitle}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 relative">
+          <div className="relative">
             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out relative"
@@ -59,21 +72,10 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
               </div>
             </div>
 
-            <div className="absolute -bottom-6 left-0">
+            <div className="mt-3 flex items-center">
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100">
                 <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
                   {Math.round(progressPercentage)}% Progression
-                </span>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-7 right-0 flex flex-col items-end">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                PROCHAIN GRADE
-              </span>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full shadow-sm">
-                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
-                  {nextTitle}
                 </span>
               </div>
             </div>
