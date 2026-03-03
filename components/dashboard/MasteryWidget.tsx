@@ -1,6 +1,6 @@
-import React from 'react';
-import MasteryProgress from '../MasteryProgress';
-import InfoTooltip from '../InfoTooltip';
+import React from "react";
+import MasteryProgress from "../MasteryProgress";
+import InfoTooltip from "../InfoTooltip";
 
 interface MasteryWidgetProps {
   personalStats: {
@@ -26,7 +26,10 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
     return 0;
   };
 
-  const xpForNextLevel = personalStats.level >= 10 ? getMinXPForLevel(10) * 1.5 : getMinXPForLevel(personalStats.level + 1);
+  const xpForNextLevel =
+    personalStats.level >= 10
+      ? getMinXPForLevel(10) * 1.5
+      : getMinXPForLevel(personalStats.level + 1);
   const xpRemaining = Math.max(0, xpForNextLevel - personalStats.xp);
 
   return (
@@ -38,7 +41,9 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
+              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">
+                Maitrise Experte
+              </h3>
               <InfoTooltip text="Calculé via tes lectures de procédures et suggestions validées (courbe exponentielle)." />
             </div>
             <div className="inline-flex mt-1 px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-100/50">
@@ -50,22 +55,38 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
           {/* Slot d'action vide ou pour bouton futur */}
         </div>
       </div>
-      
+
       <div className="flex-1">
         <MasteryProgress data={personalStats.mastery} />
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-50 grid grid-cols-2 gap-4">
         <div className="flex flex-col">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">XP Restant</span>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              XP Restant
+            </span>
+          </div>
           <div className="flex items-center gap-2">
-            <span className="text-lg font-black text-indigo-600 font-mono tracking-tighter">{xpRemaining.toLocaleString()}</span>
+            <span className="text-lg font-black text-indigo-600 font-mono tracking-tighter">
+              {xpRemaining.toLocaleString()}
+            </span>
             <span className="text-xs font-black text-slate-400 uppercase">Points</span>
           </div>
         </div>
-        <div className="flex flex-col text-right">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Cible Suivante</span>
-          <span className="text-xs font-black text-slate-700 uppercase">Rang {personalStats.level + 1}</span>
+        <div className="flex flex-col text-right items-end">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              Cible Suivante
+            </span>
+            <InfoTooltip text="Le Rang représente ton niveau d'expertise global sur la plateforme, calculé selon ton XP totale." />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-slate-400 uppercase">Prochain palier</span>
+            <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
+              Rang {personalStats.level + 1}
+            </span>
+          </div>
         </div>
       </div>
     </div>

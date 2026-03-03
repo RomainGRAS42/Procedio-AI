@@ -48,43 +48,51 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                 <button className="text-slate-300 hover:text-orange-500 transition-colors cursor-help ml-1">
                   <i className="fa-solid fa-circle-info text-[0.8rem]"></i>
                 </button>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-slate-900 text-white rounded-2xl p-4 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-white/10 pointer-events-none text-left">
-                  <p className="text-[11px] font-black text-orange-400 uppercase tracking-widest mb-3 text-center">Comment débloquer les trophées ?</p>
-                  <p className="text-[10px] text-slate-400 mb-4 leading-tight text-center italic">Chaque action te rapporte de l'XP et te rapproche de nouveaux trophées exclusifs.</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-[11px] pb-1 border-b border-white/5 opacity-50 font-black">
-                      <span>ACTION</span>
-                      <span>PROGRESSION</span>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-80 bg-white text-slate-900 rounded-[2rem] p-6 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-slate-100 pointer-events-none text-left ring-1 ring-slate-900/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
+                      <i className="fa-solid fa-trophy"></i>
                     </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span>Lecture procédure</span>
-                      <span className="text-emerald-400">→ Badge "Novice"</span>
+                    <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">Comment obtenir des trophées</h4>
+                  </div>
+                  
+                  <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+                    Chaque action te rapporte de l'XP. Cumule l'XP pour débloquer automatiquement tes badges de spécialité.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2 border-b border-slate-50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                        <span className="text-[11px] font-bold text-slate-700">Lecture procédure</span>
+                      </div>
+                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">Badge Novice</span>
                     </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span>Lecture flash note</span>
-                      <span className="text-emerald-400">→ Badge "Lecteur"</span>
+                    <div className="flex items-center justify-between py-2 border-b border-slate-50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
+                        <span className="text-[11px] font-bold text-slate-700">Missions terminées</span>
+                      </div>
+                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">Badge Expert</span>
                     </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span>Mission acceptée</span>
-                      <span className="text-indigo-400">→ Badge "Engagé"</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span>Rendu de mission</span>
-                      <span className="text-indigo-400">→ Badge "Productif"</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold border-t border-white/5 pt-1">
-                      <span>Mission accomplie</span>
-                      <span className="text-emerald-400">→ Badge "Expert"</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span>Suggestion approuvée</span>
-                      <span className="text-amber-400">→ Badge "Innovateur"</span>
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                        <span className="text-[11px] font-bold text-slate-700">Suggestions validées</span>
+                      </div>
+                      <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">Badge Innovateur</span>
                     </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-white/10">
-                    <p className="text-[10px] text-slate-400 text-center italic">L'XP cumulée débloque automatiquement les trophées correspondants.</p>
+
+                  <div className="mt-5 pt-4 border-t border-slate-100">
+                    <div className="flex items-start gap-2">
+                      <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5"></i>
+                      <p className="text-[10px] text-slate-400 leading-tight italic">
+                        L'XP est créditée instantanément. Tes trophées s'affichent dès le palier atteint.
+                      </p>
+                    </div>
                   </div>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-900"></div>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-white filter drop-shadow-[0_-1px_1px_rgba(0,0,0,0.05)]"></div>
                 </div>
               </div>
             </div>
