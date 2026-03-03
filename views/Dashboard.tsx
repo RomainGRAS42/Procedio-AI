@@ -1,30 +1,39 @@
-
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { User, Procedure, Suggestion, UserRole, Mission } from "../types";
 import CustomToast from "../components/CustomToast";
-import TeamPodium from '../components/TeamPodium';
-import XPProgressBar from '../components/XPProgressBar';
-import LevelUpModal from '../components/LevelUpModal';
-import BadgeUnlockedModal from '../components/BadgeUnlockedModal';
-import { calculateLevelFromXP, getLevelTitle } from '../lib/xpSystem';
+import TeamPodium from "../components/TeamPodium";
+import XPProgressBar from "../components/XPProgressBar";
+import LevelUpModal from "../components/LevelUpModal";
+import BadgeUnlockedModal from "../components/BadgeUnlockedModal";
+import { calculateLevelFromXP, getLevelTitle } from "../lib/xpSystem";
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
-import LoadingState from '../components/LoadingState';
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip as RechartsTooltip,
+} from "recharts";
+import LoadingState from "../components/LoadingState";
 import { cacheStore } from "../lib/CacheStore";
 
 // Widgets
-import StatsSummaryWidget from '../components/dashboard/StatsSummaryWidget';
-import TeamSynergyWidget from '../components/dashboard/TeamSynergyWidget';
-import ActiveMissionWidget from '../components/dashboard/ActiveMissionWidget';
-import MissionsWidget from '../components/dashboard/MissionsWidget';
-import BadgesWidget from '../components/dashboard/BadgesWidget';
-import MasteryWidget from '../components/dashboard/MasteryWidget';
-import AnnouncementWidget from '../components/dashboard/AnnouncementWidget';
-import ActivityWidget from '../components/dashboard/ActivityWidget';
-import ReviewCenterWidget from '../components/dashboard/ReviewCenterWidget';
-import PilotCenterTechWidget from '../components/dashboard/PilotCenterTechWidget';
+import StatsSummaryWidget from "../components/dashboard/StatsSummaryWidget";
+import TeamSynergyWidget from "../components/dashboard/TeamSynergyWidget";
+import ActiveMissionWidget from "../components/dashboard/ActiveMissionWidget";
+import MissionsWidget from "../components/dashboard/MissionsWidget";
+import BadgesWidget from "../components/dashboard/BadgesWidget";
+import MasteryWidget from "../components/dashboard/MasteryWidget";
+import AnnouncementWidget from "../components/dashboard/AnnouncementWidget";
+import ActivityWidget from "../components/dashboard/ActivityWidget";
+import ReviewCenterWidget from "../components/dashboard/ReviewCenterWidget";
+import PilotCenterTechWidget from "../components/dashboard/PilotCenterTechWidget";
 import RSSWidget from "../components/RSSWidget";
 import MasteryQuizModal from "../components/MasteryQuizModal";
 import MasteryResultDetailModal from "../components/MasteryResultDetailModal";
@@ -35,7 +44,7 @@ interface DashboardProps {
   onQuickNote: () => void;
   onSelectProcedure: (procedure: Procedure) => void;
   onViewComplianceHistory: () => void;
-  targetAction?: { type: 'suggestion' | 'read' | 'mastery' | 'mastery_result', id: string } | null;
+  targetAction?: { type: "suggestion" | "read" | "mastery" | "mastery_result"; id: string } | null;
   onActionHandled?: () => void;
   onUploadClick: () => void;
   onNavigate?: (view: string) => void;
@@ -67,38 +76,49 @@ const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const [isRead, setIsRead] = useState(false);
-  const [announcement, setAnnouncement] = useState<Announcement | null>(cacheStore.get('dash_announcement') || null);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(
+    cacheStore.get("dash_announcement") || null
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [loadingAnnouncement, setLoadingAnnouncement] = useState(!cacheStore.has('dash_announcement'));
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(
+    !cacheStore.has("dash_announcement")
+  );
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [managerResponse, setManagerResponse] = useState("");
 
-
   // Suggestions (Manager Only)
-  const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>(cacheStore.get('dash_suggestions') || []);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(!cacheStore.has('dash_suggestions') && user.role === UserRole.MANAGER);
+  const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>(
+    cacheStore.get("dash_suggestions") || []
+  );
+  const [loadingSuggestions, setLoadingSuggestions] = useState(
+    !cacheStore.has("dash_suggestions") && user.role === UserRole.MANAGER
+  );
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [pendingFlashNotesCount, setPendingFlashNotesCount] = useState(0);
 
   // Activities
-  const [activities, setActivities] = useState<any[]>(cacheStore.get('dash_activities') || []);
-  const [loadingActivities, setLoadingActivities] = useState(!cacheStore.has('dash_activities'));
+  const [activities, setActivities] = useState<any[]>(cacheStore.get("dash_activities") || []);
+  const [loadingActivities, setLoadingActivities] = useState(!cacheStore.has("dash_activities"));
 
   // Missions
-  const [activeMissions, setActiveMissions] = useState<Mission[]>(cacheStore.get('dash_active_missions') || []);
-  const [loadingMissions, setLoadingMissions] = useState(!cacheStore.has('dash_active_missions'));
+  const [activeMissions, setActiveMissions] = useState<Mission[]>(
+    cacheStore.get("dash_active_missions") || []
+  );
+  const [loadingMissions, setLoadingMissions] = useState(!cacheStore.has("dash_active_missions"));
 
   // Toast Notification State
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
 
   // Mission Lifecycle State
   const [completingMission, setCompletingMission] = useState<Mission | null>(null);
   const [completionNotes, setCompletionNotes] = useState("");
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
-  
 
   // Mastery Claims (Manager Only)
   const [masteryClaims, setMasteryClaims] = useState<any[]>([]);
@@ -113,15 +133,21 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [showMasteryDetail, setShowMasteryDetail] = useState(false);
 
   // Badges (Personal View)
-  const [earnedBadges, setEarnedBadges] = useState<any[]>(cacheStore.get('dash_earned_badges') || []);
-  const [loadingBadges, setLoadingBadges] = useState(!cacheStore.has('dash_earned_badges'));
+  const [earnedBadges, setEarnedBadges] = useState<any[]>(
+    cacheStore.get("dash_earned_badges") || []
+  );
+  const [loadingBadges, setLoadingBadges] = useState(!cacheStore.has("dash_earned_badges"));
 
   // KPI Details Modal
-  const [modalConfig, setModalConfig] = useState<{title: string, type: 'urgent' | 'redZone', items: any[]} | null>(null);
+  const [modalConfig, setModalConfig] = useState<{
+    title: string;
+    type: "urgent" | "redZone";
+    items: any[];
+  } | null>(null);
 
   // Celebration Queue System (Daisy Chaining)
   interface CelebrationItem {
-    type: 'level' | 'badge';
+    type: "level" | "badge";
     data: any;
   }
   const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
@@ -129,30 +155,33 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // ViewMode removed
 
-
   // Stats personnelles
-  const [personalStats, setPersonalStats] = useState(cacheStore.get('dash_personal_stats') || {
-    consultations: 0,
-    suggestions: 0,
-    notes: 0,
-    xp: 0,
-    level: 1,
-    mastery: [] as { subject: string; A: number; fullMark: number }[],
-  });
+  const [personalStats, setPersonalStats] = useState(
+    cacheStore.get("dash_personal_stats") || {
+      consultations: 0,
+      suggestions: 0,
+      notes: 0,
+      xp: 0,
+      level: 1,
+      mastery: [] as { subject: string; A: number; fullMark: number }[],
+    }
+  );
 
   // Sprint Hebdo (XP gagnée cette semaine)
-  const [weeklyXP, setWeeklyXP] = useState(cacheStore.get('dash_weekly_xp') || 0);
+  const [weeklyXP, setWeeklyXP] = useState(cacheStore.get("dash_weekly_xp") || 0);
 
   // Trend du moment
   const [trendProcedure, setTrendProcedure] = useState<Procedure | null>(null);
 
   // Stats dynamiques (Manager)
-  const [managerKPIs, setManagerKPIs] = useState(cacheStore.get('dash_manager_kpis') || {
-    redZone: 0,
-    searchSuccess: 100,
-    health: 0,
-    usage: 0
-  });
+  const [managerKPIs, setManagerKPIs] = useState(
+    cacheStore.get("dash_manager_kpis") || {
+      redZone: 0,
+      searchSuccess: 100,
+      health: 0,
+      usage: 0,
+    }
+  );
 
   const [hasInitialFetchCompleted, setHasInitialFetchCompleted] = useState(false);
 
@@ -162,17 +191,18 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Initialize refs on mount
   useEffect(() => {
     if (user?.id && personalStats.level > 0) {
-       if (prevLevelRef.current === 0) prevLevelRef.current = personalStats.level;
-       if (prevBadgeCountRef.current === 0) prevBadgeCountRef.current = earnedBadges.length;
+      if (prevLevelRef.current === 0) prevLevelRef.current = personalStats.level;
+      if (prevBadgeCountRef.current === 0) prevBadgeCountRef.current = earnedBadges.length;
     }
   }, [user?.id, personalStats.level, earnedBadges.length]);
 
   // Detection Level Up & Badges
   useEffect(() => {
-    if (user.role !== UserRole.TECHNICIAN || !user.id || !hasInitialFetchCompleted || loadingBadges) return;
+    if (user.role !== UserRole.TECHNICIAN || !user.id || !hasInitialFetchCompleted || loadingBadges)
+      return;
 
     const newQueue: CelebrationItem[] = [];
-    
+
     // Initial Session Check (Only once per session)
     const hasSeenIntro = sessionStorage.getItem(`procedio_session_intro_${user.id}`);
 
@@ -180,58 +210,57 @@ const Dashboard: React.FC<DashboardProps> = ({
       // 1. Show Level if > 1
       const currentLevel = calculateLevelFromXP(personalStats.xp);
       if (currentLevel > 1) {
-         newQueue.push({
-          type: 'level',
-          data: { level: currentLevel, title: getLevelTitle(currentLevel) }
+        newQueue.push({
+          type: "level",
+          data: { level: currentLevel, title: getLevelTitle(currentLevel) },
         });
       }
 
       // 2. Show Last Badge if exists
       if (earnedBadges.length > 0) {
-        const sortedBadges = [...earnedBadges].sort((a, b) => 
-          new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
+        const sortedBadges = [...earnedBadges].sort(
+          (a, b) => new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
         );
         const lastBadge = sortedBadges[sortedBadges.length - 1]?.badges;
         if (lastBadge) {
-          newQueue.push({ type: 'badge', data: lastBadge });
+          newQueue.push({ type: "badge", data: lastBadge });
         }
       }
-      
+
       // Mark session as seen
-      sessionStorage.setItem(`procedio_session_intro_${user.id}`, 'true');
-      
+      sessionStorage.setItem(`procedio_session_intro_${user.id}`, "true");
+
       // Sync refs to prevent double firing immediately
       prevLevelRef.current = currentLevel;
       prevBadgeCountRef.current = earnedBadges.length;
-
     } else {
-        // REAL-TIME UPDATES
-        
-        // 1. Check Level Up Realtime
-        const calculatedLevel = calculateLevelFromXP(personalStats.xp);
-        if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
-          newQueue.push({
-            type: 'level',
-            data: { level: calculatedLevel, title: getLevelTitle(calculatedLevel) }
-          });
-        }
-        prevLevelRef.current = calculatedLevel;
+      // REAL-TIME UPDATES
 
-        // 2. Check Badge Unlocked Realtime
-        if (earnedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
-           const sortedBadges = [...earnedBadges].sort((a, b) => 
-            new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
-          );
-          const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
-          if (newBadge) {
-            newQueue.push({ type: 'badge', data: newBadge });
-          }
+      // 1. Check Level Up Realtime
+      const calculatedLevel = calculateLevelFromXP(personalStats.xp);
+      if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
+        newQueue.push({
+          type: "level",
+          data: { level: calculatedLevel, title: getLevelTitle(calculatedLevel) },
+        });
+      }
+      prevLevelRef.current = calculatedLevel;
+
+      // 2. Check Badge Unlocked Realtime
+      if (earnedBadges.length > prevBadgeCountRef.current && prevBadgeCountRef.current !== 0) {
+        const sortedBadges = [...earnedBadges].sort(
+          (a, b) => new Date(a.awarded_at).getTime() - new Date(b.awarded_at).getTime()
+        );
+        const newBadge = sortedBadges[sortedBadges.length - 1]?.badges;
+        if (newBadge) {
+          newQueue.push({ type: "badge", data: newBadge });
         }
-        prevBadgeCountRef.current = earnedBadges.length;
+      }
+      prevBadgeCountRef.current = earnedBadges.length;
     }
 
     if (newQueue.length > 0) {
-      setCelebrationQueue(prev => [...prev, ...newQueue]);
+      setCelebrationQueue((prev) => [...prev, ...newQueue]);
     }
   }, [personalStats.level, earnedBadges, user.id, loadingBadges]);
 
@@ -240,78 +269,81 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!currentCelebration && celebrationQueue.length > 0) {
       const next = celebrationQueue[0];
       setCurrentCelebration(next);
-      setCelebrationQueue(prev => prev.slice(1));
+      setCelebrationQueue((prev) => prev.slice(1));
     }
   }, [celebrationQueue, currentCelebration]);
 
   const handleCloseCelebration = () => {
     setCurrentCelebration(null);
   };
-  
-  const stats = user.role === UserRole.MANAGER ? [
-    {
-      label: "Succès Recherche",
-      value: `${managerKPIs.searchSuccess}%`,
-      icon: "fa-magnifying-glass-chart",
-      color: managerKPIs.searchSuccess >= 85 ? "text-emerald-600" : "text-amber-600",
-      bg: managerKPIs.searchSuccess >= 85 ? "bg-emerald-50" : "bg-amber-50",
-      desc: "Efficacité des recherches",
-      tooltipTitle: "Taux de Succès",
-      tooltipDesc: "Pourcentage de recherches aboutissant à un résultat."
-    },
-    {
-      label: "Fiabilité",
-      value: `${managerKPIs.health}%`,
-      icon: "fa-shield-heart",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
-      desc: "Pertinence du contenu",
-      tooltipTitle: "Santé du Patrimoine",
-      tooltipDesc: "Indicateur global de fraîcheur et de validation des procédures."
-    },
-    {
-      label: "Dynamique",
-      value: `+${managerKPIs.usage}`,
-      icon: "fa-arrow-trend-up",
-      color: "text-indigo-600",
-      bg: "bg-indigo-50",
-      desc: "Niveau d'adoption",
-      tooltipTitle: "Croissance d'Usage",
-      tooltipDesc: "Volume de consultations sur la période en cours."
-    },
-    {
-      label: "Zone Rouge",
-      value: `${managerKPIs.redZone}`,
-      icon: "fa-triangle-exclamation",
-      color: "text-rose-600",
-      bg: "bg-rose-50",
-      desc: "Gouvernance manquante",
-      tooltipTitle: "Risque de Perte",
-      tooltipDesc: "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour)."
-    }
-  ] : [
 
-    {
-      label: "Impact Équipe",
-      value: `${personalStats.suggestions * 50} pts`,
-      icon: "fa-handshake-angle",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
-      desc: `${personalStats.suggestions} suggs validées`,
-      tooltipTitle: "Ton apport à l'équipe",
-      tooltipDesc: `Chaque suggestion validée aide tes collègues et prouve ton expertise métier.`
-    },
-    {
-      label: "Sprint Actuel",
-      value: `+${weeklyXP} XP`,
-      icon: "fa-bolt-lightning",
-      color: "text-amber-600",
-      bg: "bg-amber-50",
-      desc: "Cette semaine",
-      tooltipTitle: "Dynamique hebdomadaire",
-      tooltipDesc: "XP gagnée au cours des 7 derniers jours. Garde le rythme !"
-    },
-  ];
+  const stats =
+    user.role === UserRole.MANAGER
+      ? [
+          {
+            label: "Succès Recherche",
+            value: `${managerKPIs.searchSuccess}%`,
+            icon: "fa-magnifying-glass-chart",
+            color: managerKPIs.searchSuccess >= 85 ? "text-emerald-600" : "text-amber-600",
+            bg: managerKPIs.searchSuccess >= 85 ? "bg-emerald-50" : "bg-amber-50",
+            desc: "Efficacité des recherches",
+            tooltipTitle: "Taux de Succès",
+            tooltipDesc: "Pourcentage de recherches aboutissant à un résultat.",
+          },
+          {
+            label: "Fiabilité",
+            value: `${managerKPIs.health}%`,
+            icon: "fa-shield-heart",
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+            desc: "Pertinence du contenu",
+            tooltipTitle: "Santé du Patrimoine",
+            tooltipDesc: "Indicateur global de fraîcheur et de validation des procédures.",
+          },
+          {
+            label: "Dynamique",
+            value: `+${managerKPIs.usage}`,
+            icon: "fa-arrow-trend-up",
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
+            desc: "Niveau d'adoption",
+            tooltipTitle: "Croissance d'Usage",
+            tooltipDesc: "Volume de consultations sur la période en cours.",
+          },
+          {
+            label: "Zone Rouge",
+            value: `${managerKPIs.redZone}`,
+            icon: "fa-triangle-exclamation",
+            color: "text-rose-600",
+            bg: "bg-rose-50",
+            desc: "Gouvernance manquante",
+            tooltipTitle: "Risque de Perte",
+            tooltipDesc:
+              "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour).",
+          },
+        ]
+      : [
+          {
+            label: "Impact Équipe",
+            value: `${personalStats.suggestions * 50} pts`,
+            icon: "fa-handshake-angle",
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+            desc: `${personalStats.suggestions} suggs validées`,
+            tooltipTitle: "Ton apport à l'équipe",
+            tooltipDesc: `Chaque suggestion validée aide tes collègues et prouve ton expertise métier.`,
+          },
+          {
+            label: "Sprint Actuel",
+            value: `+${weeklyXP} XP`,
+            icon: "fa-bolt-lightning",
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            desc: "Cette semaine",
+            tooltipTitle: "Dynamique hebdomadaire",
+            tooltipDesc: "XP gagnée au cours des 7 derniers jours. Garde le rythme !",
+          },
+        ];
 
   const filteredStats = stats;
 
@@ -330,8 +362,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       } else {
         fetchApprovedExams();
       }
-      
-
     }
   }, [user?.id, user?.role]);
 
@@ -340,19 +370,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!user?.id || user.role !== UserRole.MANAGER) return;
 
     const channel = supabase
-      .channel('pilotage_updates')
+      .channel("pilotage_updates")
+      .on("postgres_changes", { event: "*", schema: "public", table: "mastery_requests" }, () => {
+        console.log("Realtime: Mastery update detected");
+        fetchMasteryClaims();
+        fetchActivities();
+      })
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'mastery_requests' },
-        () => {
-          console.log("Realtime: Mastery update detected");
-          fetchMasteryClaims();
-          fetchActivities();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'procedure_suggestions' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "procedure_suggestions" },
         () => {
           console.log("Realtime: Suggestion update detected");
           fetchSuggestions();
@@ -369,24 +395,24 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Support for deep linking to suggestions or mastery exams
   useEffect(() => {
     if (targetAction) {
-      if (targetAction.type === 'suggestion' && pendingSuggestions.length > 0) {
-        const sugg = pendingSuggestions.find(s => s.id === targetAction.id);
+      if (targetAction.type === "suggestion" && pendingSuggestions.length > 0) {
+        const sugg = pendingSuggestions.find((s) => s.id === targetAction.id);
         if (sugg) {
           setSelectedSuggestion(sugg);
           setShowSuggestionModal(true);
           onActionHandled?.();
         }
-      } else if (targetAction.type === 'mastery' && approvedExams.length > 0) {
+      } else if (targetAction.type === "mastery" && approvedExams.length > 0) {
         // For Technician: Launch Quiz
-        const exam = approvedExams.find(e => e.id === targetAction.id);
+        const exam = approvedExams.find((e) => e.id === targetAction.id);
         if (exam) {
           setActiveQuizRequest(exam);
           setShowDashboardQuiz(true);
           onActionHandled?.();
         }
-      } else if (targetAction.type === 'mastery_result' && masteryClaims.length > 0) {
+      } else if (targetAction.type === "mastery_result" && masteryClaims.length > 0) {
         // For Manager: View Result Details
-        const claim = masteryClaims.find(c => c.id === targetAction.id);
+        const claim = masteryClaims.find((c) => c.id === targetAction.id);
         if (claim) {
           setSelectedMasteryClaim(claim);
           setShowMasteryDetail(true);
@@ -399,48 +425,55 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchPersonalStats = async () => {
     try {
       const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('xp_points, level, stats_by_category')
-        .eq('id', user.id)
+        .from("user_profiles")
+        .select("xp_points, level, stats_by_category")
+        .eq("id", user.id)
         .single();
 
       const { count: consultCount } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .ilike('title', 'CONSULTATION_%');
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .ilike("title", "CONSULTATION_%");
 
       const { count: suggCount } = await supabase
-        .from('procedure_suggestions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'approved');
+        .from("procedure_suggestions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "approved");
 
       const { data: allNotes } = await supabase
-        .from('notes')
-        .select('title')
-        .eq('user_id', user.id);
-      
-      const realNotesCount = allNotes?.filter(n => 
-        !n.title.startsWith('LOG_') && 
-        !n.title.startsWith('CONSULTATION_') && 
-        !n.title.startsWith('SUGGESTION_')
-      ).length || 0;
+        .from("notes")
+        .select("title")
+        .eq("user_id", user.id);
+
+      const realNotesCount =
+        allNotes?.filter(
+          (n) =>
+            !n.title.startsWith("LOG_") &&
+            !n.title.startsWith("CONSULTATION_") &&
+            !n.title.startsWith("SUGGESTION_")
+        ).length || 0;
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const { count: weeklyConsults } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .ilike('title', 'CONSULTATION_%')
-        .gte('created_at', sevenDaysAgo.toISOString());
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .ilike("title", "CONSULTATION_%")
+        .gte("created_at", sevenDaysAgo.toISOString());
 
-      const masteryData = profile?.stats_by_category ? Object.keys(profile.stats_by_category).map(cat => ({
-        subject: cat,
-        A: profile.stats_by_category[cat],
-        fullMark: Math.max(...Object.values(profile.stats_by_category as object) as number[]) + 5
-      })).slice(0, 6) : [];
+      const masteryData = profile?.stats_by_category
+        ? Object.keys(profile.stats_by_category)
+            .map((cat) => ({
+              subject: cat,
+              A: profile.stats_by_category[cat],
+              fullMark:
+                Math.max(...(Object.values(profile.stats_by_category as object) as number[])) + 5,
+            }))
+            .slice(0, 6)
+        : [];
 
       const stats = {
         consultations: consultCount || 0,
@@ -451,16 +484,17 @@ const Dashboard: React.FC<DashboardProps> = ({
         mastery: masteryData,
       };
       setPersonalStats(stats);
-      cacheStore.set('dash_personal_stats', stats);
+      cacheStore.set("dash_personal_stats", stats);
 
       const weeklyXpVal = (weeklyConsults || 0) * 5;
       setWeeklyXP(weeklyXpVal);
-      cacheStore.set('dash_weekly_xp', weeklyXpVal);
+      cacheStore.set("dash_weekly_xp", weeklyXpVal);
 
       setLoadingBadges(true);
       const { data: userBadges, error: badgeError } = await supabase
-        .from('user_badges')
-        .select(`
+        .from("user_badges")
+        .select(
+          `
           id,
           awarded_at,
           badges (
@@ -470,12 +504,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             icon,
             category
           )
-        `)
-        .eq('user_id', user.id);
-      
+        `
+        )
+        .eq("user_id", user.id);
+
       if (!badgeError && userBadges) {
         setEarnedBadges(userBadges);
-        cacheStore.set('dash_earned_badges', userBadges);
+        cacheStore.set("dash_earned_badges", userBadges);
       }
       setLoadingBadges(false);
       setHasInitialFetchCompleted(true);
@@ -484,29 +519,29 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-
-
   const fetchMasteryClaims = async () => {
     if (user.role !== UserRole.MANAGER) return;
     setLoadingClaims(true);
     try {
       const { data, error } = await supabase
-        .from('mastery_requests')
-        .select(`
+        .from("mastery_requests")
+        .select(
+          `
           *,
           user_profiles:user_id (first_name, last_name, avatar_url),
           procedures:procedure_id (title, uuid),
           is_read_by_manager
-        `)
-        .or('status.eq.pending,status.eq.approved,status.eq.completed') 
-        .order('created_at', { ascending: false })
+        `
+        )
+        .or("status.eq.pending,status.eq.approved,status.eq.completed")
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
       if (data) {
-        const mappedData = data.map(d => ({
-            ...d,
-            isReadByManager: d.is_read_by_manager
+        const mappedData = data.map((d) => ({
+          ...d,
+          isReadByManager: d.is_read_by_manager,
         }));
         setMasteryClaims(mappedData);
       }
@@ -522,14 +557,16 @@ const Dashboard: React.FC<DashboardProps> = ({
     setLoadingExams(true);
     try {
       const { data, error } = await supabase
-        .from('mastery_requests')
-        .select(`
+        .from("mastery_requests")
+        .select(
+          `
           *,
           procedure:procedure_id (title, uuid, file_url, Type, views)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false });
+        `
+        )
+        .eq("user_id", user.id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       if (data) {
@@ -547,37 +584,43 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleApproveMastery = async (requestId: string) => {
     try {
-      const request = masteryClaims.find(c => c.id === requestId);
+      const request = masteryClaims.find((c) => c.id === requestId);
       if (!request) return;
 
-      const procedureId = Array.isArray(request.procedures) ? request.procedures[0]?.uuid : request.procedures?.uuid;
+      const procedureId = Array.isArray(request.procedures)
+        ? request.procedures[0]?.uuid
+        : request.procedures?.uuid;
       if (!procedureId) throw new Error("ID de procédure introuvable.");
 
       setGeneratingExamId(requestId);
       setToast({ message: "Lancement de la génération IA en arrière-plan...", type: "info" });
 
       const { error: preUpdateError } = await supabase
-        .from('mastery_requests')
-        .update({ status: 'approved' })
-        .eq('id', requestId);
+        .from("mastery_requests")
+        .update({ status: "approved" })
+        .eq("id", requestId);
 
       if (preUpdateError) throw preUpdateError;
 
-      setToast({ message: "Demande approuvée ! L'examen sera prêt dans quelques instants.", type: "success" });
-      setGeneratingExamId(null);
-      fetchMasteryClaims(); 
-
-      supabase.functions.invoke('generate-mastery-quiz', {
-        body: { 
-          procedure_id: procedureId, 
-          request_id: requestId,
-          manager_name: user.firstName
-        }
-      }).then(({ error }) => {
-        if (error) console.error("❌ Background AI Generation Error:", error);
-        else console.log("✅ Background AI Generation Finished.");
+      setToast({
+        message: "Demande approuvée ! L'examen sera prêt dans quelques instants.",
+        type: "success",
       });
+      setGeneratingExamId(null);
+      fetchMasteryClaims();
 
+      supabase.functions
+        .invoke("generate-mastery-quiz", {
+          body: {
+            procedure_id: procedureId,
+            request_id: requestId,
+            manager_name: user.firstName,
+          },
+        })
+        .then(({ error }) => {
+          if (error) console.error("❌ Background AI Generation Error:", error);
+          else console.log("✅ Background AI Generation Finished.");
+        });
     } catch (err: any) {
       console.error("Error approving mastery:", err);
       setGeneratingExamId(null);
@@ -585,56 +628,61 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleToggleReadStatus = async (type: 'suggestion' | 'mastery', id: string, status: boolean) => {
+  const handleToggleReadStatus = async (
+    type: "suggestion" | "mastery",
+    id: string,
+    status: boolean
+  ) => {
     try {
-        const table = type === 'suggestion' ? 'procedure_suggestions' : 'mastery_requests';
-        
-        if (type === 'suggestion') {
-            setPendingSuggestions(prev => prev.map(s => s.id === id ? { ...s, isReadByManager: status } : s));
-        } else {
-            setMasteryClaims(prev => prev.map(c => c.id === id ? { ...c, isReadByManager: status } : c));
-        }
+      const table = type === "suggestion" ? "procedure_suggestions" : "mastery_requests";
 
-        await supabase
-           .from(table)
-           .update({ is_read_by_manager: status })
-           .eq('id', id);
+      if (type === "suggestion") {
+        setPendingSuggestions((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, isReadByManager: status } : s))
+        );
+      } else {
+        setMasteryClaims((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, isReadByManager: status } : c))
+        );
+      }
 
+      await supabase.from(table).update({ is_read_by_manager: status }).eq("id", id);
     } catch (err) {
-        console.error("Error toggling read status:", err);
+      console.error("Error toggling read status:", err);
     }
   };
 
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-
-
-
   const fetchSuggestions = async () => {
     setLoadingSuggestions(true);
     try {
       const { data, error } = await supabase
-        .from('procedure_suggestions')
-        .select(`
+        .from("procedure_suggestions")
+        .select(
+          `
           *,
           procedures (title),
           user_profiles (first_name, last_name, avatar_url)
-        `)
-        .in('status', ['pending', 'approved', 'rejected'])
-        .order('created_at', { ascending: false })
+        `
+        )
+        .in("status", ["pending", "approved", "rejected"])
+        .order("created_at", { ascending: false })
         .limit(20);
 
       if (error) throw error;
       if (data) {
-        const mapped = data.map(d => ({
+        const mapped = data.map((d) => ({
           ...d,
           procedureTitle: d.procedures?.title,
-          authorName: d.user_profiles ? `${d.user_profiles.first_name} ${d.user_profiles.last_name}` : 'Inconnu',
+          authorName: d.user_profiles
+            ? `${d.user_profiles.first_name} ${d.user_profiles.last_name}`
+            : "Inconnu",
           authorAvatar: d.user_profiles?.avatar_url,
-          isReadByManager: d.is_read_by_manager 
+          isReadByManager: d.is_read_by_manager,
         }));
         setPendingSuggestions(mapped);
-        cacheStore.set('dash_suggestions', mapped);
+        cacheStore.set("dash_suggestions", mapped);
       }
     } catch (err) {
       console.error("Error fetching suggestions:", err);
@@ -644,44 +692,48 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const fetchPendingFlashNotes = async () => {
-     try {
-        const { count } = await supabase
-          .from('flash_notes')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active');
-        
-        if (count !== null) setPendingFlashNotesCount(count);
-        onFlashCountChange?.(count || 0);
-     } catch (err) {
-        console.error("Error fetching flash notes count:", err);
-     }
+    try {
+      const { count } = await supabase
+        .from("flash_notes")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "active");
+
+      if (count !== null) setPendingFlashNotesCount(count);
+      onFlashCountChange?.(count || 0);
+    } catch (err) {
+      console.error("Error fetching flash notes count:", err);
+    }
   };
 
   const fetchActivities = async () => {
     setLoadingActivities(true);
     try {
       let query = supabase
-        .from('notes')
-        .select(`
+        .from("notes")
+        .select(
+          `
           id, 
           title, 
           content, 
           created_at, 
           user:user_id (first_name, last_name)
-        `)
-        .or('title.ilike.CONSULTATION%,title.ilike.LOG_SUGGESTION%,title.ilike.CLAIM_MASTERY%,title.ilike.MISSION_%')
-        .order('created_at', { ascending: false });
+        `
+        )
+        .or(
+          "title.ilike.CONSULTATION%,title.ilike.LOG_SUGGESTION%,title.ilike.CLAIM_MASTERY%,title.ilike.MISSION_%"
+        )
+        .order("created_at", { ascending: false });
 
       if (user.role === UserRole.TECHNICIAN) {
-        query = query.eq('user_id', user.id);
+        query = query.eq("user_id", user.id);
       }
 
       const { data, error } = await query.limit(20);
-      
+
       if (error) throw error;
       if (data) {
         setActivities(data);
-        cacheStore.set('dash_activities', data);
+        cacheStore.set("dash_activities", data);
       }
     } catch (err) {
       console.error("Error fetching activities:", err);
@@ -694,26 +746,28 @@ const Dashboard: React.FC<DashboardProps> = ({
     try {
       // Fetch missions - Simpler query first to ensure data comes through
       const { data, error } = await supabase
-        .from('missions')
-        .select(`
+        .from("missions")
+        .select(
+          `
           *,
           assignee:user_profiles!missions_assigned_to_fkey (first_name, last_name)
-        `)
+        `
+        )
         // Filter for specific statuses relevant to the team view
-        .in('status', ['open', 'assigned', 'in_progress', 'awaiting_validation', 'completed'])
-        .order('updated_at', { ascending: false }); 
+        .in("status", ["open", "assigned", "in_progress", "awaiting_validation", "completed"])
+        .order("updated_at", { ascending: false });
 
       if (error) {
-         console.error("Error fetching missions:", error);
+        console.error("Error fetching missions:", error);
       } else if (data) {
-         console.log("Missions fetched:", data); // Debug log
-         setActiveMissions(data);
-         cacheStore.set('dash_active_missions', data);
+        console.log("Missions fetched:", data); // Debug log
+        setActiveMissions(data);
+        cacheStore.set("dash_active_missions", data);
       }
     } catch (err) {
-       console.error("Fetch missions error:", err);
+      console.error("Fetch missions error:", err);
     } finally {
-       setLoadingMissions(false);
+      setLoadingMissions(false);
     }
   };
 
@@ -722,20 +776,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     setLoadingAnnouncement(true);
     try {
       const { data, error } = await supabase
-        .from('team_announcements')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from("team_announcements")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) {
         console.error("Error fetching announcement:", error);
-      } 
-      
+      }
+
       if (data) {
         setAnnouncement(data);
-        cacheStore.set('dash_announcement', data);
-        
+        cacheStore.set("dash_announcement", data);
+
         const lastReadId = localStorage.getItem(`announcement_read_${user.id}`);
         setIsRead(lastReadId === data.id);
       } else {
@@ -747,7 +801,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       setLoadingAnnouncement(false);
     }
   };
-  
+
   const handleMarkAsRead = async () => {
     if (announcement) {
       setIsRead(true);
@@ -762,25 +816,24 @@ const Dashboard: React.FC<DashboardProps> = ({
     setSaving(true);
     try {
       const { data, error } = await supabase
-        .from('team_announcements')
+        .from("team_announcements")
         .insert({
           content: editContent,
-          author_id: user.id || 'system',
-          author_name: user.firstName ? `${user.firstName} ${user.lastName}` : 'Direction',
-          author_initials: user.firstName ? `${user.firstName[0]}${user.lastName[0]}` : 'JD',
-          requires_confirmation: requiresConfirmation
+          author_id: user.id || "system",
+          author_name: user.firstName ? `${user.firstName} ${user.lastName}` : "Direction",
+          author_initials: user.firstName ? `${user.firstName[0]}${user.lastName[0]}` : "JD",
+          requires_confirmation: requiresConfirmation,
         })
         .select()
         .single();
 
       if (error) throw error;
-      
+
       setAnnouncement(data);
       setIsEditing(false);
       setEditContent("");
-      setIsRead(false); 
+      setIsRead(false);
       setToast({ message: "Annonce publiée avec succès", type: "success" });
-      
     } catch (err) {
       console.error("Error updating announcement:", err);
       setToast({ message: "Erreur lors de la publication", type: "error" });
@@ -792,18 +845,20 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleCreateMission = async (missionData: Partial<Mission>) => {
     try {
       const { data, error } = await supabase
-        .from('missions')
-        .insert([{
-          ...missionData,
-          created_by: user.id,
-          status: 'active'
-        }])
+        .from("missions")
+        .insert([
+          {
+            ...missionData,
+            created_by: user.id,
+            status: "active",
+          },
+        ])
         .select()
         .single();
 
       if (error) throw error;
 
-      setActiveMissions(prev => [...prev, data]);
+      setActiveMissions((prev) => [...prev, data]);
       setToast({ message: "Mission créée avec succès !", type: "success" });
     } catch (err: any) {
       setToast({ message: "Erreur création mission: " + err.message, type: "error" });
@@ -815,13 +870,13 @@ const Dashboard: React.FC<DashboardProps> = ({
     try {
       // 1. Health & RedZone
       const { data: procs } = await supabase
-        .from('procedures')
-        .select('uuid, updated_at, created_at, views');
+        .from("procedures")
+        .select("uuid, updated_at, created_at, views");
 
       if (!procs) return;
 
-      const { data: referents } = await supabase.from('procedure_referents').select('procedure_id');
-      const referentSet = new Set(referents?.map(r => r.procedure_id) || []);
+      const { data: referents } = await supabase.from("procedure_referents").select("procedure_id");
+      const referentSet = new Set(referents?.map((r) => r.procedure_id) || []);
 
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -834,39 +889,44 @@ const Dashboard: React.FC<DashboardProps> = ({
         const date = new Date(p.updated_at || p.created_at);
         if (date > sixMonthsAgo) fresh++;
         if (!referentSet.has(p.uuid)) redZoneCount++;
-        totalUsage += (p.views || 0);
+        totalUsage += p.views || 0;
       });
 
       const healthPct = procs.length > 0 ? Math.round((fresh / procs.length) * 100) : 0;
 
       // 2. Search Success Rate - Logic adapted from Statistics.tsx
-      const RESET_DATE = '2026-02-14T09:00:00.000Z';
+      const RESET_DATE = "2026-02-14T09:00:00.000Z";
       const { count: totalSearches } = await supabase
-        .from('notes')
-        .select('*', { count: 'exact', head: true })
-        .ilike('title', 'LOG_SEARCH_%')
-        .gte('created_at', RESET_DATE);
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .ilike("title", "LOG_SEARCH_%")
+        .gte("created_at", RESET_DATE);
 
       const { data: opportunities } = await supabase
-        .from('search_opportunities')
-        .select('search_count')
-        .eq('status', 'pending');
+        .from("search_opportunities")
+        .select("search_count")
+        .eq("status", "pending");
 
-      const totalFailedCount = opportunities?.reduce((acc, curr) => acc + (curr.search_count || 0), 0) || 0;
-      
-      const successRate = totalSearches && totalSearches > 0 
-        ? Math.max(0, Math.min(100, Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100)))
-        : 100;
+      const totalFailedCount =
+        opportunities?.reduce((acc, curr) => acc + (curr.search_count || 0), 0) || 0;
+
+      const successRate =
+        totalSearches && totalSearches > 0
+          ? Math.max(
+              0,
+              Math.min(100, Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100))
+            )
+          : 100;
 
       const kpis = {
         searchSuccess: successRate,
         health: healthPct,
         usage: totalUsage,
-        redZone: redZoneCount
+        redZone: redZoneCount,
       };
 
       setManagerKPIs(kpis);
-      cacheStore.set('dash_manager_kpis', kpis);
+      cacheStore.set("dash_manager_kpis", kpis);
     } catch (err) {
       console.error("Error fetching manager KPIs:", err);
     }
@@ -874,36 +934,39 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleClaimMission = async (mission: Mission) => {
     if (!user.id) return;
-    
+
     // Check if user is already assigned
     if (mission.assigned_to === user.id) {
-       setToast({ message: "Vous participez déjà à cette mission.", type: "info" });
-       return;
+      setToast({ message: "Vous participez déjà à cette mission.", type: "info" });
+      return;
     }
 
     try {
       // Update DB - Assignments are single user based on types.ts
       const { error } = await supabase
-        .from('missions')
-        .update({ assigned_to: user.id, status: 'in_progress' })
-        .eq('id', mission.id);
+        .from("missions")
+        .update({ assigned_to: user.id, status: "in_progress" })
+        .eq("id", mission.id);
 
       if (error) throw error;
 
       // Update Local State
-      setActiveMissions(prev => prev.map(m => m.id === mission.id ? { ...m, assigned_to: user.id, status: 'in_progress' } : m));
+      setActiveMissions((prev) =>
+        prev.map((m) =>
+          m.id === mission.id ? { ...m, assigned_to: user.id, status: "in_progress" } : m
+        )
+      );
       setToast({ message: "Mission acceptée ! Bonne chance.", type: "success" });
 
       // LOG ACTIVITY
-      await supabase.from('notes').insert({
+      await supabase.from("notes").insert({
         user_id: user.id,
         title: `MISSION_CLAIM_${mission.id}`,
         content: `a pris en charge la mission "${mission.title}"`,
-        category: 'mission_log',
-        tags: ['mission_claim'],
-        status: 'public'
+        category: "mission_log",
+        tags: ["mission_claim"],
+        status: "public",
       });
-
     } catch (err) {
       console.error("Error claiming mission:", err);
       setToast({ message: "Impossible de rejoindre la mission.", type: "error" });
@@ -915,47 +978,46 @@ const Dashboard: React.FC<DashboardProps> = ({
     setIsSubmittingCompletion(true);
 
     try {
-       const { error } = await supabase
-         .from('notes')
-         .insert({
-            user_id: user.id,
-            title: `MISSION_COMPLETION_${completingMission.id}`,
-            content: `Mission: ${completingMission.title}\n\nPreuve/Notes:\n${completionNotes}`,
-            category: 'mission_log',
-            tags: ['mission_completion', 'pending_validation'],
-            status: 'private' 
-         });
+      const { error } = await supabase.from("notes").insert({
+        user_id: user.id,
+        title: `MISSION_COMPLETION_${completingMission.id}`,
+        content: `Mission: ${completingMission.title}\n\nPreuve/Notes:\n${completionNotes}`,
+        category: "mission_log",
+        tags: ["mission_completion", "pending_validation"],
+        status: "private",
+      });
 
-       if (error) throw error;
+      if (error) throw error;
 
-       setToast({ message: "Validation envoyée au manager !", type: "success" });
-       setCompletingMission(null);
-       setCompletionNotes("");
+      setToast({ message: "Validation envoyée au manager !", type: "success" });
+      setCompletingMission(null);
+      setCompletionNotes("");
     } catch (err) {
-       setToast({ message: "Erreur lors de l'envoi.", type: "error" });
+      setToast({ message: "Erreur lors de l'envoi.", type: "error" });
     } finally {
-       setIsSubmittingCompletion(false);
+      setIsSubmittingCompletion(false);
     }
   };
-  
 
   if (!user) return <LoadingState />;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
-      <CustomToast 
+      <CustomToast
         visible={!!toast}
-        message={toast?.message || ""} 
-        type={toast?.type || "info"} 
-        onClose={() => setToast(null)} 
+        message={toast?.message || ""}
+        type={toast?.type || "info"}
+        onClose={() => setToast(null)}
       />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
-        
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
           <div className="space-y-1">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-              Bonjour, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">{user.firstName}</span>
+              Bonjour,{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
+                {user.firstName}
+              </span>
               <span className="ml-2 text-xl">👋</span>
             </h1>
             <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
@@ -975,10 +1037,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="flex items-center gap-3">
             {user.role === UserRole.MANAGER && (
-              <button 
+              <button
                 onClick={onUploadClick}
-                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-2 font-bold text-xs"
-              >
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-2 font-bold text-xs">
                 <i className="fa-solid fa-plus"></i>
                 <span>Nouvelle Procédure</span>
               </button>
@@ -988,32 +1049,26 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {user.role === UserRole.TECHNICIAN ? (
           <div className="grid grid-cols-12 gap-8">
-            {/* ROW 1: Pilotage (8/12) + XP/Stats (4/12) */}
-            <div className="col-span-12 lg:col-span-8 h-full">
-              <PilotCenterTechWidget 
-                missions={activeMissions.filter(m => m.assigned_to === user.id)}
+            {/* ROW 1: XP Progress Bar (Full Width) */}
+            <div className="col-span-12">
+              <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
+            </div>
+
+            {/* ROW 2: Pilotage (8/12) + Stats (4/12) */}
+            <div className="col-span-12 lg:col-span-8">
+              <PilotCenterTechWidget
+                missions={activeMissions.filter((m) => m.assigned_to === user.id)}
                 activities={activities}
                 loading={loadingMissions || loadingActivities}
                 onNavigate={onNavigate}
               />
             </div>
 
-            <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-              <div className="h-[180px]">
-                <XPProgressBar 
-                  currentXP={personalStats.xp} 
-                  currentLevel={personalStats.level} 
-                />
-              </div>
-              <div className="flex-1">
-                <StatsSummaryWidget 
-                  stats={filteredStats} 
-                  isClickable={false}
-                />
-              </div>
+            <div className="col-span-12 lg:col-span-4">
+              <StatsSummaryWidget stats={filteredStats} isClickable={false} />
             </div>
 
-            {/* ROW 2: Announcement (Full Width) - Important but can be here */}
+            {/* ROW 3: Announcement (Full Width) */}
             <div className="col-span-12">
               <AnnouncementWidget
                 user={user}
@@ -1033,121 +1088,116 @@ const Dashboard: React.FC<DashboardProps> = ({
               />
             </div>
 
-            {/* ROW 3: Mastery (8/12) + Badges (4/12) */}
+            {/* ROW 4: Mastery (8/12) + Badges (4/12) */}
             <div className="col-span-12 lg:col-span-8">
-               <MasteryWidget 
-                 personalStats={personalStats} 
-               />
+              <MasteryWidget personalStats={personalStats} />
             </div>
             <div className="col-span-12 lg:col-span-4">
-              <BadgesWidget 
-                earnedBadges={earnedBadges} 
-                onNavigate={onNavigate}
-              />
+              <BadgesWidget earnedBadges={earnedBadges} onNavigate={onNavigate} />
             </div>
 
-            {/* ROW 4: RSS (Full Width) */}
+            {/* ROW 5: RSS (Full Width) */}
             <div className="col-span-12 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
-               <RSSWidget user={user} />
+              <RSSWidget user={user} />
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-              {/* MANAGER SYNERGY */}
-              <section className="mb-4">
-                <TeamSynergyWidget />
-              </section>
+            {/* MANAGER SYNERGY */}
+            <section className="mb-4">
+              <TeamSynergyWidget />
+            </section>
 
-              {/* MANAGER KPIs */}
-              <section className="mb-4">
-                <StatsSummaryWidget stats={filteredStats} />
-              </section>
-              
-              {/* MANAGER ROW 1: Centre de Pilotage | Podium | Pouls */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                 
-                 {/* Col 1: Centre de Pilotage */}
-                 <div className="space-y-8">
-                   <ReviewCenterWidget 
-                     pendingSuggestions={pendingSuggestions || []}
-                     masteryClaims={masteryClaims || []}
-                     onSelectSuggestion={(sugg) => {
-                         setSelectedSuggestion(sugg);
-                         setShowSuggestionModal(true);
-                     }}
-                     onNavigateToStatistics={() => onNavigate?.('/statistics')}
-                     onApproveMastery={handleApproveMastery}
-                     onViewMasteryDetail={(claim) => {
-                         setSelectedMasteryClaim(claim);
-                         setShowMasteryDetail(true);
-                     }}
-                     generatingExamId={generatingExamId}
-                     onToggleReadStatus={handleToggleReadStatus}
-                   />
-                 </div>
+            {/* MANAGER KPIs */}
+            <section className="mb-4">
+              <StatsSummaryWidget stats={filteredStats} />
+            </section>
 
-                 {/* Col 2: Podium (Manager) */}
-                 <div className="space-y-8">
-                    <TeamPodium />
-                    <MissionsWidget 
-                      activeMissions={activeMissions}
-                      userRole={user.role}
-                      viewMode="team"
-                      onNavigate={onNavigate}
-                      loading={loadingMissions}
-                    />
-                 </div>
-
-                 {/* Col 3: Pouls de l'Équipe (Activity) */}
-                 <div className="space-y-8">
-                   <ActivityWidget 
-                     activities={activities} 
-                     loadingActivities={loadingActivities}
-                     onRefresh={fetchActivities}
-                   />
-                 </div>
-
-              </div>
-
-              {/* MANAGER ROW 2: RSS (Veille Info) */}
+            {/* MANAGER ROW 1: Centre de Pilotage | Podium | Pouls */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Col 1: Centre de Pilotage */}
               <div className="space-y-8">
-                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
-                    <RSSWidget user={user} />
-                 </div>
+                <ReviewCenterWidget
+                  pendingSuggestions={pendingSuggestions || []}
+                  masteryClaims={masteryClaims || []}
+                  onSelectSuggestion={(sugg) => {
+                    setSelectedSuggestion(sugg);
+                    setShowSuggestionModal(true);
+                  }}
+                  onNavigateToStatistics={() => onNavigate?.("/statistics")}
+                  onApproveMastery={handleApproveMastery}
+                  onViewMasteryDetail={(claim) => {
+                    setSelectedMasteryClaim(claim);
+                    setShowMasteryDetail(true);
+                  }}
+                  generatingExamId={generatingExamId}
+                  onToggleReadStatus={handleToggleReadStatus}
+                />
               </div>
+
+              {/* Col 2: Podium (Manager) */}
+              <div className="space-y-8">
+                <TeamPodium />
+                <MissionsWidget
+                  activeMissions={activeMissions}
+                  userRole={user.role}
+                  viewMode="team"
+                  onNavigate={onNavigate}
+                  loading={loadingMissions}
+                />
+              </div>
+
+              {/* Col 3: Pouls de l'Équipe (Activity) */}
+              <div className="space-y-8">
+                <ActivityWidget
+                  activities={activities}
+                  loadingActivities={loadingActivities}
+                  onRefresh={fetchActivities}
+                />
+              </div>
+            </div>
+
+            {/* MANAGER ROW 2: RSS (Veille Info) */}
+            <div className="space-y-8">
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
+                <RSSWidget user={user} />
+              </div>
+            </div>
           </div>
         )}
-
       </div>
-      
+
       {showSuggestionModal && selectedSuggestion && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                 <h2 className="text-xl font-bold mb-4">{selectedSuggestion.procedureTitle}</h2>
-                 <p className="border-b pb-4 mb-4">{selectedSuggestion.content}</p>
-                 <button className="bg-slate-200 px-4 py-2 rounded" onClick={() => setShowSuggestionModal(false)}>Fermer</button>
-              </div>
-           </div>
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-4">{selectedSuggestion.procedureTitle}</h2>
+              <p className="border-b pb-4 mb-4">{selectedSuggestion.content}</p>
+              <button
+                className="bg-slate-200 px-4 py-2 rounded"
+                onClick={() => setShowSuggestionModal(false)}>
+                Fermer
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {currentCelebration && (
-        currentCelebration.type === 'level' ? (
-           <LevelUpModal 
-             level={currentCelebration.data.level} 
-             title={currentCelebration.data.title}
-             onClose={handleCloseCelebration} 
-           />
+      {currentCelebration &&
+        (currentCelebration.type === "level" ? (
+          <LevelUpModal
+            level={currentCelebration.data.level}
+            title={currentCelebration.data.title}
+            onClose={handleCloseCelebration}
+          />
         ) : (
-           <BadgeUnlockedModal 
-             badge={currentCelebration.data} 
-             currentXP={personalStats.xp}
-             currentLevel={personalStats.level}
-             onClose={handleCloseCelebration} 
-           />
-        )
-      )}
+          <BadgeUnlockedModal
+            badge={currentCelebration.data}
+            currentXP={personalStats.xp}
+            currentLevel={personalStats.level}
+            onClose={handleCloseCelebration}
+          />
+        ))}
 
       <MasteryQuizModal
         isOpen={showDashboardQuiz}
@@ -1157,12 +1207,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         quizData={activeQuizRequest?.quiz_data}
         masteryRequestId={activeQuizRequest?.id}
         onSuccess={(score, level) => {
-           setToast({ message: `Examen terminé ! Score: ${score}%`, type: 'success' });
-           setShowDashboardQuiz(false);
-           fetchPersonalStats();
+          setToast({ message: `Examen terminé ! Score: ${score}%`, type: "success" });
+          setShowDashboardQuiz(false);
+          fetchPersonalStats();
         }}
       />
-
 
       {modalConfig && (
         <KPIDetailsModal
@@ -1172,7 +1221,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           items={modalConfig.items}
         />
       )}
-
     </div>
   );
 };

@@ -22,32 +22,46 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats, isClicka
   const navigate = useNavigate();
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 h-full`}>
+    <div className={`flex flex-col gap-6 h-full`}>
       {stats.map((stat, idx) => (
-        <div
-          key={idx}
-          onClick={() => isClickable && navigate("/statistics")}
-          className={`bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between gap-4 transition-all group relative ${isClickable ? "hover:shadow-lg hover:shadow-slate-200/50 cursor-pointer" : "cursor-default"}`}>
-          <div className="flex items-center gap-3 shrink-0">
-            <div
-              className={`w-11 h-11 rounded-[1rem] ${stat.bg} ${stat.color} flex items-center justify-center text-lg shadow-inner shrink-0`}>
-              <i className={`fa-solid ${stat.icon}`}></i>
+        <div 
+          key={idx} 
+          onClick={() => isClickable && navigate('/statistics')}
+          className={`bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-4 transition-all group relative ${isClickable ? 'hover:shadow-lg hover:shadow-slate-200/50 cursor-pointer' : 'cursor-default'}`}
+        >
+          {/* Module Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center text-lg shadow-sm shrink-0`}>
+                <i className={`fa-solid ${stat.icon}`}></i>
+              </div>
+              <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                {stat.label}
+              </h4>
             </div>
-            <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">
-              {stat.value}
-            </p>
+            <InfoTooltip 
+              text={stat.tooltipDesc || "Indicateur clé"} 
+              align="right"
+            />
           </div>
-          <div className="flex flex-col items-end text-right min-w-0">
-            <div className="flex items-center gap-1 justify-end">
-              <p className="text-[11px] font-bold text-slate-600 leading-tight truncate">
+
+          {/* Module Body */}
+          <div className="flex items-end justify-between gap-4 mt-2">
+            <div className="min-w-0">
+              <p className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-1">
+                {stat.value}
+              </p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide truncate">
                 {stat.desc}
               </p>
-              <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} align="right" />
             </div>
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
-              {stat.label}
-            </p>
+            <div className="shrink-0 pb-1">
+              <i className="fa-solid fa-chevron-right text-[10px] text-slate-200 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
+            </div>
           </div>
+
+          {/* Decorative bar */}
+          <div className={`absolute bottom-0 left-8 right-8 h-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${stat.color.replace('text-', 'bg-')}`}></div>
         </div>
       ))}
     </div>
