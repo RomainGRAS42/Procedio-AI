@@ -475,18 +475,18 @@ const Dashboard: React.FC<DashboardProps> = ({
             }))
             .slice(0, 6)
         : [];
-      
+
       // Fetch Certifications (Completed Mastery Requests) by Category
       const { data: completedMasteries } = await supabase
         .from("mastery_requests")
         .select("procedure:procedure_id(category)")
         .eq("user_id", user.id)
         .eq("status", "completed");
-        
+
       if (completedMasteries) {
         masteryData.forEach((item) => {
           const certCount = completedMasteries.filter(
-             (m: any) => m.procedure?.category === item.subject
+            (m: any) => m.procedure?.category === item.subject
           ).length;
           item.certifications = certCount;
         });
@@ -1066,16 +1066,16 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {user.role === UserRole.TECHNICIAN ? (
           <div className="grid grid-cols-12 gap-8">
-            {/* ROW 1: XP Progress Bar (Full Width) */}
-            <div className="col-span-12">
+            {/* Barre de progression XP avec style unifié */}
+            <div className="col-span-12 mt-10 mb-12">
               <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
             </div>
 
             {/* ROW 2: Action & Stats Grid */}
             <div className="col-span-12 grid grid-cols-12 gap-8">
               <div className="col-span-12 lg:col-span-8">
-                <PilotCenterTechWidget 
-                  missions={activeMissions.filter(m => m.assigned_to === user.id)}
+                <PilotCenterTechWidget
+                  missions={activeMissions.filter((m) => m.assigned_to === user.id)}
                   activities={activities}
                   loading={loadingMissions || loadingActivities}
                   onNavigate={onNavigate}
@@ -1083,10 +1083,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               <div className="col-span-12 lg:col-span-4">
-                <StatsSummaryWidget 
-                  stats={filteredStats} 
-                  isClickable={false}
-                />
+                <StatsSummaryWidget stats={filteredStats} isClickable={false} />
               </div>
             </div>
 

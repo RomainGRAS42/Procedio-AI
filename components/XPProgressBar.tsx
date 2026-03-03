@@ -66,6 +66,17 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
                 </span>
               </div>
             </div>
+
+            <div className="absolute -bottom-7 right-0 flex flex-col items-end">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                PROCHAIN GRADE
+              </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full shadow-sm">
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                  {nextTitle}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
