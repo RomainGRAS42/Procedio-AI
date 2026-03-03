@@ -13,7 +13,9 @@ export default defineConfig(({ mode }) => {
       
       throw new Error(`\n\n❌ ERROR: Supabase environment variables are missing in your environment!
 Missing: ${missingVars.join(', ')}
-Building without these will break the app. Please ensure they are set in .env.local or your deployment environment.\n\n`);
+Building without these will break the app. Please ensure they are set in .env.local or your deployment environment.
+
+`);
     }
 
     return {
