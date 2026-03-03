@@ -75,14 +75,17 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
         <div className="flex flex-col text-right items-end justify-end">
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1.5 mb-1">
+              <div className="flex items-center gap-1.5 mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   PROCHAIN GRADE
                 </span>
               </div>
-              <span className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
-                {nextLevelTitle}
-              </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full shadow-sm group/grade cursor-help">
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                  {nextLevelTitle}
+                </span>
+                <i className="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+              </div>
             </div>
           </div>
         </div>
