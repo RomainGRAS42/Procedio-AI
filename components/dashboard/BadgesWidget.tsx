@@ -11,6 +11,38 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
   totalConsultations = 0,
   onNavigate,
 }) => {
+  // Compute virtual badges based on real stats if DB badges are missing
+  const virtualBadges = [...earnedBadges];
+
+  // Badge: Lecteur Assidu (10 lectures) - "Novice"
+  if (totalConsultations >= 10 && !virtualBadges.some((b) => b.badges.name === "Lecteur Assidu")) {
+    virtualBadges.push({
+      id: "virt-1",
+      badges: {
+        name: "Lecteur Assidu",
+        icon: "fa-book-open",
+        description: "Vous avez consulté plus de 10 procédures.",
+        criteria_value: 10,
+      },
+    });
+  }
+
+  // Badge: Lecteur Confirmé (50 lectures) - "Engagé"
+  if (
+    totalConsultations >= 50 &&
+    !virtualBadges.some((b) => b.badges.name === "Lecteur Confirmé")
+  ) {
+    virtualBadges.push({
+      id: "virt-2",
+      badges: {
+        name: "Lecteur Confirmé",
+        icon: "fa-glasses",
+        description: "Une soif de connaissance ! Plus de 50 procédures consultées.",
+        criteria_value: 50,
+      },
+    });
+  }
+
   // Helper to determine badge tier styling
   const getBadgeStyle = (criteriaValue: number) => {
     if (criteriaValue >= 2000)
