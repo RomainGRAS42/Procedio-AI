@@ -84,7 +84,6 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
                 <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
                   {nextLevelTitle}
                 </span>
-                <i className="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
               </div>
             </div>
           </div>

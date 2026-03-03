@@ -60,7 +60,7 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                     {item.subject}
                   </h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
+                    <span className="inline-flex items-center px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full shadow-sm text-[10px] font-black text-slate-900 uppercase tracking-tight">
                       Expertise : {expertiseTitle}
                     </span>
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
