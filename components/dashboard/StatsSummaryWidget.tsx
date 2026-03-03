@@ -42,19 +42,16 @@ const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats, isClicka
             <InfoTooltip text={stat.tooltipDesc || "Indicateur clé"} align="right" />
           </div>
 
-          {/* Module Body */}
-          <div className="flex items-end justify-between gap-6 mt-1">
-            <div className="min-w-0">
-              <p className="text-5xl font-black text-slate-900 tracking-tighter leading-none mb-2">
-                {stat.value}
-              </p>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-wide truncate">
-                {stat.desc}
-              </p>
-            </div>
-            <div className="shrink-0 pb-2">
-              <i className="fa-solid fa-chevron-right text-xs text-slate-200 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
-            </div>
+          {/* Module Body - Centered for Glanceability */}
+          <div className="flex-1 flex flex-col items-center justify-center text-center mt-1">
+            <p className="text-5xl font-black text-slate-900 tracking-tighter leading-none mb-3">
+              {stat.value}
+            </p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-wide">{stat.desc}</p>
+          </div>
+
+          <div className="absolute right-6 bottom-6 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i className="fa-solid fa-chevron-right text-xs text-slate-200 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
           </div>
 
           {/* Decorative bar */}

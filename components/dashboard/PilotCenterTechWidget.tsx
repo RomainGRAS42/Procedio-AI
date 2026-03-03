@@ -110,8 +110,8 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               <i className="fa-solid fa-clock-rotate-left"></i>
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
-              Mon Activité
-              <InfoTooltip text="Tes dernières actions sur la plateforme." />
+              Historique Récent
+              <InfoTooltip text="Tes dernières actions pour reprendre rapidement ton travail." />
             </h3>
           </div>
         </div>
