@@ -4,6 +4,7 @@ interface MasteryData {
   subject: string;
   A: number;
   fullMark: number;
+  certifications?: number;
 }
 
 interface MasteryProgressProps {
@@ -40,6 +41,8 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
       {data.map((item, idx) => {
         const percentage = Math.min(Math.round((item.A / item.fullMark) * 100), 100);
         const icon = getCategoryIcon(item.subject);
+        const currentLevel = Math.floor(item.A / 10) + 1;
+        const nextLevelTarget = (currentLevel) * 10;
         
         return (
           <div key={idx} className="group cursor-default">
@@ -54,19 +57,33 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
-                      Niveau {Math.floor(item.A / 10) + 1}
+                      Niveau {currentLevel}
                     </span>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      • {item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                       <span>• {item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}</span>
+                       {item.certifications && item.certifications > 0 ? (
+                         <>
+                           <span className="mx-1">•</span>
+                           <span className="text-emerald-600 flex items-center gap-1">
+                             <i className="fa-solid fa-certificate text-[9px]"></i>
+                             {item.certifications} {item.certifications > 1 ? 'Certifications' : 'Certification'}
+                           </span>
+                         </>
+                       ) : null}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-sm font-black text-slate-900 tracking-tighter">
-                  {percentage}%
-                </span>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Maîtrise</p>
+                <div className="flex items-end justify-end gap-1">
+                  <span className="text-sm font-black text-slate-900 tracking-tighter">
+                    {item.A}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 mb-0.5">
+                    / {nextLevelTarget}
+                  </span>
+                </div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Vers Niveau {currentLevel + 1}</p>
               </div>
             </div>
             

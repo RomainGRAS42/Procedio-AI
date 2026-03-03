@@ -163,7 +163,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       notes: 0,
       xp: 0,
       level: 1,
-      mastery: [] as { subject: string; A: number; fullMark: number }[],
+      mastery: [] as { subject: string; A: number; fullMark: number; certifications?: number }[],
     }
   );
 
@@ -471,9 +471,26 @@ const Dashboard: React.FC<DashboardProps> = ({
               A: profile.stats_by_category[cat],
               fullMark:
                 Math.max(...(Object.values(profile.stats_by_category as object) as number[])) + 5,
+              certifications: 0, // Placeholder, will be populated below
             }))
             .slice(0, 6)
         : [];
+      
+      // Fetch Certifications (Completed Mastery Requests) by Category
+      const { data: completedMasteries } = await supabase
+        .from("mastery_requests")
+        .select("procedure:procedure_id(category)")
+        .eq("user_id", user.id)
+        .eq("status", "completed");
+        
+      if (completedMasteries) {
+        masteryData.forEach((item) => {
+          const certCount = completedMasteries.filter(
+             (m: any) => m.procedure?.category === item.subject
+          ).length;
+          item.certifications = certCount;
+        });
+      }
 
       const stats = {
         consultations: consultCount || 0,
