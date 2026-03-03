@@ -59,7 +59,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
           )}
         </div>
 
-        <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+        <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin flex flex-col justify-center">
           {missions.length > 0 ? (
             missions.slice(0, 3).map((mission) => (
               <div
@@ -85,15 +85,15 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               </div>
             ))
           ) : (
-            <div className="py-12 px-4 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex flex-col items-center text-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-emerald-500 text-xl shadow-sm border border-emerald-50 shrink-0">
+            <div className="py-16 px-4 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex flex-col items-center justify-center text-center gap-5">
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-emerald-500 text-2xl shadow-sm border border-emerald-50 shrink-0">
                 <i className="fa-solid fa-check"></i>
               </div>
               <div>
-                <p className="text-sm font-black text-emerald-900 uppercase tracking-tight">
+                <p className="text-base font-black text-emerald-900 uppercase tracking-tight">
                   Mission accomplie !
                 </p>
-                <p className="text-[11px] font-medium text-emerald-700/80 leading-tight italic mt-1">
+                <p className="text-xs font-medium text-emerald-700/80 leading-tight italic mt-2">
                   Tout est à jour. Une pause bien méritée ?
                 </p>
               </div>

@@ -1056,7 +1056,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* ROW 2: Action & Stats Grid */}
             <div className="col-span-12 grid grid-cols-12 gap-8">
-              <div className="col-span-12 lg:col-span-9">
+              <div className="col-span-12 lg:col-span-8">
                 <PilotCenterTechWidget 
                   missions={activeMissions.filter(m => m.assigned_to === user.id)}
                   activities={activities}
@@ -1065,7 +1065,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              <div className="col-span-12 lg:col-span-3">
+              <div className="col-span-12 lg:col-span-4">
                 <StatsSummaryWidget 
                   stats={filteredStats} 
                   isClickable={false}
