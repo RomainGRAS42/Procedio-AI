@@ -106,7 +106,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center text-lg shadow-lg shadow-rose-100">
+            <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center text-lg shadow-lg shadow-violet-100">
               <i className="fa-solid fa-clock-rotate-left"></i>
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
