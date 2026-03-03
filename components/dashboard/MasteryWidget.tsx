@@ -80,7 +80,7 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
                   PROCHAIN GRADE
                 </span>
                 <InfoTooltip
-                  text={`Atteindre le Grade ${nextLevel} (${nextLevelTitle}) débloque de nouveaux privilèges et badges d'expertise sur toute la plateforme.`}
+                  text={`Le Grade ${nextLevel} (${nextLevelTitle}) témoigne de ton expertise croissante et de ton impact au sein de l'équipe.`}
                 />
               </div>
               <span className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
