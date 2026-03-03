@@ -232,11 +232,18 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
 
         if (missingBadges.length > 0) {
+          console.log("🛠️ Badges manquants détectés (Self-Healing) :", missingBadges);
+          
           // Find badge IDs
-          const { data: badgesDefs } = await supabase
+          const { data: badgesDefs, error: badgeErr } = await supabase
             .from('badges')
             .select('id, name')
             .in('name', missingBadges);
+            
+          if (badgeErr) {
+             console.error("❌ Erreur récupération badgesDefs :", badgeErr);
+             return;
+          }
             
           if (badgesDefs && badgesDefs.length > 0) {
              const newBadgesInserts = badgesDefs.map(def => ({
@@ -245,11 +252,36 @@ const Dashboard: React.FC<DashboardProps> = ({
                awarded_at: new Date().toISOString()
              }));
              
-             await supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' });
+             console.log("📥 Insertion des badges manquants...", newBadgesInserts);
              
-             // Trigger refresh
-             fetchPersonalStats();
+             const { error: insertErr } = await supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' });
+             
+             if (insertErr) {
+               console.error("❌ Erreur insertion badges :", insertErr);
+             } else {
+               console.log("✅ Badges insérés avec succès ! Rafraîchissement optimiste...");
+               
+               // Optimistic Update: Update UI immediately
+               const newBadgesForUI = badgesDefs.map(def => ({
+                 id: `temp-${def.id}`, // Temp ID until refresh
+                 awarded_at: new Date().toISOString(),
+                 badges: {
+                   id: def.id,
+                   name: def.name,
+                   description: "Badge débloqué automatiquement", // Placeholder
+                   icon: def.name.includes('Expert') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : 'fa-book-open', // Fallback icons
+                   category: 'achievement'
+                 }
+               }));
+               
+               setEarnedBadges(prev => [...prev, ...newBadgesForUI]);
+               
+               // Then trigger real fetch
+               fetchPersonalStats();
+             }
           }
+        } else {
+           console.log("✅ Tous les badges de lecture sont à jour.");
         }
       };
       
