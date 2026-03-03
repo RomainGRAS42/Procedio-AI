@@ -39,7 +39,7 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Maitrise Experte</h3>
-              <InfoTooltip text="Votre niveau de maîtrise par catégorie métier." />
+              <InfoTooltip text="Calculé via tes lectures de procédures et suggestions validées (courbe exponentielle)." />
             </div>
             <div className="inline-flex mt-1 px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-100/50">
               Progression par paliers
