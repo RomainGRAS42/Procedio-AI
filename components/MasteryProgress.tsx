@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import { getLevelTitle } from "../lib/xpSystem";
 
 interface MasteryData {
   subject: string;
@@ -19,7 +20,9 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
           <i className="fa-solid fa-chart-line text-xl"></i>
         </div>
         <p className="text-slate-500 font-bold text-sm">Exploration en cours...</p>
-        <p className="text-slate-500 text-xs mt-1">Consultez des procédures pour développer votre expertise.</p>
+        <p className="text-slate-500 text-xs mt-1">
+          Consultez des procédures pour développer votre expertise.
+        </p>
       </div>
     );
   }
@@ -27,13 +30,13 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
   // Categories icons mapping
   const getCategoryIcon = (category: string) => {
     const cat = category.toLowerCase();
-    if (cat.includes('infra') || cat.includes('system')) return 'fa-server';
-    if (cat.includes('dev') || cat.includes('code')) return 'fa-code';
-    if (cat.includes('secu')) return 'fa-shield-halved';
-    if (cat.includes('reseau') || cat.includes('network')) return 'fa-network-wired';
-    if (cat.includes('support')) return 'fa-headset';
-    if (cat.includes('data')) return 'fa-database';
-    return 'fa-layer-group';
+    if (cat.includes("infra") || cat.includes("system")) return "fa-server";
+    if (cat.includes("dev") || cat.includes("code")) return "fa-code";
+    if (cat.includes("secu")) return "fa-shield-halved";
+    if (cat.includes("reseau") || cat.includes("network")) return "fa-network-wired";
+    if (cat.includes("support")) return "fa-headset";
+    if (cat.includes("data")) return "fa-database";
+    return "fa-layer-group";
   };
 
   return (
@@ -42,8 +45,9 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
         const percentage = Math.min(Math.round((item.A / item.fullMark) * 100), 100);
         const icon = getCategoryIcon(item.subject);
         const currentLevel = Math.floor(item.A / 10) + 1;
-        const nextLevelTarget = (currentLevel) * 10;
-        
+        const nextLevelTarget = currentLevel * 10;
+        const expertiseTitle = getLevelTitle(currentLevel);
+
         return (
           <div key={idx} className="group cursor-default">
             <div className="flex items-center justify-between mb-3">
@@ -57,19 +61,22 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md">
-                      Niveau {currentLevel}
+                      Expertise : {expertiseTitle}
                     </span>
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                       <span>• {item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}</span>
-                       {item.certifications && item.certifications > 0 ? (
-                         <>
-                           <span className="mx-1">•</span>
-                           <span className="text-emerald-600 flex items-center gap-1">
-                             <i className="fa-solid fa-certificate text-[9px]"></i>
-                             {item.certifications} {item.certifications > 1 ? 'Certifications' : 'Certification'}
-                           </span>
-                         </>
-                       ) : null}
+                      <span>
+                        • {item.A} {item.A > 1 ? "Lectures" : "Lecture"}
+                      </span>
+                      {item.certifications && item.certifications > 0 ? (
+                        <>
+                          <span className="mx-1">•</span>
+                          <span className="text-emerald-600 flex items-center gap-1">
+                            <i className="fa-solid fa-certificate text-[9px]"></i>
+                            {item.certifications}{" "}
+                            {item.certifications > 1 ? "Certifications" : "Certification"}
+                          </span>
+                        </>
+                      ) : null}
                     </span>
                   </div>
                 </div>
@@ -83,15 +90,16 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
                     / {nextLevelTarget}
                   </span>
                 </div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Vers Niveau {currentLevel + 1}</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
+                  Vers palier suivant
+                </p>
               </div>
             </div>
-            
+
             <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden relative p-0.5 border border-slate-200/50">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-                style={{ width: `${percentage}%` }}
-              >
+                style={{ width: `${percentage}%` }}>
                 {/* Subtle animated shine */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full animate-progress-shine"></div>
               </div>

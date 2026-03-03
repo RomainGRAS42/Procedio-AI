@@ -10,26 +10,24 @@ interface MasteryWidgetProps {
   };
 }
 
-const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
-  // Curve Logic (Sync with XPProgressBar)
-  const getMinXPForLevel = (level: number) => {
-    if (level <= 1) return 0;
-    if (level === 2) return 200;
-    if (level === 3) return 800;
-    if (level === 4) return 2400;
-    if (level === 5) return 6000;
-    if (level === 6) return 15000;
-    if (level === 7) return 30000;
-    if (level === 8) return 60000;
-    if (level === 9) return 120000;
-    if (level >= 10) return 250000;
-    return 0;
+import { calculateLevelFromXP, getLevelTitle, getMinXPForLevel } from "../../lib/xpSystem";
+
+interface MasteryWidgetProps {
+  personalStats: {
+    level: number;
+    xp: number;
+    mastery: any[];
   };
+}
+
+const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
+  const currentLevel = personalStats.level;
+  const nextLevel = currentLevel + 1;
+  const nextLevelTitle = getLevelTitle(nextLevel);
 
   const xpForNextLevel =
-    personalStats.level >= 10
-      ? getMinXPForLevel(10) * 1.5
-      : getMinXPForLevel(personalStats.level + 1);
+    personalStats.level >= 10 ? getMinXPForLevel(10) * 1.5 : getMinXPForLevel(nextLevel);
+
   const xpRemaining = Math.max(0, xpForNextLevel - personalStats.xp);
 
   return (
@@ -64,28 +62,34 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              XP Restant
+              Étape suivante
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-lg font-black text-indigo-600 font-mono tracking-tighter">
-              {xpRemaining.toLocaleString()}
+              +{xpRemaining.toLocaleString()}
             </span>
-            <span className="text-xs font-black text-slate-400 uppercase">Points</span>
+            <span className="text-xs font-black text-slate-400 uppercase">XP pour le grade</span>
           </div>
         </div>
         <div className="flex flex-col text-right items-end">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              Cible Suivante
+              Rappel Objectif Global
             </span>
-            <InfoTooltip text="Le Rang représente ton niveau d'expertise global sur la plateforme, calculé selon ton XP totale." />
+            <InfoTooltip
+              text={`Atteindre le Grade ${nextLevel} (${nextLevelTitle}) débloque de nouveaux privilèges et badges d'expertise sur toute la plateforme.`}
+            />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-slate-400 uppercase">Prochain palier</span>
-            <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
-              Rang {personalStats.level + 1}
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                PROCHAIN GRADE
+              </span>
+              <span className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
+                {nextLevelTitle}
+              </span>
+            </div>
           </div>
         </div>
       </div>
