@@ -79,9 +79,6 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   PROCHAIN GRADE
                 </span>
-                <InfoTooltip
-                  text={`Le Grade ${nextLevel} (${nextLevelTitle}) témoigne de ton expertise croissante et de ton impact au sein de l'équipe.`}
-                />
               </div>
               <span className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
                 {nextLevelTitle}
