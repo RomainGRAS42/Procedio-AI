@@ -41,7 +41,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
           </button>
         </div>
 
-        <div className="space-y-2 flex-1 pr-1">
+        <div className="space-y-2 flex-1 pr-1 overflow-y-auto max-h-[300px] custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
               <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -49,7 +49,6 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
             </div>
           ) : activeMissions.length > 0 ? (
             activeMissions
-              .slice(0, 5)
               .map((mission) => {
                  const assigneeName = mission.assignee ? `${mission.assignee.first_name} ${mission.assignee.last_name}` : 'Non assigné';
                  const statusLabel = {
