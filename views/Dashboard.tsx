@@ -403,11 +403,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       : [
           {
             label: "Impact Équipe",
-            value: `${personalStats.suggestions * 50} pts`,
+            value: `${(personalStats?.suggestions || 0) * 50} pts`,
             icon: "fa-handshake-angle",
             color: "text-emerald-600",
             bg: "bg-emerald-50",
-            desc: `${personalStats.suggestions} suggs validées`,
+            desc: `${personalStats?.suggestions || 0} suggs validées`,
             tooltipTitle: "Ton apport à l'équipe",
             tooltipDesc: `Chaque suggestion validée aide tes collègues et prouve ton expertise métier.`,
           },
