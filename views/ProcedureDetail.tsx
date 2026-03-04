@@ -1182,10 +1182,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
             {/* Open in New Tab Button (Full Text) */}
             <button
               onClick={() => window.open(docUrl || "", "_blank")}
-              className="px-4 py-3 h-10 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-sm flex items-center justify-center gap-2"
+              className="px-4 py-2 h-auto bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all shadow-sm flex items-center justify-center gap-3"
               title="Ouvrir le document PDF dans un nouvel onglet">
-              <i className="fa-solid fa-arrow-up-right-from-square"></i>
-              <span className="hidden sm:inline">Ouvrir dans un onglet</span>
+              <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+              <div className="flex flex-col items-start leading-none gap-0.5">
+                <span className="hidden sm:inline">Ouvrir dans un onglet</span>
+                <span className="hidden sm:inline text-[8px] opacity-70 italic normal-case tracking-normal">(Lien valide 1h)</span>
+              </div>
             </button>
           </div>
         </div>
