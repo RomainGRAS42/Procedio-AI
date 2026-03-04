@@ -141,191 +141,242 @@ const Account: React.FC<AccountProps> = ({ user }) => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-120px)] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
-      <div className="max-w-5xl mx-auto w-full space-y-10">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
         
-        {/* HEADER SECTION */}
-        <div className="text-center space-y-3">
-          <h2 className="text-5xl font-black text-slate-900 tracking-tighter">Mon Compte</h2>
-          <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.4em]">Profil & Synchronisation Base</p>
-        </div>
+        {/* HEADER SECTION ALIGNÉ GAUCHE (COMME DASHBOARD) */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              Mon Compte
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
+                & Profil
+              </span>
+            </h1>
+            <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
+              <i className="fa-solid fa-id-card text-indigo-500"></i>
+              <span>Gérez vos informations personnelles et votre sécurité.</span>
+            </p>
+          </div>
+        </header>
 
         {message && (
-          <div className={`p-6 rounded-[2rem] text-[11px] font-black uppercase tracking-widest flex items-center gap-4 animate-slide-up shadow-sm border ${
-            message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+          <div className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-3 animate-slide-up shadow-sm border ${
+            message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
           }`}>
-            <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check text-base' : 'fa-circle-exclamation text-base'}`}></i>
+            <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}`}></i>
             {message.text}
           </div>
         )}
 
-        {/* MAIN PROFILE CARD */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* MAIN GRID LAYOUT */}
+        <div className="grid grid-cols-12 gap-8">
           
-          {/* LEFT COLUMN: AVATAR & STATS */}
-          <div className="lg:col-span-4">
-            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-xl shadow-indigo-500/5 flex flex-col items-center justify-center gap-10 h-full group">
-              <div className="relative">
-                <div className="w-56 h-56 rounded-[3.5rem] overflow-hidden ring-[16px] ring-slate-50 shadow-2xl transition-all duration-500 group-hover:scale-105 border border-slate-100">
-                  <img 
-                    src={avatarUrl || `https://ui-avatars.com/api/?name=${displayName}&background=random`} 
-                    className="w-full h-full object-cover" 
-                    alt="Profil"
-                  />
-                  {uploading && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
-                      <i className="fa-solid fa-circle-notch animate-spin text-indigo-600 text-4xl"></i>
-                    </div>
-                  )}
+          {/* LEFT COLUMN: IDENTITY CARD (4/12) */}
+          <div className="col-span-12 lg:col-span-4">
+            <section className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm h-full flex flex-col items-center text-center relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-32 bg-slate-50 rounded-t-[2.5rem]"></div>
+              
+              <div className="relative z-10 mt-12 mb-6">
+                <div className="w-40 h-40 rounded-[2.5rem] p-1.5 bg-white shadow-xl shadow-slate-200/50">
+                  <div className="w-full h-full rounded-[2rem] overflow-hidden relative group-hover:scale-[1.02] transition-transform duration-500">
+                    <img 
+                      src={avatarUrl || `https://ui-avatars.com/api/?name=${displayName}&background=random`} 
+                      className="w-full h-full object-cover" 
+                      alt="Profil"
+                    />
+                    {uploading && (
+                      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                        <i className="fa-solid fa-circle-notch animate-spin text-indigo-600 text-2xl"></i>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-slate-900/0 hover:bg-slate-900/20 flex items-center justify-center cursor-pointer transition-all group/edit">
+                      <div className="w-10 h-10 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-900 opacity-0 group-hover/edit:opacity-100 transform translate-y-2 group-hover/edit:translate-y-0 transition-all shadow-lg">
+                        <i className="fa-solid fa-camera text-sm"></i>
+                      </div>
+                      <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
+                    </label>
+                  </div>
                 </div>
-                <label className="absolute -bottom-2 -right-2 w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-2xl flex items-center justify-center cursor-pointer hover:bg-slate-900 transition-all active:scale-90 border-[6px] border-white">
-                  <i className="fa-solid fa-camera text-lg"></i>
-                  <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
-                </label>
               </div>
 
-              <div className="text-center space-y-4">
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">{displayName}</h3>
-                <div className={`inline-flex px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
+              <div className="space-y-3 mb-8 relative z-10">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">{displayName}</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{user.email}</p>
+                </div>
+                <div className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                   user.role === UserRole.MANAGER ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'
                 }`}>
-                  {user.role}
+                  {user.role === UserRole.MANAGER ? 'Manager' : 'Technicien'}
                 </div>
               </div>
 
-              {/* MINI STATS STRIP */}
-              <div className="grid grid-cols-3 gap-6 w-full pt-8 border-t border-slate-50">
-                <div className="text-center">
-                  <p className="text-[16px] font-black text-slate-900">{personalStats.xp}</p>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">XP</p>
+              {/* STATS ROW */}
+              <div className="grid grid-cols-3 w-full border-t border-slate-50 pt-6 mt-auto">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg font-black text-slate-900 leading-none">{personalStats.xp}</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">XP Total</span>
                 </div>
-                <div className="text-center border-x border-slate-100">
-                  <p className="text-[16px] font-black text-slate-900">{personalStats.level}</p>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">LVL</p>
+                <div className="flex flex-col items-center gap-1 border-x border-slate-50">
+                  <span className="text-lg font-black text-indigo-600 leading-none">{personalStats.level}</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Niveau</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-[16px] font-black text-slate-900">{personalStats.badgesCount}</p>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Badges</p>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg font-black text-amber-500 leading-none">{personalStats.badgesCount}</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Badges</span>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* RIGHT COLUMN: SETTINGS & PROGRESSION */}
-          <div className="lg:col-span-8 space-y-8">
-            {/* SETTINGS CARD */}
-            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-xl shadow-indigo-500/5 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* RIGHT COLUMN: SETTINGS & PROGRESS (8/12) */}
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-8">
+            
+            {/* PROGRESSION WIDGET REUSED */}
+            {user.role === UserRole.TECHNICIAN && (
+              <div className="w-full">
+                <XPProgressBar 
+                  currentXP={personalStats.xp} 
+                  currentLevel={personalStats.level} 
+                />
+              </div>
+            )}
+
+            {/* SETTINGS FORM CARD */}
+            <section className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm flex-1">
+              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-50">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg">
+                  <i className="fa-solid fa-user-gear"></i>
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg tracking-tight">Paramètres du profil</h3>
+                  <p className="text-xs font-medium text-slate-400">Modifiez vos informations de connexion.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Nom d'affichage</label>
-                  <div className="group">
+                  <label className="text-[10px] font-black text-slate-500 ml-1 uppercase tracking-widest">Nom d'affichage</label>
+                  <div className="relative group">
                     <input 
                       type="text" 
                       value={displayName} 
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner group-hover:border-slate-100"
+                      className="w-full px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-sm group-hover:bg-slate-50/80"
                     />
-                    <div className="mt-2 flex items-center gap-2 text-amber-500 text-[10px] font-bold uppercase tracking-wider">
-                       <i className="fa-solid fa-triangle-exclamation"></i>
-                       <span>Déconnexion requise après modification</span>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                      <i className="fa-solid fa-pen text-xs"></i>
                     </div>
                   </div>
+                  <p className="text-[10px] font-medium text-amber-500 flex items-center gap-1.5 mt-1.5">
+                    <i className="fa-solid fa-circle-info"></i>
+                    Déconnexion requise après modification
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Email (Lecture seule)</label>
-                  <input 
-                    type="text" 
-                    readOnly
-                    value={user.email} 
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-100 border-none font-bold text-slate-400 cursor-not-allowed"
-                  />
+                  <label className="text-[10px] font-black text-slate-500 ml-1 uppercase tracking-widest">Email (Lecture seule)</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      readOnly
+                      value={user.email} 
+                      className="w-full px-5 py-3.5 rounded-xl bg-slate-100/50 border border-transparent text-slate-400 font-bold text-sm cursor-not-allowed select-none"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300">
+                      <i className="fa-solid fa-lock text-xs"></i>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button 
                   onClick={handleUpdateProfile}
                   disabled={saving || uploading}
-                  className="flex-[2] bg-indigo-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50"
+                  className="flex-[2] bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center justify-center gap-3"
                 >
-                  {saving ? "Sauvegarde..." : "Enregistrer les modifications"}
+                  {saving ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch animate-spin"></i>
+                      Sauvegarde...
+                    </>
+                  ) : (
+                    "Enregistrer les modifications"
+                  )}
                 </button>
                 
                 <button 
                   onClick={() => setShowPasswordModal(true)}
-                  className="flex-1 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-50 transition-all active:scale-95"
+                  className="flex-1 px-6 py-4 bg-white text-slate-600 border border-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <i className="fa-solid fa-key mr-2 text-indigo-600"></i> Changer mon mot de passe
+                  <i className="fa-solid fa-key"></i> 
+                  Mot de passe
                 </button>
               </div>
             </section>
-
-            {/* PROGRESSION CARD */}
-            {user.role === UserRole.TECHNICIAN && (
-              <XPProgressBar 
-                currentXP={personalStats.xp} 
-                currentLevel={personalStats.level} 
-              />
-            )}
           </div>
         </div>
 
-        {/* MODALE DE SÉCURITÉ RE-DESIGNÉE */}
+        {/* MODALE DE SÉCURITÉ */}
         {showPasswordModal && (
-          <div className="fixed inset-0 z-[100] backdrop-blur-2xl bg-slate-900/10 flex items-center justify-center p-6 animate-fade-in">
-            <div className="bg-white w-full max-w-md rounded-[3.5rem] p-12 shadow-[0_40px_100px_-20px_rgba(79,70,229,0.25)] space-y-10 border border-indigo-50 relative overflow-hidden animate-slide-up">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 opacity-40"></div>
+          <div className="fixed inset-0 z-[100] backdrop-blur-sm bg-slate-900/20 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl space-y-6 border border-slate-100 animate-scale-up">
               
-              <div className="text-center space-y-3 relative z-10">
-                <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
-                  <i className="fa-solid fa-shield-halved text-2xl"></i>
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
+                  <i className="fa-solid fa-shield-halved text-xl"></i>
                 </div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Accès & Sécurité</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Mise à jour de vos identifiants</p>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Sécurité du compte</h3>
+                <p className="text-xs text-slate-500 font-medium">Mettez à jour votre mot de passe pour sécuriser votre accès.</p>
               </div>
 
-              <form onSubmit={handleUpdatePassword} className="space-y-6 relative z-10">
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-slate-400 ml-4 uppercase tracking-widest">Ancien mot de passe</label>
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 ml-2 uppercase tracking-widest">Ancien mot de passe</label>
                   <input 
                     type="password" required placeholder="••••••••"
-                    className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
+                    className="w-full px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-sm"
                     value={passwordData.old}
                     onChange={e => setPasswordData({...passwordData, old: e.target.value})}
                   />
                 </div>
                 
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <label className="text-[9px] font-black text-slate-400 ml-4 uppercase tracking-widest">Nouveau mot de passe</label>
-                  <input 
-                    type="password" required placeholder="Min. 6 caractères"
-                    className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner"
-                    value={passwordData.new}
-                    onChange={e => setPasswordData({...passwordData, new: e.target.value})}
-                  />
-                  <input 
-                    type="password" required placeholder="Confirmer le nouveau"
-                    className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 shadow-inner mt-3"
-                    value={passwordData.confirm}
-                    onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
-                  />
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 ml-2 uppercase tracking-widest">Nouveau mot de passe</label>
+                    <input 
+                      type="password" required placeholder="6 caractères minimum"
+                      className="w-full px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-sm"
+                      value={passwordData.new}
+                      onChange={e => setPasswordData({...passwordData, new: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <input 
+                      type="password" required placeholder="Confirmer le nouveau mot de passe"
+                      className="w-full px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-sm"
+                      value={passwordData.confirm}
+                      onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
+                    />
+                  </div>
                 </div>
 
-                <div className="pt-6 flex flex-col gap-4">
-                  <button 
-                    type="submit" 
-                    disabled={passwordLoading} 
-                    className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50"
-                  >
-                    {passwordLoading ? "Mise à jour..." : "Confirmer"}
-                  </button>
+                <div className="pt-4 flex gap-3">
                   <button 
                     type="button" 
                     onClick={() => setShowPasswordModal(false)} 
-                    className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors py-2"
+                    className="flex-1 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all"
                   >
                     Annuler
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={passwordLoading} 
+                    className="flex-[2] bg-indigo-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100 active:scale-95 disabled:opacity-50"
+                  >
+                    {passwordLoading ? "Mise à jour..." : "Confirmer le changement"}
                   </button>
                 </div>
               </form>
