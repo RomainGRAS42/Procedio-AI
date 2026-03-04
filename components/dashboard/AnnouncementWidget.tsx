@@ -91,21 +91,20 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className={`flex items-center gap-4 ${compact ? 'gap-3' : 'gap-4'}`}>
-            <div className={`${compact ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-lg'} rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black border border-indigo-100 shadow-sm`}>
-              {announcement?.author_initials || "??"}
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+              <i className="fa-solid fa-bullhorn"></i>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                  {user.role === UserRole.MANAGER ? "Message à l'équipe" : "Message du manager"}
-                </span>
-                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                  {announcement ? formatDate(announcement.created_at) : ""}
-                </span>
+              <div className="flex items-center gap-3">
+                <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+                  Message du Manager
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {announcement ? formatDate(announcement.created_at) : ""}
+                  </span>
+                </h3>
               </div>
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-4 mt-1">
                 <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-relaxed italic line-clamp-1`}>
                   "{announcement?.content || "Aucun message pour le moment."}"
                 </p>
