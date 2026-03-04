@@ -216,7 +216,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
       }
 
-      // 3. Self-Healing Badges (Lectures Count Fix) WITH RETRY & SAFETY CHECKS
+      // 3. Self-Healing Badges (Lectures, Suggestions, Missions) WITH RETRY & SAFETY CHECKS
       const checkAndRepairBadges = async () => {
         if (!personalStats || typeof personalStats.consultations === 'undefined') {
            console.warn("⚠️ Self-Healing reporté : stats non chargées", personalStats);
@@ -224,9 +224,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
 
         const totalLectures = personalStats.consultations || 0;
+        const totalSuggestions = personalStats.suggestions || 0;
+        const totalMissions = personalStats.missions || 0;
         const missingBadges = [];
 
-        console.log(`🔍 Vérification Badges : ${totalLectures} lectures détectées.`);
+        console.log(`🔍 Vérification Badges : ${totalLectures} lectures, ${totalSuggestions} suggestions, ${totalMissions} missions.`);
 
         if (totalLectures >= 10 && !earnedBadges.some(b => b.badges.name === 'Lecteur Assidu')) {
            missingBadges.push('Lecteur Assidu');
@@ -236,6 +238,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
         if (totalLectures >= 100 && !earnedBadges.some(b => b.badges.name === 'Expert Visionnaire')) {
            missingBadges.push('Expert Visionnaire');
+        }
+        if (totalSuggestions >= 1 && !earnedBadges.some(b => b.badges.name === 'Innovateur')) {
+           missingBadges.push('Innovateur');
+        }
+        if (totalMissions >= 1 && !earnedBadges.some(b => b.badges.name === 'Stratège')) {
+           missingBadges.push('Stratège');
         }
 
         if (missingBadges.length > 0) {
@@ -263,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                    id: def.id,
                    name: def.name,
                    description: "Badge débloqué automatiquement", // Placeholder
-                   icon: def.name.includes('Visionnaire') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : 'fa-book-open', // Fallback icons
+                   icon: def.name.includes('Visionnaire') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : def.name.includes('Innovateur') ? 'fa-lightbulb' : def.name.includes('Stratège') ? 'fa-chess-knight' : 'fa-book-open', // Fallback icons
                    category: 'achievement'
                  }
                }));
@@ -292,7 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                  });
             }
          } else {
-            console.log("✅ Tous les badges de lecture sont à jour.");
+            console.log("✅ Tous les badges (lectures, suggestions, missions) sont à jour.");
          }
        };
        
@@ -578,6 +586,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
       }
 
+      const { count: missionsCount } = await retryPromise(async () => await supabase
+        .from("missions")
+        .select("*", { count: "exact", head: true })
+        .eq("assigned_to", user.id)
+        .eq("status", "completed"));
+
       // Fallback: Si le count 'notes' échoue ou est 0, on utilise la somme des stats par catégorie
       const totalMasteryLectures = masteryData.reduce((acc, curr) => acc + curr.A, 0);
       const finalConsultations = (consultCount && consultCount > totalMasteryLectures) ? consultCount : totalMasteryLectures;
@@ -585,6 +599,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const stats = {
         consultations: finalConsultations,
         suggestions: suggCount || 0,
+        missions: missionsCount || 0,
         notes: realNotesCount,
         xp: profile?.xp_points || 0,
         level: calculateLevelFromXP(profile?.xp_points || 0),

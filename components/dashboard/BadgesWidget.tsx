@@ -3,12 +3,16 @@ import React from "react";
 interface BadgesWidgetProps {
   earnedBadges: any[];
   totalConsultations?: number;
+  totalSuggestions?: number;
+  totalMissions?: number;
   onNavigate?: (view: string) => void;
 }
 
 const BadgesWidget: React.FC<BadgesWidgetProps> = ({
   earnedBadges,
   totalConsultations = 0,
+  totalSuggestions = 0,
+  totalMissions = 0,
   onNavigate,
 }) => {
   // Compute virtual badges based on real stats if DB badges are missing
@@ -42,6 +46,92 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
       },
     });
   }
+
+  // Badge: Innovateur (1 suggestion)
+  if (totalSuggestions >= 1 && !virtualBadges.some((b) => b.badges.name === "Innovateur")) {
+    virtualBadges.push({
+      id: "virt-3",
+      badges: {
+        name: "Innovateur",
+        icon: "fa-lightbulb",
+        description: "Vous avez proposé votre première suggestion.",
+        criteria_value: 100, // Arbitrary value for sorting/styling
+      },
+    });
+  }
+
+  // Badge: Stratège (1 mission)
+  if (totalMissions >= 1 && !virtualBadges.some((b) => b.badges.name === "Stratège")) {
+    virtualBadges.push({
+      id: "virt-4",
+      badges: {
+        name: "Stratège",
+        icon: "fa-chess-knight",
+        description: "Première mission accomplie avec succès.",
+        criteria_value: 200, // Arbitrary value
+      },
+    });
+  }
+
+  // Determine Next Objective (Priority Logic)
+  let nextObjective = {
+    title: "Débloquez 10 lectures",
+    subtitle: "Pour obtenir le trophée Lecteur Assidu",
+    current: totalConsultations,
+    target: 10,
+    unit: "Lectures",
+    icon: "fa-book-open",
+    color: "amber"
+  };
+
+  // Logic: 
+  // 1. Reading (Assidu) -> 2. Suggestion (Innovateur) -> 3. Reading (Confirmé) -> 4. Mission (Stratège) -> 5. Reading (Visionnaire)
+  if (totalConsultations < 10) {
+     // Default is OK
+  } else if (totalSuggestions < 1) {
+     nextObjective = {
+       title: "Proposez 1 idée",
+       subtitle: "Pour obtenir le trophée Innovateur",
+       current: totalSuggestions,
+       target: 1,
+       unit: "Suggestion",
+       icon: "fa-lightbulb",
+       color: "emerald"
+     };
+  } else if (totalConsultations < 50) {
+     nextObjective = {
+       title: "Débloquez 50 lectures",
+       subtitle: "Pour obtenir le trophée Lecteur Confirmé",
+       current: totalConsultations,
+       target: 50,
+       unit: "Lectures",
+       icon: "fa-glasses",
+       color: "amber"
+     };
+  } else if (totalMissions < 1) {
+     nextObjective = {
+       title: "Réussissez 1 mission",
+       subtitle: "Pour obtenir le trophée Stratège",
+       current: totalMissions,
+       target: 1,
+       unit: "Mission",
+       icon: "fa-chess-knight",
+       color: "indigo"
+     };
+  } else {
+     nextObjective = {
+       title: "Débloquez 100 lectures",
+       subtitle: "Pour obtenir le trophée Visionnaire",
+       current: totalConsultations,
+       target: 100,
+       unit: "Lectures",
+       icon: "fa-eye",
+       color: "amber"
+     };
+  }
+  
+  // Cap progress at 100%
+  const progressPercent = Math.min((nextObjective.current / nextObjective.target) * 100, 100);
 
   // Helper to determine badge tier styling
   const getBadgeStyle = (criteriaValue: number) => {
@@ -221,47 +311,35 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
 
         <div className="pt-6 border-t border-slate-100">
           <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
-            Objectif en cours
+            Prochain Trophée
           </p>
           <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500 transition-colors">
-                <i className="fa-solid fa-book-bookmark"></i>
+              <div className={`w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm group-hover/challenge:bg-${nextObjective.color}-50 group-hover/challenge:text-${nextObjective.color}-500 transition-colors`}>
+                <i className={`fa-solid ${nextObjective.icon}`}></i>
               </div>
               <div>
                 <p className="text-xs font-black text-slate-700 uppercase leading-none mb-1">
-                  {totalConsultations >= 50
-                    ? "Visionnaire"
-                    : totalConsultations >= 10
-                      ? "Lecteur Confirmé"
-                      : "Lecteur Assidu"}
+                  {nextObjective.title}
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium leading-tight mb-1.5">
-                  {totalConsultations >= 50
-                    ? "Atteignez 100 procédures pour le rang ultime"
-                    : totalConsultations >= 10
-                      ? "Consultez 50 procédures pour le prochain badge"
-                      : "Consultez 10 procédures pour débloquer ce badge"}
+                  {nextObjective.subtitle}
                 </p>
                 <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-amber-400 animate-pulse transition-all duration-1000"
+                    className={`h-full bg-${nextObjective.color}-400 animate-pulse transition-all duration-1000`}
                     style={{
-                      width: `${Math.min((totalConsultations >= 50 ? (totalConsultations - 50) / 50 : totalConsultations >= 10 ? (totalConsultations - 10) / 40 : totalConsultations / 10) * 100, 100)}%`,
+                      width: `${progressPercent}%`,
                     }}></div>
                 </div>
               </div>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                {totalConsultations >= 50
-                  ? `${Math.min(totalConsultations, 100)} / 100`
-                  : totalConsultations >= 10
-                    ? `${totalConsultations} / 50`
-                    : `${totalConsultations} / 10`}
+                {nextObjective.current} / {nextObjective.target}
               </span>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                Procédures
+                {nextObjective.unit}
               </span>
             </div>
           </div>
