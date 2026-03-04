@@ -118,6 +118,8 @@ export type ViewType =
 export type MissionStatus = 'open' | 'assigned' | 'in_progress' | 'awaiting_validation' | 'completed' | 'cancelled';
 export type MissionUrgency = 'low' | 'medium' | 'high' | 'critical';
 
+export type MissionType = 'solo' | 'team' | 'challenge';
+
 export interface Mission {
   id: string;
   created_at: string;
@@ -137,11 +139,24 @@ export interface Mission {
   attachment_url?: string;
   manager_feedback?: string;
   submission_xp_granted?: boolean;
+  // New Fields
+  mission_type?: MissionType;
+  recurrence_rule?: string; // 'weekly', 'monthly'
+  parent_mission_id?: string;
   // Joins
   assignee_name?: string;
   creator_name?: string;
   assignee?: { first_name: string; last_name: string };
   creator?: { first_name: string; last_name: string };
+}
+
+export interface MissionParticipant {
+  id: string;
+  mission_id: string;
+  user_id: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'validated';
+  contribution_score: number;
+  created_at: string;
 }
 
 export interface ActiveTransfer {

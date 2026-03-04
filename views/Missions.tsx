@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useMissions } from "../contexts/MissionsContext";
 import { supabase } from "../lib/supabase";
-import { User, UserRole, Mission, MissionStatus, MissionUrgency, Procedure } from "../types";
+import { User, UserRole, Mission, MissionStatus, MissionUrgency, Procedure, MissionType } from "../types";
 import InfoTooltip from "../components/InfoTooltip";
 import LoadingState from "../components/LoadingState";
 import CustomToast from "../components/CustomToast";
@@ -94,8 +94,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     description: "",
     xp_reward: 50,
     urgency: "medium" as MissionUrgency,
-    targetType: "team" as "team" | "individual",
-    assigned_to: "",
+    mission_type: "solo" as MissionType,
+    assigned_to: "", // For Solo
+    participants: [] as string[], // For Team
+    recurrence: "none", // 'none', 'weekly', 'monthly'
     hasDeadline: false,
     deadline: "",
     needs_attachment: false,
@@ -183,12 +185,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     if (!newMission.title.trim()) return;
     try {
       let assigned_to = null;
+      let missionStatus = "open";
 
-      if (newMission.targetType === "individual" && newMission.assigned_to) {
+      // Logic for Solo vs Team
+      if (newMission.mission_type === "solo" && newMission.assigned_to) {
         assigned_to = newMission.assigned_to;
+        missionStatus = "assigned";
+      } else if (newMission.mission_type === "team" && newMission.participants.length > 0) {
+        missionStatus = "assigned"; 
       }
 
-      const { error } = await supabase.from("missions").insert([
+      const { data: insertedMission, error } = await supabase.from("missions").insert([
         {
           title: newMission.title,
           description: newMission.description,
@@ -197,16 +204,44 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           deadline: newMission.hasDeadline ? newMission.deadline : null,
           assigned_to: assigned_to,
           created_by: user.id,
-          status: assigned_to ? "assigned" : "open",
+          status: missionStatus,
           needs_attachment: newMission.needs_attachment,
           category: newMission.category || null,
+          mission_type: newMission.mission_type,
+          recurrence_rule: newMission.recurrence !== 'none' ? newMission.recurrence : null,
         },
-      ]);
+      ]).select().single();
 
       if (error) throw error;
 
-      // Trigger Notification for the assigned technician
-      if (assigned_to) {
+      // Handle Participants (Team)
+      if (newMission.mission_type === "team" && newMission.participants.length > 0) {
+          const participantsData = newMission.participants.map(uid => ({
+              mission_id: insertedMission.id,
+              user_id: uid,
+              status: 'pending'
+          }));
+          
+          const { error: partError } = await supabase
+            .from('mission_participants')
+            .insert(participantsData);
+            
+          if (partError) console.error("Error adding participants:", partError);
+          
+          // Notify Participants
+           for (const uid of newMission.participants) {
+                await supabase.from("notifications").insert({
+                  user_id: uid,
+                  type: "mission",
+                  title: "Mission d'Équipe 🤝",
+                  content: `Vous avez été ajouté à la mission d'équipe : ${newMission.title}`,
+                  link: "/missions",
+                });
+           }
+      }
+
+      // Trigger Notification for the assigned technician (Solo)
+      if (newMission.mission_type === "solo" && assigned_to) {
         await supabase.from("notifications").insert({
           user_id: assigned_to,
           type: "mission",
@@ -231,8 +266,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         description: "",
         xp_reward: 50,
         urgency: "medium",
-        targetType: "team",
+        mission_type: "solo",
         assigned_to: "",
+        participants: [],
+        recurrence: "none",
         hasDeadline: false,
         deadline: "",
         needs_attachment: false,
@@ -242,6 +279,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
       // fetchMissions(); // Handled by Realtime in Context
     } catch (err) {
+      console.error(err);
       setToast({ message: "Erreur lors de la création.", type: "error" });
     }
   };
@@ -1502,7 +1540,113 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  {/* TYPE DE MISSION */}
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        Type de Mission
+                     </label>
+                     <div className="grid grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setNewMission({ ...newMission, mission_type: 'solo' })}
+                          className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${newMission.mission_type === 'solo' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-200'}`}
+                        >
+                           <i className="fa-solid fa-user"></i>
+                           <span className="text-[10px] font-black uppercase tracking-widest">Solo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewMission({ ...newMission, mission_type: 'team' })}
+                          className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${newMission.mission_type === 'team' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-200'}`}
+                        >
+                           <i className="fa-solid fa-users"></i>
+                           <span className="text-[10px] font-black uppercase tracking-widest">Équipe</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewMission({ ...newMission, mission_type: 'challenge' })}
+                          className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${newMission.mission_type === 'challenge' ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-amber-200'}`}
+                        >
+                           <i className="fa-solid fa-trophy"></i>
+                           <span className="text-[10px] font-black uppercase tracking-widest">Challenge</span>
+                        </button>
+                     </div>
+                  </div>
+
+                  {/* DESTINATAIRE / PARTICIPANTS */}
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        {newMission.mission_type === 'team' ? 'Participants' : newMission.mission_type === 'solo' ? 'Assigner à' : 'Cible'}
+                      </label>
+                      
+                      {newMission.mission_type === 'solo' && (
+                          <select
+                            className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer"
+                            value={newMission.assigned_to}
+                            onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
+                          >
+                            <option value="">Sélectionner un technicien</option>
+                            {technicians.map((tech) => (
+                              <option key={tech.id} value={tech.id}>
+                                {tech.first_name} {tech.last_name}
+                              </option>
+                            ))}
+                          </select>
+                      )}
+
+                      {newMission.mission_type === 'team' && (
+                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 max-h-40 overflow-y-auto space-y-2">
+                             {technicians.map((tech) => (
+                                <label key={tech.id} className="flex items-center gap-3 cursor-pointer group select-none">
+                                   <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${newMission.participants.includes(tech.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-transparent'}`}>
+                                      <i className="fa-solid fa-check text-xs"></i>
+                                   </div>
+                                   <input 
+                                     type="checkbox" 
+                                     className="hidden"
+                                     checked={newMission.participants.includes(tech.id)}
+                                     onChange={(e) => {
+                                        if (e.target.checked) {
+                                           setNewMission(prev => ({ ...prev, participants: [...prev.participants, tech.id] }));
+                                        } else {
+                                           setNewMission(prev => ({ ...prev, participants: prev.participants.filter(id => id !== tech.id) }));
+                                        }
+                                     }}
+                                   />
+                                   <span className={`text-xs font-bold transition-colors ${newMission.participants.includes(tech.id) ? 'text-indigo-900' : 'text-slate-500 group-hover:text-indigo-600'}`}>
+                                      {tech.first_name} {tech.last_name}
+                                   </span>
+                                </label>
+                             ))}
+                          </div>
+                      )}
+
+                      {newMission.mission_type === 'challenge' && (
+                          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center gap-3 text-amber-600">
+                             <i className="fa-solid fa-bolt"></i>
+                             <span className="text-xs font-bold">Premier arrivé, premier servi !</span>
+                          </div>
+                      )}
+                  </div>
+
+                  {/* RECURRENCE */}
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        Récurrence
+                     </label>
+                     <select
+                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer"
+                        value={newMission.recurrence}
+                        onChange={(e) => setNewMission({ ...newMission, recurrence: e.target.value })}
+                     >
+                        <option value="none">Aucune (One-shot)</option>
+                        <option value="weekly">Hebdomadaire (Lundi matin)</option>
+                        <option value="monthly">Mensuelle (1er du mois)</option>
+                     </select>
+                  </div>
+                  
+                  {/* ECHEANCE (Moved here) */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                       Echéance
@@ -1533,40 +1677,6 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                             setNewMission({ ...newMission, deadline: e.target.value })
                           }
                         />
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                      Destinataire
-                    </label>
-                    <div className="flex flex-col gap-3">
-                      <select
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-slate-700 appearance-none cursor-pointer"
-                        value={newMission.targetType}
-                        onChange={(e) =>
-                          setNewMission({
-                            ...newMission,
-                            targetType: e.target.value as "team" | "individual",
-                          })
-                        }>
-                        <option value="team">Toute l'équipe</option>
-                        <option value="individual">Individu spécifique</option>
-                      </select>
-                      {newMission.targetType === "individual" && (
-                        <select
-                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer"
-                          value={newMission.assigned_to}
-                          onChange={(e) =>
-                            setNewMission({ ...newMission, assigned_to: e.target.value })
-                          }>
-                          <option value="">Sélectionner un technicien</option>
-                          {technicians.map((tech) => (
-                            <option key={tech.id} value={tech.id}>
-                              {tech.first_name} {tech.last_name} ({tech.email})
-                            </option>
-                          ))}
-                        </select>
                       )}
                     </div>
                   </div>
