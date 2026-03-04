@@ -467,6 +467,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
 
     const isCompact = layoutMode !== 'focus';
+    const isWide = layoutMode === 'focus' || (layoutMode === 'grid' && slotIndex === 0);
 
     return (
       <div className={`relative h-full flex flex-col ${isCompact ? '' : ''}`}>
@@ -497,7 +498,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         {/* CONTENT SWITCH */}
         {type === 'searchSuccess' && (
              <div className="space-y-6 animate-fade-in flex-1 flex items-center justify-center">
-               <div className="max-w-md w-full">
+               <div className={`${isWide ? 'max-w-5xl' : 'max-w-md'} w-full transition-all duration-500`}>
                  {layoutMode === 'focus' && (
                    <div className="text-center mb-8">
                      <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center justify-center gap-3">
@@ -533,9 +534,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                            Voici les termes recherchés sans succès par l'équipe :
                          </p>
                          
-                         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden text-left max-h-[200px] overflow-y-auto">
+                         <div className={`bg-white rounded-2xl border border-slate-100 overflow-hidden text-left max-h-[200px] overflow-y-auto ${isWide ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0' : ''}`}>
                            {(globalKPIs.missedOpportunities || []).map((op, idx) => (
-                              <div key={idx} className="p-3 border-b border-slate-50 last:border-0 flex items-center justify-between hover:bg-slate-50 transition-colors group/item">
+                              <div key={idx} className={`p-3 border-b border-slate-50 last:border-0 flex items-center justify-between hover:bg-slate-50 transition-colors group/item ${isWide ? 'border-r last:border-r-0' : ''}`}>
                                  <div>
                                     <p className="text-sm font-bold text-slate-800">{op.term}</p>
                                     <span className="text-[10px] text-slate-400 uppercase font-bold">{op.count} échec{op.count > 1 ? 's' : ''}</span>
