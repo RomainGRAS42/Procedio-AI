@@ -59,22 +59,6 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
           )}
         </div>
 
-        {/* --- MOVED: Message du Manager (Above Missions List) --- */}
-        <div className="mb-6 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-start gap-4">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold shrink-0">
-            RM
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">
-              Message du Manager
-            </p>
-            <p className="text-xs text-slate-600 font-medium leading-relaxed italic">
-              "Salut l'équipe France, objectif 100% de conformité cette semaine ! On compte sur vous."
-            </p>
-          </div>
-        </div>
-        {/* ----------------------------------------------------- */}
-
         <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin flex flex-col justify-center">
           {missions.length > 0 ? (
             missions.slice(0, 3).map((mission) => (

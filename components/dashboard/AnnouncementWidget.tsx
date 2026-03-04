@@ -17,6 +17,7 @@ interface AnnouncementWidgetProps {
   handleMarkAsRead: () => Promise<void>;
   formatDate: (date: string) => string;
   embedded?: boolean;
+  compact?: boolean; // New prop for Banner Style
 }
 
 const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
@@ -35,9 +36,12 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
   handleMarkAsRead,
   formatDate,
   embedded = false,
+  compact = false,
 }) => {
   const containerClasses = embedded
     ? "flex flex-col justify-center h-full animate-fade-in"
+    : compact
+    ? "bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex flex-col justify-center animate-fade-in"
     : `bg-white rounded-[2rem] p-4 md:p-5 border border-slate-100 shadow-lg shadow-indigo-500/5 flex flex-col justify-center animate-fade-in ${isRead ? "opacity-75" : "border-indigo-100/50 shadow-indigo-500/10"}`;
 
   return (
@@ -87,8 +91,8 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-lg border border-indigo-100 shadow-sm">
+          <div className={`flex items-center gap-4 ${compact ? 'gap-3' : 'gap-4'}`}>
+            <div className={`${compact ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-lg'} rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black border border-indigo-100 shadow-sm`}>
               {announcement?.author_initials || "??"}
             </div>
             <div className="flex-1 min-w-0">
@@ -102,7 +106,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                 </span>
               </div>
               <div className="flex items-start justify-between gap-4">
-                <p className="text-sm font-bold text-slate-800 tracking-tight leading-relaxed italic">
+                <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-relaxed italic`}>
                   "{announcement?.content || "Aucun message pour le moment."}"
                 </p>
 

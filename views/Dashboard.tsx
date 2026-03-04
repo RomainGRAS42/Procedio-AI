@@ -1183,6 +1183,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* ROW 2: Action & Stats Grid */}
             <div className="col-span-12 grid grid-cols-12 gap-8">
+              {/* Message du Manager (Full Width Above Grid) */}
+              <div className="col-span-12">
+                <AnnouncementWidget
+                  user={user}
+                  announcement={announcement}
+                  isRead={isRead}
+                  handleMarkAsRead={handleMarkAsRead}
+                  handleSaveAnnouncement={handleUpdateAnnouncement}
+                  loadingAnnouncement={loadingAnnouncement}
+                  saving={saving}
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                  editContent={editContent}
+                  setEditContent={setEditContent}
+                  requiresConfirmation={requiresConfirmation}
+                  setRequiresConfirmation={setRequiresConfirmation}
+                  formatDate={(d) => new Date(d).toLocaleDateString()}
+                  compact={true} // New prop to style it as a banner
+                />
+              </div>
+
               <div className="col-span-12 lg:col-span-8">
                 <PilotCenterTechWidget
                   missions={activeMissions.filter((m) => m.assigned_to === user.id)}
@@ -1197,25 +1218,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* ROW 3: Announcement (Full Width) */}
-            <div className="col-span-12">
-              <AnnouncementWidget
-                user={user}
-                announcement={announcement}
-                isRead={isRead}
-                handleMarkAsRead={handleMarkAsRead}
-                handleSaveAnnouncement={handleUpdateAnnouncement}
-                loadingAnnouncement={loadingAnnouncement}
-                saving={saving}
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-                editContent={editContent}
-                setEditContent={setEditContent}
-                requiresConfirmation={requiresConfirmation}
-                setRequiresConfirmation={setRequiresConfirmation}
-                formatDate={(d) => new Date(d).toLocaleDateString()}
-              />
-            </div>
+            {/* ROW 3: Announcement (Full Width) - REMOVED since moved up */}
+            {/* <div className="col-span-12">
+              <AnnouncementWidget ... />
+            </div> */}
 
             {/* ROW 4: Mastery (8/12) + Badges (4/12) */}
             <div className="col-span-12 lg:col-span-8">
