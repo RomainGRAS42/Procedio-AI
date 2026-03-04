@@ -106,7 +106,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                 </span>
               </div>
               <div className="flex items-start justify-between gap-4">
-                <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-relaxed italic`}>
+                <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-relaxed italic line-clamp-1`}>
                   "{announcement?.content || "Aucun message pour le moment."}"
                 </p>
 
