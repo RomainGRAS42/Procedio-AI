@@ -246,40 +246,44 @@ const Dashboard: React.FC<DashboardProps> = ({
           }
             
           if (badgesDefs && badgesDefs.length > 0) {
-             const newBadgesInserts = badgesDefs.map(def => ({
-               user_id: user.id,
-               badge_id: def.id,
-               awarded_at: new Date().toISOString()
-             }));
-             
-             console.log("📥 Insertion des badges manquants...", newBadgesInserts);
-             
-             const { error: insertErr } = await supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' });
-             
-             if (insertErr) {
-               console.error("❌ Erreur insertion badges :", insertErr);
-             } else {
-               console.log("✅ Badges insérés avec succès ! Rafraîchissement optimiste...");
-               
-               // Optimistic Update: Update UI immediately
-               const newBadgesForUI = badgesDefs.map(def => ({
-                 id: `temp-${def.id}`, // Temp ID until refresh
-                 awarded_at: new Date().toISOString(),
-                 badges: {
-                   id: def.id,
-                   name: def.name,
-                   description: "Badge débloqué automatiquement", // Placeholder
-                   icon: def.name.includes('Expert') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : 'fa-book-open', // Fallback icons
-                   category: 'achievement'
-                 }
-               }));
-               
-               setEarnedBadges(prev => [...prev, ...newBadgesForUI]);
-               
-               // Then trigger real fetch
-               fetchPersonalStats();
-             }
-          }
+              console.log("🚀 Application Optimiste des badges...");
+              
+              // 1. Optimistic Update: Update UI IMMEDIATELY
+              const newBadgesForUI = badgesDefs.map(def => ({
+                id: `temp-${def.id}`, // Temp ID until refresh
+                awarded_at: new Date().toISOString(),
+                badges: {
+                  id: def.id,
+                  name: def.name,
+                  description: "Badge débloqué automatiquement", // Placeholder
+                  icon: def.name.includes('Visionnaire') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : 'fa-book-open', // Fallback icons
+                  category: 'achievement'
+                }
+              }));
+              
+              setEarnedBadges(prev => {
+                 // Avoid duplicates
+                 const existingIds = new Set(prev.map(b => b.badges.id));
+                 const uniqueNew = newBadgesForUI.filter(b => !existingIds.has(b.badges.id));
+                 return [...prev, ...uniqueNew];
+              });
+
+              // 2. Background Sync
+              const newBadgesInserts = badgesDefs.map(def => ({
+                user_id: user.id,
+                badge_id: def.id,
+                awarded_at: new Date().toISOString()
+              }));
+              
+              console.log("📥 Tentative insertion background...", newBadgesInserts);
+              
+              // Fire and forget (almost)
+              supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' })
+                .then(({ error }) => {
+                   if (error) console.warn("⚠️ Sync background échouée (mais UI à jour):", error);
+                   else console.log("✅ Sync background réussie !");
+                });
+           }
         } else {
            console.log("✅ Tous les badges de lecture sont à jour.");
         }
