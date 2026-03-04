@@ -1237,14 +1237,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* ROW 4: Mastery (8/12) + Badges (4/12) */}
             <div className="col-span-12 lg:col-span-8">
-              <MasteryWidget personalStats={personalStats} />
+              {personalStats && <MasteryWidget personalStats={personalStats} />}
             </div>
             <div className="col-span-12 lg:col-span-4">
               <BadgesWidget
               earnedBadges={earnedBadges}
-              totalConsultations={personalStats.consultations}
-              totalSuggestions={personalStats.suggestions}
-              totalMissions={personalStats.missions}
+              totalConsultations={personalStats?.consultations || 0}
+              totalSuggestions={personalStats?.suggestions || 0}
+              totalMissions={personalStats?.missions || 0}
               onNavigate={onNavigate}
             />
             </div>
