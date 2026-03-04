@@ -44,7 +44,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg shadow-sm">
               <i className="fa-solid fa-rocket"></i>
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
@@ -53,7 +53,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
             </h3>
           </div>
           {missions.length > 3 && (
-            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest cursor-pointer hover:text-indigo-700 transition-colors">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors">
               Voir tout
             </span>
           )}
@@ -106,7 +106,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center text-lg shadow-lg shadow-violet-100">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg shadow-sm">
               <i className="fa-solid fa-clock-rotate-left"></i>
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">

@@ -1140,12 +1140,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-              Bonjour,{" "}
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              Bonjour,
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
                 {user.firstName}
               </span>
-              <span className="ml-2 text-xl">👋</span>
+              <span className="text-xl">👋</span>
             </h1>
             <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
               {user.role === UserRole.MANAGER ? (
@@ -1155,8 +1155,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-wrench text-indigo-500"></i>
                   <span>Prêt à relever les défis d'aujourd'hui ?</span>
+                  <i className="fa-solid fa-wrench text-indigo-500"></i>
                 </>
               )}
             </p>
