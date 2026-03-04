@@ -77,6 +77,8 @@ export interface Note {
   // Flash Notes
   status?: "private" | "suggestion" | "public"; // private = perso, suggestion = submitted, public = flash note
   category?: string; // used for filtering, default 'general'
+  display_duration?: "1h" | "24h" | "1week" | "1month" | "infinite"; // New field for duration
+  expires_at?: string; // Calculated expiration date
 }
 
 export interface Suggestion {

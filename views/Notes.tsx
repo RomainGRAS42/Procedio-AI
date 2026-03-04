@@ -46,11 +46,13 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
     content: string;
     is_protected: boolean;
     folder_id?: string;
+    display_duration?: string;
   }>({
     title: "",
     content: "",
     is_protected: false,
     folder_id: "",
+    display_duration: "infinite"
   });
 
   const [folderForm, setFolderForm] = useState<{
@@ -377,7 +379,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
   };
 
   const handleAddNew = () => {
-    setActiveNote({ title: "", content: "", is_protected: false, folder_id: currentFolderId || "" });
+    setActiveNote({ title: "", content: "", is_protected: false, folder_id: currentFolderId || "", display_duration: "infinite" });
     setIsEditing(true);
   };
 
@@ -388,6 +390,7 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       content: note.content,
       is_protected: note.is_protected,
       folder_id: note.folder_id || "",
+      display_duration: (note as any).display_duration || "infinite"
     });
     setIsEditing(true);
   };
@@ -473,6 +476,19 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
       } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Non autorisé");
 
+      // Calculate expiration date if duration is set
+      let expiresAt = null;
+      if (activeNote.display_duration && activeNote.display_duration !== "infinite") {
+        const now = new Date();
+        switch (activeNote.display_duration) {
+          case "1h": now.setHours(now.getHours() + 1); break;
+          case "24h": now.setHours(now.getHours() + 24); break;
+          case "1week": now.setDate(now.getDate() + 7); break;
+          case "1month": now.setMonth(now.getMonth() + 1); break;
+        }
+        expiresAt = now.toISOString();
+      }
+
       const payload = {
         title: activeNote.title.trim(),
         content: activeNote.content,
@@ -482,7 +498,9 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
         updated_at: new Date().toISOString(),
         status: mode === "flash" ? (user?.role === UserRole.MANAGER ? "public" : "suggestion") : "private", 
         category: "general",
-        is_flash_note: mode === "flash" // FIX: Assure que la note reste dans le filtre Flash
+        is_flash_note: mode === "flash", // FIX: Assure que la note reste dans le filtre Flash
+        display_duration: activeNote.display_duration || "infinite",
+        expires_at: expiresAt
       };
 
       let result;
@@ -1029,6 +1047,25 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                      ))}
                    </select>
                 </div>
+
+                {/* DURATION SELECTOR (Manager + Flash Mode Only) */}
+                {mode === "flash" && user?.role === UserRole.MANAGER && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                     <i className="fa-regular fa-clock text-slate-400 text-[10px]"></i>
+                     <select 
+                       value={activeNote.display_duration || "infinite"}
+                       onChange={(e) => setActiveNote({...activeNote, display_duration: e.target.value})}
+                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
+                       title="Durée d'affichage"
+                     >
+                       <option value="infinite">Illimité</option>
+                       <option value="1h">1 Heure</option>
+                       <option value="24h">24 Heures</option>
+                       <option value="1week">1 Semaine</option>
+                       <option value="1month">1 Mois</option>
+                     </select>
+                  </div>
+                )}
 
                 {/* PROPOSE AS FLASH NOTE BUTTON (Technician + Personal Mode) */}
                 {mode === "personal" && user?.role === UserRole.TECHNICIAN && (
