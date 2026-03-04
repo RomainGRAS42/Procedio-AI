@@ -30,6 +30,8 @@ const Account: React.FC<AccountProps> = ({ user }) => {
   const [passwordData, setPasswordData] = useState({ old: '', new: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  const [loadingStats, setLoadingStats] = useState(true);
+
   // Sync local state with user prop changes
   useEffect(() => {
     if (user.avatarUrl && user.avatarUrl !== avatarUrl) {
@@ -45,6 +47,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
   }, [user.id]);
 
   const fetchLatestStats = async () => {
+    setLoadingStats(true);
     try {
       // 1. Fetch Profile Data
       const { data: profile } = await supabase
@@ -116,6 +119,9 @@ const Account: React.FC<AccountProps> = ({ user }) => {
       }
     } catch (err) {
       console.error("Error fetching latest stats:", err);
+    } finally {
+      // Small artificial delay for smoother transition
+      setTimeout(() => setLoadingStats(false), 800);
     }
   };
 
@@ -374,10 +380,22 @@ const Account: React.FC<AccountProps> = ({ user }) => {
             {/* PROGRESSION WIDGET REUSED */}
             {user.role === UserRole.TECHNICIAN && (
               <div className="w-full">
-                <XPProgressBar 
-                  currentXP={personalStats.xp} 
-                  currentLevel={personalStats.level} 
-                />
+                {loadingStats ? (
+                  <div className="w-full bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm flex flex-col gap-4 animate-pulse">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="h-6 w-32 bg-slate-100 rounded-full"></div>
+                      <div className="h-6 w-24 bg-slate-100 rounded-full"></div>
+                    </div>
+                    <div className="h-4 w-full bg-slate-100 rounded-full"></div>
+                    <div className="h-4 w-1/3 bg-slate-100 rounded-full mt-2">
+                    </div>
+                  </div>
+                ) : (
+                  <XPProgressBar 
+                    currentXP={personalStats.xp} 
+                    currentLevel={personalStats.level} 
+                  />
+                )}
               </div>
             )}
 
@@ -392,11 +410,21 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                   <p className="text-[10px] font-medium text-slate-400">Votre collection de succès débloqués.</p>
                 </div>
                 <div className="ml-auto px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-orange-100">
-                  {earnedBadges.length} Obtenus
+                  {loadingStats ? "..." : earnedBadges.length} Obtenus
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              {loadingStats ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-3 animate-pulse">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100"></div>
+                      <div className="h-3 w-12 bg-slate-100 rounded-full"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                 {earnedBadges.length > 0 ? (
                   earnedBadges.map((ub) => {
                     // Safety check if badge relation is loaded

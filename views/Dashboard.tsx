@@ -79,6 +79,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [announcement, setAnnouncement] = useState<Announcement | null>(
     cacheStore.get("dash_announcement") || null
   );
+  // Simuler un chargement initial pour l'effet "skeleton" si pas de cache
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -925,7 +928,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     } catch (err) {
       console.error("Announcement error:", err);
     } finally {
-      setLoadingAnnouncement(false);
+      // Artificial delay of 1s as requested for skeleton effect
+      setTimeout(() => setLoadingAnnouncement(false), 1000);
     }
   };
 

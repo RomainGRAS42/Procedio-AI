@@ -38,6 +38,20 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
   embedded = false,
   compact = false,
 }) => {
+  if (loadingAnnouncement) {
+    return (
+      <div className={`${compact ? 'h-[70px] rounded-[1.2rem]' : 'h-[120px] rounded-[2rem]'} w-full bg-white border border-slate-100 shadow-sm p-4 flex items-center gap-4 animate-pulse relative overflow-hidden`}>
+         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-50 to-transparent animate-shimmer"></div>
+         <div className="w-10 h-10 bg-slate-100 rounded-xl shrink-0"></div>
+         <div className="flex-1 space-y-2.5">
+            <div className="h-2.5 bg-slate-100 rounded-full w-32"></div>
+            <div className="h-2 bg-slate-100 rounded-full w-64"></div>
+         </div>
+         <div className="w-16 h-6 bg-slate-100 rounded-full shrink-0"></div>
+      </div>
+    );
+  }
+
   const containerClasses = embedded
     ? "flex flex-col justify-center h-full animate-fade-in"
     : compact
@@ -46,14 +60,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
 
   return (
     <section className={containerClasses}>
-      {loadingAnnouncement ? (
-        <div className="flex items-center justify-center gap-3 py-4">
-          <div className="w-5 h-5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-[10px] font-black text-sky-700 uppercase tracking-widest">
-            Chargement...
-          </span>
-        </div>
-      ) : isEditing ? (
+      {isEditing ? (
         <div className="w-full space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-[10px] font-black text-sky-700 uppercase tracking-widest">
