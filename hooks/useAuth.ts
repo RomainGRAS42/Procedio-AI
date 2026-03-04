@@ -39,7 +39,7 @@ export const useAuth = () => {
         .maybeSingle();
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("DB_TIMEOUT")), 10000)
+        setTimeout(() => reject(new Error("DB_TIMEOUT")), 30000)
       );
 
       let profile: any = null;
@@ -84,7 +84,7 @@ export const useAuth = () => {
   useEffect(() => {
     const initApp = async () => {
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout d'initialisation")), 10000)
+        setTimeout(() => reject(new Error("Timeout d'initialisation")), 30000)
       );
 
       try {

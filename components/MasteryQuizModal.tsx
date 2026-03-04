@@ -33,6 +33,8 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
 
   // Normalisation des données du quiz (supporte tableau direct, objet {questions: []} et noms de clés variés)
   const questions = React.useMemo(() => {
+    if (!quizData || !isOpen) return [];
+    
     let rawQuestions = [];
     
     if (Array.isArray(quizData)) {

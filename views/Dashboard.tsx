@@ -788,7 +788,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           `
           *,
           procedures (title),
-          user_profiles (first_name, last_name, avatar_url)
+          user_profiles!user_id (first_name, last_name, avatar_url)
         `
         )
         .in("status", ["pending", "approved", "rejected"])
@@ -819,9 +819,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchPendingFlashNotes = async () => {
     try {
       const { count } = await supabase
-        .from("flash_notes")
+        .from("notes")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+        .eq("is_flash_note", true)
+        .eq("status", "public");
 
       if (count !== null) setPendingFlashNotesCount(count);
       onFlashCountChange?.(count || 0);
@@ -875,7 +876,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select(
           `
           *,
-          assignee:user_profiles (first_name, last_name)
+          assignee:user_profiles!assigned_to (first_name, last_name)
         `
         )
         // Filter for specific statuses relevant to the team view

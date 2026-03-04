@@ -173,6 +173,10 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                    !n.title.startsWith("SUGGESTION_") && 
                    !n.title.startsWith("FLASH_NOTE_") &&
                    !n.title.startsWith("NOUVEAU_") &&
+                   !n.title.startsWith("GAIN_XP") &&
+                   !n.title.startsWith("CLAIM_MASTERY") &&
+                   !n.title.startsWith("MASTERY_") &&
+                   !n.title.startsWith("MISSION_") &&
                    n.title !== "expert_synthesis"
           )
           .map((n) => ({
