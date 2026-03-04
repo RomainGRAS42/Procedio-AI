@@ -29,6 +29,16 @@ const Account: React.FC<AccountProps> = ({ user }) => {
   const [passwordData, setPasswordData] = useState({ old: '', new: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Sync local state with user prop changes
+  useEffect(() => {
+    if (user.avatarUrl && user.avatarUrl !== avatarUrl) {
+      setAvatarUrl(user.avatarUrl);
+    }
+    if (user.firstName && user.firstName !== displayName) {
+      setDisplayName(user.firstName);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchLatestStats();
   }, [user.id]);
@@ -37,7 +47,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
     try {
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('xp_points, level')
+        .select('xp_points, level, avatar_url, first_name')
         .eq('id', user.id)
         .single();
       
@@ -52,6 +62,8 @@ const Account: React.FC<AccountProps> = ({ user }) => {
           level: profile.level || 1,
           badgesCount: badgesCount || 0
         });
+        if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
+        if (profile.first_name) setDisplayName(profile.first_name);
       }
     } catch (err) {
       console.error("Error fetching latest stats:", err);
