@@ -96,7 +96,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
               <i className="fa-solid fa-bullhorn"></i>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex flex-col justify-center h-10">
+              <div className="flex flex-col justify-center h-10 gap-1.5">
                 <div className="flex items-center gap-2">
                   <h3 className="font-black text-slate-900 text-base tracking-tight leading-none">
                     Message du Manager
@@ -105,8 +105,8 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                     {announcement ? formatDate(announcement.created_at) : ""}
                   </span>
                 </div>
-                <div className="mt-1">
-                  <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-none italic line-clamp-1`}>
+                <div>
+                  <p className={`${compact ? 'text-xs' : 'text-sm'} text-slate-700 tracking-tight leading-none italic line-clamp-1`}>
                     "{announcement?.content || "Aucun message pour le moment."}"
                   </p>
                 </div>
