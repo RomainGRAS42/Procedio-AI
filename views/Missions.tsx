@@ -1655,17 +1655,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
-                          id="noDeadline"
+                          id="hasDeadline"
                           className="w-5 h-5 accent-indigo-600 rounded-lg cursor-pointer"
-                          checked={!newMission.hasDeadline}
+                          checked={newMission.hasDeadline}
                           onChange={(e) =>
-                            setNewMission({ ...newMission, hasDeadline: !e.target.checked })
+                            setNewMission({ ...newMission, hasDeadline: e.target.checked })
                           }
                         />
                         <label
-                          htmlFor="noDeadline"
+                          htmlFor="hasDeadline"
                           className="text-xs font-bold text-slate-600 cursor-pointer">
-                          Pas de délai
+                          Définir une date limite
                         </label>
                       </div>
                       {newMission.hasDeadline && (
