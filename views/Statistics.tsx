@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User, Procedure, UserRole } from '../types';
@@ -187,14 +187,21 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .gte('created_at', RESET_DATE);
 
       // Fetch aggregated missed opportunities from DEDICATED TABLE
-      const { data: opportunities } = await supabase
+      // 1. Get ALL pending opportunities for calculation to match Dashboard
+      const { data: allOpportunities } = await supabase
+        .from('search_opportunities')
+        .select('search_count')
+        .eq('status', 'pending');
+
+      // 2. Get Top 5 for display
+      const { data: topOpportunities } = await supabase
         .from('search_opportunities')
         .select('id, term, search_count')
         .eq('status', 'pending')
         .order('search_count', { ascending: false })
         .limit(5);
 
-      const missedOpportunities = (opportunities || []).map(op => ({
+      const missedOpportunities = (topOpportunities || []).map(op => ({
         id: op.id,
         term: op.term,
         count: op.search_count
@@ -202,7 +209,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
       // Calculate total failures based on the sum of search_counts in the table (plus current period logic if needed)
       // For simplicity and alignment with the dashboard, we sum pending opportunities counts
-      const totalFailedCount = missedOpportunities.reduce((acc, curr) => acc + (curr.count || 0), 0);
+      const totalFailedCount = (allOpportunities || []).reduce((acc, curr) => acc + (curr.search_count || 0), 0);
 
       const successRate = totalSearches && totalSearches > 0 
         ? Math.round(((totalSearches - totalFailedCount) / totalSearches) * 100)
@@ -892,9 +899,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                 </div>
               </>
            ) : (
-              // Grid Mode: Show 3 slots
+              // Grid Mode: Show 3 slots - FIRST SLOT FULL WIDTH
               <>
-                 <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
+                 <div className="col-span-full h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
                     {renderKPIContent(selectedSlots[0], 0)}
                  </div>
                  <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
