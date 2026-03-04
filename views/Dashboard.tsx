@@ -216,10 +216,17 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
       }
 
-      // 3. Self-Healing Badges (Lectures Count Fix)
+      // 3. Self-Healing Badges (Lectures Count Fix) WITH RETRY & SAFETY CHECKS
       const checkAndRepairBadges = async () => {
+        if (!personalStats || typeof personalStats.consultations === 'undefined') {
+           console.warn("⚠️ Self-Healing reporté : stats non chargées", personalStats);
+           return;
+        }
+
         const totalLectures = personalStats.consultations || 0;
         const missingBadges = [];
+
+        console.log(`🔍 Vérification Badges : ${totalLectures} lectures détectées.`);
 
         if (totalLectures >= 10 && !earnedBadges.some(b => b.badges.name === 'Lecteur Assidu')) {
            missingBadges.push('Lecteur Assidu');
@@ -232,64 +239,65 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
 
         if (missingBadges.length > 0) {
-          console.log("🛠️ Badges manquants détectés (Self-Healing) :", missingBadges);
-          
-          // Find badge IDs
-          const { data: badgesDefs, error: badgeErr } = await supabase
-            .from('badges')
-            .select('id, name')
-            .in('name', missingBadges);
-            
-          if (badgeErr) {
-             console.error("❌ Erreur récupération badgesDefs :", badgeErr);
-             return;
-          }
-            
-          if (badgesDefs && badgesDefs.length > 0) {
-              console.log("🚀 Application Optimiste des badges...");
-              
-              // 1. Optimistic Update: Update UI IMMEDIATELY
-              const newBadgesForUI = badgesDefs.map(def => ({
-                id: `temp-${def.id}`, // Temp ID until refresh
-                awarded_at: new Date().toISOString(),
-                badges: {
-                  id: def.id,
-                  name: def.name,
-                  description: "Badge débloqué automatiquement", // Placeholder
-                  icon: def.name.includes('Visionnaire') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : 'fa-book-open', // Fallback icons
-                  category: 'achievement'
-                }
-              }));
-              
-              setEarnedBadges(prev => {
-                 // Avoid duplicates
-                 const existingIds = new Set(prev.map(b => b.badges.id));
-                 const uniqueNew = newBadgesForUI.filter(b => !existingIds.has(b.badges.id));
-                 return [...prev, ...uniqueNew];
-              });
-
-              // 2. Background Sync
-              const newBadgesInserts = badgesDefs.map(def => ({
-                user_id: user.id,
-                badge_id: def.id,
-                awarded_at: new Date().toISOString()
-              }));
-              
-              console.log("📥 Tentative insertion background...", newBadgesInserts);
-              
-              // Fire and forget (almost)
-              supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' })
-                .then(({ error }) => {
-                   if (error) console.warn("⚠️ Sync background échouée (mais UI à jour):", error);
-                   else console.log("✅ Sync background réussie !");
-                });
+           console.log("🛠️ Badges manquants détectés (Self-Healing) :", missingBadges);
+           
+           // Find badge IDs
+           const { data: badgesDefs, error: badgeErr } = await supabase
+             .from('badges')
+             .select('id, name')
+             .in('name', missingBadges);
+             
+           if (badgeErr) {
+              console.error("❌ Erreur récupération badgesDefs :", badgeErr);
+              return;
            }
-        } else {
-           console.log("✅ Tous les badges de lecture sont à jour.");
-        }
-      };
-      
-      checkAndRepairBadges();
+             
+           if (badgesDefs && badgesDefs.length > 0) {
+               console.log("🚀 Application Optimiste des badges...");
+               
+               // 1. Optimistic Update: Update UI IMMEDIATELY
+               const newBadgesForUI = badgesDefs.map(def => ({
+                 id: `temp-${def.id}`, // Temp ID until refresh
+                 awarded_at: new Date().toISOString(),
+                 badges: {
+                   id: def.id,
+                   name: def.name,
+                   description: "Badge débloqué automatiquement", // Placeholder
+                   icon: def.name.includes('Visionnaire') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : 'fa-book-open', // Fallback icons
+                   category: 'achievement'
+                 }
+               }));
+               
+               setEarnedBadges(prev => {
+                  // Avoid duplicates
+                  const existingIds = new Set(prev.map(b => b.badges.id));
+                  const uniqueNew = newBadgesForUI.filter(b => !existingIds.has(b.badges.id));
+                  return [...prev, ...uniqueNew];
+               });
+ 
+               // 2. Background Sync
+               const newBadgesInserts = badgesDefs.map(def => ({
+                 user_id: user.id,
+                 badge_id: def.id,
+                 awarded_at: new Date().toISOString()
+               }));
+               
+               console.log("📥 Tentative insertion background...", newBadgesInserts);
+               
+               // Fire and forget (almost)
+               supabase.from('user_badges').upsert(newBadgesInserts, { onConflict: 'user_id, badge_id' })
+                 .then(({ error }) => {
+                    if (error) console.warn("⚠️ Sync background échouée (mais UI à jour):", error);
+                    else console.log("✅ Sync background réussie !");
+                 });
+            }
+         } else {
+            console.log("✅ Tous les badges de lecture sont à jour.");
+         }
+       };
+       
+       // Delay check slightly to ensure state is settled
+       setTimeout(checkAndRepairBadges, 500);
 
       // Mark session as seen
       sessionStorage.setItem(`procedio_session_intro_${user.id}`, "true");
@@ -326,7 +334,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (newQueue.length > 0) {
       setCelebrationQueue((prev) => [...prev, ...newQueue]);
     }
-  }, [personalStats.level, earnedBadges, user.id, loadingBadges]);
+  }, [personalStats.level, personalStats.consultations, earnedBadges, user.id, loadingBadges, hasInitialFetchCompleted]);
 
   // Handle Celebration Queue PROCESSING
   useEffect(() => {
@@ -486,19 +494,33 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [targetAction, pendingSuggestions, approvedExams, masteryClaims]);
 
+  // Retry helper
+  const retryPromise = async <T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
+    try {
+      return await fn();
+    } catch (err) {
+      if (retries <= 0) throw err;
+      console.warn(`⚠️ Retry operation... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryPromise(fn, retries - 1, delay * 1.5);
+    }
+  };
+
   const fetchPersonalStats = async () => {
     try {
-      const { data: profile } = await supabase
+      console.log("🔄 Chargement des stats personnelles...");
+      
+      const { data: profile } = await retryPromise(() => supabase
         .from("user_profiles")
         .select("xp_points, level, stats_by_category")
         .eq("id", user.id)
-        .single();
+        .single());
 
-      const { count: consultCount } = await supabase
+      const { count: consultCount } = await retryPromise(() => supabase
         .from("notes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .ilike("title", "CONSULTATION_%");
+        .ilike("title", "CONSULTATION_%"));
 
       const { count: suggCount } = await supabase
         .from("procedure_suggestions")
@@ -556,8 +578,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
       }
 
+      // Fallback: Si le count 'notes' échoue ou est 0, on utilise la somme des stats par catégorie
+      const totalMasteryLectures = masteryData.reduce((acc, curr) => acc + curr.A, 0);
+      const finalConsultations = (consultCount && consultCount > totalMasteryLectures) ? consultCount : totalMasteryLectures;
+
       const stats = {
-        consultations: consultCount || 0,
+        consultations: finalConsultations,
         suggestions: suggCount || 0,
         notes: realNotesCount,
         xp: profile?.xp_points || 0,
@@ -572,7 +598,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       cacheStore.set("dash_weekly_xp", weeklyXpVal);
 
       setLoadingBadges(true);
-      const { data: userBadges, error: badgeError } = await supabase
+      const { data: userBadges, error: badgeError } = await retryPromise(() => supabase
         .from("user_badges")
         .select(
           `
@@ -587,7 +613,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           )
         `
         )
-        .eq("user_id", user.id);
+        .eq("user_id", user.id));
 
       if (!badgeError && userBadges) {
         setEarnedBadges(userBadges);
@@ -596,7 +622,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       setLoadingBadges(false);
       setHasInitialFetchCompleted(true);
     } catch (err) {
-      console.error("Erreur stats personnelles:", err);
+      console.error("❌ Erreur CRITIQUE stats personnelles (après retries):", err);
+      setToast({ message: "Erreur de connexion. Certaines données peuvent manquer.", type: "error" });
     }
   };
 
