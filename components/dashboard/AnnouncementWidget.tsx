@@ -106,7 +106,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                   </span>
                 </div>
                 <div className="hidden sm:block w-px h-4 bg-slate-200 shrink-0"></div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 mt-0.5">
                   <p className={`${compact ? 'text-xs' : 'text-sm'} text-slate-600 font-medium tracking-tight leading-none truncate`}>
                     "{announcement?.content || "Aucun message pour le moment."}"
                   </p>
