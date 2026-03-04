@@ -12,6 +12,26 @@ interface MasteryProgressProps {
   data: MasteryData[];
 }
 
+const MASTERY_THRESHOLDS = [10, 25, 50, 100, 250, 500, 1000];
+
+const getMasteryLevelInfo = (count: number) => {
+  let level = 1;
+  let min = 0;
+  let max = MASTERY_THRESHOLDS[0];
+
+  for (let i = 0; i < MASTERY_THRESHOLDS.length; i++) {
+    if (count >= MASTERY_THRESHOLDS[i]) {
+      level = i + 2; // Level starts at 1, so passing first threshold means Level 2
+      min = MASTERY_THRESHOLDS[i];
+      max = MASTERY_THRESHOLDS[i + 1] || (MASTERY_THRESHOLDS[i] * 2); // Fallback for last level
+    } else {
+      break;
+    }
+  }
+  
+  return { level, min, max };
+};
+
 const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
   if (!data || data.length === 0) {
     return (
@@ -42,50 +62,61 @@ const MasteryProgress: React.FC<MasteryProgressProps> = ({ data }) => {
   return (
     <div className="space-y-6">
       {data.map((item, idx) => {
-        const percentage = Math.min(Math.round((item.A / item.fullMark) * 100), 100);
+        const { level, min, max } = getMasteryLevelInfo(item.A);
+        
+        // Calculer la progression RELATIVE au niveau actuel
+        // Ex: 34 lectures. Niveau (25->50). Progression = (34-25) / (50-25)
+        const currentProgress = item.A - min;
+        const levelRange = max - min;
+        const percentage = Math.min(Math.round((currentProgress / levelRange) * 100), 100);
+        
         const icon = getCategoryIcon(item.subject);
-        const currentLevel = Math.floor(item.A / 10) + 1;
-        const nextLevelTarget = currentLevel * 10;
-        const expertiseTitle = getLevelTitle(currentLevel);
+        const remaining = max - item.A;
 
         return (
           <div key={idx} className="group cursor-default">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 border border-slate-100">
-                  <i className={`fa-solid ${icon}`}></i>
+                <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 border border-slate-100 relative overflow-hidden">
+                  <i className={`fa-solid ${icon} relative z-10`}></i>
+                  {/* Niveau Badge sur l'icone */}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-indigo-100 text-indigo-700 text-[8px] font-black flex items-center justify-center rounded-md border border-white z-20">
+                    {level}
+                  </div>
                 </div>
                 <div>
-                  <h4 className="text-[12px] font-black text-slate-900 uppercase tracking-tight leading-none mb-1">
-                    {item.subject}
-                  </h4>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="text-[12px] font-black text-slate-900 uppercase tracking-tight leading-none">
+                      {item.subject}
+                    </h4>
+                    {item.certifications && item.certifications > 0 && (
+                       <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-bold uppercase tracking-wide border border-emerald-100 flex items-center gap-1">
+                         <i className="fa-solid fa-certificate"></i> {item.certifications}
+                       </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                       <span>{item.A} {item.A > 1 ? 'Lectures' : 'Lecture'}</span>
-                       {item.certifications && item.certifications > 0 ? (
-                         <>
-                           <span className="mx-1">•</span>
-                           <span className="text-emerald-600 flex items-center gap-1">
-                             <i className="fa-solid fa-certificate text-[9px]"></i>
-                             {item.certifications} {item.certifications > 1 ? 'Certifs' : 'Certif'}
-                           </span>
-                         </>
-                       ) : null}
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                       Niveau {level} • Total {item.A}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="flex items-end justify-end gap-1">
-                  <span className="text-sm font-black text-slate-900 tracking-tighter">
-                    {item.A}
+                  <span className="text-sm font-black text-indigo-600 tracking-tighter">
+                    {currentProgress}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 mb-0.5">
-                    / {nextLevelTarget}
+                    / {levelRange}
                   </span>
                 </div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
-                  Vers palier suivant
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {remaining > 0 ? (
+                    <>Plus que <span className="text-slate-600 font-black">{remaining}</span> lectures</>
+                  ) : (
+                    <span className="text-emerald-500 font-black">Niveau Validé !</span>
+                  )}
                 </p>
               </div>
             </div>
