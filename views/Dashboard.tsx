@@ -1149,8 +1149,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
               {user.role === UserRole.MANAGER ? (
                 <>
+                  <span>Piloter la performance et le bien-être de l'équipe</span>
                   <i className="fa-solid fa-chess-queen text-amber-500"></i>
-                  <span>Pilotage de la performance & Bien-être de l'équipe</span>
                 </>
               ) : (
                 <>
@@ -1263,7 +1263,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* MANAGER KPIs */}
             <section className="mb-4">
-              <StatsSummaryWidget stats={filteredStats} />
+              <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
             </section>
 
             {/* MANAGER ROW 1: Centre de Pilotage | Podium | Pouls */}

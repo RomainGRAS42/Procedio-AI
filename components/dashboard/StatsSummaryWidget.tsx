@@ -16,13 +16,18 @@ interface StatItem {
 interface StatsSummaryWidgetProps {
   stats: StatItem[];
   isClickable?: boolean;
+  orientation?: "vertical" | "horizontal";
 }
 
-const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats, isClickable = true }) => {
+const StatsSummaryWidget: React.FC<StatsSummaryWidgetProps> = ({ stats, isClickable = true, orientation = "vertical" }) => {
   const navigate = useNavigate();
 
+  const containerClasses = orientation === "horizontal" 
+    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+    : "flex flex-col gap-6 h-full";
+
   return (
-    <div className={`flex flex-col gap-8 h-full`}>
+    <div className={containerClasses}>
       {stats.map((stat, idx) => (
         <div
           key={idx}
