@@ -128,7 +128,45 @@ export const useAuth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [syncUserProfile]);
+  }, []); // syncUserProfile is stable (useCallback)
+
+  // 🔄 REALTIME SYNC: Listen for profile changes (avatar, name, etc.)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log("🔌 Subscribing to profile changes for:", user.id);
+    const channel = supabase
+      .channel(`profile_changes_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "user_profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          console.log("🔄 Profile Realtime Update:", payload.new);
+          setUser((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              firstName: payload.new.first_name || prev.firstName,
+              lastName: payload.new.last_name || prev.lastName,
+              avatarUrl: payload.new.avatar_url || prev.avatarUrl,
+              // Update other fields as needed
+              level: payload.new.level || prev.level,
+              currentXp: payload.new.xp_points || prev.currentXp,
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const handleLogout = async () => {
     setLoading(true);
