@@ -208,19 +208,19 @@ const Account: React.FC<AccountProps> = ({ user }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+    <div className="min-h-screen bg-[#F8FAFC] pb-10">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6 animate-fade-in">
         
         {/* HEADER SECTION ALIGNÉ GAUCHE (COMME DASHBOARD) */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-1">
+          <div className="space-y-0.5">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               Mon Compte
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
                 & Profil
               </span>
             </h1>
-            <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
+            <p className="text-slate-500 font-medium text-xs flex items-center gap-2">
               <i className="fa-solid fa-id-card text-indigo-500"></i>
               <span>Gérez vos informations personnelles et votre sécurité.</span>
             </p>
@@ -228,7 +228,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
         </header>
 
         {message && (
-          <div className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-3 animate-slide-up shadow-sm border ${
+          <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-3 animate-slide-up shadow-sm border ${
             message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
           }`}>
             <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}`}></i>
@@ -237,17 +237,17 @@ const Account: React.FC<AccountProps> = ({ user }) => {
         )}
 
         {/* MAIN GRID LAYOUT */}
-        <div className="grid grid-cols-12 gap-8">
+        <div className="grid grid-cols-12 gap-6">
           
           {/* LEFT COLUMN: IDENTITY & SETTINGS (5/12) */}
-          <div className="col-span-12 lg:col-span-5 flex flex-col gap-8">
+          <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
             {/* IDENTITY CARD */}
-            <section className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm flex flex-col items-center text-center relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-32 bg-slate-50 rounded-t-[2.5rem]"></div>
+            <section className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm flex flex-col items-center text-center relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-24 bg-slate-50 rounded-t-[2rem]"></div>
               
-              <div className="relative z-10 mt-12 mb-6">
-                <div className="w-40 h-40 rounded-[2.5rem] p-1.5 bg-white shadow-xl shadow-slate-200/50">
-                  <div className="w-full h-full rounded-[2rem] overflow-hidden relative group-hover:scale-[1.02] transition-transform duration-500">
+              <div className="relative z-10 mt-8 mb-4">
+                <div className="w-32 h-32 rounded-[2rem] p-1.5 bg-white shadow-xl shadow-slate-200/50">
+                  <div className="w-full h-full rounded-[1.75rem] overflow-hidden relative group-hover:scale-[1.02] transition-transform duration-500">
                     <img 
                       src={avatarUrl || `https://ui-avatars.com/api/?name=${displayName}&background=random`} 
                       className="w-full h-full object-cover" 
@@ -259,8 +259,8 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                       </div>
                     )}
                     <label className="absolute inset-0 bg-slate-900/0 hover:bg-slate-900/20 flex items-center justify-center cursor-pointer transition-all group/edit">
-                      <div className="w-10 h-10 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-900 opacity-0 group-hover/edit:opacity-100 transform translate-y-2 group-hover/edit:translate-y-0 transition-all shadow-lg">
-                        <i className="fa-solid fa-camera text-sm"></i>
+                      <div className="w-8 h-8 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-900 opacity-0 group-hover/edit:opacity-100 transform translate-y-2 group-hover/edit:translate-y-0 transition-all shadow-lg">
+                        <i className="fa-solid fa-camera text-xs"></i>
                       </div>
                       <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
                     </label>
@@ -268,12 +268,12 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                 </div>
               </div>
 
-              <div className="space-y-3 mb-8 relative z-10">
+              <div className="space-y-2 mb-6 relative z-10">
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">{displayName}</h3>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{user.email}</p>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">{displayName}</h3>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{user.email}</p>
                 </div>
-                <div className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                <div className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
                   user.role === UserRole.MANAGER ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'
                 }`}>
                   {user.role === UserRole.MANAGER ? 'Manager' : 'Technicien'}
@@ -281,70 +281,70 @@ const Account: React.FC<AccountProps> = ({ user }) => {
               </div>
 
               {/* STATS ROW */}
-              <div className="grid grid-cols-3 w-full border-t border-slate-50 pt-6 mt-auto">
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg font-black text-slate-900 leading-none">{personalStats.xp}</span>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">XP Total</span>
+              <div className="grid grid-cols-3 w-full border-t border-slate-50 pt-4 mt-auto">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-base font-black text-slate-900 leading-none">{personalStats.xp}</span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">XP Total</span>
                 </div>
-                <div className="flex flex-col items-center gap-1 border-x border-slate-50">
-                  <span className="text-lg font-black text-indigo-600 leading-none">{personalStats.level}</span>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Niveau</span>
+                <div className="flex flex-col items-center gap-0.5 border-x border-slate-50">
+                  <span className="text-base font-black text-indigo-600 leading-none">{personalStats.level}</span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Niveau</span>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg font-black text-amber-500 leading-none">{personalStats.badgesCount}</span>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Badges</span>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-base font-black text-amber-500 leading-none">{personalStats.badgesCount}</span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Badges</span>
                 </div>
               </div>
             </section>
 
             {/* SETTINGS FORM CARD */}
-            <section className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-              <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-50">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg">
+            <section className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-50">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center text-sm">
                   <i className="fa-solid fa-user-gear"></i>
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 text-lg tracking-tight">Paramètres</h3>
-                  <p className="text-xs font-medium text-slate-400">Infos de connexion.</p>
+                  <h3 className="font-black text-slate-900 text-base tracking-tight">Paramètres</h3>
+                  <p className="text-[10px] font-medium text-slate-400">Infos de connexion.</p>
                 </div>
               </div>
 
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 ml-1 uppercase tracking-widest">Nom d'affichage</label>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-500 ml-1 uppercase tracking-widest">Nom d'affichage</label>
                   <div className="relative group">
                     <input 
                       type="text" 
                       value={displayName} 
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-sm group-hover:bg-slate-50/80"
+                      className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-xs group-hover:bg-slate-50/80"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
-                      <i className="fa-solid fa-pen text-xs"></i>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                      <i className="fa-solid fa-pen text-[10px]"></i>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 ml-1 uppercase tracking-widest">Email (Lecture seule)</label>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-500 ml-1 uppercase tracking-widest">Email (Lecture seule)</label>
                   <div className="relative">
                     <input 
                       type="text" 
                       readOnly
                       value={user.email} 
-                      className="w-full px-5 py-3.5 rounded-xl bg-slate-100/50 border border-transparent text-slate-400 font-bold text-sm cursor-not-allowed select-none"
+                      className="w-full px-4 py-2.5 rounded-lg bg-slate-100/50 border border-transparent text-slate-400 font-bold text-xs cursor-not-allowed select-none"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300">
-                      <i className="fa-solid fa-lock text-xs"></i>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300">
+                      <i className="fa-solid fa-lock text-[10px]"></i>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 pt-2">
+                <div className="flex flex-col gap-2 pt-1">
                   <button 
                     onClick={handleUpdateProfile}
                     disabled={saving || uploading}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center justify-center gap-3"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3 rounded-lg font-black text-[10px] uppercase tracking-widest hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <>
@@ -358,7 +358,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                   
                   <button 
                     onClick={() => setShowPasswordModal(true)}
-                    className="w-full px-6 py-3 bg-white text-slate-600 border border-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-2"
                   >
                     <i className="fa-solid fa-key"></i> 
                     Changer mot de passe
@@ -369,7 +369,7 @@ const Account: React.FC<AccountProps> = ({ user }) => {
           </div>
 
           {/* RIGHT COLUMN: PROGRESSION & BADGES (7/12) */}
-          <div className="col-span-12 lg:col-span-7 flex flex-col gap-8">
+          <div className="col-span-12 lg:col-span-7 flex flex-col gap-6">
             
             {/* PROGRESSION WIDGET REUSED */}
             {user.role === UserRole.TECHNICIAN && (
@@ -382,21 +382,21 @@ const Account: React.FC<AccountProps> = ({ user }) => {
             )}
 
             {/* BADGES COLLECTION */}
-            <section className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm flex-1">
-              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-50">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-lg">
+            <section className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm flex-1">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-50">
+                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
                   <i className="fa-solid fa-trophy"></i>
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 text-lg tracking-tight">Mes Trophées</h3>
-                  <p className="text-xs font-medium text-slate-400">Votre collection de succès débloqués.</p>
+                  <h3 className="font-black text-slate-900 text-base tracking-tight">Mes Trophées</h3>
+                  <p className="text-[10px] font-medium text-slate-400">Votre collection de succès débloqués.</p>
                 </div>
-                <div className="ml-auto px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-orange-100">
+                <div className="ml-auto px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-orange-100">
                   {earnedBadges.length} Obtenus
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                 {earnedBadges.length > 0 ? (
                   earnedBadges.map((ub) => {
                     // Safety check if badge relation is loaded
@@ -407,34 +407,34 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                     return (
                       <div key={ub.id} className="group relative flex flex-col items-center">
                         <div
-                          className={`w-20 h-20 rounded-3xl ${style.bg} border ${style.border} flex flex-col items-center justify-center gap-2 hover:bg-white hover:scale-110 transition-all cursor-help transform shadow-sm hover:shadow-md ${style.icon.replace('text-', 'shadow-')}/10`}>
-                          <i className={`fa-solid ${badge.icon} text-2xl ${style.icon}`}></i>
+                          className={`w-16 h-16 rounded-2xl ${style.bg} border ${style.border} flex flex-col items-center justify-center gap-1 hover:bg-white hover:scale-110 transition-all cursor-help transform shadow-sm hover:shadow-md ${style.icon.replace('text-', 'shadow-')}/10`}>
+                          <i className={`fa-solid ${badge.icon} text-xl ${style.icon}`}></i>
                         </div>
-                        <span className="mt-3 text-[10px] font-black text-slate-500 uppercase tracking-tight text-center leading-tight max-w-[80px]">
+                        <span className="mt-2 text-[9px] font-black text-slate-500 uppercase tracking-tight text-center leading-tight max-w-[64px] truncate">
                           {badge.name}
                         </span>
                         
                         {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none text-center">
-                          <p className={`font-black uppercase tracking-widest mb-1 ${style.icon.replace("text-", "text-")}`}>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 p-2.5 bg-slate-900 text-white rounded-xl text-[9px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none text-center">
+                          <p className={`font-black uppercase tracking-widest mb-0.5 ${style.icon.replace("text-", "text-")}`}>
                             {badge.name}
                           </p>
                           <p className="text-slate-300 leading-relaxed">{badge.description}</p>
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="col-span-full py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-2xl">
+                  <div className="col-span-full py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300 text-xl">
                       <i className="fa-solid fa-lock"></i>
                     </div>
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">
-                      Aucun trophée débloqué
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                      Aucun trophée
                     </p>
-                    <p className="text-[11px] text-slate-400">
-                      Complétez des missions et consultez des procédures pour commencer votre collection !
+                    <p className="text-[9px] text-slate-400">
+                      Complétez des missions pour commencer !
                     </p>
                   </div>
                 )}
