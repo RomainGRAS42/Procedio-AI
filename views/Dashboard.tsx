@@ -495,7 +495,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [targetAction, pendingSuggestions, approvedExams, masteryClaims]);
 
   // Retry helper
-  const retryPromise = async <T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
+  const retryPromise = async <T extends unknown>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
     try {
       return await fn();
     } catch (err) {
@@ -510,13 +510,13 @@ const Dashboard: React.FC<DashboardProps> = ({
     try {
       console.log("🔄 Chargement des stats personnelles...");
       
-      const { data: profile } = await retryPromise(() => supabase
+      const { data: profile } = await retryPromise(async () => await supabase
         .from("user_profiles")
         .select("xp_points, level, stats_by_category")
         .eq("id", user.id)
         .single());
 
-      const { count: consultCount } = await retryPromise(() => supabase
+      const { count: consultCount } = await retryPromise(async () => await supabase
         .from("notes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
@@ -598,7 +598,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       cacheStore.set("dash_weekly_xp", weeklyXpVal);
 
       setLoadingBadges(true);
-      const { data: userBadges, error: badgeError } = await retryPromise(() => supabase
+      const { data: userBadges, error: badgeError } = await retryPromise(async () => await supabase
         .from("user_badges")
         .select(
           `
