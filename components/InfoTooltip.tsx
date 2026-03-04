@@ -46,12 +46,12 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({
 
       {isVisible && (
         <div
-          className={`absolute bottom-full mb-3 w-[max-content] max-w-[280px] sm:max-w-xs bg-slate-900 text-white text-xs p-3.5 rounded-xl shadow-2xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>
+          className={`absolute bottom-full mb-3 w-[max-content] max-w-[280px] sm:max-w-xs bg-[#121826] text-white text-[13px] p-4 rounded-2xl shadow-xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>
           <p className="font-medium leading-relaxed text-center antialiased whitespace-normal break-words">
             {text}
           </p>
           <div
-            className={`absolute top-full -mt-1 border-4 border-transparent border-t-slate-900 ${getArrowClasses()}`}></div>
+            className={`absolute top-full -mt-1 border-4 border-transparent border-t-[#121826] ${getArrowClasses()}`}></div>
         </div>
       )}
     </div>
