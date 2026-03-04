@@ -1496,11 +1496,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       {/* MODAL CREATION MISSION */}
       {showCreateModal &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-scale-up">
-              <div className="flex items-center justify-between mb-8">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-up flex flex-col max-h-[85vh] overflow-hidden">
+              <div className="flex items-center justify-between p-8 pb-4 shrink-0 border-b border-slate-50">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm">
                     <i className="fa-solid fa-bolt"></i>
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">
@@ -1509,12 +1509,12 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                 </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-slate-300 hover:text-rose-500 transition-colors">
-                  <i className="fa-solid fa-xmark text-2xl"></i>
+                  className="w-10 h-10 rounded-full bg-slate-50 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center">
+                  <i className="fa-solid fa-xmark text-xl"></i>
                 </button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 overflow-y-auto p-8 pt-6 custom-scrollbar flex-1">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                     Titre de la mission
@@ -1741,10 +1741,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   </div>
                 </div>
 
+              </div>
+              <div className="p-8 pt-4 shrink-0 border-t border-slate-50 bg-white z-10">
                 <button
                   onClick={handleCreateMission}
-                  className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95">
-                  Lancer la Mission
+                  className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2">
+                  <span>Lancer la Mission</span>
+                  <i className="fa-solid fa-paper-plane"></i>
                 </button>
               </div>
             </div>
