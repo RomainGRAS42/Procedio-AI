@@ -1,4 +1,5 @@
 import React from "react";
+import InfoTooltip from "../InfoTooltip";
 
 interface BadgesWidgetProps {
   earnedBadges: any[];
@@ -113,73 +114,67 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">
                 Mes Trophées
               </h3>
-              <div className="relative group/xp-info">
-                <button className="text-slate-300 hover:text-orange-500 transition-colors cursor-help ml-1">
-                  <i className="fa-solid fa-circle-info text-[0.8rem]"></i>
-                </button>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-80 bg-white text-slate-900 rounded-[2rem] p-6 opacity-0 invisible group-hover/xp-info:opacity-100 group-hover/xp-info:visible transition-all z-[60] shadow-2xl border border-slate-100 pointer-events-none text-left ring-1 ring-slate-900/5">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
-                      <i className="fa-solid fa-trophy"></i>
-                    </div>
-                    <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">
-                      Comment obtenir des trophées
-                    </h4>
+              <InfoTooltip text={`
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-trophy"></i>
                   </div>
-
-                  <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-                    Chaque action te rapporte de l'XP. Cumule l'XP pour débloquer automatiquement
-                    tes badges de spécialité.
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                        <span className="text-[11px] font-bold text-slate-700">
-                          Lecture procédure
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                        Rat de Bibliothèque
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
-                        <span className="text-[11px] font-bold text-slate-700">
-                          Missions terminées
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
-                        Stratège
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
-                        <span className="text-[11px] font-bold text-slate-700">
-                          Suggestions validées
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">
-                        Innovateur
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-slate-100">
-                    <div className="flex items-start gap-2">
-                      <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5"></i>
-                      <p className="text-[10px] text-slate-400 leading-tight italic">
-                        L'XP est créditée instantanément. Tes trophées s'affichent dès le palier
-                        atteint.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-white filter drop-shadow-[0_-1px_1px_rgba(0,0,0,0.05)]"></div>
+                  <h4 class="font-black text-white text-sm uppercase tracking-tight">
+                    Comment obtenir des trophées
+                  </h4>
                 </div>
-              </div>
+
+                <p class="text-xs text-slate-300 mb-5 leading-relaxed text-left">
+                  Chaque action te rapporte de l'XP. Cumule l'XP pour débloquer automatiquement
+                  tes badges de spécialité.
+                </p>
+
+                <div class="space-y-3 w-full">
+                  <div class="flex items-center justify-between py-2 border-b border-slate-700/50">
+                    <div class="flex items-center gap-2">
+                      <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                      <span class="text-[11px] font-bold text-slate-200">
+                        Lecture procédure
+                      </span>
+                    </div>
+                    <span class="text-[10px] font-black text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded-full uppercase border border-emerald-500/20">
+                      Rat de Bibliothèque
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-700/50">
+                    <div class="flex items-center gap-2">
+                      <div class="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
+                      <span class="text-[11px] font-bold text-slate-200">
+                        Missions terminées
+                      </span>
+                    </div>
+                    <span class="text-[10px] font-black text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase border border-indigo-500/20">
+                      Stratège
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between py-2">
+                    <div class="flex items-center gap-2">
+                      <div class="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                      <span class="text-[11px] font-bold text-slate-200">
+                        Suggestions validées
+                      </span>
+                    </div>
+                    <span class="text-[10px] font-black text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded-full uppercase border border-amber-500/20">
+                      Innovateur
+                    </span>
+                  </div>
+                </div>
+
+                <div class="mt-5 pt-4 border-t border-slate-700/50 w-full">
+                  <div class="flex items-start gap-2 text-left">
+                    <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs"></i>
+                    <p class="text-[10px] text-slate-400 leading-tight italic">
+                      L'XP est créditée instantanément. Tes trophées s'affichent dès le palier
+                      atteint.
+                    </p>
+                  </div>
+                </div>
+              `} align="center" className="ml-1" />
             </div>
             <div className="inline-flex mt-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest">
               {virtualBadges.length} Obtenus
