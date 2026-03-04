@@ -44,6 +44,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
   let nextObjective = {
     title: "Débloquez 10 lectures",
     subtitle: "Pour obtenir le trophée Lecteur Assidu",
+    description: "Naviguez dans la base de connaissances et consultez 10 procédures pour initier votre parcours d'expert.",
     current: totalConsultations,
     target: 10,
     unit: "Lectures",
@@ -55,21 +56,21 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
   // ORDER: Suggestion 1 -> Mission 1 -> Reading 50 -> Suggestion 5 -> Mission 5 -> Reading 100...
   
   if (totalConsultations < 10) { /* Default */ }
-  else if (totalSuggestions < 1) { nextObjective = { title: "Proposez 1 idée", subtitle: "Trophée Innovateur", current: totalSuggestions, target: 1, unit: "Suggestion", icon: "fa-lightbulb", color: "emerald" }; }
-  else if (totalMissions < 1) { nextObjective = { title: "Réussissez 1 mission", subtitle: "Trophée Stratège", current: totalMissions, target: 1, unit: "Mission", icon: "fa-chess-knight", color: "indigo" }; }
+  else if (totalSuggestions < 1) { nextObjective = { title: "Proposez 1 idée", subtitle: "Trophée Innovateur", description: "Participez à l'innovation continue en proposant votre première idée d'amélioration.", current: totalSuggestions, target: 1, unit: "Suggestion", icon: "fa-lightbulb", color: "emerald" }; }
+  else if (totalMissions < 1) { nextObjective = { title: "Réussissez 1 mission", subtitle: "Trophée Stratège", description: "Passez à l'action ! Complétez votre première mission assignée par votre manager.", current: totalMissions, target: 1, unit: "Mission", icon: "fa-chess-knight", color: "indigo" }; }
   
-  else if (totalConsultations < 50) { nextObjective = { title: "Débloquez 50 lectures", subtitle: "Trophée Lecteur Confirmé", current: totalConsultations, target: 50, unit: "Lectures", icon: "fa-glasses", color: "amber" }; }
-  else if (totalSuggestions < 5) { nextObjective = { title: "Proposez 5 idées", subtitle: "Trophée Esprit Critique", current: totalSuggestions, target: 5, unit: "Suggestions", icon: "fa-magnifying-glass-plus", color: "emerald" }; }
-  else if (totalMissions < 5) { nextObjective = { title: "Réussissez 5 missions", subtitle: "Trophée Agent de Terrain", current: totalMissions, target: 5, unit: "Missions", icon: "fa-user-shield", color: "indigo" }; }
+  else if (totalConsultations < 50) { nextObjective = { title: "Débloquez 50 lectures", subtitle: "Trophée Lecteur Confirmé", description: "Approfondissez vos connaissances en consultant 50 fiches techniques.", current: totalConsultations, target: 50, unit: "Lectures", icon: "fa-glasses", color: "amber" }; }
+  else if (totalSuggestions < 5) { nextObjective = { title: "Proposez 5 idées", subtitle: "Trophée Esprit Critique", description: "Continuez à innover ! Proposez 5 suggestions pertinentes pour l'équipe.", current: totalSuggestions, target: 5, unit: "Suggestions", icon: "fa-magnifying-glass-plus", color: "emerald" }; }
+  else if (totalMissions < 5) { nextObjective = { title: "Réussissez 5 missions", subtitle: "Trophée Agent de Terrain", description: "Gagnez en expérience terrain en menant à bien 5 missions opérationnelles.", current: totalMissions, target: 5, unit: "Missions", icon: "fa-user-shield", color: "indigo" }; }
   
-  else if (totalConsultations < 100) { nextObjective = { title: "Débloquez 100 lectures", subtitle: "Trophée Expert Visionnaire", current: totalConsultations, target: 100, unit: "Lectures", icon: "fa-eye", color: "amber" }; }
-  else if (totalSuggestions < 20) { nextObjective = { title: "Proposez 20 idées", subtitle: "Trophée Architecte du Futur", current: totalSuggestions, target: 20, unit: "Suggestions", icon: "fa-drafting-compass", color: "emerald" }; }
-  else if (totalMissions < 20) { nextObjective = { title: "Réussissez 20 missions", subtitle: "Trophée Commandant", current: totalMissions, target: 20, unit: "Missions", icon: "fa-medal", color: "indigo" }; }
+  else if (totalConsultations < 100) { nextObjective = { title: "Débloquez 100 lectures", subtitle: "Trophée Expert Visionnaire", description: "Devenez une référence technique en atteignant 100 consultations de procédures.", current: totalConsultations, target: 100, unit: "Lectures", icon: "fa-eye", color: "amber" }; }
+  else if (totalSuggestions < 20) { nextObjective = { title: "Proposez 20 idées", subtitle: "Trophée Architecte du Futur", description: "Votre esprit critique est un atout. Atteignez 20 suggestions pour ce grade.", current: totalSuggestions, target: 20, unit: "Suggestions", icon: "fa-drafting-compass", color: "emerald" }; }
+  else if (totalMissions < 20) { nextObjective = { title: "Réussissez 20 missions", subtitle: "Trophée Commandant", description: "Prenez le commandement. 20 missions réussies pour ce trophée prestigieux.", current: totalMissions, target: 20, unit: "Missions", icon: "fa-medal", color: "indigo" }; }
   
-  else if (totalConsultations < 250) { nextObjective = { title: "Débloquez 250 lectures", subtitle: "Trophée Rat de Bibliothèque", current: totalConsultations, target: 250, unit: "Lectures", icon: "fa-book-atlas", color: "amber" }; }
+  else if (totalConsultations < 250) { nextObjective = { title: "Débloquez 250 lectures", subtitle: "Trophée Rat de Bibliothèque", description: "Votre curiosité est sans limite. Atteignez 250 lectures pour ce badge d'élite.", current: totalConsultations, target: 250, unit: "Lectures", icon: "fa-book-atlas", color: "amber" }; }
   else {
      // End Game Loop
-     nextObjective = { title: "Légende vivante", subtitle: "Vous avez atteint le sommet !", current: 100, target: 100, unit: "Héros", icon: "fa-crown", color: "rose" };
+     nextObjective = { title: "Légende vivante", subtitle: "Vous avez atteint le sommet !", description: "Vous avez débloqué tous les trophées disponibles. Félicitations !", current: 100, target: 100, unit: "Héros", icon: "fa-crown", color: "rose" };
   }
   
   // Cap progress at 100%
@@ -249,7 +250,28 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
           <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
             Prochain Trophée
           </p>
-          <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
+          <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all relative">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 bg-[#121826] text-white rounded-2xl shadow-xl opacity-0 invisible group-hover/challenge:opacity-100 group-hover/challenge:visible transition-all z-50 pointer-events-none">
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
+                    nextObjective.color === "emerald"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : nextObjective.color === "indigo"
+                      ? "bg-indigo-500/20 text-indigo-400"
+                      : "bg-amber-500/20 text-amber-400"
+                  }`}>
+                  <i className={`fa-solid ${nextObjective.icon}`}></i>
+                </div>
+                <p className="font-black text-xs uppercase tracking-wider text-white">
+                  {nextObjective.subtitle}
+                </p>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {nextObjective.description}
+              </p>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-[#121826]"></div>
+            </div>
             <div className="flex items-center gap-3">
               {/* Dynamic color class handling */}
               <div className={`w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm transition-colors ${
