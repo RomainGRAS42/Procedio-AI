@@ -343,15 +343,21 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         if (path.startsWith("http")) {
           finalUrl = path;
         } else {
-          const { data } = supabase.storage.from("procedures").getPublicUrl(path);
-          finalUrl = data?.publicUrl || null;
+          // SECURITY UPDATE: Use Signed URL instead of Public URL
+          // Expires in 1 hour (3600 seconds)
+          const { data } = await supabase.storage
+            .from("procedures")
+            .createSignedUrl(path, 3600);
+          finalUrl = data?.signedUrl || null;
         }
       } else {
         // Fallback to ID at root
         const fallbackId = procedure.id || procedure.uuid || (procedure as any).file_id;
         if (fallbackId) {
-          const { data } = supabase.storage.from("procedures").getPublicUrl(fallbackId);
-          finalUrl = data?.publicUrl || null;
+          const { data } = await supabase.storage
+            .from("procedures")
+            .createSignedUrl(fallbackId, 3600);
+          finalUrl = data?.signedUrl || null;
         }
       }
       setDocUrl(finalUrl);
