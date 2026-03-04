@@ -24,7 +24,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[300px]">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg shrink-0">
               <i className="fa-solid fa-map-location-dot"></i>
             </div>
             <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center min-w-0">
