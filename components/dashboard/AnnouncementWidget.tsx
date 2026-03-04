@@ -114,25 +114,35 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
               </div>
             </div>
             
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-4 shrink-0">
                   {user.role === UserRole.MANAGER ? (
                     <button
                       onClick={() => {
                         setEditContent(announcement?.content || "");
                         setIsEditing(true);
                       }}
-                      className="w-8 h-8 rounded-lg bg-white text-sky-400 hover:bg-sky-100 hover:text-sky-600 transition-all flex items-center justify-center border border-sky-100">
-                      <i className="fa-solid fa-pen-to-square text-xs"></i>
+                      className="w-10 h-10 rounded-xl bg-white text-sky-500 hover:bg-sky-50 hover:text-sky-700 hover:scale-105 hover:shadow-md transition-all flex items-center justify-center border border-sky-100/50 shadow-sm"
+                      aria-label="Modifier le message">
+                      <i className="fa-solid fa-pen-to-square"></i>
                     </button>
                   ) : (
-                    announcement &&
-                    !isRead && (
-                      <button
-                        onClick={handleMarkAsRead}
-                        className="bg-sky-600 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-sky-200 flex items-center gap-2 shrink-0 active:scale-95">
-                        <i className="fa-solid fa-check"></i>
-                        Compris
-                      </button>
+                    announcement && (
+                      !isRead ? (
+                        <button
+                          onClick={handleMarkAsRead}
+                          className="group relative bg-gradient-to-r from-sky-600 to-blue-600 hover:from-slate-800 hover:to-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-sky-200/50 hover:shadow-slate-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2 shrink-0 border border-white/20 ring-2 ring-transparent focus:ring-sky-200 outline-none"
+                          aria-label="Marquer le message comme lu">
+                          <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                            <i className="fa-solid fa-check text-[10px]"></i>
+                          </span>
+                          <span>J'ai compris</span>
+                        </button>
+                      ) : (
+                        <div className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2 opacity-75 select-none">
+                          <i className="fa-solid fa-circle-check text-sm"></i>
+                          <span className="text-[10px] font-black uppercase tracking-widest">Lu</span>
+                        </div>
+                      )
                     )
                   )}
             </div>
