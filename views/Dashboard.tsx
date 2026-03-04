@@ -202,7 +202,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     if (!hasSeenIntro) {
       // 1. Show Level if > 1
-      const currentLevel = calculateLevelFromXP(personalStats.xp);
+      const currentLevel = calculateLevelFromXP(personalStats.xp || 0);
       if (currentLevel > 1) {
         newQueue.push({
           type: "level",
@@ -315,7 +315,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       // REAL-TIME UPDATES
 
       // 1. Check Level Up Realtime
-      const calculatedLevel = calculateLevelFromXP(personalStats.xp);
+      const calculatedLevel = calculateLevelFromXP(personalStats.xp || 0);
       if (calculatedLevel > prevLevelRef.current && prevLevelRef.current !== 0) {
         newQueue.push({
           type: "level",
@@ -340,7 +340,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (newQueue.length > 0) {
       setCelebrationQueue((prev) => [...prev, ...newQueue]);
     }
-  }, [personalStats.level, personalStats.consultations, earnedBadges, user.id, loadingBadges, hasInitialFetchCompleted]);
+  }, [personalStats?.level, personalStats?.consultations, earnedBadges, user.id, loadingBadges, hasInitialFetchCompleted]);
 
   // Handle Celebration Queue PROCESSING
   useEffect(() => {
