@@ -825,7 +825,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .from("notes")
         .select("*", { count: "exact", head: true })
         .eq("is_flash_note", true)
-        .eq("status", "public");
+        .eq("status", "suggestion");
 
       if (count !== null) setPendingFlashNotesCount(count);
       onFlashCountChange?.(count || 0);
