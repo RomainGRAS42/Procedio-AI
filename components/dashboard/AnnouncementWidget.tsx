@@ -92,24 +92,28 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-100 shrink-0">
               <i className="fa-solid fa-bullhorn"></i>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
-                <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
-                  Message du Manager
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+              <div className="flex flex-col justify-center h-10">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-slate-900 text-base tracking-tight leading-none">
+                    Message du Manager
+                  </h3>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full leading-none">
                     {announcement ? formatDate(announcement.created_at) : ""}
                   </span>
-                </h3>
+                </div>
+                <div className="mt-1">
+                  <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-none italic line-clamp-1`}>
+                    "{announcement?.content || "Aucun message pour le moment."}"
+                  </p>
+                </div>
               </div>
-              <div className="flex items-start justify-between gap-4 mt-1">
-                <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-slate-800 tracking-tight leading-relaxed italic line-clamp-1`}>
-                  "{announcement?.content || "Aucun message pour le moment."}"
-                </p>
-
-                <div className="flex items-center gap-2">
+            </div>
+            
+            <div className="flex items-center gap-2 shrink-0">
                   {user.role === UserRole.MANAGER ? (
                     <button
                       onClick={() => {
@@ -130,8 +134,6 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                       </button>
                     )
                   )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
