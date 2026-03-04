@@ -1034,19 +1034,22 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                   {activeNote.is_protected ? "Protégée" : "Publique"}
                 </button>
 
-                <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-                   <i className="fa-solid fa-folder text-slate-400 text-[10px]"></i>
-                   <select 
-                     value={activeNote.folder_id || ""}
-                     onChange={(e) => setActiveNote({...activeNote, folder_id: e.target.value})}
-                     className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
-                   >
-                     <option value="">Sans Dossier</option>
-                     {folders.map(f => (
-                       <option key={f.id} value={f.id}>{f.name}</option>
-                     ))}
-                   </select>
-                </div>
+                {/* FOLDER SELECTOR - HIDDEN FOR FLASH NOTES */}
+                {mode !== "flash" && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                     <i className="fa-solid fa-folder text-slate-400 text-[10px]"></i>
+                     <select 
+                       value={activeNote.folder_id || ""}
+                       onChange={(e) => setActiveNote({...activeNote, folder_id: e.target.value})}
+                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
+                     >
+                       <option value="">Sans Dossier</option>
+                       {folders.map(f => (
+                         <option key={f.id} value={f.id}>{f.name}</option>
+                       ))}
+                     </select>
+                  </div>
+                )}
 
                 {/* DURATION SELECTOR (Manager + Flash Mode Only) */}
                 {mode === "flash" && user?.role === UserRole.MANAGER && (
