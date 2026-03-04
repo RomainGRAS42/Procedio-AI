@@ -94,12 +94,35 @@ const TeamPodium: React.FC = () => {
     // Fallback static data if no champion found for a category (to avoid empty holes)
     // In a real app we might hide it, but for UI consistency we show a placeholder
     if (!champion) {
+       // EMPTY STATE: Manager Insight instead of "Empty"
+       let emptyMessage = "Aucune donnée";
+       let emptyInsight = "En attente d'activité...";
+       let emptyIcon = "fa-chart-line";
+       let emptyColor = "text-slate-300";
+
+       if (type === 'progression') {
+          emptyMessage = "Performance stable";
+          emptyInsight = "Pas de pic d'activité notable cette semaine.";
+          emptyIcon = "fa-battery-half";
+       } else if (type === 'expert') {
+          emptyMessage = "Aucune contribution";
+          emptyInsight = "0 suggestion validée cette semaine.";
+          emptyIcon = "fa-file-circle-question";
+          emptyColor = "text-amber-300";
+       } else if (type === 'explorer') {
+          emptyMessage = "Aucune veille";
+          emptyInsight = "Personne n'a consulté de nouvelles procédures.";
+          emptyIcon = "fa-eye-slash";
+          emptyColor = "text-indigo-300";
+       }
+
        return (
-        <div className="flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-4 flex flex-col items-center justify-center text-center opacity-60">
-             <div className="w-10 h-10 rounded-full bg-slate-100 mb-2 flex items-center justify-center text-slate-300">
-                <i className="fa-solid fa-user-slash"></i>
+        <div className="flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-4 flex flex-col items-center justify-center text-center">
+             <div className={`w-10 h-10 rounded-full bg-white mb-3 flex items-center justify-center ${emptyColor} shadow-sm`}>
+                <i className={`fa-solid ${emptyIcon}`}></i>
              </div>
-             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Aucun champion<br/>cette semaine</p>
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-tight mb-1">{emptyMessage}</p>
+             <p className="text-[9px] font-medium text-slate-400 leading-tight max-w-[120px]">{emptyInsight}</p>
         </div>
        );
     }
