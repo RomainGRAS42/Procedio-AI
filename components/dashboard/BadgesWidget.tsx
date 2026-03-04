@@ -114,7 +114,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
               <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">
                 Mes Trophées
               </h3>
-              <InfoTooltip text={`
+              <InfoTooltip isHtml={true} text={`
                 <div class="flex items-center gap-3 mb-4">
                   <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
                     <i class="fa-solid fa-trophy"></i>
