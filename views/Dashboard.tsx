@@ -803,6 +803,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           authorName: d.user_profiles
             ? `${d.user_profiles.first_name} ${d.user_profiles.last_name}`
             : "Inconnu",
+          userName: d.user_profiles
+            ? `${d.user_profiles.first_name} ${d.user_profiles.last_name}`
+            : "Inconnu",
           authorAvatar: d.user_profiles?.avatar_url,
           isReadByManager: d.is_read_by_manager,
         }));
@@ -881,7 +884,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         )
         // Filter for specific statuses relevant to the team view
         .in("status", ["open", "assigned", "in_progress", "awaiting_validation", "completed"])
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching missions:", error);

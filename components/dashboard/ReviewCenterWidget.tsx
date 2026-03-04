@@ -86,7 +86,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
               dataType: 'suggestion',
               date: s.createdAt,
               title: s.procedureTitle,
-              user: { first_name: s.userName.split(' ')[0], last_name: s.userName.split(' ')[1] || '' }, // Approximation if user obj not full
+              user: { first_name: (s.userName || "Inconnu").split(' ')[0], last_name: (s.userName || "").split(' ')[1] || '' }, // Approximation if user obj not full
               isRead: s.isReadByManager === true
             }))
           ];
