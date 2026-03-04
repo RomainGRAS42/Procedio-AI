@@ -201,10 +201,13 @@ const Account: React.FC<AccountProps> = ({ user }) => {
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
       
-      await supabase.from('user_profiles').update({ avatar_url: data.publicUrl }).eq('id', user.id);
-      await supabase.auth.updateUser({ data: { avatarUrl: data.publicUrl } });
+      // Add timestamp to force browser cache refresh
+      const publicUrlWithTimestamp = `${data.publicUrl}?t=${new Date().getTime()}`;
       
-      setAvatarUrl(data.publicUrl);
+      await supabase.from('user_profiles').update({ avatar_url: publicUrlWithTimestamp }).eq('id', user.id);
+      await supabase.auth.updateUser({ data: { avatarUrl: publicUrlWithTimestamp } });
+      
+      setAvatarUrl(publicUrlWithTimestamp);
       setMessage({ type: 'success', text: 'Avatar mis à jour !' });
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });

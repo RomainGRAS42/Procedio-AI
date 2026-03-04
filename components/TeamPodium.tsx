@@ -68,7 +68,7 @@ const TeamPodium: React.FC = () => {
          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50/30 to-transparent rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
          <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-200">
+          <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
             <i className="fa-solid fa-medal"></i>
           </div>
           <div>
@@ -158,15 +158,15 @@ const TeamPodium: React.FC = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50/30 to-transparent rounded-full blur-3xl -z-10"></div>
        </div>
 
-       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-200">
+       <div className="flex items-center gap-4 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
           <i className="fa-solid fa-medal"></i>
         </div>
         <div>
-            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
-              Dynamique d'Équipe
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-slate-900 text-lg tracking-tight">Dynamique d'Équipe</h3>
               <InfoTooltip text="Les champions de la semaine : Progression fulgurante, Expert validé et Explorateur de connaissances." />
-            </h3>
+            </div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Champions de la semaine</p>
         </div>
       </div>

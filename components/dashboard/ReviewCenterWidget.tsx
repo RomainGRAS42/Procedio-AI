@@ -45,7 +45,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
-            <i className="fa-solid fa-tower-control"></i>
+            <i className="fa-solid fa-list-check"></i>
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center">
             Centre de Pilotage
