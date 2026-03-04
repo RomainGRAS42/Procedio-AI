@@ -858,7 +858,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         .select(
           `
           *,
-          assignee:user_profiles!missions_assigned_to_fkey (first_name, last_name)
+          assignee:user_profiles (first_name, last_name)
         `
         )
         // Filter for specific statuses relevant to the team view

@@ -151,7 +151,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
               </div>
             </div>
             <div className="inline-flex mt-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-              {earnedBadges.length} Obtenus
+              {virtualBadges.length} Obtenus
             </div>
           </div>
         </div>
@@ -163,8 +163,8 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
             Collection active
           </p>
           <div className="flex flex-wrap gap-3">
-            {earnedBadges.length > 0 ? (
-              earnedBadges.map((ub) => {
+            {virtualBadges.length > 0 ? (
+              virtualBadges.map((ub) => {
                 const style = getBadgeStyle(ub.badges.criteria_value || 0);
                 return (
                   <div key={ub.id} className="group relative">
