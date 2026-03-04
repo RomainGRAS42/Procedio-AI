@@ -1175,9 +1175,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         </header>
 
         {user.role === UserRole.TECHNICIAN ? (
-          <div className="grid grid-cols-12 gap-8">
+          <div className="grid grid-cols-12 gap-y-4 gap-x-8">
             {/* Barre de progression XP avec style unifié */}
-            <div className="col-span-12 mt-10 mb-12">
+            <div className="col-span-12 mt-6 mb-4">
               <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
             </div>
 
