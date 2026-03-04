@@ -157,15 +157,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Stats personnelles
   const [personalStats, setPersonalStats] = useState(
-    cacheStore.get("dash_personal_stats") || {
-      consultations: 0,
-      suggestions: 0,
-      notes: 0,
-      xp: 0,
-      level: 1,
-      mastery: [] as { subject: string; A: number; fullMark: number; certifications?: number }[],
-    }
+    cacheStore.get("dash_personal_stats") || null
   );
+  const [loadingPersonalStats, setLoadingPersonalStats] = useState(true);
 
   // Sprint Hebdo (XP gagnée cette semaine)
   const [weeklyXP, setWeeklyXP] = useState(cacheStore.get("dash_weekly_xp") || 0);
@@ -190,15 +184,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Initialize refs on mount
   useEffect(() => {
-    if (user?.id && personalStats.level > 0) {
+    if (user?.id && personalStats?.level > 0) {
       if (prevLevelRef.current === 0) prevLevelRef.current = personalStats.level;
       if (prevBadgeCountRef.current === 0) prevBadgeCountRef.current = earnedBadges.length;
     }
-  }, [user?.id, personalStats.level, earnedBadges.length]);
+  }, [user?.id, personalStats?.level, earnedBadges.length]);
 
   // Detection Level Up & Badges
   useEffect(() => {
-    if (user.role !== UserRole.TECHNICIAN || !user.id || !hasInitialFetchCompleted || loadingBadges)
+    if (user.role !== UserRole.TECHNICIAN || !user.id || !hasInitialFetchCompleted || loadingBadges || !personalStats)
       return;
 
     const newQueue: CelebrationItem[] = [];
@@ -521,6 +515,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchPersonalStats = async () => {
     try {
       console.log("🔄 Chargement des stats personnelles...");
+      setLoadingPersonalStats(true);
       
       const { data: profile } = await retryPromise(async () => await supabase
         .from("user_profiles")
@@ -643,6 +638,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     } catch (err) {
       console.error("❌ Erreur CRITIQUE stats personnelles (après retries):", err);
       setToast({ message: "Erreur de connexion. Certaines données peuvent manquer.", type: "error" });
+    } finally {
+      // Artificial delay for smoother loading UX
+      setTimeout(() => setLoadingPersonalStats(false), 800);
     }
   };
 
@@ -1179,7 +1177,20 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="grid grid-cols-12 gap-y-4 gap-x-8">
             {/* Barre de progression XP avec style unifié */}
             <div className="col-span-12 mt-6 mb-4">
-              <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
+              {loadingPersonalStats || !personalStats ? (
+                <div className="w-full h-32 bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm flex flex-col justify-center animate-pulse">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full"></div>
+                    <div className="space-y-2">
+                      <div className="h-6 w-32 bg-slate-100 rounded-full"></div>
+                      <div className="h-4 w-48 bg-slate-100 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="h-4 w-full bg-slate-100 rounded-full"></div>
+                </div>
+              ) : (
+                <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
+              )}
             </div>
 
             {/* ROW 2: Action & Stats Grid */}
