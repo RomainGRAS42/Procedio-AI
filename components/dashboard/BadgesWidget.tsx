@@ -141,7 +141,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                         </span>
                       </div>
                       <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                        Badge Novice
+                        Rat de Bibliothèque
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2 border-b border-slate-50">
@@ -152,7 +152,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                         </span>
                       </div>
                       <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
-                        Badge Expert
+                        Stratège
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2">
@@ -163,7 +163,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                         </span>
                       </div>
                       <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">
-                        Badge Innovateur
+                        Innovateur
                       </span>
                     </div>
                   </div>
