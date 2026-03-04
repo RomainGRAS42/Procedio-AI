@@ -18,62 +18,28 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
   // Compute virtual badges based on real stats if DB badges are missing
   const virtualBadges = [...earnedBadges];
 
-  // Badge: Lecteur Assidu (10 lectures) - "Novice"
-  if (totalConsultations >= 10 && !virtualBadges.some((b) => b.badges.name === "Lecteur Assidu")) {
-    virtualBadges.push({
-      id: "virt-1",
-      badges: {
-        name: "Lecteur Assidu",
-        icon: "fa-book-open",
-        description: "Vous avez consulté plus de 10 procédures.",
-        criteria_value: 10,
-      },
-    });
-  }
+  // --- DEFINITIONS DES BADGES VIRTUELS PROGRESSIFS ---
+  
+  // 1. LECTURE
+  if (totalConsultations >= 10 && !virtualBadges.some(b => b.badges.name === "Lecteur Assidu")) virtualBadges.push({ id: "v-l1", badges: { name: "Lecteur Assidu", icon: "fa-book-open", description: "10 procédures consultées.", criteria_value: 10 } });
+  if (totalConsultations >= 50 && !virtualBadges.some(b => b.badges.name === "Lecteur Confirmé")) virtualBadges.push({ id: "v-l2", badges: { name: "Lecteur Confirmé", icon: "fa-glasses", description: "50 procédures consultées.", criteria_value: 50 } });
+  if (totalConsultations >= 100 && !virtualBadges.some(b => b.badges.name === "Expert Visionnaire")) virtualBadges.push({ id: "v-l3", badges: { name: "Expert Visionnaire", icon: "fa-eye", description: "100 procédures consultées.", criteria_value: 100 } });
+  if (totalConsultations >= 250 && !virtualBadges.some(b => b.badges.name === "Rat de Bibliothèque")) virtualBadges.push({ id: "v-l4", badges: { name: "Rat de Bibliothèque", icon: "fa-book-atlas", description: "250 procédures consultées.", criteria_value: 250 } });
+  if (totalConsultations >= 500 && !virtualBadges.some(b => b.badges.name === "Archiviste Suprême")) virtualBadges.push({ id: "v-l5", badges: { name: "Archiviste Suprême", icon: "fa-landmark", description: "500 procédures consultées.", criteria_value: 500 } });
 
-  // Badge: Lecteur Confirmé (50 lectures) - "Engagé"
-  if (
-    totalConsultations >= 50 &&
-    !virtualBadges.some((b) => b.badges.name === "Lecteur Confirmé")
-  ) {
-    virtualBadges.push({
-      id: "virt-2",
-      badges: {
-        name: "Lecteur Confirmé",
-        icon: "fa-glasses",
-        description: "Une soif de connaissance ! Plus de 50 procédures consultées.",
-        criteria_value: 50,
-      },
-    });
-  }
+  // 2. SUGGESTIONS
+  if (totalSuggestions >= 1 && !virtualBadges.some(b => b.badges.name === "Innovateur")) virtualBadges.push({ id: "v-s1", badges: { name: "Innovateur", icon: "fa-lightbulb", description: "1 suggestion proposée.", criteria_value: 100 } });
+  if (totalSuggestions >= 5 && !virtualBadges.some(b => b.badges.name === "Esprit Critique")) virtualBadges.push({ id: "v-s2", badges: { name: "Esprit Critique", icon: "fa-magnifying-glass-plus", description: "5 suggestions proposées.", criteria_value: 150 } });
+  if (totalSuggestions >= 20 && !virtualBadges.some(b => b.badges.name === "Architecte du Futur")) virtualBadges.push({ id: "v-s3", badges: { name: "Architecte du Futur", icon: "fa-drafting-compass", description: "20 suggestions proposées.", criteria_value: 200 } });
+  if (totalSuggestions >= 50 && !virtualBadges.some(b => b.badges.name === "Visionnaire")) virtualBadges.push({ id: "v-s4", badges: { name: "Visionnaire", icon: "fa-eye", description: "50 suggestions proposées.", criteria_value: 300 } });
 
-  // Badge: Innovateur (1 suggestion)
-  if (totalSuggestions >= 1 && !virtualBadges.some((b) => b.badges.name === "Innovateur")) {
-    virtualBadges.push({
-      id: "virt-3",
-      badges: {
-        name: "Innovateur",
-        icon: "fa-lightbulb",
-        description: "Vous avez proposé votre première suggestion.",
-        criteria_value: 100, // Arbitrary value for sorting/styling
-      },
-    });
-  }
+  // 3. MISSIONS
+  if (totalMissions >= 1 && !virtualBadges.some(b => b.badges.name === "Stratège")) virtualBadges.push({ id: "v-m1", badges: { name: "Stratège", icon: "fa-chess-knight", description: "1 mission accomplie.", criteria_value: 200 } });
+  if (totalMissions >= 5 && !virtualBadges.some(b => b.badges.name === "Agent de Terrain")) virtualBadges.push({ id: "v-m2", badges: { name: "Agent de Terrain", icon: "fa-user-shield", description: "5 missions accomplies.", criteria_value: 300 } });
+  if (totalMissions >= 20 && !virtualBadges.some(b => b.badges.name === "Commandant")) virtualBadges.push({ id: "v-m3", badges: { name: "Commandant", icon: "fa-medal", description: "20 missions accomplies.", criteria_value: 500 } });
+  if (totalMissions >= 50 && !virtualBadges.some(b => b.badges.name === "Légende Opérationnelle")) virtualBadges.push({ id: "v-m4", badges: { name: "Légende Opérationnelle", icon: "fa-crown", description: "50 missions accomplies.", criteria_value: 1000 } });
 
-  // Badge: Stratège (1 mission)
-  if (totalMissions >= 1 && !virtualBadges.some((b) => b.badges.name === "Stratège")) {
-    virtualBadges.push({
-      id: "virt-4",
-      badges: {
-        name: "Stratège",
-        icon: "fa-chess-knight",
-        description: "Première mission accomplie avec succès.",
-        criteria_value: 200, // Arbitrary value
-      },
-    });
-  }
-
-  // Determine Next Objective (Priority Logic)
+  // Determine Next Objective (Priority Logic - Gamification Loop)
   let nextObjective = {
     title: "Débloquez 10 lectures",
     subtitle: "Pour obtenir le trophée Lecteur Assidu",
@@ -84,50 +50,25 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
     color: "amber"
   };
 
-  // Logic: 
-  // 1. Reading (Assidu) -> 2. Suggestion (Innovateur) -> 3. Reading (Confirmé) -> 4. Mission (Stratège) -> 5. Reading (Visionnaire)
-  if (totalConsultations < 10) {
-     // Default is OK
-  } else if (totalSuggestions < 1) {
-     nextObjective = {
-       title: "Proposez 1 idée",
-       subtitle: "Pour obtenir le trophée Innovateur",
-       current: totalSuggestions,
-       target: 1,
-       unit: "Suggestion",
-       icon: "fa-lightbulb",
-       color: "emerald"
-     };
-  } else if (totalConsultations < 50) {
-     nextObjective = {
-       title: "Débloquez 50 lectures",
-       subtitle: "Pour obtenir le trophée Lecteur Confirmé",
-       current: totalConsultations,
-       target: 50,
-       unit: "Lectures",
-       icon: "fa-glasses",
-       color: "amber"
-     };
-  } else if (totalMissions < 1) {
-     nextObjective = {
-       title: "Réussissez 1 mission",
-       subtitle: "Pour obtenir le trophée Stratège",
-       current: totalMissions,
-       target: 1,
-       unit: "Mission",
-       icon: "fa-chess-knight",
-       color: "indigo"
-     };
-  } else {
-     nextObjective = {
-       title: "Débloquez 100 lectures",
-       subtitle: "Pour obtenir le trophée Visionnaire",
-       current: totalConsultations,
-       target: 100,
-       unit: "Lectures",
-       icon: "fa-eye",
-       color: "amber"
-     };
+  // Logic Loop: Find the nearest achievable goal across all categories
+  // ORDER: Suggestion 1 -> Mission 1 -> Reading 50 -> Suggestion 5 -> Mission 5 -> Reading 100...
+  
+  if (totalConsultations < 10) { /* Default */ }
+  else if (totalSuggestions < 1) { nextObjective = { title: "Proposez 1 idée", subtitle: "Trophée Innovateur", current: totalSuggestions, target: 1, unit: "Suggestion", icon: "fa-lightbulb", color: "emerald" }; }
+  else if (totalMissions < 1) { nextObjective = { title: "Réussissez 1 mission", subtitle: "Trophée Stratège", current: totalMissions, target: 1, unit: "Mission", icon: "fa-chess-knight", color: "indigo" }; }
+  
+  else if (totalConsultations < 50) { nextObjective = { title: "Débloquez 50 lectures", subtitle: "Trophée Lecteur Confirmé", current: totalConsultations, target: 50, unit: "Lectures", icon: "fa-glasses", color: "amber" }; }
+  else if (totalSuggestions < 5) { nextObjective = { title: "Proposez 5 idées", subtitle: "Trophée Esprit Critique", current: totalSuggestions, target: 5, unit: "Suggestions", icon: "fa-magnifying-glass-plus", color: "emerald" }; }
+  else if (totalMissions < 5) { nextObjective = { title: "Réussissez 5 missions", subtitle: "Trophée Agent de Terrain", current: totalMissions, target: 5, unit: "Missions", icon: "fa-user-shield", color: "indigo" }; }
+  
+  else if (totalConsultations < 100) { nextObjective = { title: "Débloquez 100 lectures", subtitle: "Trophée Expert Visionnaire", current: totalConsultations, target: 100, unit: "Lectures", icon: "fa-eye", color: "amber" }; }
+  else if (totalSuggestions < 20) { nextObjective = { title: "Proposez 20 idées", subtitle: "Trophée Architecte du Futur", current: totalSuggestions, target: 20, unit: "Suggestions", icon: "fa-drafting-compass", color: "emerald" }; }
+  else if (totalMissions < 20) { nextObjective = { title: "Réussissez 20 missions", subtitle: "Trophée Commandant", current: totalMissions, target: 20, unit: "Missions", icon: "fa-medal", color: "indigo" }; }
+  
+  else if (totalConsultations < 250) { nextObjective = { title: "Débloquez 250 lectures", subtitle: "Trophée Rat de Bibliothèque", current: totalConsultations, target: 250, unit: "Lectures", icon: "fa-book-atlas", color: "amber" }; }
+  else {
+     // End Game Loop
+     nextObjective = { title: "Légende vivante", subtitle: "Vous avez atteint le sommet !", current: 100, target: 100, unit: "Héros", icon: "fa-crown", color: "rose" };
   }
   
   // Cap progress at 100%
@@ -315,7 +256,12 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
           </p>
           <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm group-hover/challenge:bg-${nextObjective.color}-50 group-hover/challenge:text-${nextObjective.color}-500 transition-colors`}>
+              {/* Dynamic color class handling */}
+              <div className={`w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm transition-colors ${
+                nextObjective.color === 'emerald' ? 'group-hover/challenge:bg-emerald-50 group-hover/challenge:text-emerald-500' :
+                nextObjective.color === 'indigo' ? 'group-hover/challenge:bg-indigo-50 group-hover/challenge:text-indigo-500' :
+                'group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500'
+              }`}>
                 <i className={`fa-solid ${nextObjective.icon}`}></i>
               </div>
               <div>
@@ -327,7 +273,11 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                 </p>
                 <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    className={`h-full bg-${nextObjective.color}-400 animate-pulse transition-all duration-1000`}
+                    className={`h-full animate-pulse transition-all duration-1000 ${
+                      nextObjective.color === 'emerald' ? 'bg-emerald-400' :
+                      nextObjective.color === 'indigo' ? 'bg-indigo-400' :
+                      'bg-amber-400'
+                    }`}
                     style={{
                       width: `${progressPercent}%`,
                     }}></div>

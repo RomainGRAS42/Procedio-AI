@@ -230,21 +230,25 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         console.log(`🔍 Vérification Badges : ${totalLectures} lectures, ${totalSuggestions} suggestions, ${totalMissions} missions.`);
 
-        if (totalLectures >= 10 && !earnedBadges.some(b => b.badges.name === 'Lecteur Assidu')) {
-           missingBadges.push('Lecteur Assidu');
-        }
-        if (totalLectures >= 50 && !earnedBadges.some(b => b.badges.name === 'Lecteur Confirmé')) {
-           missingBadges.push('Lecteur Confirmé');
-        }
-        if (totalLectures >= 100 && !earnedBadges.some(b => b.badges.name === 'Expert Visionnaire')) {
-           missingBadges.push('Expert Visionnaire');
-        }
-        if (totalSuggestions >= 1 && !earnedBadges.some(b => b.badges.name === 'Innovateur')) {
-           missingBadges.push('Innovateur');
-        }
-        if (totalMissions >= 1 && !earnedBadges.some(b => b.badges.name === 'Stratège')) {
-           missingBadges.push('Stratège');
-        }
+        // --- LECTURE ---
+        if (totalLectures >= 10 && !earnedBadges.some(b => b.badges.name === 'Lecteur Assidu')) missingBadges.push('Lecteur Assidu');
+        if (totalLectures >= 50 && !earnedBadges.some(b => b.badges.name === 'Lecteur Confirmé')) missingBadges.push('Lecteur Confirmé');
+        if (totalLectures >= 100 && !earnedBadges.some(b => b.badges.name === 'Expert Visionnaire')) missingBadges.push('Expert Visionnaire');
+        if (totalLectures >= 250 && !earnedBadges.some(b => b.badges.name === 'Rat de Bibliothèque')) missingBadges.push('Rat de Bibliothèque');
+        if (totalLectures >= 500 && !earnedBadges.some(b => b.badges.name === 'Archiviste Suprême')) missingBadges.push('Archiviste Suprême');
+        if (totalLectures >= 1000 && !earnedBadges.some(b => b.badges.name === 'Omniscient')) missingBadges.push('Omniscient');
+
+        // --- SUGGESTIONS ---
+        if (totalSuggestions >= 1 && !earnedBadges.some(b => b.badges.name === 'Innovateur')) missingBadges.push('Innovateur');
+        if (totalSuggestions >= 5 && !earnedBadges.some(b => b.badges.name === 'Esprit Critique')) missingBadges.push('Esprit Critique');
+        if (totalSuggestions >= 20 && !earnedBadges.some(b => b.badges.name === 'Architecte du Futur')) missingBadges.push('Architecte du Futur');
+        if (totalSuggestions >= 50 && !earnedBadges.some(b => b.badges.name === 'Visionnaire')) missingBadges.push('Visionnaire');
+
+        // --- MISSIONS ---
+        if (totalMissions >= 1 && !earnedBadges.some(b => b.badges.name === 'Stratège')) missingBadges.push('Stratège');
+        if (totalMissions >= 5 && !earnedBadges.some(b => b.badges.name === 'Agent de Terrain')) missingBadges.push('Agent de Terrain');
+        if (totalMissions >= 20 && !earnedBadges.some(b => b.badges.name === 'Commandant')) missingBadges.push('Commandant');
+        if (totalMissions >= 50 && !earnedBadges.some(b => b.badges.name === 'Légende Opérationnelle')) missingBadges.push('Légende Opérationnelle');
 
         if (missingBadges.length > 0) {
            console.log("🛠️ Badges manquants détectés (Self-Healing) :", missingBadges);
@@ -271,7 +275,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                    id: def.id,
                    name: def.name,
                    description: "Badge débloqué automatiquement", // Placeholder
-                   icon: def.name.includes('Visionnaire') ? 'fa-eye' : def.name.includes('Confirmé') ? 'fa-glasses' : def.name.includes('Innovateur') ? 'fa-lightbulb' : def.name.includes('Stratège') ? 'fa-chess-knight' : 'fa-book-open', // Fallback icons
+                   icon: 'fa-trophy', // Fallback icon
                    category: 'achievement'
                  }
                }));
@@ -1219,10 +1223,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="col-span-12 lg:col-span-4">
               <BadgesWidget
-                earnedBadges={earnedBadges}
-                totalConsultations={personalStats.consultations}
-                onNavigate={onNavigate}
-              />
+              earnedBadges={earnedBadges}
+              totalConsultations={personalStats.consultations}
+              totalSuggestions={personalStats.suggestions}
+              totalMissions={personalStats.missions}
+              onNavigate={onNavigate}
+            />
             </div>
 
             {/* ROW 5: RSS (Full Width) */}
