@@ -1169,7 +1169,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               <i
                 className={`fa-solid ${referentExpert ? "fa-lock text-[8px] opacity-40" : "fa-regular fa-lightbulb text-sm"}`}></i>
               <span className="hidden sm:inline">
-                {referentExpert ? "Soumettre Amélioration" : "Suggérer une modif"}
+                {referentExpert ? "Soumettre Amélioration" : "Améliorer la procédure"}
               </span>
             </button>
 
@@ -1384,9 +1384,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <i className="fa-solid fa-lightbulb"></i>
               </div>
               <div>
-                <h3 className="font-black text-slate-800 text-lg">Suggérer une modification</h3>
+                <h3 className="font-black text-slate-800 text-lg">Proposer une amélioration</h3>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Aidez-nous à améliorer cette procédure
+                  Aidez-nous à perfectionner cette procédure
                 </p>
               </div>
             </div>
