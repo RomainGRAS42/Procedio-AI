@@ -46,24 +46,71 @@ const Account: React.FC<AccountProps> = ({ user }) => {
 
   const fetchLatestStats = async () => {
     try {
+      // 1. Fetch Profile Data
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('xp_points, level, avatar_url, first_name')
         .eq('id', user.id)
         .single();
       
+      // 2. Fetch Real Badges from DB
       const { data: badgesData } = await supabase
         .from('user_badges')
         .select('*, badges(*)')
         .eq('user_id', user.id);
 
+      // 3. Fetch Counts for Virtual Badges Logic
+      const { count: consultCount } = await supabase
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .ilike("title", "CONSULTATION_%");
+
+      const { count: suggCount } = await supabase
+        .from("procedure_suggestions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "approved");
+
+      const { count: missionsCount } = await supabase
+        .from("missions")
+        .select("*", { count: "exact", head: true })
+        .eq("assigned_to", user.id)
+        .eq("status", "completed");
+
+      // 4. Calculate Virtual Badges (Same logic as Dashboard)
+      const totalConsultations = consultCount || 0;
+      const totalSuggestions = suggCount || 0;
+      const totalMissions = missionsCount || 0;
+      
+      const virtualBadges = badgesData ? [...badgesData] : [];
+
+      // --- LECTURE ---
+      if (totalConsultations >= 10 && !virtualBadges.some(b => b.badges.name === "Lecteur Assidu")) virtualBadges.push({ id: "v-l1", badges: { name: "Lecteur Assidu", icon: "fa-book-open", description: "10 procédures consultées.", criteria_value: 10 } });
+      if (totalConsultations >= 50 && !virtualBadges.some(b => b.badges.name === "Lecteur Confirmé")) virtualBadges.push({ id: "v-l2", badges: { name: "Lecteur Confirmé", icon: "fa-glasses", description: "50 procédures consultées.", criteria_value: 50 } });
+      if (totalConsultations >= 100 && !virtualBadges.some(b => b.badges.name === "Expert Visionnaire")) virtualBadges.push({ id: "v-l3", badges: { name: "Expert Visionnaire", icon: "fa-eye", description: "100 procédures consultées.", criteria_value: 100 } });
+      if (totalConsultations >= 250 && !virtualBadges.some(b => b.badges.name === "Rat de Bibliothèque")) virtualBadges.push({ id: "v-l4", badges: { name: "Rat de Bibliothèque", icon: "fa-book-atlas", description: "250 procédures consultées.", criteria_value: 250 } });
+      if (totalConsultations >= 500 && !virtualBadges.some(b => b.badges.name === "Archiviste Suprême")) virtualBadges.push({ id: "v-l5", badges: { name: "Archiviste Suprême", icon: "fa-landmark", description: "500 procédures consultées.", criteria_value: 500 } });
+
+      // --- SUGGESTIONS ---
+      if (totalSuggestions >= 1 && !virtualBadges.some(b => b.badges.name === "Innovateur")) virtualBadges.push({ id: "v-s1", badges: { name: "Innovateur", icon: "fa-lightbulb", description: "1 suggestion proposée.", criteria_value: 100 } });
+      if (totalSuggestions >= 5 && !virtualBadges.some(b => b.badges.name === "Esprit Critique")) virtualBadges.push({ id: "v-s2", badges: { name: "Esprit Critique", icon: "fa-magnifying-glass-plus", description: "5 suggestions proposées.", criteria_value: 150 } });
+      if (totalSuggestions >= 20 && !virtualBadges.some(b => b.badges.name === "Architecte du Futur")) virtualBadges.push({ id: "v-s3", badges: { name: "Architecte du Futur", icon: "fa-drafting-compass", description: "20 suggestions proposées.", criteria_value: 200 } });
+      if (totalSuggestions >= 50 && !virtualBadges.some(b => b.badges.name === "Visionnaire")) virtualBadges.push({ id: "v-s4", badges: { name: "Visionnaire", icon: "fa-eye", description: "50 suggestions proposées.", criteria_value: 300 } });
+
+      // --- MISSIONS ---
+      if (totalMissions >= 1 && !virtualBadges.some(b => b.badges.name === "Stratège")) virtualBadges.push({ id: "v-m1", badges: { name: "Stratège", icon: "fa-chess-knight", description: "1 mission accomplie.", criteria_value: 200 } });
+      if (totalMissions >= 5 && !virtualBadges.some(b => b.badges.name === "Agent de Terrain")) virtualBadges.push({ id: "v-m2", badges: { name: "Agent de Terrain", icon: "fa-user-shield", description: "5 missions accomplies.", criteria_value: 300 } });
+      if (totalMissions >= 20 && !virtualBadges.some(b => b.badges.name === "Commandant")) virtualBadges.push({ id: "v-m3", badges: { name: "Commandant", icon: "fa-medal", description: "20 missions accomplies.", criteria_value: 500 } });
+      if (totalMissions >= 50 && !virtualBadges.some(b => b.badges.name === "Légende Opérationnelle")) virtualBadges.push({ id: "v-m4", badges: { name: "Légende Opérationnelle", icon: "fa-crown", description: "50 missions accomplies.", criteria_value: 1000 } });
+
       if (profile) {
         setPersonalStats({
           xp: profile.xp_points || 0,
           level: profile.level || 1,
-          badgesCount: badgesData?.length || 0
+          badgesCount: virtualBadges.length || 0
         });
-        if (badgesData) setEarnedBadges(badgesData);
+        setEarnedBadges(virtualBadges);
         if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
         if (profile.first_name) setDisplayName(profile.first_name);
       }
