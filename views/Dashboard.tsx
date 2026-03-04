@@ -85,9 +85,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [loadingAnnouncement, setLoadingAnnouncement] = useState(
-    !cacheStore.has("dash_announcement")
-  );
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [managerResponse, setManagerResponse] = useState("");
 
