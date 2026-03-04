@@ -467,9 +467,10 @@ const Account: React.FC<AccountProps> = ({ user }) => {
                   </div>
                 )}
               </div>
-            </section>
-          </div>
+            )}
+          </section>
         </div>
+      </div>
 
         {/* MODALE DE SÉCURITÉ */}
         {showPasswordModal && (
