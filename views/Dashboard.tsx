@@ -1326,6 +1326,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                   activities={activities}
                   loading={loadingMissions || loadingActivities}
                   onNavigate={onNavigate}
+                  onOpenExam={(exam) => {
+                      setActiveQuizRequest(exam);
+                      setShowDashboardQuiz(true);
+                  }}
                 />
               </div>
             </div>
@@ -1521,6 +1525,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                     });
 
                     setToast({ message: "Utilisateur nommé Référent avec succès !", type: "success" });
+
+                    // Remove notification/note for manager
+                    const noteTitle = `CLAIM_MASTERY_RESULT_${selectedMasteryClaim.id}`;
+                    await supabase.from("notes").delete().match({ title: noteTitle });
+                    
+                    fetchMasteryClaims();
+                    fetchActivities(); // Refresh activities to remove notification from list if needed
+                    setShowMasteryDetail(false); // Close modal on success
                 } else {
                      // Check if user is actually referent before revoking? 
                      // Or this action might be "Revoke" button if already referent
@@ -1531,6 +1543,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                      setToast({ message: "Statut de Référent révoqué.", type: "info" });
                 }
                 fetchMasteryClaims();
+                fetchActivities();
                 setShowMasteryDetail(false); // Close modal on success
             } catch (e: any) {
                 console.error(e);

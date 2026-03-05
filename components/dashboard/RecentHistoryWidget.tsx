@@ -88,7 +88,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let xp = null;
 
         // Custom colors for specific notifications
-        if (n.title.toLowerCase().includes('validée') || n.title.toLowerCase().includes('completed')) {
+        if (n.title.toLowerCase().includes('validée') || n.title.toLowerCase().includes('completed') || n.title.toLowerCase().includes('félicitations') || n.title.toLowerCase().includes('bravo')) {
             color = 'text-emerald-500';
             bg = 'bg-emerald-50';
             icon = 'fa-check-circle';

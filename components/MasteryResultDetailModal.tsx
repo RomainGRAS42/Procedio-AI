@@ -183,10 +183,10 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
                       onClick={() => handleReferentAction('assign')}
                       disabled={isReferentLoading || isRejecting}
                       className="px-6 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-all flex items-center gap-2"
-                      title="Valider et nommer cet utilisateur comme Gardien"
+                      title="Valider et nommer cet utilisateur comme Référent"
                   >
                       {isReferentLoading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-check"></i>}
-                      Valider & Nommer Gardien
+                      Valider & Nommer Référent
                   </button>
                 </>
              )}
