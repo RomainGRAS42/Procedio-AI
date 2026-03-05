@@ -252,6 +252,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                     const isCompleted = claim.status === 'completed';
                     const isApproved = claim.status === 'approved';
                     const isPending = claim.status === 'pending';
+                    const isReviewPending = isCompleted && claim.score !== undefined; // User finished quiz, awaiting manager
                     const score = claim.score || 0;
                     const isSuccess = score >= 70;
                     const isRead = claim.isRead;
@@ -262,11 +263,11 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                         onContextMenu={(e) => handleContextMenu(e, 'mastery', claim)}
                         onClick={() => {
                             if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
-                            if (isCompleted) onViewMasteryDetail?.(claim);
+                            if (isCompleted || isReviewPending) onViewMasteryDetail?.(claim);
                         }}
                         className={`p-3 rounded-2xl border transition-all group/item ${
                           !isRead ? 'bg-white border-indigo-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80'
-                        } ${isCompleted ? 'cursor-pointer hover:border-indigo-200' : ''}`}
+                        } ${isCompleted || isReviewPending ? 'cursor-pointer hover:border-indigo-200' : ''}`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -277,7 +278,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                               (isSuccess ? 'bg-emerald-400' : 'bg-rose-400')
                             }`}></div>
                             <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-indigo-900' : 'font-bold text-slate-500'}`}>
-                              {isCompleted ? 'Examen' : 'Expertise'}
+                              {isReviewPending ? 'Résultat Examen' : isCompleted ? 'Examen Terminé' : 'Expertise'}
                             </span>
                           </div>
                           <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
@@ -298,7 +299,19 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                             </div>
 
                             <div className="shrink-0">
-                              {isCompleted ? (
+                              {isReviewPending ? (
+                                <button 
+                                  onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
+                                      onViewMasteryDetail?.(claim);
+                                  }}
+                                  className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95 flex items-center gap-2"
+                                >
+                                  <i className="fa-solid fa-eye"></i>
+                                  CORRIGER
+                                </button>
+                              ) : isCompleted ? (
                                 <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
                                   isSuccess ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
                                 }`}>

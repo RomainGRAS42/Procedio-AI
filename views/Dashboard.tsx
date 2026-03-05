@@ -1475,13 +1475,92 @@ const Dashboard: React.FC<DashboardProps> = ({
         quizData={activeQuizRequest?.quiz_data}
         masteryRequestId={activeQuizRequest?.id}
         onSuccess={(score, level) => {
-          setToast({ message: `Examen terminé ! Score: ${score}%`, type: "success" });
-          setShowDashboardQuiz(false);
+          // Success handled in Modal (Status updated to completed/review_pending)
+          // Just refresh lists
+          fetchApprovedExams();
           fetchPersonalStats();
         }}
       />
 
-      {modalConfig && (
+      <MasteryResultDetailModal
+         isOpen={showMasteryDetail && !!selectedMasteryClaim}
+         onClose={() => {
+            setShowMasteryDetail(false);
+            setSelectedMasteryClaim(null);
+         }}
+         claim={selectedMasteryClaim}
+         onUpdateReferent={async (procId, userId, action) => {
+            try {
+                if (action === 'assign') {
+                    await supabase.from('procedure_referents').upsert({
+                        procedure_id: procId,
+                        user_id: userId
+                    }, { onConflict: 'procedure_id, user_id' });
+                    
+                    // Mark request as Approved/Archived/ReferentGranted
+                    await supabase.from('mastery_requests')
+                        .update({ status: 'approved_referent' }) // Or keep as completed?
+                        .eq('id', selectedMasteryClaim.id);
+
+                    // Notify User
+                    await supabase.from("notifications").insert({
+                      user_id: userId,
+                      type: "level_up",
+                      title: "Félicitations ! 🎓",
+                      content: `Vous avez été nommé Référent pour la procédure "${selectedMasteryClaim.procedures?.title}".`,
+                      link: `/procedures/${procId}`,
+                    });
+
+                    // Grant XP
+                    const score = selectedMasteryClaim.score || 100;
+                    const xpReward = score === 100 ? 100 : score >= 85 ? 75 : 50;
+                    await supabase.rpc('increment_user_xp', {
+                        target_user_id: userId,
+                        xp_amount: xpReward,
+                        reason: `Maîtrise validée (Référent) : ${selectedMasteryClaim.procedures?.title}`
+                    });
+
+                    setToast({ message: "Utilisateur nommé Référent avec succès !", type: "success" });
+                } else {
+                     // Check if user is actually referent before revoking? 
+                     // Or this action might be "Revoke" button if already referent
+                     await supabase.from('procedure_referents').delete().match({
+                        procedure_id: procId,
+                        user_id: userId
+                     });
+                     setToast({ message: "Statut de Référent révoqué.", type: "info" });
+                }
+                fetchMasteryClaims();
+                setShowMasteryDetail(false); // Close modal on success
+            } catch (e: any) {
+                console.error(e);
+                setToast({ message: "Erreur lors de la mise à jour du référent.", type: "error" });
+            }
+         }}
+         onReject={async (requestId) => {
+             try {
+                 await supabase.from('mastery_requests')
+                     .update({ status: 'rejected' })
+                     .eq('id', requestId);
+                 
+                 // Notify User
+                 await supabase.from("notifications").insert({
+                    user_id: selectedMasteryClaim.user_id,
+                    type: "system",
+                    title: "Candidature Refusée",
+                    content: `Votre examen pour "${selectedMasteryClaim.procedures?.title}" n'a pas été validé par le manager.`,
+                    link: `/dashboard`,
+                 });
+
+                 setToast({ message: "Candidature refusée.", type: "info" });
+                 fetchMasteryClaims();
+                 setShowMasteryDetail(false);
+             } catch (e) {
+                 console.error(e);
+                 setToast({ message: "Erreur lors du refus.", type: "error" });
+             }
+         }}
+      />
         <KPIDetailsModal
           onClose={() => setModalConfig(null)}
           title={modalConfig.title}

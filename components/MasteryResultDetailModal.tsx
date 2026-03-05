@@ -5,11 +5,13 @@ interface MasteryResultDetailModalProps {
   onClose: () => void;
   claim: any;
   onUpdateReferent?: (procedureId: string, userId: string, action: 'assign' | 'revoke') => Promise<void>;
+  onReject?: (requestId: string) => Promise<void>; // Add Reject Handler
 }
 
-const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isOpen, onClose, claim, onUpdateReferent }) => {
+const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isOpen, onClose, claim, onUpdateReferent, onReject }) => {
   const [isReferentLoading, setIsReferentLoading] = React.useState(false);
   const [currentReferentId, setCurrentReferentId] = React.useState<string | null>(null);
+  const [isRejecting, setIsRejecting] = React.useState(false);
 
   React.useEffect(() => {
     if (claim?.procedure_id) {
@@ -24,7 +26,11 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
     setIsReferentLoading(true);
     try {
         await onUpdateReferent(claim.procedure_id, claim.user_id, action);
-        if (action === 'assign') setCurrentReferentId(claim.user_id);
+        if (action === 'assign') {
+            setCurrentReferentId(claim.user_id);
+            // Optionally close modal or show success
+            onClose();
+        }
         else setCurrentReferentId(null);
     } catch (e) {
         console.error(e);
@@ -32,6 +38,20 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
         setIsReferentLoading(false);
     }
   };
+
+  const handleReject = async () => {
+    if (!onReject) return;
+    setIsRejecting(true);
+    try {
+        await onReject(claim.id);
+        onClose();
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsRejecting(false);
+    }
+  };
+
   const rawData = claim.quiz_data;
   let questions: any[] = [];
   
@@ -148,23 +168,34 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
         <div className="p-8 border-t border-slate-50 bg-slate-50/30 flex justify-end">
           <div className="flex gap-3">
              {/* 🛡️ REFERENT MANAGEMENT */}
-             {isSuccess && onUpdateReferent && (
-                <button
-                    onClick={() => handleReferentAction('assign')}
-                    disabled={isReferentLoading}
-                    className="px-6 py-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2"
-                    title="Nommer cet utilisateur comme Gardien de la procédure"
-                >
-                    {isReferentLoading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-chess-king"></i>}
-                    Nommer Gardien
-                </button>
+             {onUpdateReferent && (
+                <>
+                  <button
+                      onClick={handleReject}
+                      disabled={isRejecting || isReferentLoading}
+                      className="px-6 py-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-100 transition-all flex items-center gap-2"
+                  >
+                      {isRejecting ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-ban"></i>}
+                      Refuser
+                  </button>
+
+                  <button
+                      onClick={() => handleReferentAction('assign')}
+                      disabled={isReferentLoading || isRejecting}
+                      className="px-6 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-all flex items-center gap-2"
+                      title="Valider et nommer cet utilisateur comme Gardien"
+                  >
+                      {isReferentLoading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-check"></i>}
+                      Valider & Nommer Gardien
+                  </button>
+                </>
              )}
 
             <button 
               onClick={onClose}
               className="px-8 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95"
             >
-              Fermer l'Analyse
+              Fermer
             </button>
           </div>
         </div>

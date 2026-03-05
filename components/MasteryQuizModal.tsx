@@ -93,7 +93,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
     stopTimer();
     setIsFinished(true);
 
-    // Calculate score
+    // Calculate score for internal use (Manager decision support)
     let correctCount = 0;
     finalAnswers.forEach((ans, idx) => {
       if (ans === questions[idx].correct) correctCount++;
@@ -102,7 +102,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
     const finalScore = Math.round((correctCount / questions.length) * 100);
     setScore(finalScore);
 
-    // Determine Level
+    // Default level calculation (just for reference)
     let level = 1;
     if (finalScore === 100) level = 4;
     else if (finalScore >= 85) level = 3;
@@ -114,7 +114,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
       await supabase
         .from('mastery_requests')
         .update({
-          status: 'completed',
+          status: 'completed', // Completed by user, awaiting manager review
           score: finalScore,
           completed_at: new Date().toISOString(),
           user_answers: finalAnswers,
@@ -122,50 +122,20 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
         })
         .eq('id', masteryRequestId);
 
-      // 2. Update user_expertise
-      const userProfileId = user.id;
-      const procUuid = procedure.db_id || procedure.uuid;
+      // 2. Notify Manager
+      await supabase.from("notes").insert([
+        {
+          title: `CLAIM_MASTERY_RESULT_${masteryRequestId}`,
+          content: `${user.firstName} a terminé l'examen de maîtrise sur "${procedure.title}". En attente de votre validation.`,
+          is_protected: false,
+          user_id: user.id, // Associated with technician
+          tags: ["MASTERY_RESULT", "AWAITING_REVIEW"],
+          viewed: false
+        },
+      ]);
 
-      if (procUuid) {
-        await supabase
-          .from('user_expertise')
-          .upsert({
-            user_id: userProfileId,
-            procedure_id: procUuid,
-            level: level,
-            achieved_score: finalScore,
-            last_tested_at: new Date().toISOString()
-          });
-
-        // 3. Notify Manager with summary (Details are available in Pilotage Center)
-        await supabase.from("notes").insert([
-          {
-            title: `CLAIM_MASTERY_RESULT_${masteryRequestId}`,
-            content: `${user.firstName} a terminé l'examen de maîtrise sur "${procedure.title}" avec un score de ${finalScore}%. (Détails disponibles dans le Centre de Pilotage)`,
-            is_protected: false,
-            user_id: user.id,
-            tags: ["MASTERY_RESULT", "COMPLETED"],
-            viewed: false
-          },
-        ]);
-
-        // 4. Grant XP Reward & Create Referent Record
-        if (finalScore >= 70) {
-          // Create Referent Record
-          await supabase.from("procedure_referents").upsert({
-             procedure_id: procUuid,
-             user_id: userProfileId
-          }, { onConflict: 'procedure_id, user_id' });
-
-          const xpReward = finalScore === 100 ? 100 : finalScore >= 85 ? 75 : 50;
-          await supabase.rpc('increment_user_xp', {
-            target_user_id: user.id,
-            xp_amount: xpReward,
-            reason: `Maîtrise validée : ${procedure.title} (${finalScore}%)`
-          });
-        }
-      }
-
+      // No automatic XP or Referent status here. Manager decides.
+      
       onSuccess(finalScore, level);
     } catch (err) {
       console.error("Error saving quiz results:", err);
@@ -181,8 +151,20 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
       <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl overflow-hidden relative">
         
+        {/* Header with Procedure Title */}
+        <div className="bg-slate-50 px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+           <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest truncate max-w-[70%]">
+             {procedure.title}
+           </h3>
+           {!isFinished && (
+             <span className="px-3 py-1 bg-white rounded-lg border border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest shadow-sm">
+               Examen Référent
+             </span>
+           )}
+        </div>
+
         {/* Progress Bar Top */}
-        <div className="absolute top-0 left-0 h-1.5 bg-slate-100 w-full">
+        <div className="absolute top-[72px] left-0 h-1.5 bg-slate-100 w-full">
           <div 
             className="h-full bg-indigo-600 transition-all duration-500"
             style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
@@ -190,7 +172,7 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
         </div>
 
         {!isFinished ? (
-          <div className="p-10">
+          <div className="p-10 pt-12">
             <div className="flex items-center justify-between mb-8">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                 Question {currentQuestionIndex + 1} / {questions.length}
@@ -243,36 +225,23 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
           </div>
         ) : (
           <div className="p-12 text-center">
-            <div className={`w-24 h-24 rounded-[2rem] mx-auto flex items-center justify-center text-4xl mb-8 shadow-xl ${score >= 70 ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-rose-500 text-white shadow-rose-200'}`}>
-              <i className={`fa-solid ${score >= 70 ? 'fa-award' : 'fa-circle-xmark'}`}></i>
+            <div className="w-24 h-24 rounded-[2rem] mx-auto flex items-center justify-center text-4xl mb-8 shadow-xl bg-slate-900 text-white shadow-slate-200">
+              <i className="fa-solid fa-paper-plane"></i>
             </div>
             
-            <h2 className="text-3xl font-black text-slate-900 mb-2">
-              {score >= 70 ? 'Félicitations !' : 'Oups...'}
+            <h2 className="text-3xl font-black text-slate-900 mb-4">
+              Réponses Envoyées !
             </h2>
-            <p className="text-slate-500 font-bold mb-8">
-              Examen sur : <span className="text-slate-900">{procedure.title}</span><br/>
-              Vous avez obtenu un score de <span className="text-indigo-600 font-black">{score}%</span>
+            <p className="text-slate-500 font-medium mb-8 leading-relaxed max-w-sm mx-auto">
+              Vos résultats ont été transmis au manager pour validation.
+              Vous serez notifié dès qu'une décision sera prise.
             </p>
-
-            <div className="bg-slate-50 rounded-3xl p-6 mb-10 border border-slate-100">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Niveau Attribué</p>
-              <div className="flex items-center justify-center gap-3">
-                 <div className="px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <span className="text-xl font-black text-slate-800">Niveau {
-                      score === 100 ? '4 (Référent)' :
-                      score >= 85 ? '3 (Expert)' :
-                      score >= 70 ? '2 (Pratique)' : '1 (Apprentissage)'
-                    }</span>
-                 </div>
-              </div>
-            </div>
 
             <button
               onClick={onClose}
               className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all active:scale-95"
             >
-              Terminer
+              FERMER
             </button>
           </div>
         )}
