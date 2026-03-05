@@ -1195,8 +1195,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
-          <div className="space-y-1">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div className="space-y-1 shrink-0">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               Bonjour,
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
@@ -1219,7 +1219,30 @@ const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* MANAGER MESSAGE (In Header) */}
+          {user.role === UserRole.MANAGER && (
+            <div className="flex-1 mx-4 min-w-[300px]">
+               <AnnouncementWidget
+                  user={user}
+                  announcement={announcement}
+                  isRead={isRead}
+                  handleMarkAsRead={handleMarkAsRead}
+                  handleSaveAnnouncement={handleUpdateAnnouncement}
+                  loadingAnnouncement={loadingAnnouncement}
+                  saving={saving}
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                  editContent={editContent}
+                  setEditContent={setEditContent}
+                  requiresConfirmation={requiresConfirmation}
+                  setRequiresConfirmation={setRequiresConfirmation}
+                  formatDate={(d) => new Date(d).toLocaleDateString()}
+                  compact={true} 
+                />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 shrink-0">
             {user.role === UserRole.MANAGER && (
               <button
                 onClick={onUploadClick}
@@ -1333,33 +1356,17 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-            {/* MANAGER MESSAGE (EDITABLE) */}
-            <div className="w-full">
-                <AnnouncementWidget
-                  user={user}
-                  announcement={announcement}
-                  isRead={isRead}
-                  handleMarkAsRead={handleMarkAsRead}
-                  handleSaveAnnouncement={handleUpdateAnnouncement}
-                  loadingAnnouncement={loadingAnnouncement}
-                  saving={saving}
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                  editContent={editContent}
-                  setEditContent={setEditContent}
-                  requiresConfirmation={requiresConfirmation}
-                  setRequiresConfirmation={setRequiresConfirmation}
-                  formatDate={(d) => new Date(d).toLocaleDateString()}
-                  compact={true} 
-                />
-            </div>
-
             {/* MANAGER ROW 0: Team Synergy (Top Priority) */}
             <div className="w-full">
               <TeamSynergyWidget />
             </div>
 
-            {/* MANAGER ROW 1: 3 Columns Layout (Review Center | Team Podium | Activity) */}
+            {/* MANAGER ROW 1: KPIs Summary */}
+            <div className="w-full">
+              <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
+            </div>
+
+            {/* MANAGER ROW 2: 3 Columns Layout (Review Center | Team Podium | Activity) */}
             <div className="grid grid-cols-12 gap-8">
               {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full">
@@ -1406,12 +1413,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* MANAGER ROW 2: KPIs Summary */}
-            <div className="w-full">
-              <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
-            </div>
-
-            {/* MANAGER ROW 4: RSS (Veille Info) */}
+            {/* MANAGER ROW 3: RSS (Veille Info) */}
             <div className="w-full">
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
                 <RSSWidget user={user} />
