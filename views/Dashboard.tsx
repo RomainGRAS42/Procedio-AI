@@ -1264,7 +1264,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                   onNavigate={onNavigate}
                 />
               </div>
-              <div className="col-span-12 lg:col-span-4">
+              <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
+                {/* REPLACED RecentHistory with BadgesWidget (Trophies) */}
+                <BadgesWidget
+                  earnedBadges={earnedBadges}
+                  totalConsultations={personalStats?.consultations || 0}
+                  totalSuggestions={personalStats?.suggestions || 0}
+                  totalMissions={personalStats?.missions || 0}
+                  onNavigate={onNavigate}
+                />
+                
+                {/* Moved Activity Feed here if needed, or kept RecentHistory but user wanted Trophies instead */}
                 <RecentHistoryWidget
                   activities={activities}
                   loading={loadingActivities}
@@ -1274,23 +1284,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* ROW 3: Announcement (Full Width) - REMOVED since moved up */}
-            {/* <div className="col-span-12">
-              <AnnouncementWidget ... />
-            </div> */}
-
-            {/* ROW 4: Mastery (8/12) + Badges (4/12) */}
-            <div className="col-span-12 lg:col-span-8">
-              {personalStats && <MasteryWidget personalStats={personalStats} />}
-            </div>
-            <div className="col-span-12 lg:col-span-4">
-              <BadgesWidget
-              earnedBadges={earnedBadges}
-              totalConsultations={personalStats?.consultations || 0}
-              totalSuggestions={personalStats?.suggestions || 0}
-              totalMissions={personalStats?.missions || 0}
-              onNavigate={onNavigate}
-            />
+            {/* ROW 3: Mastery (Full Width now) */}
+            <div className="col-span-12">
+               {personalStats && <MasteryWidget personalStats={personalStats} />}
             </div>
 
             {/* ROW 5: RSS (Full Width) */}
