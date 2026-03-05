@@ -52,35 +52,37 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               <InfoTooltip text="Tes missions en cours et à venir." />
             </h3>
           </div>
-          {missions.length > 3 && (
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors">
-              Voir tout
-            </span>
-          )}
+          <button 
+            onClick={() => onNavigate && onNavigate('/missions')}
+            className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-indigo-600 transition-colors bg-transparent border-0 p-0 focus:outline-none"
+          >
+            Voir tout
+          </button>
         </div>
 
-        <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin flex flex-col justify-center">
+        <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
           {missions.length > 0 ? (
             missions.slice(0, 3).map((mission) => (
               <div
                 key={mission.id}
-                className="p-4 bg-slate-50 rounded-2xl border border-transparent transition-all cursor-default group hover:bg-white hover:border-slate-100 hover:shadow-sm">
-                <div className="flex justify-between items-start mb-1">
+                onClick={() => onNavigate && onNavigate(`/missions?id=${mission.id}`)}
+                className="p-4 bg-slate-50 rounded-2xl border border-transparent transition-all cursor-pointer group hover:bg-white hover:border-slate-100 hover:shadow-sm"
+              >
+                <div className="flex justify-between items-start mb-2">
                   <span className="text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                     {mission.title}
                   </span>
-                  <span className="text-[10px] font-black text-indigo-600 shrink-0 ml-4">
-                    {mission.xp_reward} XP
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-1 flex-1 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full bg-indigo-500 ${mission.status === "awaiting_validation" ? "w-full" : "w-1/2"}`}></div>
+                  <div className="text-right">
+                    <span className="block text-[10px] font-black text-indigo-600">
+                        {mission.xp_reward} XP
+                    </span>
+                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                        {mission.status === "awaiting_validation" ? "Valid." : "En cours"}
+                    </span>
                   </div>
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">
-                    {mission.status === "awaiting_validation" ? "Valid." : "En cours"}
-                  </span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
+                    <div className="bg-indigo-500 h-1 rounded-full" style={{ width: '45%' }}></div>
                 </div>
               </div>
             ))

@@ -83,6 +83,19 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
     setLoadingMessages(false);
   };
 
+  // Reset notes when status changes (especially for technician after manager feedback)
+  useEffect(() => {
+    // If mission goes back to 'in_progress' (e.g. refused by manager), 
+    // we want to clear the "Espage de travail" input so the technician starts fresh 
+    // BUT we might want to keep the previous notes visible somewhere as history?
+    // For now, per user request: "le texte que j'avais mis en manager en justificatif apparait toujours dans espace de travail"
+    // This implies that 'completionNotes' state is persisting the manager's refusal reason.
+    
+    if (mission.status === 'in_progress' && user.role === UserRole.TECHNICIAN) {
+        setCompletionNotes(""); 
+    }
+  }, [mission.status, user.role]);
+
   useEffect(() => {
     const generateSignedUrl = async () => {
       if (!attachmentUrl) {
