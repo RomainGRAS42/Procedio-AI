@@ -803,14 +803,26 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={skillMapData}>
                           <PolarGrid stroke="#e2e8f0" />
                           <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} />
-                          <Radar name="Team" dataKey="A" stroke="#f59e0b" strokeWidth={3} fill="#f59e0b" fillOpacity={0.2} />
-                          <RechartsTooltip />
+                          <Radar name="Score Moyen" dataKey="A" stroke="#f59e0b" strokeWidth={3} fill="#f59e0b" fillOpacity={0.2} />
+                          <RechartsTooltip 
+                             formatter={(value: number) => [`${value} XP`, 'Score Moyen']}
+                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', padding: '8px 12px' }}
+                             itemStyle={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '12px' }}
+                          />
                         </RadarChart>
                       </ResponsiveContainer>
                       <div className="absolute top-0 right-0">
                           <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 uppercase tracking-wider shadow-sm">
                             Intensité: {globalKPIs.teamIntensity}%
                           </span>
+                      </div>
+                      
+                      {/* Legend */}
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-2 pointer-events-none">
+                         <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 shadow-sm flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-amber-500/20 border-2 border-amber-500"></span>
+                            <span className="text-[10px] font-medium text-slate-500">Score d'expertise moyen de l'équipe (XP)</span>
+                         </div>
                       </div>
                    </div>
 
