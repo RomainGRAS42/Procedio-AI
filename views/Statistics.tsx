@@ -47,7 +47,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     redZone: 0,
 
     totalViews: 0,
-    missedOpportunities: [] as { id: string; term: string; count: number }[]
+    missedOpportunities: [] as { id: string; term: string; count: number; trend: 'up' | 'urgent' | 'new' }[]
   });
 
   // Modal State
@@ -196,16 +196,27 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       // 2. Get Top 5 for display
       const { data: topOpportunities } = await supabase
         .from('search_opportunities')
-        .select('id, term, search_count')
+        .select('id, term, search_count, created_at, last_searched_at')
         .eq('status', 'pending')
         .order('search_count', { ascending: false })
         .limit(5);
 
-      const missedOpportunities = (topOpportunities || []).map(op => ({
-        id: op.id,
-        term: op.term,
-        count: op.search_count
-      }));
+      const missedOpportunities = (topOpportunities || []).map(op => {
+        let trend: 'up' | 'urgent' | 'new' = 'up';
+        const created = new Date(op.created_at);
+        const now = new Date();
+        const diffDays = (now.getTime() - created.getTime()) / (1000 * 3600 * 24);
+
+        if (op.search_count >= 5) trend = 'urgent';
+        else if (diffDays <= 7) trend = 'new';
+        
+        return {
+          id: op.id,
+          term: op.term,
+          count: op.search_count,
+          trend
+        };
+      });
 
       // Calculate total failures based on the sum of search_counts in the table (plus current period logic if needed)
       // For simplicity and alignment with the dashboard, we sum pending opportunities counts
@@ -570,7 +581,24 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                                  </div>
                                  
                                  <div className="mb-3">
-                                    <h4 className="text-lg font-black text-slate-800 mb-1">{op.term}</h4>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <h4 className="text-lg font-black text-slate-800">{op.term}</h4>
+                                      {op.trend === 'urgent' && (
+                                        <span className="bg-rose-100 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                          <i className="fa-solid fa-fire"></i> Urgent
+                                        </span>
+                                      )}
+                                      {op.trend === 'new' && (
+                                        <span className="bg-emerald-100 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                          <i className="fa-solid fa-sparkles"></i> Nouveau
+                                        </span>
+                                      )}
+                                      {op.trend === 'up' && (
+                                        <span className="bg-indigo-100 text-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                          <i className="fa-solid fa-arrow-trend-up"></i> En hausse
+                                        </span>
+                                      )}
+                                    </div>
                                     <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider border border-amber-100">
                                       <i className="fa-solid fa-triangle-exclamation"></i>
                                       {op.count} échecs
