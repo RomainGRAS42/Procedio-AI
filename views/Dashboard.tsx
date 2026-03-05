@@ -367,6 +367,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             desc: "Efficacité des recherches",
             tooltipTitle: "Taux de Succès",
             tooltipDesc: "Pourcentage de recherches aboutissant à un résultat.",
+            ariaLabel: `Taux de succès des recherches: ${managerKPIs.searchSuccess}%`
           },
           {
             label: "Fiabilité",
@@ -377,6 +378,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             desc: "Pertinence du contenu",
             tooltipTitle: "Santé du Patrimoine",
             tooltipDesc: "Indicateur global de fraîcheur et de validation des procédures.",
+            ariaLabel: `Taux de fiabilité du contenu: ${managerKPIs.health}%`
           },
           {
             label: "Dynamique",
@@ -387,6 +389,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             desc: "Niveau d'adoption",
             tooltipTitle: "Croissance d'Usage",
             tooltipDesc: "Volume de consultations sur la période en cours.",
+            ariaLabel: `Dynamique d'adoption: +${managerKPIs.usage} consultations`
           },
           {
             label: "Zone Rouge",
@@ -398,6 +401,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             tooltipTitle: "Risque de Perte",
             tooltipDesc:
               "Nombre de procédures n'ayant aucun référent assigné (risque de non-mise à jour).",
+            ariaLabel: `${managerKPIs.redZone} procédures en zone rouge`
           },
         ]
       : [
@@ -410,6 +414,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             desc: `${personalStats?.suggestions || 0} suggs validées`,
             tooltipTitle: "Ton apport à l'équipe",
             tooltipDesc: `Chaque suggestion validée aide tes collègues et prouve ton expertise métier.`,
+            ariaLabel: `Impact équipe: ${(personalStats?.suggestions || 0) * 50} points`
           },
           {
             label: "Sprint Actuel",
@@ -420,6 +425,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             desc: "Cette semaine",
             tooltipTitle: "Dynamique hebdomadaire",
             tooltipDesc: "XP gagnée au cours des 7 derniers jours. Garde le rythme !",
+            ariaLabel: `Sprint actuel: +${weeklyXP} XP cette semaine`
           },
         ];
 

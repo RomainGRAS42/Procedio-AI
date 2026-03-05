@@ -137,6 +137,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
               onChange={(e) => setSelectedUser(e.target.value)}
               className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl py-2 pl-3 pr-8 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer min-h-[44px]"
               aria-label="Filtrer par technicien"
+              title="Filtrer les activités par technicien"
             >
               <option value="all">Tous les techniciens</option>
               {uniqueUsers.map(user => (
@@ -152,7 +153,8 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl py-2 pl-3 pr-8 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer min-h-[44px]"
               aria-label="Filtrer par période"
-            >
+              title="Filtrer les activités par période"
+            >            >
               <option value="all">Toute la période</option>
               <option value="today">Aujourd'hui</option>
               <option value="week">7 derniers jours</option>

@@ -134,18 +134,22 @@ const TeamPodium: React.FC = () => {
     };
 
     return (
-      <div className="flex-1 bg-white rounded-2xl border border-slate-100 p-4 flex flex-col items-center text-center hover:border-indigo-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden h-full min-h-[160px]">
+      <div 
+        className="flex-1 bg-white rounded-2xl border border-slate-100 p-4 flex flex-col items-center text-center hover:border-indigo-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden h-full min-h-[160px]"
+        role="article"
+        aria-label={`Champion ${champion.badge_title}: ${champion.first_name} ${champion.last_name}`}
+      >
         
         {/* Badge Title Pill */}
-        <div className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest mb-3 border ${colorClasses[champion.badge_color]}`}>
+        <div className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest mb-3 border ${colorClasses[champion.badge_color]}`} aria-hidden="true">
           <i className={`fa-solid ${champion.badge_icon} mr-1.5`}></i>
           {champion.badge_title}
         </div>
 
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-2xl bg-slate-100 mb-3 overflow-hidden border-2 border-white shadow-md relative z-10 shrink-0">
+        <div className="w-12 h-12 rounded-2xl bg-slate-100 mb-3 overflow-hidden border-2 border-white shadow-md relative z-10 shrink-0" aria-hidden="true">
             {champion.avatar_url ? (
-            <img src={champion.avatar_url} alt={champion.first_name} className="w-full h-full object-cover" />
+            <img src={champion.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
             <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 font-black text-sm">
                 {(champion.first_name || '?')[0]}{(champion.last_name || '')[0]}
