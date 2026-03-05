@@ -35,6 +35,7 @@ import AnnouncementWidget from "../components/dashboard/AnnouncementWidget";
 import ActivityWidget from "../components/dashboard/ActivityWidget";
 import ReviewCenterWidget from "../components/dashboard/ReviewCenterWidget";
 import PilotCenterTechWidget from "../components/dashboard/PilotCenterTechWidget";
+import RecentHistoryWidget from "../components/dashboard/RecentHistoryWidget";
 import RSSWidget from "../components/RSSWidget";
 import MasteryQuizModal from "../components/MasteryQuizModal";
 import MasteryResultDetailModal from "../components/MasteryResultDetailModal";
@@ -1263,9 +1264,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                   onNavigate={onNavigate}
                 />
               </div>
-
               <div className="col-span-12 lg:col-span-4">
-                <StatsSummaryWidget stats={filteredStats} isClickable={false} />
+                <RecentHistoryWidget
+                  activities={activities}
+                  loading={loadingActivities}
+                  notifications={systemNotifications}
+                  onNavigate={onNavigate}
+                />
               </div>
             </div>
 
