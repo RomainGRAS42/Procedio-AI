@@ -112,8 +112,7 @@ export const useNotifications = (user: User) => {
         .select("*")
         .eq("user_id", user.id)
         .eq("read", false)
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .order("created_at", { ascending: false });
       if (error) throw error;
       if (data) setSystemNotifications(data as Notification[]);
     } catch (err) {
