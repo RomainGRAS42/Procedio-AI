@@ -689,7 +689,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                      <XAxis 
                         dataKey="date" 
-                        hide={layoutMode === 'grid'} 
                         tick={{ fontSize: 10, fill: '#64748b' }} 
                         axisLine={false}
                         tickLine={false}
