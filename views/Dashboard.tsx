@@ -1502,10 +1502,18 @@ const Dashboard: React.FC<DashboardProps> = ({
                     }, { onConflict: 'procedure_id, user_id' });
                     
                     // Mark request as Approved/Archived/ReferentGranted
-                    await supabase.from('mastery_requests')
-                        .update({ status: 'approved_referent' }) // Or keep as completed?
+                    const { error: updateError } = await supabase.from('mastery_requests')
+                        .update({ status: 'approved_referent' })
                         .eq('id', selectedMasteryClaim.id);
 
+                    if (updateError) {
+                      console.error("Error updating status:", updateError);
+                      throw updateError;
+                    }
+
+                    // Immediately update local state to remove item from UI
+                    setMasteryClaims(prev => prev.filter(c => c.id !== selectedMasteryClaim.id));
+                    
                     // Notify User
                     await supabase.from("notifications").insert({
                       user_id: userId,
@@ -1530,9 +1538,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                     const noteTitle = `CLAIM_MASTERY_RESULT_${selectedMasteryClaim.id}`;
                     await supabase.from("notes").delete().match({ title: noteTitle });
                     
+                    // Force refresh and close
                     fetchMasteryClaims();
-                    fetchActivities(); // Refresh activities to remove notification from list if needed
-                    setShowMasteryDetail(false); // Close modal on success
+                    fetchActivities(); 
+                    setShowMasteryDetail(false); 
                 } else {
                      // Check if user is actually referent before revoking? 
                      // Or this action might be "Revoke" button if already referent
@@ -1544,10 +1553,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                 }
                 fetchMasteryClaims();
                 fetchActivities();
-                setShowMasteryDetail(false); // Close modal on success
+                setShowMasteryDetail(false);
             } catch (e: any) {
-                console.error(e);
-                setToast({ message: "Erreur lors de la mise à jour du référent.", type: "error" });
+                console.error("Error in onUpdateReferent:", e);
+                setToast({ message: "Erreur lors de la mise à jour : " + (e.message || "Erreur inconnue"), type: "error" });
             }
          }}
          onReject={async (requestId) => {
