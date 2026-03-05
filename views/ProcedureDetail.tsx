@@ -1054,36 +1054,40 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
                   {procedure?.category}
                 </span>
-                {referentExpert && (
-                  <div
-                    className="flex items-center gap-2 bg-indigo-50/50 pl-1 pr-3 py-1.5 rounded-full border border-indigo-100/50 shadow-sm"
-                    title={`Référent : ${referentExpert.first_name} ${referentExpert.last_name}`}>
-                    <div className="w-6 h-6 rounded-full bg-white overflow-hidden flex items-center justify-center shrink-0 border border-indigo-200 shadow-sm">
-                      {referentExpert.avatar_url ? (
-                        <img
-                          src={referentExpert.avatar_url}
-                          className="w-full h-full object-cover"
-                          alt="Referent Avatar"
-                        />
-                      ) : (
-                        <span className="text-[10px] font-black text-indigo-600 uppercase">
-                          {referentExpert.first_name[0]}
-                          {referentExpert.last_name[0]}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest pl-1">
-                      Gardien :{" "}
-                      <span className="text-indigo-600 font-black">
-                        {referentExpert.first_name} {referentExpert.last_name}
-                      </span>
-                    </span>
-                  </div>
-                )}
                 {/* Badge MAITRISE pour l'utilisateur courant s'il a réussi - SUPPRIMÉ SUR DEMANDE (14/02/2026) */}
               </div>
             </div>
           </div>
+
+          {referentExpert && (
+            <div className="flex-1 flex justify-center mx-4">
+              <div
+                className="flex items-center gap-2 bg-indigo-50/50 pl-1 pr-3 py-1.5 rounded-full border border-indigo-100/50 shadow-sm"
+                title={`Référent : ${referentExpert.first_name} ${referentExpert.last_name}`}>
+                <div className="w-6 h-6 rounded-full bg-white overflow-hidden flex items-center justify-center shrink-0 border border-indigo-200 shadow-sm">
+                  {referentExpert.avatar_url ? (
+                    <img
+                      src={referentExpert.avatar_url}
+                      className="w-full h-full object-cover"
+                      alt="Referent Avatar"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-black text-indigo-600 uppercase">
+                      {referentExpert.first_name[0]}
+                      {referentExpert.last_name[0]}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest pl-1">
+                  RÉFÉRENT :{" "}
+                  <span className="text-indigo-600 font-black">
+                    {referentExpert.first_name} {referentExpert.last_name}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 shrink-0">
             {/* Context Button */}
             <button

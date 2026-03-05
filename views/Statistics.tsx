@@ -47,7 +47,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     redZone: 0,
 
     totalViews: 0,
-    missedOpportunities: [] as { id: string; term: string; count: number; trend: 'up' | 'urgent' | 'new' }[]
+    missedOpportunities: [] as { id: string; term: string; count: number; trend: 'up' | 'urgent' | 'new' }[],
+    avoidedFailures: 0
   });
 
   // Modal State
@@ -90,7 +91,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     try {
       const { data: procs } = await supabase
         .from('procedures')
-        .select('uuid, title, updated_at, created_at, views');
+        .select('uuid, title, updated_at, created_at, views, ignore_zone_rouge');
 
       if (!procs) return;
 
@@ -125,14 +126,16 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         else if (date > oneYearAgo) aging++;
         else old++;
 
-        if (!referentSet.has(p.uuid)) {
+        // ZONE ROUGE LOGIC
+        if (!referentSet.has(p.uuid) && !p.ignore_zone_rouge) {
           redZoneCount++;
           const hasMission = activeMissionSet.has(p.uuid);
           redZoneItems.push({
             id: p.uuid,
             label: p.title || "Procédure sans titre",
-            sublabel: hasMission ? "Mission en cours" : "Aucun référent assigné",
-            hasMission: hasMission
+            sublabel: hasMission ? "Mission en cours" : "MANQUE DE RÉFÉRENT",
+            hasMission: hasMission,
+            isMissingReferent: !hasMission
           });
         }
         totalViews += (p.views || 0);
@@ -201,6 +204,14 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         .order('search_count', { ascending: false })
         .limit(5);
 
+      // 3. Fetch RESOLVED opportunities to calculate "Avoided Failures"
+      const { data: resolvedOpportunities } = await supabase
+        .from('search_opportunities')
+        .select('search_count')
+        .eq('status', 'resolved');
+
+      const avoidedFailures = (resolvedOpportunities || []).reduce((acc, curr) => acc + (curr.search_count || 0), 0);
+
       const missedOpportunities = (topOpportunities || []).map(op => {
         let trend: 'up' | 'urgent' | 'new' = 'up';
         const created = new Date(op.created_at);
@@ -228,8 +239,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
       const finalSuccessRate = Math.max(0, Math.min(100, successRate));
 
-      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: finalSuccessRate, missedOpportunities }));
-      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: finalSuccessRate, missedOpportunities });
+      setGlobalKPIs(prev => ({ ...prev, searchSuccessRate: finalSuccessRate, missedOpportunities, avoidedFailures }));
+      cacheStore.set('stats_global_kpis', { ...globalKPIs, searchSuccessRate: finalSuccessRate, missedOpportunities, avoidedFailures });
     } catch (err) {
       console.error("Error fetching search success rate:", err);
     }
@@ -424,6 +435,29 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
   };
 
+  const handleIgnoreZoneRouge = async (e: React.MouseEvent, procedureId: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Voulez-vous vraiment retirer cette procédure de la Zone Rouge ? Elle ne sera plus surveillée.")) return;
+
+    try {
+      const { error } = await supabase
+        .from('procedures')
+        .update({ ignore_zone_rouge: true })
+        .eq('uuid', procedureId);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setRedZoneList(prev => prev.filter(item => item.id !== procedureId));
+      setGlobalKPIs(prev => ({ ...prev, redZone: Math.max(0, prev.redZone - 1) }));
+      
+      setToast({ message: "Procédure retirée de la Zone Rouge", type: "success" });
+    } catch (err) {
+      console.error("Error ignoring procedure:", err);
+      setToast({ message: "Erreur lors de la mise à jour", type: "error" });
+    }
+  };
+
 
   // ... (keep handleCreateRedZoneMission for backward compatibility or remove if fully replaced, but user asked for popup on click now)
 
@@ -557,6 +591,18 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                          {globalKPIs.searchSuccessRate >= 85 ? "Performance Excellente" : "Attention Requise"}
                        </p>
                      </div>
+
+                     {/* ENCOURAGING MESSAGE */}
+                     {globalKPIs.avoidedFailures > 0 && (
+                        <div className="mb-8 bg-white/80 backdrop-blur-sm border border-emerald-100 p-3 rounded-2xl inline-flex items-center gap-3 shadow-sm mx-auto animate-fade-in-up">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <i className="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                          </div>
+                          <p className="text-emerald-700 text-xs font-bold pr-2">
+                            Grâce aux missions créées, <span className="font-black underline decoration-emerald-300 underline-offset-2">{globalKPIs.avoidedFailures} échecs évités</span> ce mois-ci !
+                          </p>
+                        </div>
+                     )}
 
                      {globalKPIs.searchSuccessRate >= 85 ? (
                        <div className="max-w-lg mx-auto bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-emerald-100/50 shadow-sm">
@@ -801,18 +847,29 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                             <h3 className="font-bold text-slate-900 truncate text-sm">{item.label}</h3>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-mono pl-3.5">ID: {item.id.slice(0,8)}...</p>
+                        <p className={`text-[10px] font-bold pl-3.5 uppercase tracking-wider ${item.isMissingReferent ? "text-rose-500" : "text-slate-400"}`}>
+                          {item.sublabel}
+                        </p>
                       </div>
-                      <button 
-                        onClick={() => {
-                            setSelectedOrphan({ id: item.id, title: item.label });
-                            setAssignModalOpen(true);
-                        }}
-                        className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
-                        title="Assigner un référent"
-                      >
-                        <i className="fa-solid fa-user-plus text-sm"></i>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={(e) => handleIgnoreZoneRouge(e, item.id)}
+                          className="w-8 h-8 rounded-lg text-slate-300 hover:bg-slate-100 hover:text-slate-500 flex items-center justify-center transition-all"
+                          title="Ignorer cette alerte"
+                        >
+                          <i className="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                        <button 
+                          onClick={() => {
+                              setSelectedOrphan({ id: item.id, title: item.label });
+                              setAssignModalOpen(true);
+                          }}
+                          className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                          title="Assigner un référent"
+                        >
+                          <i className="fa-solid fa-user-plus text-sm"></i>
+                        </button>
+                      </div>
                    </div>
                  ))}
                  {redZoneList.length === 0 && (
