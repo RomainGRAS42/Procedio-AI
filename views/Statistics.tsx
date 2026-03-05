@@ -56,6 +56,10 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   const [redZoneList, setRedZoneList] = useState<any[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedOrphan, setSelectedOrphan] = useState<{id: string, title: string} | null>(null);
+  
+  // Ignore Zone Rouge Confirmation Modal
+  const [ignoreModalOpen, setIgnoreModalOpen] = useState(false);
+  const [procedureToIgnore, setProcedureToIgnore] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAllStats = async () => {
@@ -435,26 +439,34 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
   };
 
-  const handleIgnoreZoneRouge = async (e: React.MouseEvent, procedureId: string) => {
+  const handleIgnoreZoneRouge = (e: React.MouseEvent, procedureId: string) => {
     e.stopPropagation();
-    if (!window.confirm("Voulez-vous vraiment retirer cette procédure de la Zone Rouge ? Elle ne sera plus surveillée.")) return;
+    setProcedureToIgnore(procedureId);
+    setIgnoreModalOpen(true);
+  };
 
+  const confirmIgnoreProcedure = async () => {
+    if (!procedureToIgnore) return;
+    
     try {
       const { error } = await supabase
         .from('procedures')
         .update({ ignore_zone_rouge: true })
-        .eq('uuid', procedureId);
+        .eq('uuid', procedureToIgnore);
 
       if (error) throw error;
 
       // Optimistic update
-      setRedZoneList(prev => prev.filter(item => item.id !== procedureId));
+      setRedZoneList(prev => prev.filter(item => item.id !== procedureToIgnore));
       setGlobalKPIs(prev => ({ ...prev, redZone: Math.max(0, prev.redZone - 1) }));
       
       setToast({ message: "Procédure retirée de la Zone Rouge", type: "success" });
     } catch (err) {
       console.error("Error ignoring procedure:", err);
       setToast({ message: "Erreur lors de la mise à jour", type: "error" });
+    } finally {
+      setIgnoreModalOpen(false);
+      setProcedureToIgnore(null);
     }
   };
 
@@ -1128,6 +1140,40 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+
+      {/* Confirmation Modal */}
+      {ignoreModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl relative overflow-hidden animate-scale-up p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl mx-auto mb-6 shadow-sm">
+                <i className="fa-solid fa-eye-slash"></i>
+              </div>
+              
+              <h3 className="text-xl font-black text-slate-900 mb-2">
+                Ignorer cette procédure ?
+              </h3>
+              
+              <p className="text-slate-500 font-medium mb-8 leading-relaxed">
+                Elle sera retirée de la <strong className="text-rose-500">Zone Rouge</strong> et ne sera plus surveillée.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIgnoreModalOpen(false)}
+                  className="flex-1 py-3 text-slate-400 font-bold hover:text-slate-600 transition-colors rounded-xl hover:bg-slate-50">
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmIgnoreProcedure}
+                  className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-slate-800 active:scale-95 transition-all">
+                  Confirmer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
