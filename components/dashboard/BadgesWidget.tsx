@@ -175,6 +175,7 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                   </div>
                 </div>
               `} align="center" className="ml-1" />
+              </h3>
             </div>
             <div className="inline-flex mt-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest">
               {virtualBadges.length} Obtenus
