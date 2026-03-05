@@ -39,7 +39,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+    <div className="h-full">
       {/* Missions Section */}
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full">
         <div className="flex items-center justify-between mb-8">
@@ -74,15 +74,15 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                   </span>
                   <div className="text-right">
                     <span className="block text-[10px] font-black text-indigo-600">
-                        {mission.xp_reward} XP
+                      {mission.xp_reward} XP
                     </span>
                     <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                        {mission.status === "awaiting_validation" ? "Valid." : "En cours"}
+                      {mission.status === "awaiting_validation" ? "Valid." : "En cours"}
                     </span>
                   </div>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
-                    <div className="bg-indigo-500 h-1 rounded-full" style={{ width: '45%' }}></div>
+                  <div className="bg-indigo-500 h-1 rounded-full" style={{ width: '45%' }}></div>
                 </div>
               </div>
             ))
@@ -99,54 +99,6 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                   Tout est à jour. Une pause bien méritée ?
                 </p>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Activity Section */}
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg shadow-sm">
-              <i className="fa-solid fa-clock-rotate-left"></i>
-            </div>
-            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
-              Historique Récent
-              <InfoTooltip text="Tes dernières actions pour reprendre rapidement ton travail." />
-            </h3>
-          </div>
-        </div>
-
-        <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-thin">
-          {activities.length > 0 ? (
-            activities.slice(0, 8).map((act) => (
-              <div
-                key={act.id}
-                className="flex gap-4 items-center p-2.5 hover:bg-slate-50 rounded-2xl transition-all group border border-transparent hover:border-slate-100">
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${getActionColor(act.title || "")} shadow-sm`}>
-                  <i className={`fa-solid ${getActionIcon(act.title || "")} text-xs`}></i>
-                </div>
-                <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                  <p className="text-xs font-medium text-slate-700 leading-tight truncate">
-                    {act.content}
-                  </p>
-                  <span className="text-[10px] font-black text-slate-400 uppercase shrink-0">
-                    {new Date(act.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-              <i className="fa-solid fa-ghost text-slate-200 text-3xl mb-3"></i>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Rien à signaler
-              </p>
             </div>
           )}
         </div>
