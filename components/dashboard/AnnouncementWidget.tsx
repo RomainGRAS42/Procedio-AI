@@ -57,9 +57,12 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
     : compact
     ? "bg-sky-50 rounded-2xl p-3 border border-sky-100 shadow-sm flex flex-col justify-center animate-fade-in"
     : `bg-sky-50 rounded-[2rem] p-4 md:p-5 border border-sky-100 shadow-lg shadow-sky-500/5 flex flex-col justify-center animate-fade-in ${isRead ? "opacity-75" : "border-sky-100/50 shadow-sky-500/10"}`;
+    
+  // Override fade-in duration for faster appearance
+  const animationStyle = { animationDuration: '0.3s' };
 
   return (
-    <section className={containerClasses}>
+    <section className={containerClasses} style={animationStyle}>
       {isEditing ? (
         <div className="w-full space-y-3">
           <div className="flex items-center justify-between">

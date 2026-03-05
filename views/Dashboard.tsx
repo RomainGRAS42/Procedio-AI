@@ -111,41 +111,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   );
   const [loadingMissions, setLoadingMissions] = useState(!cacheStore.has("dash_active_missions"));
 
-  // Fetch active missions for Dashboard
-  const fetchActiveMissions = async () => {
-    try {
-      // Fetch missions - Only fetch relevant statuses for the "Mes Missions" widget
-      // For Technician: "assigned", "in_progress", "awaiting_validation"
-      // For Manager: "open", "assigned", "in_progress", "awaiting_validation", "completed" (for team view)
-      
-      const statuses = user.role === UserRole.TECHNICIAN 
-        ? ["assigned", "in_progress", "awaiting_validation"] 
-        : ["open", "assigned", "in_progress", "awaiting_validation", "completed"];
-
-      const { data, error } = await supabase
-        .from("missions")
-        .select(
-          `
-          *,
-          assignee:user_profiles!assigned_to (first_name, last_name)
-        `
-        )
-        .in("status", statuses)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching missions:", error);
-      } else if (data) {
-        console.log("Missions fetched:", data); // Debug log
-        setActiveMissions(data);
-        cacheStore.set("dash_active_missions", data);
-      }
-    } catch (err) {
-      console.error("Fetch missions error:", err);
-    } finally {
-      setLoadingMissions(false);
-    }
-  };
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
