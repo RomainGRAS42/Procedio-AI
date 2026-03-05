@@ -346,6 +346,14 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         if (notifError) console.error("Error sending claim notification:", notifError);
       }
 
+      // Log system message
+      await supabase.from("mission_messages").insert({
+          mission_id: missionId,
+          user_id: user.id,
+          content: `${user.firstName} a réclamé la mission`,
+          type: 'system'
+      });
+
       setToast({ message: "Mission acceptée ! À vous de jouer.", type: "success" });
 
       try {
@@ -439,6 +447,21 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         const { error } = await supabase.from("missions").update(updateData).eq("id", missionId);
 
         if (error) throw error;
+
+        // Log system message in chat
+        let systemMsg = "";
+        if (newStatus === "assigned" && user.id) systemMsg = `${user.firstName} a pris en charge la mission`;
+        if (newStatus === "completed") systemMsg = `${user.firstName} a terminé la mission`;
+        if (newStatus === "cancelled") systemMsg = `Mission annulée par ${user.firstName}`;
+        
+        if (systemMsg) {
+            await supabase.from("mission_messages").insert({
+                mission_id: missionId,
+                user_id: user.id,
+                content: systemMsg,
+                type: 'system'
+            });
+        }
 
         // Give XP if transitioning to completed directly (standard way)
         if (newStatus === "completed" && mission.assigned_to) {

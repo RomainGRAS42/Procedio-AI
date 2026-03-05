@@ -7,6 +7,7 @@ export interface MissionMessage {
   user_id: string;
   content: string;
   created_at: string;
+  type?: 'text' | 'system';
   tempId?: string;
   user?: {
     first_name: string;
@@ -45,6 +46,22 @@ export const MissionChat: React.FC<MissionChatProps> = ({
         ) : (
           messages.map((msg) => {
             const isMe = msg.user_id === userId;
+            const isSystem = msg.type === 'system';
+
+            if (isSystem) {
+              return (
+                <div key={msg.id} className="flex justify-center my-4">
+                  <div className="bg-slate-100 px-4 py-1.5 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 border border-slate-200">
+                    <i className="fa-solid fa-info-circle text-slate-400"></i>
+                    {msg.content}
+                    <span className="text-[9px] font-normal text-slate-400 border-l border-slate-300 pl-2 ml-1">
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={msg.id}
