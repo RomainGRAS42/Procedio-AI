@@ -1561,6 +1561,8 @@ const Dashboard: React.FC<DashboardProps> = ({
              }
          }}
       />
+
+      {modalConfig && (
         <KPIDetailsModal
           onClose={() => setModalConfig(null)}
           title={modalConfig.title}
