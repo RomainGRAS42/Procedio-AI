@@ -1257,7 +1257,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* 1. Mon Fil d'Activité (LEFT - 50%) */}
-              <div className="col-span-12 lg:col-span-6">
+              <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
                 <RecentHistoryWidget
                   activities={activities}
                   loading={loadingActivities}
@@ -1267,7 +1267,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* 2. Mes Missions (RIGHT - 50%) */}
-              <div className="col-span-12 lg:col-span-6">
+              <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
                 <PilotCenterTechWidget
                   missions={activeMissions.filter((m) => m.assigned_to === user.id)}
                   activities={activities}

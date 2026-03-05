@@ -152,7 +152,12 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-4">
+      <div 
+        className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-4 focus:outline-none focus:ring-2 focus:ring-indigo-100 rounded-lg"
+        tabIndex={0}
+        role="feed"
+        aria-label="Liste des activités récentes"
+      >
         {loading ? (
             <div className="space-y-4 animate-pulse">
                 {[1,2,3].map(i => (
@@ -164,22 +169,23 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 <div 
                     key={`${item.type}-${item.id}`}
                     onClick={() => item.link && onNavigate && onNavigate(item.link)}
-                    className={`p-3 rounded-2xl border transition-all group flex gap-3 items-start ${item.link ? 'cursor-pointer hover:bg-slate-50 hover:border-slate-200' : 'border-transparent bg-white'}`}
+                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start ${item.link ? 'cursor-pointer hover:bg-slate-50 hover:border-slate-200' : 'border-transparent bg-white'}`}
+                    role="article"
                 >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
-                        <i className={`fa-solid ${item.icon} text-xs`}></i>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
+                        <i className={`fa-solid ${item.icon} text-sm`}></i>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${item.color}`}>
+                        <div className="flex justify-between items-start mb-1">
+                            <span className={`text-[11px] font-black uppercase tracking-widest ${item.color}`}>
                                 {item.title}
                             </span>
-                            <span className="text-[9px] font-bold text-slate-400">
+                            <span className="text-[10px] font-bold text-slate-400">
                                 {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
                         <div 
-                            className="text-xs font-bold text-slate-700 leading-tight mt-0.5 line-clamp-2"
+                            className="text-[13px] font-medium text-slate-700 leading-snug mt-0.5 line-clamp-2"
                             dangerouslySetInnerHTML={{ __html: item.content }}
                         />
                     </div>
