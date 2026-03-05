@@ -403,8 +403,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   // ... (keep handleCreateRedZoneMission for backward compatibility or remove if fully replaced, but user asked for popup on click now)
 
   // Tabs State & Multi-View
-  const [layoutMode, setLayoutMode] = useState<'focus' | 'split' | 'grid'>('focus');
-  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>(['searchSuccess', 'reliability', 'dynamic']);
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'split'>('focus');
+  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>(['searchSuccess', 'reliability']);
 
   const kpiConfig = [
     { id: 'searchSuccess', label: 'Succès Recherche', icon: 'fa-magnifying-glass-chart', color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -425,16 +425,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     if (layoutMode === 'focus') return selectedSlots[0] === id;
     
     // In split mode, check first 2 slots
-    if (layoutMode === 'split') return selectedSlots.slice(0, 2).includes(id);
-    
-    // In grid mode, check all 3
-    return selectedSlots.slice(0, 3).includes(id);
+    return selectedSlots.slice(0, 2).includes(id);
   };
 
   const getAvailableKPIs = (currentSlotIndex: number) => {
     // Filter out KPIs that are already selected in OTHER slots
     // We only care about active slots based on mode
-    const activeSlotsCount = layoutMode === 'focus' ? 1 : layoutMode === 'split' ? 2 : 3;
+    const activeSlotsCount = layoutMode === 'focus' ? 1 : 2;
     const otherSelectedKPIs = selectedSlots.filter((k, i) => i < activeSlotsCount && i !== currentSlotIndex && k !== null);
     return kpiConfig.filter(k => !otherSelectedKPIs.includes(k.id));
   };
@@ -467,11 +464,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     }
 
     const isCompact = layoutMode !== 'focus';
-    const isWide = layoutMode === 'focus' || (layoutMode === 'grid' && slotIndex === 0);
+    const isWide = layoutMode === 'focus';
 
     return (
       <div className="relative h-full flex flex-col">
-        {/* Slot Header (Only in Split/Grid mode to allow changing/removing) */}
+        {/* Slot Header (Only in Split mode to allow changing/removing) */}
         {layoutMode !== 'focus' && (
            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
               <div className="flex items-center gap-3">
@@ -899,15 +896,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                 <i className="fa-solid fa-table-columns text-sm"></i>
                 <span className="text-xs font-black uppercase tracking-wider hidden md:block">Comparatif</span>
              </button>
-             <div className="w-px h-5 bg-slate-300/50 mx-1"></div>
-             <button 
-               onClick={() => setLayoutMode('grid')}
-               className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'grid' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
-               title="Global View (3)"
-             >
-                <i className="fa-solid fa-grip text-sm"></i>
-                <span className="text-xs font-black uppercase tracking-wider hidden md:block">Global</span>
-             </button>
           </div>
         </div>
 
@@ -977,14 +965,13 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
            grid gap-8 transition-all duration-500 ease-in-out
            ${layoutMode === 'focus' ? 'grid-cols-1' : ''}
            ${layoutMode === 'split' ? 'grid-cols-1 lg:grid-cols-2' : ''}
-           ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : ''}
         `}>
            {layoutMode === 'focus' ? (
               // Focus Mode: Show only 1st slot, full width
               <div className="col-span-1 min-h-[600px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-10 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                  {renderKPIContent(selectedSlots[0], 0)}
               </div>
-           ) : layoutMode === 'split' ? (
+           ) : (
               // Split Mode: Show 2 slots
               <>
                 <div className="min-h-[550px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
@@ -993,19 +980,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                 <div className="min-h-[550px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                    {renderKPIContent(selectedSlots[1], 1)}
                 </div>
-              </>
-           ) : (
-              // Grid Mode: Show 3 slots - FIRST SLOT FULL WIDTH
-              <>
-                 <div className="col-span-full min-h-[500px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
-                    {renderKPIContent(selectedSlots[0], 0)}
-                 </div>
-                 <div className="min-h-[450px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
-                    {renderKPIContent(selectedSlots[1], 1)}
-                 </div>
-                 <div className="min-h-[450px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
-                    {renderKPIContent(selectedSlots[2], 2)}
-                 </div>
               </>
            )}
         </div>

@@ -11,6 +11,8 @@ interface SidebarProps {
   onCancelTransfer: () => void;
   pendingFlashNotesCount?: number;
   alertCount?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -23,6 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onCancelTransfer,
   pendingFlashNotesCount,
   alertCount,
+  isCollapsed = false,
+  onToggleCollapse,
 }) => {
   const menuItems = [
     {
@@ -77,28 +81,40 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`fixed lg:relative inset-y-0 left-0 w-72 h-full bg-white text-slate-500 flex flex-col z-[70] transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-slate-100 shadow-xl lg:shadow-none ${
+      className={`fixed lg:relative inset-y-0 left-0 h-full bg-white text-slate-500 flex flex-col z-[70] transition-all duration-300 ease-in-out lg:translate-x-0 border-r border-slate-100 shadow-xl lg:shadow-none ${
         isOpen ? "translate-x-0" : "-translate-x-full"
-      }`}
+      } ${isCollapsed ? "w-24" : "w-72"}`}
       style={{ backgroundColor: "#ffffff" }}
       aria-label="Navigation principale">
-      <div className="p-8 flex items-center gap-4 shrink-0">
+      
+      {/* Toggle Button (Desktop Only) */}
+      <button
+        onClick={onToggleCollapse}
+        className="absolute -right-3 top-10 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm z-50 transition-colors hidden lg:flex"
+        title={isCollapsed ? "Déplier le menu" : "Réduire le menu"}
+      >
+        <i className={`fa-solid fa-chevron-${isCollapsed ? 'right' : 'left'} text-[10px]`}></i>
+      </button>
+
+      <div className={`p-6 flex items-center gap-4 shrink-0 transition-all ${isCollapsed ? 'justify-center px-2' : ''}`}>
         <div
           className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0"
           aria-hidden="true">
           <i className="fa-solid fa-bolt"></i>
         </div>
-        <div className="flex flex-col">
-          <span className="text-xl font-black text-slate-900 tracking-tight leading-none">
-            Procedio
-          </span>
-          <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
-            v2.1 Stable
-          </span>
-        </div>
+        {!isCollapsed && (
+          <div className="flex flex-col animate-fade-in overflow-hidden whitespace-nowrap">
+            <span className="text-xl font-black text-slate-900 tracking-tight leading-none">
+              Procedio
+            </span>
+            <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
+              v2.1 Stable
+            </span>
+          </div>
+        )}
       </div>
 
-      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto mt-4 scrollbar-hide">
+      <nav className="flex-1 px-3 py-2 space-y-2 overflow-y-auto mt-4 scrollbar-hide">
         {filteredItems.map((item) => (
           <div key={item.id} className="space-y-2">
             <a
@@ -107,12 +123,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 e.preventDefault();
                 setView(item.id as ViewType);
               }}
-              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all duration-200 group relative ${
                 currentView === item.id
                   ? "bg-indigo-50 text-indigo-600 shadow-sm border border-indigo-100"
                   : "hover:bg-slate-50 hover:text-slate-900"
-              }`}>
-              <div className="w-5 flex justify-center">
+              }`}
+              title={isCollapsed ? item.label : undefined}
+            >
+              <div className="w-5 flex justify-center shrink-0">
                 <i
                   className={`fa-solid ${item.icon} text-lg ${
                     currentView === item.id
@@ -120,27 +138,32 @@ const Sidebar: React.FC<SidebarProps> = ({
                       : "text-slate-400 group-hover:text-slate-600"
                   }`}></i>
               </div>
-              <span className="font-bold tracking-tight text-sm">{item.label}</span>
+              
+              {!isCollapsed && (
+                <span className="font-bold tracking-tight text-sm animate-fade-in whitespace-nowrap overflow-hidden text-ellipsis">
+                  {item.label}
+                </span>
+              )}
 
-              {item.id === "procedures" && activeTransfer && (
+              {item.id === "procedures" && activeTransfer && !isCollapsed && (
                 <div className="ml-auto w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-lg shadow-indigo-500/50"></div>
               )}
-
-              {item.id === "flash-notes" && userRole === UserRole.MANAGER && (pendingFlashNotesCount || 0) > 0 && (
-                <div className="ml-auto min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 border border-white">
-                  <span className="text-[9px] font-black text-white">{pendingFlashNotesCount}</span>
-                </div>
-              )}
-
-              {item.id === "statistics" && userRole === UserRole.MANAGER && (alertCount || 0) > 0 && (
-                <div className="ml-auto min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 border border-white">
-                  <span className="text-[9px] font-black text-white">{alertCount}</span>
-                </div>
+              
+              {/* Badges */}
+              {(item.id === "flash-notes" || item.id === "statistics") && userRole === UserRole.MANAGER && (
+                 ((item.id === "flash-notes" && (pendingFlashNotesCount || 0) > 0) || 
+                  (item.id === "statistics" && (alertCount || 0) > 0)) && (
+                  <div className={`${isCollapsed ? 'absolute top-2 right-2' : 'ml-auto'} min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 border border-white`}>
+                    <span className="text-[9px] font-black text-white">
+                      {item.id === "flash-notes" ? pendingFlashNotesCount : alertCount}
+                    </span>
+                  </div>
+                 )
               )}
             </a>
 
-            {/* Barre de transfert dynamique sous Procédures */}
-            {item.id === "procedures" && activeTransfer && (
+            {/* Barre de transfert dynamique sous Procédures - Only show if NOT collapsed */}
+            {item.id === "procedures" && activeTransfer && !isCollapsed && (
               <div className="mx-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100 animate-slide-up">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest truncate max-w-[120px]">
@@ -169,12 +192,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         ))}
       </nav>
 
-      <div className="p-6 mt-auto border-t border-slate-100 shrink-0">
+      <div className={`p-6 mt-auto border-t border-slate-100 shrink-0 ${isCollapsed ? 'flex justify-center' : ''}`}>
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-rose-50 text-rose-500 font-bold hover:bg-rose-500 hover:text-white transition-all text-xs tracking-wider border border-rose-100 hover:border-rose-500">
+          className={`flex items-center justify-center gap-3 py-4 rounded-xl bg-rose-50 text-rose-500 font-bold hover:bg-rose-500 hover:text-white transition-all text-xs tracking-wider border border-rose-100 hover:border-rose-500 ${isCollapsed ? 'w-10 h-10 px-0' : 'w-full px-5'}`}
+          title={isCollapsed ? "Déconnexion" : undefined}
+        >
           <i className="fa-solid fa-power-off"></i>
-          DÉCONNEXION
+          {!isCollapsed && "DÉCONNEXION"}
         </button>
       </div>
     </aside>

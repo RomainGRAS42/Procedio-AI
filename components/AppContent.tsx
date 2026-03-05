@@ -27,6 +27,7 @@ const AppContent: React.FC<any> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
   if (!user) {
     return (
@@ -57,9 +58,11 @@ const AppContent: React.FC<any> = ({
         onCancelTransfer={() => setActiveTransfer(null)}
         pendingFlashNotesCount={pendingFlashNotesCount}
         alertCount={dashboardAlertCount}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
+      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 transition-all duration-300">
         <Header
           user={user}
           currentView={location.pathname.split('/')[1] as any || "dashboard"}
