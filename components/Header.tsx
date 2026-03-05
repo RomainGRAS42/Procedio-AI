@@ -196,6 +196,16 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3 md:gap-6 min-w-[200px] justify-end">
+        {user.role === UserRole.MANAGER && (
+          <button
+            onClick={() => onNavigate("upload")}
+            className="hidden lg:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white pl-4 pr-5 py-2.5 rounded-2xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 font-bold text-xs"
+          >
+            <i className="fa-solid fa-plus"></i>
+            <span>Créer une procédure</span>
+          </button>
+        )}
+
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}

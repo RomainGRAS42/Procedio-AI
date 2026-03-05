@@ -1254,14 +1254,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           <div className="flex items-center gap-3 shrink-0">
-            {user.role === UserRole.MANAGER && (
-              <button
-                onClick={onUploadClick}
-                className="h-full bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest">
-                <i className="fa-solid fa-plus"></i>
-                <span>Nouvelle Procédure</span>
-              </button>
-            )}
+            {/* Action button moved to Navbar */}
           </div>
         </header>
 
