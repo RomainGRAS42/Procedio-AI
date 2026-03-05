@@ -5,7 +5,6 @@ import AppContent from "./components/AppContent";
 import Login from "./views/Login";
 import ResetPassword from "./views/ResetPassword";
 import LoadingState from "./components/LoadingState";
-import ScrollToTop from "./components/ScrollToTop";
 
 const App: React.FC = () => {
   const { isAuthenticated, user, loading, connectionStatus, handleLogout } = useAuth();
@@ -47,7 +46,6 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <ScrollToTop />
       <AppContent 
         user={user} 
         handleLogout={handleLogout}

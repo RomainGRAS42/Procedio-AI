@@ -28,6 +28,13 @@ const AppContent: React.FC<any> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const mainScrollRef = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
 
   if (!user) {
     return (
@@ -83,7 +90,7 @@ const AppContent: React.FC<any> = ({
             navigate("/dashboard");
           }}
         />
-        <main className="flex-1 overflow-y-auto scrollbar-hide">
+        <main ref={mainScrollRef} className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="mx-auto w-full">
             <MissionsProvider>
               <Routes>
