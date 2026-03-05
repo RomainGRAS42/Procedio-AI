@@ -170,3 +170,14 @@ export interface ActiveTransfer {
   currentFile?: number;
   totalFiles?: number;
 }
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'chat_message' | 'mission_assigned' | 'mission_status' | 'level_up' | 'system';
+  title: string;
+  content: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
+}

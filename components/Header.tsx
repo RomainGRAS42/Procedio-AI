@@ -43,7 +43,8 @@ const Header: React.FC<HeaderProps> = ({
     suggestionResponses, setSuggestionResponses,
     flashNoteNotifications, setFlashNoteNotifications,
     systemNotifications, setSystemNotifications,
-    handleClearAll
+    handleClearAll,
+    markAsRead
   } = useNotifications(user);
 
   // Search logic
@@ -221,7 +222,42 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 scrollbar-hide">
-                  {/* Notification items rendering logic (kept simple here for brevity, see original for full JSX details) */}
+                  {/* System Notifications */}
+                  {systemNotifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={() => {
+                        markAsRead(notif.id);
+                        if (notif.link) {
+                          onNavigate(notif.link.replace(/^\//, '')); // Remove leading slash
+                        }
+                        setShowNotifications(false);
+                      }}
+                      className="p-3 rounded-xl border border-indigo-100 bg-white cursor-pointer hover:bg-slate-50 transition-all flex gap-3 group relative overflow-hidden"
+                    >
+                      <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${
+                        notif.type === 'chat_message' ? 'bg-blue-500' :
+                        notif.type === 'mission_assigned' ? 'bg-emerald-500' :
+                        notif.type === 'mission_status' ? 'bg-amber-500' :
+                        'bg-indigo-500'
+                      }`}>
+                        <i className={`fa-solid ${
+                          notif.type === 'chat_message' ? 'fa-message' :
+                          notif.type === 'mission_assigned' ? 'fa-clipboard-check' :
+                          notif.type === 'mission_status' ? 'fa-flag' :
+                          'fa-bell'
+                        } text-xs`}></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 leading-tight mb-0.5">{notif.title}</p>
+                        <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{notif.content}</p>
+                      </div>
+                      {!notif.read && (
+                        <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-white"></div>
+                      )}
+                    </div>
+                  ))}
+
                   {/* Render manager logs */}
                   {user.role === UserRole.MANAGER && readLogs.map(log => (
                     <div key={log.id} onClick={async () => {

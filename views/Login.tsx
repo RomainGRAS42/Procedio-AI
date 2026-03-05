@@ -23,6 +23,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
+        // Force redirection to dashboard upon login
+        window.history.replaceState(null, '', '/dashboard');
+
         // On ne fait rien ici, onAuthStateChange dans App.tsx gérera la transition
       } else {
         // Récupération mot de passe

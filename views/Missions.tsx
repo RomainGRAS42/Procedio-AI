@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useMissions } from "../contexts/MissionsContext";
+import { useNotifications } from "../hooks/useNotifications";
 import { supabase } from "../lib/supabase";
 import { User, UserRole, Mission, MissionStatus, MissionUrgency, Procedure, MissionType } from "../types";
 import InfoTooltip from "../components/InfoTooltip";
@@ -75,6 +76,28 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
 const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveTransfer }) => {
   const { missions, setMissions, loading, refreshMissions } = useMissions();
+  const { systemNotifications, markAsRead } = useNotifications(user);
+
+  const unreadMissionIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    systemNotifications.forEach(n => {
+      if (n.type === 'chat_message' && !n.read && n.link && n.link.includes('missions?id=')) {
+        const id = n.link.split('missions?id=')[1];
+        if (id) ids.add(id);
+      }
+    });
+    return ids;
+  }, [systemNotifications]);
+
+  const handleMissionClick = (mission: Mission) => {
+    setSelectedMission(mission);
+    // Auto-mark notifications as read for this mission
+    systemNotifications.forEach(n => {
+      if (n.type === 'chat_message' && !n.read && n.link?.includes(mission.id)) {
+        markAsRead(n.id);
+      }
+    });
+  };
   // const [loading, setLoading] = useState(true); // From Context
   // const [missions, setMissions] = useState<Mission[]>([]); // From Context
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -760,11 +783,22 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   };
 
   const renderMissionCard = (mission: Mission) => {
+    const hasUnread = unreadMissionIds.has(mission.id);
     return (
       <div
         key={mission.id}
-        onClick={() => setSelectedMission(mission)}
-        className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden cursor-pointer">
+        onClick={() => handleMissionClick(mission)}
+        className={`bg-white rounded-[2.5rem] p-8 border shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden cursor-pointer ${
+          hasUnread ? "border-rose-500 ring-2 ring-rose-500/20" : "border-slate-100"
+        }`}>
+        {hasUnread && (
+          <div className="absolute top-6 right-6 z-20 animate-bounce">
+            <span className="bg-rose-500 text-white text-[9px] font-black px-2 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
+              <i className="fa-solid fa-message"></i>
+              NOUVEAU
+            </span>
+          </div>
+        )}
         {/* Urgency accent border */}
         <div
           className={`absolute top-0 left-0 w-2 h-full ${
@@ -958,11 +992,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   };
 
   const renderMissionListRow = (mission: Mission) => {
+    const hasUnread = unreadMissionIds.has(mission.id);
     return (
       <div
         key={mission.id}
-        onClick={() => setSelectedMission(mission)}
-        className="flex items-center gap-4 bg-white hover:bg-slate-50 p-4 rounded-2xl border border-slate-100 transition-all cursor-pointer group">
+        onClick={() => handleMissionClick(mission)}
+        className={`flex items-center gap-4 bg-white hover:bg-slate-50 p-4 rounded-2xl border transition-all cursor-pointer group ${
+          hasUnread ? "border-rose-500 ring-1 ring-rose-500/20" : "border-slate-100"
+        }`}>
+        {hasUnread && (
+          <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse"></div>
+        )}
         <div
           className="w-1.5 h-8 rounded-full opacity-40 shrink-0"
           style={{

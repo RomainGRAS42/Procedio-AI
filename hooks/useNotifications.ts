@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { User, UserRole, Suggestion } from "../types";
+import { User, UserRole, Suggestion, Notification } from "../types";
 import { supabase } from "../lib/supabase";
 
 export const useNotifications = (user: User) => {
@@ -7,7 +7,7 @@ export const useNotifications = (user: User) => {
   const [pendingSuggestions, setPendingSuggestions] = useState<Suggestion[]>([]);
   const [suggestionResponses, setSuggestionResponses] = useState<any[]>([]);
   const [flashNoteNotifications, setFlashNoteNotifications] = useState<any[]>([]);
-  const [systemNotifications, setSystemNotifications] = useState<any[]>([]);
+  const [systemNotifications, setSystemNotifications] = useState<Notification[]>([]);
 
   const fetchPendingSuggestions = useCallback(async () => {
     try {
@@ -113,9 +113,9 @@ export const useNotifications = (user: User) => {
         .eq("user_id", user.id)
         .eq("read", false)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
       if (error) throw error;
-      if (data) setSystemNotifications(data);
+      if (data) setSystemNotifications(data as Notification[]);
     } catch (err) {
       console.error("Error fetching system notifications:", err);
     }
@@ -157,12 +157,48 @@ export const useNotifications = (user: User) => {
   useEffect(() => {
     fetchSystemNotifications();
     fetchFlashNoteNotifications();
+
+    // Add Realtime for notifications
+    const notificationChannel = supabase
+        .channel('system-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setSystemNotifications((prev) => [payload.new as Notification, ...prev]);
+          }
+        )
+        .subscribe();
+
     const interval = setInterval(() => {
-      fetchSystemNotifications();
+      // Keep polling for other types and as backup
       fetchFlashNoteNotifications();
+      fetchSystemNotifications(); 
     }, 10000);
-    return () => clearInterval(interval);
+
+    return () => {
+        clearInterval(interval);
+        supabase.removeChannel(notificationChannel);
+    };
   }, [user.id, user.role, fetchSystemNotifications, fetchFlashNoteNotifications]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", id);
+      if (error) throw error;
+      setSystemNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
+  };
 
   const handleClearAll = async () => {
     if (user.role === UserRole.TECHNICIAN) {
@@ -207,6 +243,7 @@ export const useNotifications = (user: User) => {
     setFlashNoteNotifications,
     systemNotifications,
     setSystemNotifications,
-    handleClearAll
+    handleClearAll,
+    markAsRead
   };
 };
