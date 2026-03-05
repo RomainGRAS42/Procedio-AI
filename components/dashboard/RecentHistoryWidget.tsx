@@ -30,33 +30,39 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
              const content = a.content?.toLowerCase() || '';
              const title = a.title?.toLowerCase() || '';
              return content.includes('terminée') || content.includes('validée') || title.includes('badge');
-        }).map(a => ({
-            id: a.id,
-            type: 'activity',
-            title: a.title?.includes('BADGE') ? 'Trophée Débloqué' : 'Mission Accomplie',
-            content: a.content,
-            date: a.created_at,
-            icon: 'fa-trophy',
-            color: 'text-amber-500',
-            bg: 'bg-amber-50',
-            link: null
-        }));
+        }).map(a => {
+            const isBadge = a.title?.includes('BADGE');
+            return {
+                id: a.id,
+                type: 'activity',
+                title: isBadge ? 'Trophée Débloqué' : 'Mission Accomplie',
+                content: a.content,
+                date: a.created_at,
+                icon: isBadge ? 'fa-trophy' : 'fa-check-circle',
+                color: isBadge ? 'text-amber-500' : 'text-emerald-500',
+                bg: isBadge ? 'bg-amber-50' : 'bg-emerald-50',
+                link: null
+            };
+        });
 
         // 2. Filter Notifications (System alerts: Mission Validated, Badge Awarded)
         const successNotifications = notifications.filter(n => {
             const t = n.title?.toLowerCase() || '';
             return t.includes('validée') || t.includes('succès') || t.includes('badge') || t.includes('completed');
-        }).map(n => ({
-            id: n.id,
-            type: 'notification',
-            title: n.title,
-            content: n.content,
-            date: n.created_at,
-            icon: 'fa-medal',
-            color: 'text-amber-600',
-            bg: 'bg-amber-100',
-            link: n.link
-        }));
+        }).map(n => {
+            const isBadge = n.title?.toLowerCase().includes('badge');
+            return {
+                id: n.id,
+                type: 'notification',
+                title: n.title,
+                content: n.content,
+                date: n.created_at,
+                icon: isBadge ? 'fa-medal' : 'fa-check-circle',
+                color: isBadge ? 'text-amber-600' : 'text-emerald-500',
+                bg: isBadge ? 'bg-amber-100' : 'bg-emerald-50',
+                link: n.link
+            };
+        });
         
         // Merge and Sort
         const allSuccess = [...successActivities, ...successNotifications];
