@@ -2015,6 +2015,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                           }
                         }
                         handleStatusUpdate(completingMission.id, "completed", reasonText, fileUrl);
+                        
+                        // LOG SYSTEM MESSAGE FOR FILE UPLOAD
+                        if (fileUrl) {
+                            await supabase.from("mission_messages").insert({
+                                mission_id: completingMission.id,
+                                user_id: user.id,
+                                content: `Fichier déposé : ${selectedFile?.name || 'Livrable'}`,
+                                type: 'system'
+                            });
+                        }
                       }}
                       disabled={
                         !reasonText.trim() ||
