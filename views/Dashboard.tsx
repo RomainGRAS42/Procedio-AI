@@ -1256,11 +1256,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              <div className="col-span-12 lg:col-span-8">
+              <div className="col-span-12 lg:col-span-4">
                 <PilotCenterTechWidget
                   missions={activeMissions.filter((m) => m.assigned_to === user.id)}
                   activities={activities}
                   loading={loadingMissions || loadingActivities}
+                  onNavigate={onNavigate}
+                />
+              </div>
+              <div className="col-span-12 lg:col-span-4">
+                 <RecentHistoryWidget
+                  activities={activities}
+                  loading={loadingActivities}
+                  notifications={systemNotifications}
                   onNavigate={onNavigate}
                 />
               </div>
@@ -1271,14 +1279,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                   totalConsultations={personalStats?.consultations || 0}
                   totalSuggestions={personalStats?.suggestions || 0}
                   totalMissions={personalStats?.missions || 0}
-                  onNavigate={onNavigate}
-                />
-                
-                {/* Moved Activity Feed here if needed, or kept RecentHistory but user wanted Trophies instead */}
-                <RecentHistoryWidget
-                  activities={activities}
-                  loading={loadingActivities}
-                  notifications={systemNotifications}
                   onNavigate={onNavigate}
                 />
               </div>
