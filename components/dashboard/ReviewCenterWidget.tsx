@@ -105,8 +105,15 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       });
     }
 
-    // Sort by Date Descending
-    filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort by Priority (Unread first) then Date Descending
+    filtered.sort((a, b) => {
+      // 1. Prioritize Unread items
+      if (a.isRead !== b.isRead) {
+        return a.isRead ? 1 : -1; // Unread (false) comes first
+      }
+      // 2. Sort by Date
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
 
     // Group by Date
     const groups: { [key: string]: typeof allItems } = {};
@@ -312,8 +319,13 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                       >
                          <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className={`w-1.5 h-1.5 rounded-full ${!isRead ? 'bg-blue-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                              <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-blue-600' : 'font-bold text-slate-500'}`}>Alerte Mission</span>
+                              <div className={`w-1.5 h-1.5 rounded-full ${!isRead ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                              <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-rose-600' : 'font-bold text-slate-500'}`}>Alerte Mission</span>
+                              {!isRead && (
+                                <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm animate-bounce">
+                                  EN ATTENTE
+                                </span>
+                              )}
                             </div>
                             <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
                               {new Date(notif.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

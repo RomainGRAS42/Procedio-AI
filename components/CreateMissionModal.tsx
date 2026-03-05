@@ -84,16 +84,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
 
       if (error) throw error;
 
-      // Trigger Notification for the assigned technician
-      if (assigned_to) {
-        await supabase.from('notifications').insert({
-          user_id: assigned_to,
-          type: 'mission',
-          title: 'Nouvelle mission assignée',
-          content: `On vous a confié la mission : ${newMission.title}`,
-          link: '/missions',
-        });
-      }
+      // Notification is handled by DB Trigger
 
       // Reset form
       setNewMission({

@@ -280,16 +280,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
            }
       }
 
-      // Trigger Notification for the assigned technician (Solo)
-      if (newMission.mission_type === "solo" && assigned_to) {
-        await supabase.from("notifications").insert({
-          user_id: assigned_to,
-          type: "mission",
-          title: "Nouvelle mission assignée",
-          content: `On vous a confié la mission : ${newMission.title}`,
-          link: "/missions", // Navigate to missions view
-        });
-      }
+      // Notification for assigned technician (Solo) is handled by DB Trigger
+      /* if (newMission.mission_type === "solo" && assigned_to) { ... } */
 
       // Resolve the opportunity if it came from one
       if ((newMission as any).opportunity_id) {
@@ -485,16 +477,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           });
         }
 
-        // 2. Manager cancels -> Notify technician
-        if (newStatus === "cancelled" && mission.assigned_to && mission.assigned_to !== user.id) {
-          await supabase.from("notifications").insert({
-            user_id: mission.assigned_to,
-            type: "mission",
-            title: "Mission annulée",
-            content: `La mission "${mission.title}" a été annulée.`,
-            link: "/missions",
-          });
-        }
+        // 2. Manager cancels -> Notify technician (HANDLED BY TRIGGER)
+        /* if (newStatus === "cancelled" && mission.assigned_to && mission.assigned_to !== user.id) { ... } */
 
         // 3. Technician starts mission -> Notify Manager (NEW)
         if (newStatus === "in_progress" && mission.created_by && mission.created_by !== user.id) {
@@ -522,20 +506,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
         // fetchMissions(); // Still kept commented to rely on optimistic update first
 
-        // 3. Technician finishes -> Notify manager
-        if (
-          newStatus === "completed" &&
-          user.role === UserRole.TECHNICIAN &&
-          mission.created_by !== user.id
-        ) {
-          await supabase.from("notifications").insert({
-            user_id: mission.created_by,
-            type: "mission",
-            title: mission.needs_attachment ? "Livrable déposé" : "Mission terminée",
-            content: `${user.firstName} a soumis son travail pour : ${mission.title}`,
-            link: "/missions",
-          });
-        }
+        // 3. Technician finishes -> Notify manager (HANDLED BY TRIGGER)
+        /* if (newStatus === "completed" ... ) { ... } */
       }
     } catch (err) {
       console.error(err);
