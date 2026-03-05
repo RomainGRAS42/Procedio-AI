@@ -97,7 +97,8 @@ export const useAuth = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
               setIsAuthenticated(true);
-              await syncUserProfile(session.user);
+              // Non-blocking sync to speed up initial load
+              syncUserProfile(session.user).catch(console.error);
             }
           })(),
           timeoutPromise,
@@ -114,7 +115,8 @@ export const useAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setIsAuthenticated(true);
-        await syncUserProfile(session.user);
+        // Non-blocking sync
+        syncUserProfile(session.user).catch(console.error);
         setLoading(false);
       } else if (event === "SIGNED_OUT") {
         setIsAuthenticated(false);
