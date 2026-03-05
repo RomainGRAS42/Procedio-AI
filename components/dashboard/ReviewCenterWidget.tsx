@@ -310,7 +310,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                         key={`notification-${notif.id}`}
                         onContextMenu={(e) => handleContextMenu(e, 'notification', notif)}
                         onClick={() => {
-                            if (onToggleReadStatus && !isRead) onToggleReadStatus('notification', notif.id, true);
+                            // Don't auto-mark as read on click, just navigate
                             if (notif.missionId && onNavigateToMission) onNavigateToMission(notif.missionId);
                         }}
                         className={`p-3 rounded-2xl border transition-all group/notif cursor-pointer ${

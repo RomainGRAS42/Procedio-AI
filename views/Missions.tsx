@@ -187,6 +187,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     markAsRead(n.id);
                 }
             });
+            // Clear URL param to avoid reopening on refresh (optional but cleaner)
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
   }, [location.search, missions, loading]); // Remove systemNotifications from dependency to avoid loop
