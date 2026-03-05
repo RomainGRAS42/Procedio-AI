@@ -110,9 +110,10 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                                 {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
-                        <p className="text-xs font-bold text-slate-700 leading-tight mt-0.5 line-clamp-2">
-                            {item.content}
-                        </p>
+                        <div 
+                            className="text-xs font-bold text-slate-700 leading-tight mt-0.5 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: item.content }}
+                        />
                     </div>
                 </div>
             ))
