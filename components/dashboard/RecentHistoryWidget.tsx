@@ -32,16 +32,21 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
              return content.includes('terminée') || content.includes('validée') || title.includes('badge');
         }).map(a => {
             const isBadge = a.title?.includes('BADGE');
+            // Extract XP value from content if available (e.g. "Vous avez gagné 50 XP")
+            const xpMatch = a.content?.match(/(\d+)\s*XP/);
+            const xpValue = xpMatch ? xpMatch[1] : null;
+            
             return {
                 id: a.id,
                 type: 'activity',
                 title: isBadge ? 'Trophée Débloqué' : 'Mission Accomplie',
-                content: a.content,
+                content: a.content, // Keep full content or simplified
                 date: a.created_at,
                 icon: isBadge ? 'fa-trophy' : 'fa-check-circle',
                 color: isBadge ? 'text-amber-500' : 'text-emerald-500',
                 bg: isBadge ? 'bg-amber-50' : 'bg-emerald-50',
-                link: null
+                link: null,
+                xp: xpValue
             };
         });
 
@@ -51,6 +56,10 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             return t.includes('validée') || t.includes('succès') || t.includes('badge') || t.includes('completed');
         }).map(n => {
             const isBadge = n.title?.toLowerCase().includes('badge');
+            // Extract XP value from content (e.g. "Vous avez gagné <b>50 XP</b>")
+            const xpMatch = n.content?.match(/(\d+)\s*XP/);
+            const xpValue = xpMatch ? xpMatch[1] : null;
+
             return {
                 id: n.id,
                 type: 'notification',
@@ -60,7 +69,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 icon: isBadge ? 'fa-medal' : 'fa-check-circle',
                 color: isBadge ? 'text-amber-600' : 'text-emerald-500',
                 bg: isBadge ? 'bg-amber-100' : 'bg-emerald-50',
-                link: n.link
+                link: n.link,
+                xp: xpValue
             };
         });
         
@@ -75,12 +85,16 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let color = 'text-rose-500';
         let bg = 'bg-rose-50';
         let icon = 'fa-bell';
+        let xp = null;
 
         // Custom colors for specific notifications
         if (n.title.toLowerCase().includes('validée') || n.title.toLowerCase().includes('completed')) {
             color = 'text-emerald-500';
             bg = 'bg-emerald-50';
             icon = 'fa-check-circle';
+            // Extract XP
+            const xpMatch = n.content?.match(/(\d+)\s*XP/);
+            if (xpMatch) xp = xpMatch[1];
         } else if (n.title.toLowerCase().includes('refusée') || n.title.toLowerCase().includes('rejected')) {
             color = 'text-rose-500';
             bg = 'bg-rose-50';
@@ -100,7 +114,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             icon,
             color,
             bg,
-            link: n.link
+            link: n.link,
+            xp
         };
       }),
       ...activities.map(a => {
@@ -190,10 +205,17 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                                 {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
-                        <div 
-                            className="text-[13px] font-medium text-slate-700 leading-snug mt-0.5 line-clamp-2"
-                            dangerouslySetInnerHTML={{ __html: item.content }}
-                        />
+                        <div className="flex justify-between items-end gap-4">
+                            <div 
+                                className="text-[13px] font-medium text-slate-700 leading-snug mt-0.5 line-clamp-2"
+                                dangerouslySetInnerHTML={{ __html: item.content }}
+                            />
+                            {item.xp && (
+                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 shrink-0">
+                                    <span className="text-[10px] font-black text-amber-600">+{item.xp} XP</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             ))
