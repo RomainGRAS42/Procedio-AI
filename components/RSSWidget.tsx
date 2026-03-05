@@ -159,8 +159,10 @@ const RSSWidget: React.FC<RSSWidgetProps> = ({ user }) => {
             <i className="fa-solid fa-rss"></i>
           </div>
           <div className="flex items-center gap-2">
-            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">Veille Info</h3>
-            <InfoTooltip text="Actualités & articles de veille technologique." />
+            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+              <span className="uppercase">Veille Info</span>
+              <InfoTooltip text="Actualités & articles de veille technologique." />
+            </h3>
           </div>
         </div>
         <button 

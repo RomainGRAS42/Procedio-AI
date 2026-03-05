@@ -1233,7 +1233,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* ROW 2: Action & Stats Grid - 3 COLUMNS */}
+            {/* ROW 2: Action & Stats Grid */}
             <div className="col-span-12 grid grid-cols-12 gap-8">
               {/* Message du Manager (Full Width Above Grid) */}
               <div className="col-span-12">
@@ -1256,8 +1256,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* 1. Mon Fil d'Activité (LEFT - 60%) */}
-              <div className="col-span-12 lg:col-span-7">
+              {/* 1. Mon Fil d'Activité (LEFT - 50%) */}
+              <div className="col-span-12 lg:col-span-6">
                 <RecentHistoryWidget
                   activities={activities}
                   loading={loadingActivities}
@@ -1266,30 +1266,37 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* 2. Mes Trophées & Progression (RIGHT - 40%) */}
-              <div className="col-span-12 lg:col-span-5 flex flex-col gap-8">
-                <BadgesWidget
-                  earnedBadges={earnedBadges}
-                  totalConsultations={personalStats?.consultations || 0}
-                  totalSuggestions={personalStats?.suggestions || 0}
-                  totalMissions={personalStats?.missions || 0}
+              {/* 2. Mes Missions (RIGHT - 50%) */}
+              <div className="col-span-12 lg:col-span-6">
+                <PilotCenterTechWidget
+                  missions={activeMissions.filter((m) => m.assigned_to === user.id)}
+                  activities={activities}
+                  loading={loadingMissions || loadingActivities}
                   onNavigate={onNavigate}
                 />
               </div>
             </div>
 
-            {/* ROW 3: Mes Missions (40%) & Journal des Succès (60%) */}
+            {/* ROW 3: Trophées | Maitrise | Journal (3 cols) */}
             <div className="col-span-12 grid grid-cols-12 gap-8">
-                <div className="col-span-12 lg:col-span-5">
-                    <PilotCenterTechWidget
-                      missions={activeMissions.filter((m) => m.assigned_to === user.id)}
-                      activities={activities}
-                      loading={loadingMissions || loadingActivities}
-                      onNavigate={onNavigate}
-                    />
+                {/* Mes Trophées */}
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
+                  <BadgesWidget
+                    earnedBadges={earnedBadges}
+                    totalConsultations={personalStats?.consultations || 0}
+                    totalSuggestions={personalStats?.suggestions || 0}
+                    totalMissions={personalStats?.missions || 0}
+                    onNavigate={onNavigate}
+                  />
                 </div>
-                <div className="col-span-12 lg:col-span-7">
-                    {/* Journal des Succès */}
+
+                {/* Maitrise Experte */}
+                <div className="col-span-12 lg:col-span-4">
+                     {personalStats && <MasteryWidget personalStats={personalStats} />}
+                </div>
+
+                {/* Journal des Succès */}
+                <div className="col-span-12 lg:col-span-4">
                      <RecentHistoryWidget
                       activities={activities}
                       loading={loadingActivities}
@@ -1299,11 +1306,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                       subtitle="Vos victoires, badges et missions validées."
                     />
                 </div>
-            </div>
-
-            {/* ROW 4: Maîtrise Experte (Full Width) */}
-            <div className="col-span-12">
-                 {personalStats && <MasteryWidget personalStats={personalStats} />}
             </div>
 
             {/* ROW 5: RSS (Full Width) */}

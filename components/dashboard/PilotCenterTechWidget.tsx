@@ -47,8 +47,8 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
             <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg shadow-sm">
               <i className="fa-solid fa-rocket"></i>
             </div>
-            <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase flex items-center gap-2">
-              Mes Missions
+            <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+              <span className="uppercase">Mes Missions</span>
               <InfoTooltip text="Tes missions en cours et à venir." />
             </h3>
           </div>

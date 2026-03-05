@@ -497,7 +497,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             user_id: mission.assigned_to,
             type: "mission",
             title: "Mission validée !",
-            content: `Votre mission "${mission.title}" a été validée. XP finale accordée !`,
+            content: `Votre mission "${mission.title}" a été validée. Vous avez gagné <b>${mission.xp_reward || 50} XP</b> !`,
             link: "/missions",
           });
         }

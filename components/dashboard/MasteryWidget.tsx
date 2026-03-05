@@ -31,7 +31,7 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
   const xpRemaining = Math.max(0, xpForNextLevel - personalStats.xp);
 
   return (
-    <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full hover:border-indigo-100 transition-all">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col h-full hover:border-indigo-100 transition-all">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg shadow-sm">
@@ -39,10 +39,10 @@ const MasteryWidget: React.FC<MasteryWidgetProps> = ({ personalStats }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase">
-                Maitrise Experte
+              <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+                <span className="uppercase">Maitrise Experte</span>
+                <InfoTooltip text="Calculé via tes lectures de procédures et suggestions validées (courbe exponentielle)." />
               </h3>
-              <InfoTooltip text="Calculé via tes lectures de procédures et suggestions validées (courbe exponentielle)." />
             </div>
             <div className="inline-flex mt-1 px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-100/50">
               Progression par paliers

@@ -104,8 +104,10 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let title = 'Activité';
 
         if (a.title?.includes('CONSULTATION')) {
-            // SKIP CONSULTATIONS IN ACTIVITY FEED TO REDUCE NOISE
-            return null;
+            icon = 'fa-eye';
+            color = 'text-blue-500';
+            bg = 'bg-blue-50';
+            title = 'Consultation';
         } else if (a.title?.includes('MISSION')) {
             icon = 'fa-rocket';
             color = 'text-indigo-500';
@@ -132,8 +134,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
       }).filter(Boolean) as any[]
     ];
 
-    // Sort by date desc
-    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+    // Sort by date desc and limit
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
   }, [activities, notifications, title]);
 
   return (
@@ -143,8 +145,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
           <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
             <i className={`fa-solid ${title.includes("Succès") ? "fa-trophy text-amber-400" : "fa-clock-rotate-left"}`}></i>
           </div>
-          <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase flex items-center gap-2">
-            {title}
+          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+            <span className="uppercase">{title}</span>
             <InfoTooltip text={subtitle} />
           </h3>
         </div>
