@@ -64,7 +64,11 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
 
         <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
           {/* Pending Exams Section */}
-          {exams.length > 0 && exams.map((exam) => (
+          {exams.length > 0 && exams.map((exam) => {
+             // Filter out completed exams or those awaiting review (only show 'approved' which means ready to take)
+             if (exam.status !== 'approved') return null;
+
+             return (
             <div
               key={`exam-${exam.id}`}
               onClick={() => onNavigate && onNavigate(`/dashboard?action=mastery&id=${exam.id}`)}
@@ -87,7 +91,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                 Votre demande a été validée. Passez le test pour devenir Référent.
               </p>
             </div>
-          ))}
+          )})}
 
           {missions.length > 0 ? (
             missions.slice(0, 3).map((mission) => {
