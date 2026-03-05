@@ -111,7 +111,41 @@ const Dashboard: React.FC<DashboardProps> = ({
   );
   const [loadingMissions, setLoadingMissions] = useState(!cacheStore.has("dash_active_missions"));
 
-  // Toast Notification State
+  // Fetch active missions for Dashboard
+  const fetchActiveMissions = async () => {
+    try {
+      // Fetch missions - Only fetch relevant statuses for the "Mes Missions" widget
+      // For Technician: "assigned", "in_progress", "awaiting_validation"
+      // For Manager: "open", "assigned", "in_progress", "awaiting_validation", "completed" (for team view)
+      
+      const statuses = user.role === UserRole.TECHNICIAN 
+        ? ["assigned", "in_progress", "awaiting_validation"] 
+        : ["open", "assigned", "in_progress", "awaiting_validation", "completed"];
+
+      const { data, error } = await supabase
+        .from("missions")
+        .select(
+          `
+          *,
+          assignee:user_profiles!assigned_to (first_name, last_name)
+        `
+        )
+        .in("status", statuses)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching missions:", error);
+      } else if (data) {
+        console.log("Missions fetched:", data); // Debug log
+        setActiveMissions(data);
+        cacheStore.set("dash_active_missions", data);
+      }
+    } catch (err) {
+      console.error("Fetch missions error:", err);
+    } finally {
+      setLoadingMissions(false);
+    }
+  };
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -886,8 +920,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const fetchActiveMissions = async () => {
     try {
-      // Fetch missions - Simpler query first to ensure data comes through
-      const { data, error } = await supabase
+      // Define statuses for ACTIVE missions only (for Dashboard)
+      // Technician: assigned, in_progress, awaiting_validation
+      // Manager: open, assigned, in_progress, awaiting_validation (completed kept for team view only if recent?)
+      
+      const statuses = user.role === UserRole.TECHNICIAN 
+        ? ["assigned", "in_progress", "awaiting_validation"] 
+        : ["open", "assigned", "in_progress", "awaiting_validation"];
+
+      let query = supabase
         .from("missions")
         .select(
           `
@@ -895,14 +936,19 @@ const Dashboard: React.FC<DashboardProps> = ({
           assignee:user_profiles!assigned_to (first_name, last_name)
         `
         )
-        // Filter for specific statuses relevant to the team view
-        .in("status", ["open", "assigned", "in_progress", "awaiting_validation", "completed"])
+        .in("status", statuses)
         .order("created_at", { ascending: false });
+
+      // For Technician, only fetch their own missions
+      if (user.role === UserRole.TECHNICIAN) {
+        query = query.eq("assigned_to", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching missions:", error);
       } else if (data) {
-        console.log("Missions fetched:", data); // Debug log
         setActiveMissions(data);
         cacheStore.set("dash_active_missions", data);
       }

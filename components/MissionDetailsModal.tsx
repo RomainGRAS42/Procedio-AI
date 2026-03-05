@@ -92,7 +92,8 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
     // This implies that 'completionNotes' state is persisting the manager's refusal reason.
     
     if (mission.status === 'in_progress' && user.role === UserRole.TECHNICIAN) {
-        setCompletionNotes(""); 
+        setCompletionNotes("");
+        setAttachmentUrl(null); // Allow re-upload
     }
   }, [mission.status, user.role]);
 
