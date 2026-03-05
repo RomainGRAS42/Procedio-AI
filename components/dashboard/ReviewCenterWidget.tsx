@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Suggestion, Notification } from '../../types';
+import { Suggestion, Notification, Mission } from '../../types';
 import InfoTooltip from '../InfoTooltip';
 
 interface ReviewCenterWidgetProps {
   pendingSuggestions: Suggestion[];
   masteryClaims: any[];
   notifications?: Notification[];
+  activeMissions?: Mission[];
   onSelectSuggestion: (suggestion: Suggestion) => void;
   onNavigateToStatistics?: () => void;
   onApproveMastery?: (requestId: string) => void;
@@ -21,6 +22,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   pendingSuggestions,
   masteryClaims,
   notifications = [],
+  activeMissions = [],
   onSelectSuggestion,
   onNavigateToStatistics,
   onApproveMastery,
@@ -46,7 +48,15 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   const alertCount = 
     pendingSuggestions.filter(s => !s.isReadByManager).length + 
     masteryClaims.filter(c => !c.isReadByManager).length +
-    notifications.filter(n => !n.read).length;
+    notifications.filter(n => {
+      if (n.read) return false;
+      // Filter out notifications for inactive missions
+      const missionId = n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null;
+      if (missionId) {
+        return activeMissions.some(m => m.id === missionId);
+      }
+      return true;
+    }).length;
 
   // 1. Unify items
   const allItems = useMemo(() => [
@@ -66,17 +76,23 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       user: { first_name: (s.userName || "Inconnu").split(' ')[0], last_name: (s.userName || "").split(' ')[1] || '' }, // Approximation if user obj not full
       isRead: s.isReadByManager === true
     })),
-    ...notifications.map(n => ({
-      ...n,
-      dataType: 'notification',
-      date: n.created_at || new Date().toISOString(),
-      title: n.title,
-      user: { first_name: 'Système', last_name: '' }, // Notifications are system-generated or we don't have sender info joined yet
-      isRead: n.read === true,
-      content: n.content,
-      missionId: n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null
-    }))
-  ], [masteryClaims, pendingSuggestions, notifications]);
+    ...notifications.map(n => {
+      const missionId = n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null;
+      const isMissionActive = missionId ? activeMissions.some(m => m.id === missionId) : true;
+      
+      return {
+        ...n,
+        dataType: 'notification',
+        date: n.created_at || new Date().toISOString(),
+        title: n.title,
+        user: { first_name: 'Système', last_name: '' }, // Notifications are system-generated or we don't have sender info joined yet
+        isRead: n.read === true,
+        content: n.content,
+        missionId,
+        isMissionActive
+      };
+    })
+  ], [masteryClaims, pendingSuggestions, notifications, activeMissions]);
 
   // Extract unique users
   const uniqueUsers = useMemo(() => {
@@ -302,8 +318,9 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                       </div>
                     );
                   } else if (item.dataType === 'notification') {
-                    const notif = item;
+                    const notif = item as any; // Cast to access custom props
                     const isRead = notif.isRead;
+                    const isActive = notif.isMissionActive;
                     
                     return (
                       <div 
@@ -314,16 +331,23 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                             if (notif.missionId && onNavigateToMission) onNavigateToMission(notif.missionId);
                         }}
                         className={`p-3 rounded-2xl border transition-all group/notif cursor-pointer ${
-                            !isRead ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80 hover:bg-slate-100'
+                            !isRead && isActive ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80 hover:bg-slate-100'
                         }`}
                       >
                          <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className={`w-1.5 h-1.5 rounded-full ${!isRead ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                              <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-rose-600' : 'font-bold text-slate-500'}`}>Alerte Mission</span>
-                              {!isRead && (
+                              <div className={`w-1.5 h-1.5 rounded-full ${!isRead && isActive ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                              <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead && isActive ? 'font-black text-rose-600' : 'font-bold text-slate-500'}`}>
+                                {isActive ? 'Alerte Mission' : 'Mission Terminée'}
+                              </span>
+                              {!isRead && isActive && (
                                 <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm animate-bounce">
                                   EN ATTENTE
+                                </span>
+                              )}
+                              {!isActive && (
+                                <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm">
+                                  TERMINÉE
                                 </span>
                               )}
                             </div>
@@ -333,7 +357,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                           </div>
 
                           <h4 className={`text-[12px] truncate leading-tight transition-colors ${
-                              !isRead ? 'font-black text-slate-900 group-hover/notif:text-blue-600' : 'font-medium text-slate-600'
+                              !isRead && isActive ? 'font-black text-slate-900 group-hover/notif:text-blue-600' : 'font-medium text-slate-600'
                           }`}>
                             {notif.content}
                           </h4>

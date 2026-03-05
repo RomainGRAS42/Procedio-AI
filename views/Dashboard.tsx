@@ -1362,6 +1362,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   pendingSuggestions={pendingSuggestions || []}
                   masteryClaims={masteryClaims || []}
                   notifications={systemNotifications}
+                  activeMissions={activeMissions}
                   onSelectSuggestion={(sugg) => {
                     setSelectedSuggestion(sugg);
                     setShowSuggestionModal(true);

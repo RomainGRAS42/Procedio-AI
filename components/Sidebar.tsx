@@ -150,12 +150,11 @@ const Sidebar: React.FC<SidebarProps> = ({
               )}
               
               {/* Badges */}
-              {(item.id === "flash-notes" || item.id === "statistics") && userRole === UserRole.MANAGER && (
-                 ((item.id === "flash-notes" && (pendingFlashNotesCount || 0) > 0) || 
-                  (item.id === "statistics" && (alertCount || 0) > 0)) && (
+              {(item.id === "flash-notes" && userRole === UserRole.MANAGER) && (
+                 ((pendingFlashNotesCount || 0) > 0) && (
                   <div className={`${isCollapsed ? 'absolute top-2 right-2' : 'ml-auto'} min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 border border-white`}>
                     <span className="text-[9px] font-black text-white">
-                      {item.id === "flash-notes" ? pendingFlashNotesCount : alertCount}
+                      {pendingFlashNotesCount}
                     </span>
                   </div>
                  )
