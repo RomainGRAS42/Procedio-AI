@@ -11,22 +11,46 @@ interface TeamMember {
   level: number;
 }
 
+const TEAM_LEVELS = [
+  { level: 1, title: "Escouade Naissante", threshold: 5000 },
+  { level: 2, title: "Unité Tactique", threshold: 15000 },
+  { level: 3, title: "Bataillon Expérimenté", threshold: 30000 },
+  { level: 4, title: "Force d'Élite", threshold: 60000 },
+  { level: 5, title: "Légion d'Honneur", threshold: 100000 },
+  { level: 6, title: "Panthéon des Héros", threshold: Infinity }
+];
+
 const TeamSynergyWidget: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [totalXP, setTotalXP] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Team Level Logic (scaled up from individual levels)
-  // Level 1: 0 - 5000
-  // Level 2: 5000 - 15000
-  // ...
   const getTeamLevelInfo = (xp: number) => {
-    if (xp < 5000) return { level: 1, title: "Escouade Naissante", nextThreshold: 5000, currentBase: 0 };
-    if (xp < 15000) return { level: 2, title: "Unité Tactique", nextThreshold: 15000, currentBase: 5000 };
-    if (xp < 30000) return { level: 3, title: "Bataillon Expérimenté", nextThreshold: 30000, currentBase: 15000 };
-    if (xp < 60000) return { level: 4, title: "Force d'Élite", nextThreshold: 60000, currentBase: 30000 };
-    if (xp < 100000) return { level: 5, title: "Légion d'Honneur", nextThreshold: 100000, currentBase: 60000 };
-    return { level: 6, title: "Panthéon des Héros", nextThreshold: 200000, currentBase: 100000 };
+    let current = TEAM_LEVELS[0];
+    let next = TEAM_LEVELS[1];
+    let currentBase = 0;
+
+    for (let i = 0; i < TEAM_LEVELS.length; i++) {
+      if (xp < TEAM_LEVELS[i].threshold) {
+        current = TEAM_LEVELS[i];
+        next = TEAM_LEVELS[i + 1] || null;
+        currentBase = i === 0 ? 0 : TEAM_LEVELS[i-1].threshold;
+        break;
+      } else if (i === TEAM_LEVELS.length - 1) {
+        // Max level reached
+        current = TEAM_LEVELS[i];
+        next = null;
+        currentBase = TEAM_LEVELS[i-1].threshold;
+      }
+    }
+    
+    return { 
+      level: current.level, 
+      title: current.title, 
+      nextThreshold: current.threshold, 
+      currentBase,
+      nextTitle: next ? next.title : "Niveau Max"
+    };
   };
 
   useEffect(() => {
@@ -35,7 +59,6 @@ const TeamSynergyWidget: React.FC = () => {
         const { data, error } = await supabase
           .from('user_profiles')
           .select('id, first_name, last_name, avatar_url, xp_points, level')
-          // Correction: le rôle en DB est 'technicien' (français) et non 'technician'
           .eq('role', 'technicien')
           .order('xp_points', { ascending: false });
 
@@ -64,8 +87,13 @@ const TeamSynergyWidget: React.FC = () => {
   }, []);
 
   const levelInfo = getTeamLevelInfo(totalXP);
-  const progress = Math.min(100, Math.max(0, ((totalXP - levelInfo.currentBase) / (levelInfo.nextThreshold - levelInfo.currentBase)) * 100));
-  const remainingXP = levelInfo.nextThreshold - totalXP;
+  const progress = levelInfo.nextThreshold === Infinity 
+    ? 100 
+    : Math.min(100, Math.max(0, ((totalXP - levelInfo.currentBase) / (levelInfo.nextThreshold - levelInfo.currentBase)) * 100));
+  
+  const remainingXP = levelInfo.nextThreshold === Infinity 
+    ? 0 
+    : levelInfo.nextThreshold - totalXP;
 
   if (loading) return (
     <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm animate-pulse h-32 flex items-center justify-center">
@@ -115,11 +143,9 @@ const TeamSynergyWidget: React.FC = () => {
             <span className="text-xs font-black text-amber-600 uppercase tracking-widest">{Math.round(progress)}% Progression</span>
          </div>
          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-            Prochain Grade : <span className="text-slate-600">+{remainingXP.toLocaleString()} XP</span> 🚀
+            Prochain Grade : <span className="text-slate-600 font-black">{levelInfo.nextTitle}</span> 🚀
          </span>
       </div>
-
-
 
     </div>
   );
