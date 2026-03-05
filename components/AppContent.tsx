@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from "react-router-dom";
 import { User, ViewType } from "../types";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -19,7 +19,7 @@ import ChatAssistant from "./ChatAssistant";
 import { MissionsProvider } from "../contexts/MissionsContext";
 
 const ProcedureRedirect = () => {
-  const { id } = React.useParams();
+  const { id } = useParams();
   return <Navigate to={`/procedure/${id}`} replace />;
 };
 
