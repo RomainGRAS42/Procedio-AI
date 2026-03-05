@@ -1257,7 +1257,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {user.role === UserRole.MANAGER && (
               <button
                 onClick={onUploadClick}
-                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-2 font-bold text-xs">
+                className="h-full bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest">
                 <i className="fa-solid fa-plus"></i>
                 <span>Nouvelle Procédure</span>
               </button>
