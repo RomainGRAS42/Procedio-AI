@@ -286,103 +286,103 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                         </div>
 
                         <div className="flex items-center justify-between gap-4">
-                          <div className="min-w-0 flex-1">
-                            <h4 className={`text-[13px] truncate leading-tight group-hover/item:text-indigo-600 transition-colors ${
-                                !isRead ? 'font-black text-slate-900' : 'font-medium text-slate-600'
-                            }`}>
-                              {claim.title}
-                            </h4>
-                            <p className="text-[11px] font-bold text-slate-500 mt-0.5">
-                              {claim.user?.first_name} {claim.user?.last_name}
-                            </p>
-                          </div>
-
-                          <div className="shrink-0">
-                            {isCompleted ? (
-                              <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
-                                isSuccess ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+                            <div className="min-w-0 flex-1">
+                              <h4 className={`text-[13px] truncate leading-tight group-hover/item:text-indigo-600 transition-colors ${
+                                  !isRead ? 'font-black text-slate-900' : 'font-medium text-slate-600'
                               }`}>
-                                <span className="text-[11px] font-black">{score}%</span>
-                                <i className={`fa-solid ${isSuccess ? 'fa-check' : 'fa-xmark'} text-xs`}></i>
-                              </div>
-                            ) : generatingExamId === claim.id ? (
-                              <div className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center gap-2">
-                                 <i className="fa-solid fa-circle-notch animate-spin text-xs"></i>
-                               <span className="text-[10px] font-black uppercase tracking-widest">IA...</span>
-                              </div>
-                            ) : isApproved ? (
-                              <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center gap-2">
-                                <i className="fa-solid fa-paper-plane text-[10px]"></i>
-                                <span className="text-[10px] font-black uppercase tracking-widest">Envoyé</span>
-                              </div>
-                            ) : (
-                              <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
-                                    onApproveMastery?.(claim.id);
-                                }}
-                                className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
-                              >
-                                VALIDER
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } else if (item.dataType === 'notification') {
-                    const notif = item as any; // Cast to access custom props
-                    const isRead = notif.isRead;
-                    const isActive = notif.isMissionActive;
-                    
-                    return (
-                      <div 
-                        key={`notification-${notif.id}`}
-                        onContextMenu={(e) => handleContextMenu(e, 'notification', notif)}
-                        onClick={() => {
-                            // Don't auto-mark as read on click, just navigate
-                            if (notif.missionId && onNavigateToMission) onNavigateToMission(notif.missionId);
-                        }}
-                        className={`p-3 rounded-2xl border transition-all group/notif cursor-pointer ${
-                            !isRead && isActive ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80 hover:bg-slate-100'
-                        }`}
-                      >
-                         <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-1.5 h-1.5 rounded-full ${!isRead && isActive ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                              <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead && isActive ? 'font-black text-rose-600' : 'font-bold text-slate-500'}`}>
-                                {isActive ? 'Alerte Mission' : 'Mission Terminée'}
-                              </span>
-                              {!isRead && isActive && (
-                                <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm animate-bounce">
-                                  EN ATTENTE
-                                </span>
-                              )}
-                              {!isActive && (
-                                <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm">
-                                  TERMINÉE
-                                </span>
+                                {claim.title}
+                              </h4>
+                              <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                                {claim.user?.first_name} {claim.user?.last_name}
+                              </p>
+                            </div>
+
+                            <div className="shrink-0">
+                              {isCompleted ? (
+                                <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
+                                  isSuccess ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+                                }`}>
+                                  <span className="text-[11px] font-black">{score}%</span>
+                                  <i className={`fa-solid ${isSuccess ? 'fa-check' : 'fa-xmark'} text-xs`}></i>
+                                </div>
+                              ) : generatingExamId === claim.id ? (
+                                <div className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center gap-2">
+                                   <i className="fa-solid fa-circle-notch animate-spin text-xs"></i>
+                                 <span className="text-[10px] font-black uppercase tracking-widest">IA...</span>
+                                </div>
+                              ) : isApproved ? (
+                                <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center gap-2">
+                                  <i className="fa-solid fa-paper-plane text-[10px]"></i>
+                                  <span className="text-[10px] font-black uppercase tracking-widest">Envoyé</span>
+                                </div>
+                              ) : (
+                                <button 
+                                  onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onToggleReadStatus && !isRead) onToggleReadStatus('mastery', claim.id, true);
+                                      onApproveMastery?.(claim.id);
+                                  }}
+                                  className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
+                                >
+                                  VALIDER
+                                </button>
                               )}
                             </div>
-                            <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
-                              {new Date(notif.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
                           </div>
+                        </div>
+                      );
+                    } else if (item.dataType === 'notification') {
+                      const notif = item as any; // Cast to access custom props
+                      const isRead = notif.isRead;
+                      const isActive = notif.isMissionActive;
+                      
+                      return (
+                        <div 
+                          key={`notification-${notif.id}`}
+                          onContextMenu={(e) => handleContextMenu(e, 'notification', notif)}
+                          onClick={() => {
+                              // Don't auto-mark as read on click, just navigate
+                              if (notif.missionId && onNavigateToMission) onNavigateToMission(notif.missionId);
+                          }}
+                          className={`p-3 rounded-2xl border transition-all group/notif cursor-pointer ${
+                              !isRead && isActive ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80 hover:bg-slate-100'
+                          }`}
+                        >
+                           <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-1.5 h-1.5 rounded-full ${!isRead && isActive ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                                <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead && isActive ? 'font-black text-rose-600' : 'font-bold text-slate-500'}`}>
+                                  {isActive ? 'Alerte Mission' : 'Mission Terminée'}
+                                </span>
+                                {!isRead && isActive && (
+                                  <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm animate-bounce">
+                                    EN ATTENTE
+                                  </span>
+                                )}
+                                {!isActive && (
+                                  <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm">
+                                    TERMINÉE
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                                {new Date(notif.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
 
-                          <h4 className={`text-[12px] truncate leading-tight transition-colors ${
-                              !isRead && isActive ? 'font-black text-slate-900 group-hover/notif:text-blue-600' : 'font-medium text-slate-600'
-                          }`}>
-                            {notif.content}
-                          </h4>
-                          {notif.title && (
-                             <p className="text-[11px] font-bold text-slate-500 mt-0.5">
-                               {notif.title}
-                             </p>
-                          )}
-                      </div>
-                    );
-                  } else {
+                            <h4 className={`text-[12px] truncate leading-tight transition-colors ${
+                                !isRead && isActive ? 'font-black text-slate-900 group-hover/notif:text-blue-600' : 'font-medium text-slate-600'
+                            }`}>
+                              {notif.content}
+                            </h4>
+                            {notif.title && (
+                               <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                                 {notif.title}
+                               </p>
+                            )}
+                        </div>
+                      );
+                    } else {
                     const sugg = item;
                     const isRead = sugg.isRead;
                     const isApproved = sugg.status === 'approved';

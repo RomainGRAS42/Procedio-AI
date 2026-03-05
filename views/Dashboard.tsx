@@ -760,6 +760,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       setGeneratingExamId(null);
       fetchMasteryClaims();
 
+      // Notify Technician immediately
+      if (request.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: request.user_id,
+          type: "mission", // Use 'mission' type to ensure it appears in dashboard alerts if needed
+          title: "Examen Prêt 🎓",
+          content: `Votre demande pour "${request.procedures?.title}" a été validée. Cliquez ici pour passer l'examen !`,
+          link: `/dashboard?action=mastery&id=${requestId}`,
+        });
+      }
+
       supabase.functions
         .invoke("generate-mastery-quiz", {
           body: {
@@ -880,7 +891,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         `
         )
         .or(
-          "title.ilike.CONSULTATION%,title.ilike.LOG_SUGGESTION%,title.ilike.CLAIM_MASTERY%,title.ilike.MISSION_%"
+          "title.ilike.CONSULTATION%,title.ilike.LOG_SUGGESTION%,title.ilike.CLAIM_MASTERY%,title.ilike.MISSION_%,title.ilike.APPLY_REFERENT%"
         )
         .order("created_at", { ascending: false });
 
@@ -1311,6 +1322,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
                 <PilotCenterTechWidget
                   missions={activeMissions.filter((m) => m.assigned_to === user.id)}
+                  exams={approvedExams}
                   activities={activities}
                   loading={loadingMissions || loadingActivities}
                   onNavigate={onNavigate}

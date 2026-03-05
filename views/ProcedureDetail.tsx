@@ -899,6 +899,15 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           procedure_id: targetUuid,
         },
       ]);
+
+      // 3. Self-Notification for Technician record
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        type: "info",
+        title: "Candidature envoyée",
+        content: `Votre demande pour devenir Référent sur "${procedure.title}" a été transmise.`,
+        link: `/procedures/${targetUuid}`,
+      });
     } catch (err) {
       console.error("Error applying for referent:", err);
     }

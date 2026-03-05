@@ -45,6 +45,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
     if (title.includes('SUGGESTION')) return 'fa-lightbulb';
     if (title.includes('MISSION')) return 'fa-flag';
     if (title.includes('CLAIM')) return 'fa-trophy';
+    if (title.includes('APPLY_REFERENT')) return 'fa-graduation-cap';
     return 'fa-check';
   };
 
@@ -53,6 +54,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
     if (title.includes('SUGGESTION')) return 'bg-amber-50 text-amber-600';
     if (title.includes('MISSION')) return 'bg-emerald-50 text-emerald-600';
     if (title.includes('CLAIM')) return 'bg-purple-50 text-purple-600';
+    if (title.includes('APPLY_REFERENT')) return 'bg-orange-50 text-orange-600';
     return 'bg-slate-50 text-slate-600';
   };
 
@@ -182,6 +184,7 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
                   if (act.title?.startsWith('LOG_SUGGESTION_')) actionText = `a fait une suggestion`;
                   if (act.title?.startsWith('CLAIM_MASTERY_')) actionText = `a demandé une validation`;
                   if (act.title?.startsWith('MISSION_')) actionText = `a avancé sur une mission`;
+                  if (act.title?.startsWith('APPLY_REFERENT_')) actionText = `souhaite devenir Référent`;
 
                   return (
                     <div key={act.id} className="flex gap-4 items-start p-3 hover:bg-slate-50 rounded-2xl transition-all group border border-transparent hover:border-slate-100">

@@ -139,6 +139,11 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             color = 'text-emerald-500';
             bg = 'bg-emerald-50';
             title = 'Prise en charge';
+        } else if (a.title?.includes('APPLY_REFERENT')) {
+            icon = 'fa-graduation-cap';
+            color = 'text-orange-500';
+            bg = 'bg-orange-50';
+            title = 'Candidature Référent';
         }
 
         return {

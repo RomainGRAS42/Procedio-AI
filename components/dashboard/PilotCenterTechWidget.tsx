@@ -12,6 +12,7 @@ interface ActivityItem {
 interface PilotCenterTechWidgetProps {
   missions: Mission[];
   activities: ActivityItem[];
+  exams?: any[];
   loading?: boolean;
   onNavigate?: (view: string) => void;
 }
@@ -19,6 +20,7 @@ interface PilotCenterTechWidgetProps {
 const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
   missions,
   activities,
+  exams = [],
   loading,
   onNavigate,
 }) => {
@@ -61,6 +63,32 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
         </div>
 
         <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+          {/* Pending Exams Section */}
+          {exams.length > 0 && exams.map((exam) => (
+            <div
+              key={`exam-${exam.id}`}
+              onClick={() => onNavigate && onNavigate(`/dashboard?action=mastery&id=${exam.id}`)}
+              className="p-4 bg-white rounded-2xl border-l-4 border-l-rose-500 border-y border-r border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[9px] font-black uppercase tracking-widest mb-1">
+                    Examen requis
+                  </span>
+                  <span className="block text-xs font-bold text-slate-900 group-hover:text-rose-600 transition-colors">
+                    {exam.procedure?.title || "Examen de certification"}
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                  <i className="fa-solid fa-play text-xs pl-0.5"></i>
+                </div>
+              </div>
+              <p className="text-[10px] font-medium text-slate-500">
+                Votre demande a été validée. Passez le test pour devenir Référent.
+              </p>
+            </div>
+          ))}
+
           {missions.length > 0 ? (
             missions.slice(0, 3).map((mission) => {
               // Status Logic
@@ -128,7 +156,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               );
             })
           ) : (
-            <div className="py-16 px-4 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex flex-col items-center justify-center text-center gap-5">
+            <div className="h-full min-h-[200px] px-4 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex flex-col items-center justify-center text-center gap-5">
               <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-emerald-500 text-2xl shadow-sm border border-emerald-50 shrink-0">
                 <i className="fa-solid fa-check"></i>
               </div>
