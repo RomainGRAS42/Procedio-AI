@@ -141,6 +141,7 @@ export interface Mission {
   attachment_url?: string;
   manager_feedback?: string;
   submission_xp_granted?: boolean;
+  category?: string;
   // New Fields
   mission_type?: MissionType;
   recurrence_rule?: string; // 'weekly', 'monthly'
