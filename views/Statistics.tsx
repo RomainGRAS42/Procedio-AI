@@ -277,6 +277,16 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         champion: stats[cat].champion
       }));
 
+      // Calculate Team Intensity (Average Expertise Score)
+      const totalScore = mapData.reduce((acc, curr) => acc + curr.A, 0);
+      const intensity = mapData.length > 0 ? Math.round(totalScore / mapData.length) : 0;
+
+      setGlobalKPIs(prev => {
+        const next = { ...prev, teamIntensity: intensity };
+        cacheStore.set('stats_global_kpis', next);
+        return next;
+      });
+
       // Radar chart needs at least 3 points for a proper shape
       if (mapData.length < 3) {
         const fallbacks = ['GENERAL', 'SYSTEME', 'RESEAU'].slice(0, 3 - mapData.length);
@@ -377,7 +387,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         cacheStore.set('stats_leaderboard', data);
       }
 
-      // Active Users Intensity KPI
+      // Active Users Intensity KPI (Moved to SkillMap calculation for better relevance)
+      // Kept here only for reference or fallback if needed, but logic is now in fetchSkillMap
+      /* 
       const activeCount = data?.length || 0; 
       const intensity = Math.min(100, (activeCount / 10) * 100);
       setGlobalKPIs(prev => {
@@ -385,6 +397,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
         cacheStore.set('stats_global_kpis', next);
         return next;
       });
+      */
     } catch (err) {
       console.error("Error fetching leaderboard:", err);
     }
@@ -412,7 +425,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     { id: 'reliability', label: 'Fiabilité', icon: 'fa-shield-heart', color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { id: 'dynamic', label: 'Dynamique', icon: 'fa-arrow-trend-up', color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { id: 'redZone', label: 'Zone Rouge', icon: 'fa-file-circle-xmark', color: 'text-rose-600', bg: 'bg-rose-50' }, // Fixed icon in config
-    { id: 'intensity', label: 'Intensité', icon: 'fa-bolt-lightning', color: 'text-amber-600', bg: 'bg-amber-50' }
+    { id: 'intensity', label: "Niveau d'Expertise", icon: 'fa-graduation-cap', color: 'text-amber-600', bg: 'bg-amber-50' }
   ];
 
   const updateSlot = (index: number, kpiId: string | null) => {
@@ -789,7 +802,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                {layoutMode === 'focus' && (
                   <div className="mb-6 text-center">
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
-                        <i className="fa-solid fa-bolt-lightning text-amber-500"></i>
+                        <i className="fa-solid fa-graduation-cap text-amber-500"></i>
                          Cartographie d'Expertise
                     </h2>
                     <p className="text-slate-500 mt-2">Répartition des compétences et leaders.</p>
@@ -813,7 +826,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                       </ResponsiveContainer>
                       <div className="absolute top-0 right-0">
                           <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 uppercase tracking-wider shadow-sm">
-                            Intensité: {globalKPIs.teamIntensity}%
+                            Niveau Global: {globalKPIs.teamIntensity}%
                           </span>
                       </div>
                       
@@ -950,9 +963,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             onClick={() => updateSlot(0, 'redZone')}
           />
           <KPICard 
-            label="Intensité Team" 
+            label="Niveau d'Expertise" 
             value={`${globalKPIs.teamIntensity}%`} 
-            icon="fa-bolt-lightning" 
+            icon="fa-graduation-cap" 
             color="text-amber-600"
             bg="bg-amber-50"
             isActive={isKpiSelected('intensity')}

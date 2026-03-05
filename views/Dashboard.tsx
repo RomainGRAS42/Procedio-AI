@@ -733,6 +733,13 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const [generatingExamId, setGeneratingExamId] = useState<string | null>(null);
 
+  const dismissRelatedNotification = async (relatedId: string) => {
+    const notif = systemNotifications.find(n => n.link && n.link.includes(relatedId));
+    if (notif) {
+      await markAsRead(notif.id);
+    }
+  };
+
   const handleApproveMastery = async (requestId: string) => {
     try {
       const request = masteryClaims.find((c) => c.id === requestId);
@@ -745,6 +752,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       setGeneratingExamId(requestId);
       setToast({ message: "Lancement de la génération IA en arrière-plan...", type: "info" });
+
+      // Dismiss associated notification if exists
+      await dismissRelatedNotification(requestId);
 
       const { error: preUpdateError } = await supabase
         .from("mastery_requests")
@@ -799,6 +809,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (type === 'notification') {
         if (status) await markAsRead(id);
         return;
+      }
+
+      // If marking as read/handled, also dismiss related notification
+      if (status) {
+        await dismissRelatedNotification(id);
       }
 
       const table = type === "suggestion" ? "procedure_suggestions" : "mastery_requests";
@@ -1507,6 +1522,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                     // Immediately update local state to remove item from UI
                     setMasteryClaims(prev => prev.filter(c => c.id !== selectedMasteryClaim.id));
                     
+                    // Dismiss associated notification
+                    await dismissRelatedNotification(selectedMasteryClaim.id);
+                    
                     // Notify User
                     await supabase.from("notifications").insert({
                       user_id: userId,
@@ -1558,6 +1576,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                      .update({ status: 'rejected' })
                      .eq('id', requestId);
                  
+                 // Dismiss associated notification
+                 await dismissRelatedNotification(requestId);
+
                  // Notify User
                  await supabase.from("notifications").insert({
                     user_id: selectedMasteryClaim.user_id,

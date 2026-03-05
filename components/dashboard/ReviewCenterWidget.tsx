@@ -55,7 +55,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       if (missionId) {
         return activeMissions.some(m => m.id === missionId);
       }
-      return true;
+      return false; // Default to false: Actionable alerts must be linked to active missions
     }).length;
 
   // 1. Unify items
@@ -365,7 +365,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                               <div className="flex items-center gap-2">
                                 <div className={`w-1.5 h-1.5 rounded-full ${!isRead && isActive ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
                                 <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead && isActive ? 'font-black text-rose-600' : 'font-bold text-slate-500'}`}>
-                                  {isActive ? 'Alerte Mission' : 'Mission Terminée'}
+                                  {isActive ? 'Alerte Mission' : (notif.type === 'mission' ? 'Mission Terminée' : 'Information')}
                                 </span>
                                 {!isRead && isActive && (
                                   <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm animate-bounce">
@@ -373,8 +373,8 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                                   </span>
                                 )}
                                 {!isActive && (
-                                  <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm">
-                                    TERMINÉE
+                                  <span className={`${notif.type === 'mission' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'} text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm`}>
+                                    {notif.type === 'mission' ? 'TERMINÉE' : 'INFO'}
                                   </span>
                                 )}
                               </div>
