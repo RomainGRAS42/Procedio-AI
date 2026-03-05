@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { User, Procedure, Suggestion, UserRole, Mission } from "../types";
 import CustomToast from "../components/CustomToast";
 import TeamPodium from "../components/TeamPodium";
@@ -78,6 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
   const { systemNotifications, markAsRead } = useNotifications(user);
+  const location = useLocation();
   const [isRead, setIsRead] = useState(false);
   const [announcement, setAnnouncement] = useState<Announcement | null>(
     cacheStore.get("dash_announcement") || null
@@ -478,8 +480,24 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
   }, [user?.id, user?.role]);
 
-  // Support for deep linking to suggestions or mastery exams
+  // Support for deep linking to suggestions or mastery exams (via URL or Prop)
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const action = params.get('action');
+    const id = params.get('id');
+
+    // 1. Check URL Params first
+    if (action === 'mastery' && id && approvedExams.length > 0) {
+      const exam = approvedExams.find(e => e.id === id);
+      if (exam) {
+        setActiveQuizRequest(exam);
+        setShowDashboardQuiz(true);
+        // Clear URL silently to avoid re-triggering on refresh
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    }
+
+    // 2. Check Prop (Legacy/Internal Navigation)
     if (targetAction) {
       if (targetAction.type === "suggestion" && pendingSuggestions.length > 0) {
         const sugg = pendingSuggestions.find((s) => s.id === targetAction.id);
@@ -506,7 +524,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
       }
     }
-  }, [targetAction, pendingSuggestions, approvedExams, masteryClaims]);
+  }, [targetAction, pendingSuggestions, approvedExams, masteryClaims, location.search]);
 
   // Retry helper
   const retryPromise = async <T extends unknown>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {

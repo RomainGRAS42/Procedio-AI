@@ -44,7 +44,7 @@ export const MissionChat: React.FC<MissionChatProps> = ({
       <div className="flex flex-col w-full h-full bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex-1 overflow-y-auto p-8 space-y-6" ref={chatContainerRef}>
           {messages.length === 0 && !loadingMessages ? (
-            <div className="text-center py-20 text-slate-300">
+            <div className="flex flex-col items-center justify-center h-full text-slate-300">
               <i className="fa-regular fa-comments text-4xl mb-4"></i>
               <p className="font-medium text-sm">Aucun message. Commencez la discussion !</p>
             </div>

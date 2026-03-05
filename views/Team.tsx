@@ -159,29 +159,27 @@ const Team: React.FC<TeamProps> = ({ user }) => {
 
       const { error } = await supabase
         .from("mastery_requests")
-        .update({ status, completed_at: new Date().toISOString() })
+        .update({ 
+          status: status === "completed" ? "approved" : "rejected",
+          // Only set completed_at if rejected (terminal state), otherwise it's pending the quiz
+          completed_at: status === "rejected" ? new Date().toISOString() : null 
+        })
         .eq("id", applicationId);
 
       if (error) throw error;
 
       if (status === "completed") {
-        // If approved, create the referent record
-        await supabase.from("procedure_referents").insert({
-          procedure_id: app.procedure_id,
-          user_id: app.user_id
+        // NOTIFICATION TECHNICIEN
+        await supabase.from("notifications").insert({
+          user_id: app.user_id,
+          type: "mission_assigned", // Uses green icon in Header
+          title: "Candidature Acceptée ! 🎓",
+          content: `Votre manager a validé votre demande pour "${app.procedure?.title}". Cliquez ici pour lancer l'examen de certification.`,
+          link: `/dashboard?action=mastery&id=${applicationId}`,
+          read: false
         });
-        
-        // Add XP reward
-        const { data: profile } = await supabase.from("user_profiles").select("xp_points").eq("id", app.user_id).single();
-        if (profile) {
-          const newXP = (profile.xp_points || 0) + 100;
-          await supabase.from("user_profiles").update({ 
-            xp_points: newXP,
-            level: calculateLevelFromXP(newXP)
-          }).eq("id", app.user_id);
-        }
 
-        setNotification({ msg: "Candidature approuvée !", type: "success" });
+        setNotification({ msg: "Candidature approuvée ! Le technicien a été notifié.", type: "success" });
       } else {
         setNotification({ msg: "Candidature refusée", type: "success" });
       }

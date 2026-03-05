@@ -444,14 +444,22 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         if (newStatus === "cancelled") updateData.cancellation_reason = notes;
         if (newStatus === "assigned") updateData.assigned_to = user.id;
 
-        const { error } = await supabase.from("missions").update(updateData).eq("id", missionId);
+        // Prevent double completion (and double XP) by checking status
+        let query = supabase.from("missions").update(updateData).eq("id", missionId);
+        
+        // If completing, ensure it wasn't already completed
+        if (newStatus === "completed") {
+             query = query.neq("status", "completed");
+        }
+
+        const { data, error } = await query.select();
 
         if (error) throw error;
 
         // Log system message in chat
         let systemMsg = "";
         if (newStatus === "assigned" && user.id) systemMsg = `${user.firstName} a pris en charge la mission`;
-        if (newStatus === "completed") systemMsg = `${user.firstName} a terminé la mission`;
+        if (newStatus === "completed" && data && data.length > 0) systemMsg = `${user.firstName} a terminé la mission`; // Only log if update happened
         if (newStatus === "cancelled") systemMsg = `Mission annulée par ${user.firstName}`;
         
         if (systemMsg) {
@@ -463,8 +471,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             });
         }
 
-        // Give XP if transitioning to completed directly (standard way)
-        if (newStatus === "completed" && mission.assigned_to) {
+        // Give XP if transitioning to completed directly (standard way) AND row was actually updated
+        if (newStatus === "completed" && mission.assigned_to && data && data.length > 0) {
           await supabase.rpc("increment_user_xp", {
             target_user_id: mission.assigned_to,
             xp_amount: mission.xp_reward || 50,

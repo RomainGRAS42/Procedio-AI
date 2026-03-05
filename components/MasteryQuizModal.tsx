@@ -149,8 +149,14 @@ const MasteryQuizModal: React.FC<MasteryQuizModalProps> = ({
           },
         ]);
 
-        // 4. Grant XP Reward
+        // 4. Grant XP Reward & Create Referent Record
         if (finalScore >= 70) {
+          // Create Referent Record
+          await supabase.from("procedure_referents").upsert({
+             procedure_id: procUuid,
+             user_id: userProfileId
+          }, { onConflict: 'procedure_id, user_id' });
+
           const xpReward = finalScore === 100 ? 100 : finalScore >= 85 ? 75 : 50;
           await supabase.rpc('increment_user_xp', {
             target_user_id: user.id,
