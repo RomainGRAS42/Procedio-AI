@@ -174,7 +174,7 @@ export interface ActiveTransfer {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'chat_message' | 'mission_assigned' | 'mission_status' | 'level_up' | 'system';
+  type: 'chat_message' | 'mission_assigned' | 'mission_status' | 'level_up' | 'system' | 'mission' | 'info' | 'badge';
   title: string;
   content: string;
   link?: string;
