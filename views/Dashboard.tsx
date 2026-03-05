@@ -1520,7 +1520,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       type: "level_up",
                       title: "Félicitations ! 🎓",
                       content: `Vous avez été nommé Référent pour la procédure "${selectedMasteryClaim.procedures?.title}".`,
-                      link: `/procedures/${procId}`,
+                      link: `/procedure/${procId}`,
                     });
 
                     // Grant XP

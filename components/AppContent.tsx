@@ -18,6 +18,11 @@ import MouseTrailEffect from "./MouseTrailEffect";
 import ChatAssistant from "./ChatAssistant";
 import { MissionsProvider } from "../contexts/MissionsContext";
 
+const ProcedureRedirect = () => {
+  const { id } = React.useParams();
+  return <Navigate to={`/procedure/${id}`} replace />;
+};
+
 const AppContent: React.FC<any> = ({ 
   user, handleLogout, isSidebarOpen, setIsSidebarOpen, activeTransfer, setActiveTransfer,
   connectionStatus, globalSearchTerm, setGlobalSearchTerm, pendingAction, setPendingAction,
@@ -84,7 +89,7 @@ const AppContent: React.FC<any> = ({
             navigate(`/procedure/${p.id}`);
           }}
           onLogout={handleLogout}
-          onNavigate={(view) => navigate(`/${view}`)}
+          onNavigate={(view) => navigate(view.startsWith('/') ? view : `/${view}`)}
           onNotificationClick={(type, id) => {
             setPendingAction({ type, id });
             navigate("/dashboard");
@@ -107,11 +112,13 @@ const AppContent: React.FC<any> = ({
                     onViewComplianceHistory={() => navigate("/dashboard")}
                     targetAction={pendingAction}
                     onActionHandled={() => setPendingAction(null)}
-                    onNavigate={(v) => navigate(`/${v}`)}
+                    onNavigate={(v) => navigate(v.startsWith('/') ? v : `/${v}`)}
                     onFlashCountChange={setPendingFlashNotesCount}
                     onAlertCountChange={setDashboardAlertCount}
                   />
                 } />
+                {/* Redirect plural /procedures/:id to singular /procedure/:id to fix typo in notifications */}
+                <Route path="/procedures/:id" element={<ProcedureRedirect />} />
                 <Route path="/procedures" element={
                   <Procedures
                     user={user}
