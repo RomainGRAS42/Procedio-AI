@@ -1551,297 +1551,208 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       {showCreateModal &&
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-            <div className="bg-white rounded-[2rem] w-full max-w-[95vw] xl:max-w-[1300px] shadow-2xl animate-scale-up flex flex-col h-auto max-h-[95vh] border border-white/20">
-              {/* HEADER COMPACT */}
-              <div className="flex items-center justify-between p-6 pb-2 shrink-0 border-b border-slate-50">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-200">
-                    <i className="fa-solid fa-bolt"></i>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                        Nouvelle Mission
-                    </h3>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        Définissez les objectifs
-                    </p>
-                  </div>
+            <div className="bg-white rounded-[2rem] w-full max-w-[95vw] xl:max-w-[1200px] shadow-2xl animate-scale-up flex flex-col overflow-hidden border border-white/20">
+              
+              {/* HEADER INTEGRATED TITLE */}
+              <div className="flex items-center gap-6 p-6 pb-4 shrink-0 border-b border-slate-50">
+                <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-200 shrink-0">
+                  <i className="fa-solid fa-bolt"></i>
+                </div>
+                <div className="flex-1 relative group">
+                     <label className="absolute -top-2.5 left-0 text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                        Titre de la mission
+                     </label>
+                     <input
+                        type="text"
+                        placeholder="ex: Rédiger la procédure VPN"
+                        className="w-full bg-transparent border-none p-0 text-2xl font-black text-slate-800 placeholder:text-slate-200 focus:ring-0 outline-none h-10"
+                        value={newMission.title}
+                        onChange={(e) => setNewMission({ ...newMission, title: e.target.value })}
+                        autoFocus
+                    />
                 </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="w-8 h-8 rounded-full bg-slate-50 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center">
+                  className="w-10 h-10 rounded-full bg-slate-50 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center shrink-0">
                   <i className="fa-solid fa-xmark text-lg"></i>
                 </button>
               </div>
 
-              {/* CONTENT NO SCROLL (Adaptive) */}
-              <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
-                <div className="grid grid-cols-12 gap-6 h-full">
-                    {/* TOP: Title (Compact) */}
-                    <div className="col-span-12">
-                        <div className="relative">
-                            <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                Titre de la mission
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="ex: Rédiger la procédure VPN"
-                                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-slate-800 text-lg placeholder:font-medium placeholder:text-slate-300"
-                                value={newMission.title}
-                                onChange={(e) => setNewMission({ ...newMission, title: e.target.value })}
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-
-                    {/* COL 1: Context (Description + Attachment) */}
-                    <div className="col-span-12 lg:col-span-5 flex flex-col gap-4">
-                        <div className="relative flex-1 flex flex-col">
-                          <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest z-10">
+              {/* CONTENT SINGLE VIEW */}
+              <div className="p-8 grid grid-cols-12 gap-8">
+                
+                {/* LEFT: CONTEXT */}
+                <div className="col-span-12 lg:col-span-7 flex flex-col gap-6">
+                    <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-100 p-4 flex flex-col focus-within:bg-white focus-within:border-indigo-200 transition-colors">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
                             Description & Objectif
-                          </label>
-                          <textarea
+                        </label>
+                        <textarea
                             placeholder="Expliquez ce qui est attendu..."
-                            className="w-full flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-600 resize-none leading-relaxed text-sm min-h-[140px]"
+                            className="w-full flex-1 bg-transparent border-none outline-none font-medium text-slate-600 resize-none leading-relaxed text-sm min-h-[200px]"
                             value={newMission.description}
                             onChange={(e) => setNewMission({ ...newMission, description: e.target.value })}
-                          />
-                        </div>
+                        />
+                    </div>
 
-                        {/* Toggle: Needs Attachment (Compact) */}
-                        <div
-                          className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between group/toggle hover:border-indigo-200 transition-all cursor-pointer shrink-0"
-                          onClick={() =>
-                            setNewMission({ ...newMission, needs_attachment: !newMission.needs_attachment })
-                          }>
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all ${newMission.needs_attachment ? "bg-indigo-600 text-white shadow-md" : "bg-white text-slate-300 border border-slate-200"}`}>
-                              <i className="fa-solid fa-paperclip"></i>
+                    <div
+                        className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-white hover:border-indigo-200 transition-all"
+                        onClick={() => setNewMission({ ...newMission, needs_attachment: !newMission.needs_attachment })}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm transition-all ${newMission.needs_attachment ? "bg-indigo-600 text-white" : "bg-white text-slate-300 border border-slate-200"}`}>
+                                <i className="fa-solid fa-paperclip"></i>
                             </div>
                             <div>
-                              <p className="text-xs font-black text-slate-800 uppercase tracking-tight">
-                                Preuve requise
-                              </p>
-                            </div>
-                          </div>
-                          <div
-                            className={`w-10 h-5 rounded-full transition-all relative ${newMission.needs_attachment ? "bg-indigo-600" : "bg-slate-200"}`}>
-                            <div
-                              className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.needs_attachment ? "right-1" : "left-1"}`}></div>
-                          </div>
-                        </div>
-                    </div>
-
-                    {/* COL 2: Configuration (Type & Who) */}
-                    <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
-                        <div className="relative">
-                             <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest z-10">
-                                Type de Mission
-                             </label>
-                             <div className="grid grid-cols-3 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setNewMission({ ...newMission, mission_type: 'solo' })}
-                                  className={`p-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${newMission.mission_type === 'solo' ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-200'}`}
-                                >
-                                   <i className="fa-solid fa-user text-sm"></i>
-                                   <span className="text-[8px] font-black uppercase tracking-widest">Solo</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setNewMission({ ...newMission, mission_type: 'team' })}
-                                  className={`p-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${newMission.mission_type === 'team' ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-200'}`}
-                                >
-                                   <i className="fa-solid fa-users text-sm"></i>
-                                   <span className="text-[8px] font-black uppercase tracking-widest">Équipe</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setNewMission({ ...newMission, mission_type: 'challenge' })}
-                                  className={`p-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${newMission.mission_type === 'challenge' ? 'bg-amber-500 border-amber-500 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-amber-200'}`}
-                                >
-                                   <i className="fa-solid fa-trophy text-sm"></i>
-                                   <span className="text-[8px] font-black uppercase tracking-widest">Défis</span>
-                                </button>
-                             </div>
-                        </div>
-
-                        <div className="relative flex-1">
-                              <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest z-10">
-                                {newMission.mission_type === 'team' ? 'Participants' : newMission.mission_type === 'solo' ? 'Assigner à' : 'Cible'}
-                              </label>
-                              
-                              {newMission.mission_type === 'solo' && (
-                                  <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] border border-indigo-100">
-                                        <i className="fa-solid fa-user-check"></i>
-                                    </div>
-                                    <select
-                                        className="w-full p-3 pl-12 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer text-xs"
-                                        value={newMission.assigned_to}
-                                        onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
-                                    >
-                                        <option value="">Sélectionner un technicien</option>
-                                        {technicians.map((tech) => (
-                                        <option key={tech.id} value={tech.id}>
-                                            {tech.first_name} {tech.last_name}
-                                        </option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-600 transition-colors">
-                                        <i className="fa-solid fa-chevron-down text-[10px]"></i>
-                                    </div>
-                                  </div>
-                              )}
-
-                              {newMission.mission_type === 'team' && (
-                                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-2 h-[160px] overflow-y-auto space-y-1 custom-scrollbar">
-                                     {technicians.map((tech) => (
-                                        <label key={tech.id} className="flex items-center gap-2 cursor-pointer group select-none hover:bg-white p-2 rounded-lg transition-all border border-transparent hover:border-slate-100 hover:shadow-sm">
-                                           <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${newMission.participants.includes(tech.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-transparent'}`}>
-                                              <i className="fa-solid fa-check text-[10px]"></i>
-                                           </div>
-                                           <input 
-                                             type="checkbox" 
-                                             className="hidden"
-                                             checked={newMission.participants.includes(tech.id)}
-                                             onChange={(e) => {
-                                                if (e.target.checked) {
-                                                   setNewMission(prev => ({ ...prev, participants: [...prev.participants, tech.id] }));
-                                                } else {
-                                                   setNewMission(prev => ({ ...prev, participants: prev.participants.filter(id => id !== tech.id) }));
-                                                }
-                                             }}
-                                           />
-                                           <div className="flex flex-col">
-                                               <span className={`text-xs font-bold transition-colors ${newMission.participants.includes(tech.id) ? 'text-indigo-900' : 'text-slate-600 group-hover:text-indigo-600'}`}>
-                                                  {tech.first_name} {tech.last_name}
-                                               </span>
-                                           </div>
-                                        </label>
-                                     ))}
-                                  </div>
-                              )}
-
-                              {newMission.mission_type === 'challenge' && (
-                                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex flex-col items-center justify-center gap-2 text-amber-600 text-center h-[160px]">
-                                     <div className="w-10 h-10 rounded-full bg-white shadow-md shadow-amber-200 flex items-center justify-center text-lg animate-pulse">
-                                         <i className="fa-solid fa-bolt"></i>
-                                     </div>
-                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-tight">Premier arrivé</p>
-                                        <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">Premier servi</p>
-                                     </div>
-                                  </div>
-                              )}
-                        </div>
-                    </div>
-
-                    {/* COL 3: Settings (Compact Grid) */}
-                    <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
-                        <div className="relative">
-                            <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest z-10">
-                                Récompense XP
-                            </label>
-                            <div className="relative group">
-                                <input
-                                type="number"
-                                className="w-full p-3 pl-12 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-black text-indigo-600 text-lg"
-                                value={newMission.xp_reward}
-                                onChange={(e) =>
-                                    setNewMission({ ...newMission, xp_reward: parseInt(e.target.value) })
-                                }
-                                />
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-300 text-sm group-hover:scale-110 transition-transform">
-                                    <i className="fa-solid fa-star"></i>
-                                </div>
+                                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Preuve requise</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Fichier obligatoire</p>
                             </div>
                         </div>
-
-                        <div className="relative">
-                            <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest z-10">
-                                Urgence
-                            </label>
-                            <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white flex items-center justify-center text-[10px] shadow-sm text-slate-400">
-                                    <i className="fa-solid fa-fire"></i>
-                                </div>
-                                <select
-                                className="w-full p-3 pl-12 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer text-xs"
-                                value={newMission.urgency}
-                                onChange={(e) =>
-                                    setNewMission({ ...newMission, urgency: e.target.value as MissionUrgency })
-                                }>
-                                <option value="low">Libre (Low)</option>
-                                <option value="medium">Standard</option>
-                                <option value="high">Prioritaire</option>
-                                <option value="critical">Urgent</option>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-600 transition-colors">
-                                    <i className="fa-solid fa-chevron-down text-[10px]"></i>
-                                </div>
-                            </div>
+                        <div className={`w-10 h-5 rounded-full transition-all relative ${newMission.needs_attachment ? "bg-indigo-600" : "bg-slate-200"}`}>
+                            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.needs_attachment ? "right-1" : "left-1"}`}></div>
                         </div>
-
-                        <div className="relative">
-                             <label className="absolute -top-2 left-3 bg-white px-1 text-[9px] font-black text-slate-400 uppercase tracking-widest z-10">
-                                Récurrence
-                             </label>
-                             <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white flex items-center justify-center text-[10px] shadow-sm text-slate-400">
-                                    <i className="fa-solid fa-rotate"></i>
-                                </div>
-                                <select
-                                    className="w-full p-3 pl-12 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer text-xs"
-                                    value={newMission.recurrence}
-                                    onChange={(e) => setNewMission({ ...newMission, recurrence: e.target.value })}
-                                >
-                                    <option value="none">Aucune (One-shot)</option>
-                                    <option value="weekly">Hebdomadaire</option>
-                                    <option value="monthly">Mensuelle</option>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-600 transition-colors">
-                                    <i className="fa-solid fa-chevron-down text-[10px]"></i>
-                                </div>
-                             </div>
-                        </div>
-
-                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between mt-auto">
-                            <div className="flex items-center gap-2">
-                                <i className="fa-solid fa-calendar-day text-slate-400 text-xs"></i>
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Date limite</span>
-                            </div>
-                            <div 
-                                onClick={() => setNewMission({ ...newMission, hasDeadline: !newMission.hasDeadline })}
-                                className={`w-8 h-5 rounded-full transition-all relative cursor-pointer ${newMission.hasDeadline ? "bg-rose-500" : "bg-slate-200"}`}
-                            >
-                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.hasDeadline ? "right-1" : "left-1"}`}></div>
-                            </div>
-                        </div>
-                        {newMission.hasDeadline && (
-                            <input
-                                type="date"
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-xs animate-fade-in"
-                                value={newMission.deadline}
-                                onChange={(e) =>
-                                setNewMission({ ...newMission, deadline: e.target.value })
-                                }
-                            />
-                        )}
                     </div>
                 </div>
+
+                {/* RIGHT: SETTINGS */}
+                <div className="col-span-12 lg:col-span-5 flex flex-col gap-5">
+                    {/* Row 1: Type */}
+                    <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100 flex">
+                        {[
+                            { id: 'solo', label: 'Solo', icon: 'user' },
+                            { id: 'team', label: 'Équipe', icon: 'users' },
+                            { id: 'challenge', label: 'Défis', icon: 'trophy' }
+                        ].map((type) => (
+                            <button
+                                key={type.id}
+                                onClick={() => setNewMission({ ...newMission, mission_type: type.id as any })}
+                                className={`flex-1 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${newMission.mission_type === type.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                <i className={`fa-solid fa-${type.icon}`}></i>
+                                {type.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Row 2: Assign */}
+                    <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500">
+                            <i className="fa-solid fa-user-check"></i>
+                        </div>
+                        {newMission.mission_type === 'team' ? (
+                             <div className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center px-4 pl-12 overflow-x-auto">
+                                <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
+                                    {newMission.participants.length > 0 ? `${newMission.participants.length} participants` : "Sélectionner participants"}
+                                </span>
+                             </div>
+                        ) : (
+                            <select
+                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-xs appearance-none cursor-pointer"
+                                value={newMission.assigned_to}
+                                onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
+                            >
+                                <option value="">Sélectionner un technicien</option>
+                                {technicians.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
+                            </select>
+                        )}
+                        <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                    </div>
+                    {/* Team Selection List (Conditional) */}
+                    {newMission.mission_type === 'team' && (
+                        <div className="h-24 overflow-y-auto bg-slate-50 border border-slate-100 rounded-xl p-2 custom-scrollbar">
+                             {technicians.map((tech) => (
+                                <label key={tech.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded-lg cursor-pointer">
+                                    <input type="checkbox" className="accent-indigo-600 rounded" checked={newMission.participants.includes(tech.id)} onChange={(e) => {
+                                        if (e.target.checked) setNewMission(prev => ({ ...prev, participants: [...prev.participants, tech.id] }));
+                                        else setNewMission(prev => ({ ...prev, participants: prev.participants.filter(id => id !== tech.id) }));
+                                    }} />
+                                    <span className="text-xs font-bold text-slate-600">{tech.first_name}</span>
+                                </label>
+                             ))}
+                        </div>
+                    )}
+
+                    {/* Row 3: XP & Urgency */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 text-sm">
+                                <i className="fa-solid fa-star"></i>
+                            </div>
+                            <input
+                                type="number"
+                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-2 focus:bg-white focus:border-indigo-500 outline-none font-black text-slate-700 text-sm"
+                                value={newMission.xp_reward}
+                                onChange={(e) => setNewMission({ ...newMission, xp_reward: parseInt(e.target.value) })}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">XP</span>
+                        </div>
+                        <div className="relative">
+                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-400">
+                                <i className="fa-solid fa-fire"></i>
+                             </div>
+                             <select
+                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
+                                value={newMission.urgency}
+                                onChange={(e) => setNewMission({ ...newMission, urgency: e.target.value as any })}
+                             >
+                                <option value="low">Low</option>
+                                <option value="medium">Moyenne</option>
+                                <option value="high">Haute</option>
+                                <option value="critical">Urgent</option>
+                             </select>
+                        </div>
+                    </div>
+
+                    {/* Row 4: Recurrence & Deadline */}
+                    <div className="grid grid-cols-2 gap-4">
+                         <div className="relative">
+                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400">
+                                <i className="fa-solid fa-rotate"></i>
+                             </div>
+                             <select
+                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
+                                value={newMission.recurrence}
+                                onChange={(e) => setNewMission({ ...newMission, recurrence: e.target.value })}
+                             >
+                                <option value="none">1x</option>
+                                <option value="weekly">Hebdo</option>
+                                <option value="monthly">Mensuel</option>
+                             </select>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 h-12 overflow-hidden relative">
+                             <i className="fa-solid fa-calendar-day text-slate-400 text-xs shrink-0"></i>
+                             {newMission.hasDeadline ? (
+                                 <input 
+                                    type="date" 
+                                    className="bg-transparent border-none outline-none text-xs font-bold text-slate-700 w-full p-0"
+                                    value={newMission.deadline}
+                                    onChange={(e) => setNewMission({ ...newMission, deadline: e.target.value })}
+                                 />
+                             ) : (
+                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex-1">Pas de date</span>
+                             )}
+                             <div 
+                                onClick={() => setNewMission({ ...newMission, hasDeadline: !newMission.hasDeadline })}
+                                className={`w-8 h-4 rounded-full transition-all relative cursor-pointer shrink-0 ${newMission.hasDeadline ? "bg-indigo-600" : "bg-slate-200"}`}
+                            >
+                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.hasDeadline ? "right-0.5" : "left-0.5"}`}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
               </div>
 
-              {/* FOOTER COMPACT */}
-              <div className="p-4 px-6 shrink-0 border-t border-slate-50 bg-white z-10 flex justify-end">
-                <button
+              {/* FOOTER ACTION */}
+              <div className="p-6 pt-0 flex justify-end">
+                 <button
                   onClick={handleCreateMission}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center gap-3">
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-3">
                   <span>Lancer la Mission</span>
                   <i className="fa-solid fa-paper-plane"></i>
                 </button>
               </div>
+
             </div>
           </div>,
           document.body
