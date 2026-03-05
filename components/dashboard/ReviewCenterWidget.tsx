@@ -67,15 +67,15 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       isRead: s.isReadByManager === true
     })),
     ...notifications.map(n => ({
-       ...n,
-       dataType: 'notification',
-       date: n.created_at,
-       title: n.title,
-       user: { first_name: 'Système', last_name: '' }, // Notifications are system-generated or we don't have sender info joined yet
-       isRead: n.read === true,
-       content: n.content,
-       missionId: n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null
-     }))
+      ...n,
+      dataType: 'notification',
+      date: n.created_at || new Date().toISOString(),
+      title: n.title,
+      user: { first_name: 'Système', last_name: '' }, // Notifications are system-generated or we don't have sender info joined yet
+      isRead: n.read === true,
+      content: n.content,
+      missionId: n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null
+    }))
   ], [masteryClaims, pendingSuggestions, notifications]);
 
   // Extract unique users

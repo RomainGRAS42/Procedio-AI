@@ -180,9 +180,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         const mission = missions.find(m => m.id === missionId);
         if (mission) {
             setSelectedMission(mission);
+            // Mark as read immediately when opened via link
+            systemNotifications.forEach(n => {
+                // Check if link contains the mission ID (simple check)
+                if (n.link && n.link.includes(missionId) && !n.read) {
+                    markAsRead(n.id);
+                }
+            });
         }
     }
-  }, [location, missions, loading]);
+  }, [location.search, missions, loading]); // Remove systemNotifications from dependency to avoid loop
 
   const fetchTechnicians = async () => {
     try {

@@ -170,7 +170,10 @@ export const useNotifications = (user: User) => {
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            setSystemNotifications((prev) => [payload.new as Notification, ...prev]);
+            setSystemNotifications((prev) => {
+              if (prev.some(n => n.id === payload.new.id)) return prev;
+              return [payload.new as Notification, ...prev];
+            });
           }
         )
         .subscribe();
