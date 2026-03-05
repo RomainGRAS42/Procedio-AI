@@ -371,6 +371,7 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
               onNewMessageChange={setNewMessage}
               onSendMessage={handleSendMessage}
               chatContainerRef={chatContainerRef}
+              missionStatus={mission.status}
             />
           )}
         </div>

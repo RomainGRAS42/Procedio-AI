@@ -1256,8 +1256,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* 1. Mon Fil d'Activité (LEFT - 4/12) */}
-              <div className="col-span-12 lg:col-span-4">
+              {/* 1. Mon Fil d'Activité (LEFT - 6/12) */}
+              <div className="col-span-12 lg:col-span-6">
                 <RecentHistoryWidget
                   activities={activities}
                   loading={loadingActivities}
@@ -1266,13 +1266,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* 2. Maîtrise Experte (CENTER - 4/12) */}
-              <div className="col-span-12 lg:col-span-4">
-                 {personalStats && <MasteryWidget personalStats={personalStats} />}
-              </div>
-
-              {/* 3. Mes Trophées (RIGHT - 4/12) */}
-              <div className="col-span-12 lg:col-span-4">
+              {/* 2. Mes Trophées & Progression (RIGHT - 6/12) */}
+              <div className="col-span-12 lg:col-span-6 flex flex-col gap-8">
                 <BadgesWidget
                   earnedBadges={earnedBadges}
                   totalConsultations={personalStats?.consultations || 0}
@@ -1283,14 +1278,44 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* ROW 3: Mes Missions (Full Width Below) */}
+            {/* ROW 3: Mes Missions & Journal des Succès (50/50) */}
+            <div className="col-span-12 grid grid-cols-12 gap-8">
+                <div className="col-span-12 lg:col-span-6">
+                    <PilotCenterTechWidget
+                      missions={activeMissions.filter((m) => m.assigned_to === user.id)}
+                      activities={activities}
+                      loading={loadingMissions || loadingActivities}
+                      onNavigate={onNavigate}
+                    />
+                </div>
+                <div className="col-span-12 lg:col-span-6">
+                    {/* Reuse RecentHistoryWidget component but configured as Journal des Succès logic via props later if needed, 
+                        or create a specific SuccessJournalWidget. For now, reusing RecentHistoryWidget as requested but placing it here.
+                        Wait, user wanted "Journal des Succès" here. 
+                        Let's use a filtered version of RecentHistoryWidget or a new one.
+                        Actually, I renamed RecentHistoryWidget to "Journal des Succès" in previous step.
+                        So I need another widget for "Mon Fil d'Activité".
+                        
+                        Strategy:
+                        - Restore RecentHistoryWidget as "Mon Fil d'Activité" (Revert rename or create new)
+                        - Create/Use "Journal des Succès" for the right column.
+                        
+                        Since I just renamed RecentHistoryWidget to "Journal des Succès", 
+                        I should duplicate it or handle title via props.
+                    */}
+                     <RecentHistoryWidget
+                      activities={activities.filter(a => a.title?.includes('MISSION_COMPLETED') || a.title?.includes('BADGE'))}
+                      loading={loadingActivities}
+                      notifications={[]} // No notifications in Success Journal
+                      onNavigate={onNavigate}
+                      title="Journal des Succès" // I need to add this prop support
+                    />
+                </div>
+            </div>
+
+            {/* ROW 4: Maîtrise Experte (Full Width) */}
             <div className="col-span-12">
-                <PilotCenterTechWidget
-                  missions={activeMissions.filter((m) => m.assigned_to === user.id)}
-                  activities={activities}
-                  loading={loadingMissions || loadingActivities}
-                  onNavigate={onNavigate}
-                />
+                 {personalStats && <MasteryWidget personalStats={personalStats} />}
             </div>
 
             {/* ROW 5: RSS (Full Width) */}
@@ -1301,7 +1326,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         ) : (
           <div className="flex flex-col gap-8">
             {/* MANAGER MESSAGE (EDITABLE) */}
-            <div className="col-span-12">
+            <div className="w-full">
                 <AnnouncementWidget
                   user={user}
                   announcement={announcement}
@@ -1321,20 +1346,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
             </div>
 
-            {/* MANAGER SYNERGY */}
-            <section className="mb-4">
-              <TeamSynergyWidget />
-            </section>
-
-            {/* MANAGER KPIs */}
-            <section className="mb-4">
-              <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
-            </section>
-
-            {/* MANAGER ROW 1: Centre de Pilotage | Podium | Pouls */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Col 1: Centre de Pilotage */}
-              <div className="space-y-8">
+            {/* MANAGER ROW 1: 3 Columns Layout (Review Center | Team Podium | Activity) */}
+            <div className="grid grid-cols-12 gap-8">
+              {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
+              <div className="col-span-12 lg:col-span-4 h-full">
                 <ReviewCenterWidget
                   pendingSuggestions={pendingSuggestions || []}
                   masteryClaims={masteryClaims || []}
@@ -1355,8 +1370,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* Col 2: Podium (Manager) */}
-              <div className="space-y-8">
+              {/* Col 2: Podium (TeamPodium) - 4/12 */}
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-8">
                 <TeamPodium />
                 <MissionsWidget
                   activeMissions={activeMissions}
@@ -1367,8 +1382,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* Col 3: Pouls de l'Équipe (Activity) */}
-              <div className="space-y-8">
+              {/* Col 3: Pouls de l'Équipe (Activity) - 4/12 */}
+              <div className="col-span-12 lg:col-span-4 h-full">
                 <ActivityWidget
                   activities={activities}
                   loadingActivities={loadingActivities}
@@ -1377,8 +1392,18 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* MANAGER ROW 2: RSS (Veille Info) */}
-            <div className="space-y-8">
+            {/* MANAGER ROW 2: KPIs Summary */}
+            <div className="w-full">
+              <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
+            </div>
+
+            {/* MANAGER ROW 3: Team Synergy */}
+            <div className="w-full">
+              <TeamSynergyWidget />
+            </div>
+
+            {/* MANAGER ROW 4: RSS (Veille Info) */}
+            <div className="w-full">
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
                 <RSSWidget user={user} />
               </div>

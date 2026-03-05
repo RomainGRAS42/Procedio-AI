@@ -7,28 +7,78 @@ interface RecentHistoryWidgetProps {
   loading: boolean;
   notifications: Notification[];
   onNavigate?: (path: string) => void;
+  title?: string;
+  subtitle?: string;
 }
 
 const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
   activities,
   loading,
   notifications,
-  onNavigate
+  onNavigate,
+  title = "Mon Fil d'Activité",
+  subtitle = "Vos dernières actions et alertes importantes."
 }) => {
   // Combine activities and notifications into a single feed
   const feedItems = useMemo(() => {
+    // If it's the Success Journal (based on title), we only want COMPLETED missions and Badges
+    const isSuccessJournal = title.includes("Succès");
+
+    if (isSuccessJournal) {
+        // Filter for completed missions and badges only
+        const successItems = activities.filter(a => {
+             const content = a.content?.toLowerCase() || '';
+             const title = a.title?.toLowerCase() || '';
+             return content.includes('terminée') || content.includes('validée') || title.includes('badge');
+        }).map(a => ({
+            id: a.id,
+            type: 'activity',
+            title: a.title?.includes('BADGE') ? 'Trophée Débloqué' : 'Mission Accomplie',
+            content: a.content,
+            date: a.created_at,
+            icon: 'fa-trophy',
+            color: 'text-amber-500',
+            bg: 'bg-amber-50',
+            link: null
+        }));
+        
+        return successItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+    }
+
+    // Default Feed Logic (Activity Feed)
     const items = [
-      ...notifications.map(n => ({
-        id: n.id,
-        type: 'notification',
-        title: n.title,
-        content: n.content,
-        date: n.created_at,
-        icon: 'fa-bell',
-        color: 'text-rose-500',
-        bg: 'bg-rose-50',
-        link: n.link
-      })),
+      ...notifications.map(n => {
+        let color = 'text-rose-500';
+        let bg = 'bg-rose-50';
+        let icon = 'fa-bell';
+
+        // Custom colors for specific notifications
+        if (n.title.toLowerCase().includes('validée') || n.title.toLowerCase().includes('completed')) {
+            color = 'text-emerald-500';
+            bg = 'bg-emerald-50';
+            icon = 'fa-check-circle';
+        } else if (n.title.toLowerCase().includes('refusée') || n.title.toLowerCase().includes('rejected')) {
+            color = 'text-rose-500';
+            bg = 'bg-rose-50';
+            icon = 'fa-circle-xmark';
+        } else if (n.title.toLowerCase().includes('attente') || n.title.toLowerCase().includes('pending')) {
+            color = 'text-amber-500';
+            bg = 'bg-amber-50';
+            icon = 'fa-clock';
+        }
+
+        return {
+            id: n.id,
+            type: 'notification',
+            title: n.title,
+            content: n.content,
+            date: n.created_at,
+            icon,
+            color,
+            bg,
+            link: n.link
+        };
+      }),
       ...activities.map(a => {
         let icon = 'fa-check';
         let color = 'text-slate-500';
@@ -66,18 +116,18 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
 
     // Sort by date desc
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
-  }, [activities, notifications]);
+  }, [activities, notifications, title]);
 
   return (
     <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col h-full min-h-[300px]">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
-            <i className="fa-solid fa-clock-rotate-left"></i>
+            <i className={`fa-solid ${title.includes("Succès") ? "fa-trophy text-amber-400" : "fa-clock-rotate-left"}`}></i>
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
-            Mon Fil d'Activité
-            <InfoTooltip text="Vos dernières actions et alertes importantes." />
+            {title}
+            <InfoTooltip text={subtitle} />
           </h3>
         </div>
       </div>

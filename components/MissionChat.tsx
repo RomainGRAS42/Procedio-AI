@@ -24,6 +24,7 @@ interface MissionChatProps {
   onNewMessageChange: (val: string) => void;
   onSendMessage: () => void;
   chatContainerRef: React.RefObject<HTMLDivElement>;
+  missionStatus: string;
 }
 
 export const MissionChat: React.FC<MissionChatProps> = ({
@@ -33,8 +34,11 @@ export const MissionChat: React.FC<MissionChatProps> = ({
   newMessage,
   onNewMessageChange,
   onSendMessage,
-  chatContainerRef
+  chatContainerRef,
+  missionStatus
 }) => {
+  const isMissionCompleted = missionStatus === 'completed';
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="flex-1 overflow-y-auto p-8 space-y-6" ref={chatContainerRef}>
@@ -85,24 +89,38 @@ export const MissionChat: React.FC<MissionChatProps> = ({
             );
           })
         )}
+        
+        {isMissionCompleted && (
+           <div className="flex justify-center my-8">
+              <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 text-emerald-600 flex flex-col items-center gap-2 text-center shadow-sm">
+                <i className="fa-solid fa-check-circle text-xl"></i>
+                <div>
+                    <p className="text-xs font-black uppercase tracking-widest">Mission Terminée</p>
+                    <p className="text-[10px] opacity-75 mt-1">La discussion est close.</p>
+                </div>
+              </div>
+           </div>
+        )}
       </div>
 
       <div className="p-6 bg-white border-t border-slate-100">
-        <div className="flex gap-4 p-2 bg-slate-50 rounded-2xl border border-slate-100 focus-within:bg-white focus-within:border-indigo-500 transition-all shadow-inner">
+        <div className={`flex gap-4 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all shadow-inner ${isMissionCompleted ? 'opacity-50 pointer-events-none grayscale' : 'focus-within:bg-white focus-within:border-indigo-500'}`}>
           <input
             type="text"
             className="flex-1 bg-transparent border-none outline-none px-4 font-bold text-slate-700 text-sm"
-            placeholder="Écrivez un message..."
+            placeholder={isMissionCompleted ? "Discussion fermée" : "Écrivez un message..."}
             value={newMessage}
             onChange={(e) => onNewMessageChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") onSendMessage();
+              if (e.key === "Enter" && !isMissionCompleted) onSendMessage();
             }}
+            disabled={isMissionCompleted}
           />
           <button
             onClick={onSendMessage}
-            className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg active:scale-95">
-            <i className="fa-solid fa-paper-plane text-xs"></i>
+            disabled={isMissionCompleted}
+            className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg active:scale-95 disabled:bg-slate-400 disabled:shadow-none">
+            <i className={`fa-solid ${isMissionCompleted ? 'fa-lock' : 'fa-paper-plane'} text-xs`}></i>
           </button>
         </div>
       </div>
