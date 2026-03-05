@@ -36,10 +36,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let title = 'Activité';
 
         if (a.title?.includes('CONSULTATION')) {
-            icon = 'fa-eye';
-            color = 'text-blue-500';
-            bg = 'bg-blue-50';
-            title = 'Consultation';
+            // SKIP CONSULTATIONS IN ACTIVITY FEED TO REDUCE NOISE
+            return null;
         } else if (a.title?.includes('MISSION')) {
             icon = 'fa-rocket';
             color = 'text-indigo-500';
@@ -63,7 +61,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             bg,
             link: null
         };
-      })
+      }).filter(Boolean) as any[]
     ];
 
     // Sort by date desc

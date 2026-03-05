@@ -10,6 +10,11 @@
       "source": "supercent-io/skills-template",
       "sourceType": "github",
       "computedHash": "f2d2d1f951b4cc8cd705295a11b991dbb89a3aa2aee5093a67b7ab0152f46f0d"
+    },
+    "ux-psychology": {
+      "source": "kimny1143/claude-code-template",
+      "sourceType": "github",
+      "computedHash": "631c3bf10aa2e91ff22b9baf3063b1ddfda914f4eefc0e6a861073080753e75e"
     }
   }
 }
