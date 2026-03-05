@@ -1273,6 +1273,27 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-8">
+            {/* MANAGER MESSAGE (EDITABLE) */}
+            <div className="col-span-12">
+                <AnnouncementWidget
+                  user={user}
+                  announcement={announcement}
+                  isRead={isRead}
+                  handleMarkAsRead={handleMarkAsRead}
+                  handleSaveAnnouncement={handleUpdateAnnouncement}
+                  loadingAnnouncement={loadingAnnouncement}
+                  saving={saving}
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                  editContent={editContent}
+                  setEditContent={setEditContent}
+                  requiresConfirmation={requiresConfirmation}
+                  setRequiresConfirmation={setRequiresConfirmation}
+                  formatDate={(d) => new Date(d).toLocaleDateString()}
+                  compact={true} 
+                />
+            </div>
+
             {/* MANAGER SYNERGY */}
             <section className="mb-4">
               <TeamSynergyWidget />
