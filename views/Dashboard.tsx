@@ -950,6 +950,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       setIsRead(true);
       localStorage.setItem(`announcement_read_${user.id}`, announcement.id);
       setToast({ message: "Annonce marquée comme lue", type: "success" });
+
+      // Notify Manager
+      if (announcement.author_id && announcement.author_id !== user.id) {
+        await supabase.from("notifications").insert({
+          user_id: announcement.author_id,
+          type: "info",
+          title: "Message Lu",
+          content: `${user.firstName} ${user.lastName} a confirmé la lecture de votre message.`,
+          link: "/dashboard",
+        });
+      }
     }
   };
 
