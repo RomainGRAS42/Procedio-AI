@@ -160,19 +160,29 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     }
   }, [user]);
 
-  // Handle Redirection from Statistics
+  // Handle Redirection from Statistics & Deep Linking
   const location = useLocation();
   useEffect(() => {
+    // 1. Handle Create Mission from Statistics
     if (location.state && (location.state as any).createMission) {
       const { initialData } = location.state as any;
       if (initialData) {
         setNewMission((prev) => ({ ...prev, ...initialData }));
         setShowCreateModal(true);
       }
-      // Clean up state to prevent reopening on refresh (requires router replacement history usually, but simple check works for now)
       window.history.replaceState({}, document.title);
     }
-  }, [location]);
+
+    // 2. Handle Deep Link to Mission (via ID param)
+    const searchParams = new URLSearchParams(location.search);
+    const missionId = searchParams.get('id');
+    if (missionId && missions.length > 0 && !loading) {
+        const mission = missions.find(m => m.id === missionId);
+        if (mission) {
+            setSelectedMission(mission);
+        }
+    }
+  }, [location, missions, loading]);
 
   const fetchTechnicians = async () => {
     try {

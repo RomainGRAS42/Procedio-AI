@@ -9,6 +9,7 @@ import BadgeUnlockedModal from "../components/BadgeUnlockedModal";
 import { calculateLevelFromXP, getLevelTitle } from "../lib/xpSystem";
 import InfoTooltip from "../components/InfoTooltip";
 import { supabase } from "../lib/supabase";
+import { useNotifications } from "../hooks/useNotifications";
 import {
   Radar,
   RadarChart,
@@ -75,6 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onAlertCountChange,
 }) => {
   console.log("DEBUG: Dashboard User Object:", { id: user?.id, role: user?.role });
+  const { systemNotifications, markAsRead } = useNotifications(user);
   const [isRead, setIsRead] = useState(false);
   const [announcement, setAnnouncement] = useState<Announcement | null>(
     cacheStore.get("dash_announcement") || null
@@ -760,11 +762,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleToggleReadStatus = async (
-    type: "suggestion" | "mastery",
+    type: "suggestion" | "mastery" | "notification",
     id: string,
     status: boolean
   ) => {
     try {
+      if (type === 'notification') {
+        if (status) await markAsRead(id);
+        return;
+      }
+
       const table = type === "suggestion" ? "procedure_suggestions" : "mastery_requests";
 
       if (type === "suggestion") {
@@ -1283,11 +1290,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <ReviewCenterWidget
                   pendingSuggestions={pendingSuggestions || []}
                   masteryClaims={masteryClaims || []}
+                  notifications={systemNotifications}
                   onSelectSuggestion={(sugg) => {
                     setSelectedSuggestion(sugg);
                     setShowSuggestionModal(true);
                   }}
                   onNavigateToStatistics={() => onNavigate?.("/statistics")}
+                  onNavigateToMission={(id) => onNavigate?.(`missions?id=${id}`)}
                   onApproveMastery={handleApproveMastery}
                   onViewMasteryDetail={(claim) => {
                     setSelectedMasteryClaim(claim);

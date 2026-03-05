@@ -1,23 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { Suggestion } from '../../types';
+import { Suggestion, Notification } from '../../types';
 import InfoTooltip from '../InfoTooltip';
 
 interface ReviewCenterWidgetProps {
   pendingSuggestions: Suggestion[];
   masteryClaims: any[];
+  notifications?: Notification[];
   onSelectSuggestion: (suggestion: Suggestion) => void;
   onNavigateToStatistics?: () => void;
   onApproveMastery?: (requestId: string) => void;
   onViewMasteryDetail?: (claim: any) => void;
   onUpdateReferent?: (procedureId: string, userId: string, action: 'assign' | 'revoke') => Promise<void>;
   generatingExamId?: string | null;
-  onToggleReadStatus?: (type: 'suggestion' | 'mastery', id: string, status: boolean) => void;
+  onToggleReadStatus?: (type: 'suggestion' | 'mastery' | 'notification', id: string, status: boolean) => void;
   onMarkAllRead?: () => void;
+  onNavigateToMission?: (missionId: string) => void;
 }
 
 const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   pendingSuggestions,
   masteryClaims,
+  notifications = [],
   onSelectSuggestion,
   onNavigateToStatistics,
   onApproveMastery,
@@ -25,22 +28,25 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   onUpdateReferent,
   generatingExamId,
   onToggleReadStatus,
-  onMarkAllRead
+  onMarkAllRead,
+  onNavigateToMission
 }) => {
-  const [selectedType, setSelectedType] = useState<string>('all'); // 'all' | 'suggestion' | 'mastery'
+  const [selectedType, setSelectedType] = useState<string>('all'); // 'all' | 'suggestion' | 'mastery' | 'notification'
   const [selectedUser, setSelectedUser] = useState<string>('all');
 
-  const handleContextMenu = (e: React.MouseEvent, type: 'suggestion' | 'mastery', item: any) => {
+  const handleContextMenu = (e: React.MouseEvent, type: 'suggestion' | 'mastery' | 'notification', item: any) => {
     e.preventDefault();
     if (onToggleReadStatus) {
         // Toggle read status (inverse current)
-        onToggleReadStatus(type, item.id, !item.isReadByManager);
+        const currentRead = type === 'notification' ? item.read : item.isReadByManager;
+        onToggleReadStatus(type, item.id, !currentRead);
     }
   };
 
   const alertCount = 
     pendingSuggestions.filter(s => !s.isReadByManager).length + 
-    masteryClaims.filter(c => !c.isReadByManager).length;
+    masteryClaims.filter(c => !c.isReadByManager).length +
+    notifications.filter(n => !n.read).length;
 
   // 1. Unify items
   const allItems = useMemo(() => [
@@ -59,8 +65,18 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       title: s.procedureTitle,
       user: { first_name: (s.userName || "Inconnu").split(' ')[0], last_name: (s.userName || "").split(' ')[1] || '' }, // Approximation if user obj not full
       isRead: s.isReadByManager === true
-    }))
-  ], [masteryClaims, pendingSuggestions]);
+    })),
+    ...notifications.map(n => ({
+       ...n,
+       dataType: 'notification',
+       date: n.created_at,
+       title: n.title,
+       user: { first_name: 'Système', last_name: '' }, // Notifications are system-generated or we don't have sender info joined yet
+       isRead: n.read === true,
+       content: n.content,
+       missionId: n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null
+     }))
+  ], [masteryClaims, pendingSuggestions, notifications]);
 
   // Extract unique users
   const uniqueUsers = useMemo(() => {
@@ -161,6 +177,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
               <option value="all">Tout voir</option>
               <option value="suggestion">Suggestions</option>
               <option value="mastery">Expertises</option>
+              <option value="notification">Alertes</option>
             </select>
             <i className="fa-solid fa-filter absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none"></i>
           </div>
@@ -275,6 +292,44 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                             )}
                           </div>
                         </div>
+                      </div>
+                    );
+                  } else if (item.dataType === 'notification') {
+                    const notif = item;
+                    const isRead = notif.isRead;
+                    
+                    return (
+                      <div 
+                        key={`notification-${notif.id}`}
+                        onContextMenu={(e) => handleContextMenu(e, 'notification', notif)}
+                        onClick={() => {
+                            if (onToggleReadStatus && !isRead) onToggleReadStatus('notification', notif.id, true);
+                            if (notif.missionId && onNavigateToMission) onNavigateToMission(notif.missionId);
+                        }}
+                        className={`p-3 rounded-2xl border transition-all group/notif cursor-pointer ${
+                            !isRead ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-80 hover:bg-slate-100'
+                        }`}
+                      >
+                         <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1.5 h-1.5 rounded-full ${!isRead ? 'bg-blue-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                              <span className={`text-[11px] uppercase tracking-widest leading-none ${!isRead ? 'font-black text-blue-600' : 'font-bold text-slate-500'}`}>Alerte Mission</span>
+                            </div>
+                            <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                              {new Date(notif.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+
+                          <h4 className={`text-[12px] truncate leading-tight transition-colors ${
+                              !isRead ? 'font-black text-slate-900 group-hover/notif:text-blue-600' : 'font-medium text-slate-600'
+                          }`}>
+                            {notif.content}
+                          </h4>
+                          {notif.title && (
+                             <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                               {notif.title}
+                             </p>
+                          )}
                       </div>
                     );
                   } else {
