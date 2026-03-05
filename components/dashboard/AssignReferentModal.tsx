@@ -151,7 +151,11 @@ const AssignReferentModal: React.FC<AssignReferentModalProps> = ({
                 </li>
                 <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
                   <i className="fa-solid fa-clipboard-question text-emerald-500 w-5"></i>
-                  Validation par Quiz (Auto)
+                  Quiz de 10 questions
+                </li>
+                <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <i className="fa-solid fa-user-check text-indigo-500 w-5"></i>
+                  Validation par le Manager
                 </li>
                 <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
                   <i className="fa-solid fa-trophy text-amber-500 w-5"></i>
