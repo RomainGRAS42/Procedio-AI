@@ -110,7 +110,7 @@ const AssignReferentModal: React.FC<AssignReferentModalProps> = ({
                    <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5 text-xs">
                     <i className="fa-solid fa-trophy"></i>
                    </div>
-                   <span>Score requis : <strong className="text-slate-900">&gt;80%</strong> pour obtenir le statut Référent.</span>
+                   <span>Score requis : <strong className="text-slate-900">&gt;80%</strong> pour éligibilité (validation finale par Manager).</span>
                 </li>
                  <li className="flex items-start gap-3 text-sm text-slate-600">
                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 text-xs">

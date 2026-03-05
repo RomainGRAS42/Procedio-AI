@@ -852,24 +852,26 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button 
-                          onClick={(e) => handleIgnoreZoneRouge(e, item.id)}
-                          className="w-8 h-8 rounded-lg text-slate-300 hover:bg-slate-100 hover:text-slate-500 flex items-center justify-center transition-all"
-                          title="Ignorer cette alerte"
-                        >
-                          <i className="fa-solid fa-xmark text-xs"></i>
-                        </button>
-                        <button 
-                          onClick={() => {
-                              setSelectedOrphan({ id: item.id, title: item.label });
-                              setAssignModalOpen(true);
-                          }}
-                          className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
-                          title="Assigner un référent"
-                        >
-                          <i className="fa-solid fa-user-plus text-sm"></i>
-                        </button>
-                      </div>
+                         <button 
+                           onClick={(e) => handleIgnoreZoneRouge(e, item.id)}
+                           className="w-8 h-8 rounded-lg text-slate-300 hover:bg-slate-100 hover:text-slate-500 flex items-center justify-center transition-all"
+                           title="Ignorer cette alerte"
+                         >
+                           <i className="fa-solid fa-xmark text-xs"></i>
+                         </button>
+                         {!item.hasMission && (
+                           <button 
+                             onClick={() => {
+                                 setSelectedOrphan({ id: item.id, title: item.label });
+                                 setAssignModalOpen(true);
+                             }}
+                             className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                             title="Assigner un référent"
+                           >
+                             <i className="fa-solid fa-user-plus text-sm"></i>
+                           </button>
+                         )}
+                       </div>
                    </div>
                  ))}
                  {redZoneList.length === 0 && (
