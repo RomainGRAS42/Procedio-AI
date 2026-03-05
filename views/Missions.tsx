@@ -520,7 +520,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             type: "mission",
             title: "Mission démarrée \uD83D\uDE80",
             content: `${user.firstName || "Le technicien"} a commencé la mission : "${mission.title}"`,
-            link: "/missions",
+            link: `/missions?id=${mission.id}`,
           });
         }
 

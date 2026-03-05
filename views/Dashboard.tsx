@@ -1354,6 +1354,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
             </div>
 
+            {/* MANAGER ROW 0: Team Synergy (Top Priority) */}
+            <div className="w-full">
+              <TeamSynergyWidget />
+            </div>
+
             {/* MANAGER ROW 1: 3 Columns Layout (Review Center | Team Podium | Activity) */}
             <div className="grid grid-cols-12 gap-8">
               {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
@@ -1404,11 +1409,6 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* MANAGER ROW 2: KPIs Summary */}
             <div className="w-full">
               <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
-            </div>
-
-            {/* MANAGER ROW 3: Team Synergy */}
-            <div className="w-full">
-              <TeamSynergyWidget />
             </div>
 
             {/* MANAGER ROW 4: RSS (Veille Info) */}

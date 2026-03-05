@@ -77,8 +77,22 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
       isRead: s.isReadByManager === true
     })),
     ...notifications.map(n => {
-      const missionId = n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null;
-      const isMissionActive = missionId ? activeMissions.some(m => m.id === missionId) : true;
+      let missionId = n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null;
+
+      // Fallback: Try to find mission ID from title if link is missing ID (Fix for legacy notifications)
+      if (!missionId && n.type === 'mission' && n.content && activeMissions.length > 0) {
+          // Match patterns: 'mission : "Title"' or 'mission : Title'
+          const match = n.content.match(/mission : "?([^"]+?)"?$/) || n.content.match(/mission : "(.+?)"/);
+          if (match && match[1]) {
+              const missionTitle = match[1];
+              const foundMission = activeMissions.find(m => m.title.trim() === missionTitle.trim());
+              if (foundMission) {
+                  missionId = foundMission.id;
+              }
+          }
+      }
+
+      const isMissionActive = missionId ? activeMissions.some(m => m.id === missionId) : false;
       
       return {
         ...n,
