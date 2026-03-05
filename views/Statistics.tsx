@@ -443,19 +443,19 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     if (!type) {
       const options = getAvailableKPIs(slotIndex);
       return (
-        <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 p-8 text-center animate-fade-in hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all group">
-            <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-slate-300 group-hover:text-indigo-500">
+        <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50 p-8 text-center hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
+            <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform text-slate-300 group-hover:text-indigo-500 ring-1 ring-slate-100">
                <i className="fa-solid fa-plus text-2xl"></i>
             </div>
-            <p className="font-black text-slate-400 mb-6 uppercase tracking-widest text-sm">Ajouter une analyse</p>
+            <p className="font-bold text-slate-400 mb-8 uppercase tracking-widest text-sm">Ajouter une analyse</p>
             <div className="grid grid-cols-1 gap-3 w-full max-w-xs">
                {options.map(opt => (
                  <button 
                    key={opt.id}
                    onClick={() => updateSlot(slotIndex, opt.id)}
-                   className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 transition-all text-left group/btn"
+                   className="flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 transition-all text-left group/btn"
                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${opt.bg} ${opt.color}`}>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm ${opt.bg} ${opt.color}`}>
                       <i className={`fa-solid ${opt.icon}`}></i>
                     </div>
                     <span className="font-bold text-slate-700 group-hover/btn:text-indigo-700">{opt.label}</span>
@@ -470,102 +470,125 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     const isWide = layoutMode === 'focus' || (layoutMode === 'grid' && slotIndex === 0);
 
     return (
-      <div className={`relative h-full flex flex-col ${isCompact ? '' : ''}`}>
+      <div className="relative h-full flex flex-col">
         {/* Slot Header (Only in Split/Grid mode to allow changing/removing) */}
         {layoutMode !== 'focus' && (
-           <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
+           <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
+              <div className="flex items-center gap-3">
                  {(() => {
                     const cfg = kpiConfig.find(k => k.id === type);
                     return (
                       <>
-                        <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] ${cfg?.bg} ${cfg?.color}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${cfg?.bg} ${cfg?.color}`}>
                            <i className={`fa-solid ${cfg?.icon}`}></i>
                         </div>
-                        <span className="font-black text-slate-700 text-sm uppercase tracking-wider">{cfg?.label}</span>
+                        <span className="font-bold text-slate-800 text-sm uppercase tracking-wide">{cfg?.label}</span>
                       </>
                     )
                  })()}
               </div>
-              <div className="flex items-center gap-1">
-                 <button onClick={() => updateSlot(slotIndex, null)} className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center">
-                    <i className="fa-solid fa-xmark"></i>
-                 </button>
-              </div>
+              <button 
+                onClick={() => updateSlot(slotIndex, null)} 
+                className="w-8 h-8 rounded-full hover:bg-rose-50 hover:text-rose-500 text-slate-300 transition-colors flex items-center justify-center"
+                title="Retirer ce widget"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
            </div>
         )}
 
         {/* CONTENT SWITCH */}
         {type === 'searchSuccess' && (
-             <div className="space-y-6 animate-fade-in flex-1 flex items-center justify-center">
-               <div className={`${isWide ? 'max-w-5xl' : 'max-w-md'} w-full transition-all duration-500`}>
+             <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
+               <div className="w-full h-full flex flex-col">
                  {layoutMode === 'focus' && (
                    <div className="text-center mb-8">
-                     <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 flex items-center justify-center gap-3">
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2 flex items-center justify-center gap-3">
                        <i className="fa-solid fa-magnifying-glass-chart text-indigo-500"></i>
                        Taux de Succès des Recherches
                      </h2>
                    </div>
                  )}
 
-                 <div className={`p-8 rounded-3xl ${globalKPIs.searchSuccessRate >= 85 ? 'bg-emerald-50/50 border-2 border-emerald-200' : 'bg-amber-50/50 border-2 border-amber-200'} text-center`}>
-                   <div className="mb-6">
-                     <div className="text-6xl font-black mb-2">
-                       {globalKPIs.searchSuccessRate >= 85 ? (
-                         <span className="text-emerald-600">✅ {globalKPIs.searchSuccessRate}%</span>
-                       ) : (
-                         <span className="text-amber-600">⚠️ {globalKPIs.searchSuccessRate}%</span>
-                       )}
-                     </div>
-                   </div>
+                 <div className={`flex-1 rounded-[2rem] ${globalKPIs.searchSuccessRate >= 85 ? 'bg-emerald-50/40 border border-emerald-100' : 'bg-amber-50/40 border border-amber-100'} p-8 flex flex-col items-center justify-center relative overflow-hidden`}>
+                   
+                   {/* Background Decoration */}
+                   <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20 -mr-16 -mt-16 pointer-events-none ${globalKPIs.searchSuccessRate >= 85 ? 'bg-emerald-300' : 'bg-amber-300'}`}></div>
+                   <div className={`absolute bottom-0 left-0 w-64 h-64 rounded-full blur-3xl opacity-20 -ml-16 -mb-16 pointer-events-none ${globalKPIs.searchSuccessRate >= 85 ? 'bg-emerald-300' : 'bg-amber-300'}`}></div>
 
-                   {globalKPIs.searchSuccessRate >= 85 ? (
-                     <div className="space-y-2">
-                       <p className="text-lg font-bold text-slate-900">Excellent !</p>
-                       <p className="text-slate-600">
-                         Vos procédures répondent à la majorité des besoins de l'équipe.
+                   <div className="relative z-10 text-center w-full max-w-4xl mx-auto">
+                     <div className="mb-8 transform hover:scale-105 transition-transform duration-300">
+                       <div className="text-7xl font-black mb-4 drop-shadow-sm flex items-center justify-center gap-4">
+                         {globalKPIs.searchSuccessRate >= 85 ? (
+                           <>
+                            <i className="fa-solid fa-circle-check text-emerald-500 text-5xl"></i>
+                            <span className="text-slate-800">{globalKPIs.searchSuccessRate}%</span>
+                           </>
+                         ) : (
+                           <>
+                            <i className="fa-solid fa-triangle-exclamation text-amber-500 text-5xl"></i>
+                            <span className="text-slate-800">{globalKPIs.searchSuccessRate}%</span>
+                           </>
+                         )}
+                       </div>
+                       <p className="text-lg font-bold text-slate-500 uppercase tracking-widest">
+                         {globalKPIs.searchSuccessRate >= 85 ? "Performance Excellente" : "Attention Requise"}
                        </p>
                      </div>
-                   ) : (
 
-                       <div className="space-y-4">
-                         <p className="text-lg font-bold text-slate-900">Certaines recherches échouent</p>
-                         <p className="text-slate-600 text-sm">
-                           Voici les termes recherchés sans succès par l'équipe :
+                     {globalKPIs.searchSuccessRate >= 85 ? (
+                       <div className="max-w-lg mx-auto bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-emerald-100/50 shadow-sm">
+                         <p className="text-lg font-bold text-slate-800 mb-2">Tout fonctionne parfaitement !</p>
+                         <p className="text-slate-600">
+                           Vos procédures répondent à la majorité des besoins de l'équipe. Continuez à maintenir ce niveau de qualité.
                          </p>
+                       </div>
+                     ) : (
+                       <div className="w-full">
+                         <div className="flex items-center justify-center gap-2 mb-6">
+                            <span className="h-px w-12 bg-amber-200"></span>
+                            <p className="text-slate-500 font-bold uppercase text-xs tracking-wider">Recherches en échec</p>
+                            <span className="h-px w-12 bg-amber-200"></span>
+                         </div>
                          
-                         <div className={`bg-white rounded-2xl border border-slate-100 overflow-hidden text-left max-h-[200px] overflow-y-auto ${isWide ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0' : ''}`}>
+                         <div className={`grid gap-4 ${isWide ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                            {(globalKPIs.missedOpportunities || []).map((op, idx) => (
-                              <div key={idx} className={`p-3 border-b border-slate-50 last:border-0 flex items-center justify-between hover:bg-slate-50 transition-colors group/item ${isWide ? 'border-r last:border-r-0' : ''}`}>
-                                 <div>
-                                    <p className="text-sm font-bold text-slate-800">{op.term}</p>
-                                    <span className="text-[10px] text-slate-400 uppercase font-bold">{op.count} échec{op.count > 1 ? 's' : ''}</span>
+                              <div key={idx} className="bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-amber-100/50 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group/item flex flex-col text-left relative overflow-hidden">
+                                 <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/item:opacity-20 transition-opacity">
+                                    <i className="fa-solid fa-magnifying-glass text-4xl text-amber-500"></i>
                                  </div>
+                                 
+                                 <div className="mb-3">
+                                    <h4 className="text-lg font-black text-slate-800 mb-1">{op.term}</h4>
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider border border-amber-100">
+                                      <i className="fa-solid fa-triangle-exclamation"></i>
+                                      {op.count} échecs
+                                    </span>
+                                 </div>
+
                                  <button
                                    onClick={() => navigate('/missions', { 
                                       state: { 
                                          createMission: true, 
                                          initialData: { 
-                                            title: `Opportunité Manquée : ${op.term}`,
-                                            description: `L'expression "${op.term}" a été recherchée ${op.count} fois sans résultat.\nActions recommandées :\n1. Créer la procédure.\n2. L'ajouter aux synonymes si elle existe déjà.`,
+                                            title: `Opportunité : ${op.term}`,
+                                            description: `L'expression "${op.term}" a été recherchée ${op.count} fois sans résultat.`,
                                             urgency: 'high',
                                             category: 'Opportunité',
-                                            opportunity_id: op.id // Pass the ID to resolve it later
+                                            opportunity_id: op.id
                                          } 
                                       } 
                                    })}
-                                   className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all opacity-0 group-hover/item:opacity-100"
-                                   title="Lancer une mission"
+                                   className="mt-auto w-full py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-black uppercase tracking-wide hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2"
                                  >
-                                    <i className="fa-solid fa-rocket mr-1"></i>
-                                    Mission
+                                    Créer la mission <i className="fa-solid fa-arrow-right"></i>
                                  </button>
                               </div>
                            ))}
                          </div>
                        </div>
                      )}
-
+                   </div>
                  </div>
                </div>
              </div>
@@ -573,128 +596,202 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
 
         {type === 'reliability' && (
-             <div className="space-y-6 animate-fade-in flex-1">
+             <div className="flex-1 flex flex-col animate-fade-in">
                 {layoutMode === 'focus' && (
-                  <div className="mb-6">
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                  <div className="mb-8 text-center">
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center justify-center gap-3">
                        <i className="fa-solid fa-shield-heart text-emerald-500"></i>
                        Qualité du Patrimoine
                     </h2>
-                     <p className="text-slate-500 mt-2">Objectif : &gt; 70% de procédures fraîches.</p>
+                     <p className="text-slate-500 mt-2 font-medium">Objectif : &gt; 70% de procédures fraîches.</p>
                   </div>
                 )}
                 
-                <div className={`flex ${layoutMode === 'split' ? 'flex-col-reverse' : layoutMode === 'grid' ? 'flex-col-reverse' : 'grid grid-cols-2 gap-8'}`}>
-                   <div className="space-y-3">
-                     {healthData.map((item, idx) => (
-                       <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs shadow-sm" style={{ backgroundColor: item.color }}>
-                             <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
-                           </div>
-                           <div>
-                             <p className="font-bold text-slate-800 text-xs">{item.name}</p>
-                           </div>
-                         </div>
-                         <span className="text-sm font-black text-slate-900">{Math.round((item.value / (healthData.reduce((a,b)=>a+b.value,0)||1))*100)}%</span>
-                       </div>
-                     ))}
-                   </div>
-
-                   <div className="flex items-center justify-center relative min-h-[200px]">
-                      <ResponsiveContainer width="100%" height={200}>
+                <div className={`flex-1 flex ${isCompact ? 'flex-col gap-6' : 'flex-row items-center gap-12'}`}>
+                   {/* Chart Section */}
+                   <div className="flex-1 flex items-center justify-center relative min-h-[250px]">
+                      <ResponsiveContainer width="100%" height={280}>
                         <PieChart>
                           <Pie
                             data={healthData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
+                            innerRadius={80}
+                            outerRadius={100}
                             paddingAngle={5}
                             dataKey="value"
+                            cornerRadius={6}
+                            stroke="none"
                           >
                             {healthData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                              <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <RechartsTooltip />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                            itemStyle={{ color: '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
-                          <span className="block text-2xl font-black text-slate-900">{globalKPIs.healthPct}%</span>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">Santé</span>
+                          <div className="text-5xl font-black text-slate-800 tracking-tight">{globalKPIs.healthPct}%</div>
+                          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Santé Globale</div>
                       </div>
+                   </div>
+
+                   {/* Legend/Stats Section */}
+                   <div className={`flex-1 space-y-4 ${isCompact ? 'w-full' : 'max-w-md'}`}>
+                     {healthData.map((item, idx) => (
+                       <div key={idx} className="group p-4 rounded-2xl bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-md transition-all flex items-center justify-between">
+                         <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm shadow-sm transition-transform group-hover:scale-110" style={{ backgroundColor: item.color }}>
+                             <i className={`fa-solid ${idx === 0 ? 'fa-check' : idx === 1 ? 'fa-clock' : 'fa-triangle-exclamation'}`}></i>
+                           </div>
+                           <div>
+                             <p className="font-bold text-slate-800 text-sm">{item.name}</p>
+                             <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">
+                               {idx === 0 ? "À jour" : idx === 1 ? "Vérification conseillée" : "Action requise"}
+                             </p>
+                           </div>
+                         </div>
+                         <div className="text-right">
+                           <span className="block text-xl font-black text-slate-800">{item.value}</span>
+                           <span className="text-[10px] text-slate-400 font-bold uppercase">Procédures</span>
+                         </div>
+                       </div>
+                     ))}
                    </div>
                 </div>
              </div>
         )}
 
         {type === 'dynamic' && (
-            <div className="space-y-6 animate-fade-in flex-1">
+            <div className="flex-1 flex flex-col animate-fade-in">
                {layoutMode === 'focus' && (
-                  <div className="mb-6">
-                     <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                  <div className="mb-8 text-center">
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center justify-center gap-3">
                         <i className="fa-solid fa-arrow-trend-up text-indigo-500"></i>
-                        Dynamique
+                        Dynamique d'Usage
                      </h2>
-                     <p className="text-slate-500 mt-2">Lectures vs Créations (30 jours)</p>
+                     <p className="text-slate-500 mt-2 font-medium">Consultations vs Contributions (30 jours)</p>
                   </div>
                )}
-               <div className="h-[250px] w-full">
+               <div className="flex-1 w-full min-h-[300px] bg-slate-50/50 rounded-3xl p-4 border border-slate-100">
                  <ResponsiveContainer width="100%" height="100%">
-                   <AreaChart data={activityData}>
+                   <AreaChart data={activityData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                      <defs>
                        <linearGradient id={`${slotIndex}-colorViews`} x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                        </linearGradient>
+                       <linearGradient id={`${slotIndex}-colorContrib`} x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                       </linearGradient>
                      </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                     <XAxis dataKey="date" hide={layoutMode === 'grid'} tick={{ fontSize: 10 }} />
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                     <XAxis 
+                        dataKey="date" 
+                        hide={layoutMode === 'grid'} 
+                        tick={{ fontSize: 10, fill: '#64748b' }} 
+                        axisLine={false}
+                        tickLine={false}
+                        dy={10}
+                     />
                      <YAxis hide={true} />
-                     <RechartsTooltip contentStyle={{ borderRadius: '12px', fontSize: '12px' }}/>
-                     <Area type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill={`url(#${slotIndex}-colorViews)`} />
-                     <Area type="monotone" dataKey="contributions" stroke="#10b981" strokeWidth={3} fillOpacity={0} fill="transparent" />
+                     <RechartsTooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                     />
+                     <Area 
+                        type="monotone" 
+                        dataKey="views" 
+                        name="Vues"
+                        stroke="#6366f1" 
+                        strokeWidth={4} 
+                        fillOpacity={1} 
+                        fill={`url(#${slotIndex}-colorViews)`} 
+                     />
+                     <Area 
+                        type="monotone" 
+                        dataKey="contributions" 
+                        name="Contributions"
+                        stroke="#10b981" 
+                        strokeWidth={4} 
+                        fillOpacity={1} 
+                        fill={`url(#${slotIndex}-colorContrib)`} 
+                     />
                    </AreaChart>
                  </ResponsiveContainer>
+               </div>
+               
+               {/* Stats Summary underneath */}
+               <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div className="bg-indigo-50/50 rounded-2xl p-4 flex items-center justify-between border border-indigo-100">
+                      <div>
+                          <p className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Vues Totales</p>
+                          <p className="text-2xl font-black text-indigo-700">{activityData.reduce((a,b) => a + b.views, 0)}</p>
+                      </div>
+                      <i className="fa-solid fa-eye text-indigo-200 text-2xl"></i>
+                  </div>
+                  <div className="bg-emerald-50/50 rounded-2xl p-4 flex items-center justify-between border border-emerald-100">
+                      <div>
+                          <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Nouveaux</p>
+                          <p className="text-2xl font-black text-emerald-700">{activityData.reduce((a,b) => a + b.contributions, 0)}</p>
+                      </div>
+                      <i className="fa-solid fa-plus text-emerald-200 text-2xl"></i>
+                  </div>
                </div>
             </div>
         )}
         
         {type === 'redZone' && (
-             <div className="space-y-6 animate-fade-in flex-1 h-full overflow-y-auto pr-2 custom-scrollbar">
+             <div className="flex-1 flex flex-col animate-fade-in h-full overflow-hidden">
                {layoutMode === 'focus' && (
-                  <h2 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-3"><i className="fa-solid fa-file-circle-xmark text-rose-500"></i> Zone Rouge</h2>
+                  <div className="mb-6 text-center">
+                    <h2 className="text-2xl font-black text-slate-900 mb-2 flex items-center justify-center gap-3">
+                        <i className="fa-solid fa-file-circle-xmark text-rose-500"></i> Zone Rouge
+                    </h2>
+                    <p className="text-slate-500">Procédures nécessitant une attention immédiate</p>
+                  </div>
                )}
-               <div className="grid grid-cols-1 gap-3">
+               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 p-1">
                  {redZoneList.map((item, idx) => (
-                   <div key={idx} className="bg-white rounded-xl p-4 border border-slate-100 flex items-center justify-between group hover:border-rose-200 hover:shadow-sm transition-all">
+                   <div key={idx} className="bg-white rounded-xl p-4 border border-slate-100 flex items-center justify-between group hover:border-rose-200 hover:shadow-md hover:-translate-x-1 transition-all">
                       <div className="overflow-hidden">
-                        <h3 className="font-bold text-slate-900 truncate text-sm">{item.label}</h3>
-                        <p className="text-[10px] text-slate-400">ID: {item.id.slice(0,6)}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <h3 className="font-bold text-slate-900 truncate text-sm">{item.label}</h3>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-mono pl-3.5">ID: {item.id.slice(0,8)}...</p>
                       </div>
                       <button 
                         onClick={() => {
                             setSelectedOrphan({ id: item.id, title: item.label });
                             setAssignModalOpen(true);
                         }}
-                        className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm"
+                        className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"
                         title="Assigner un référent"
                       >
-                        <i className="fa-solid fa-user-plus text-xs"></i>
+                        <i className="fa-solid fa-user-plus text-sm"></i>
                       </button>
                    </div>
                  ))}
-                 {redZoneList.length === 0 && <p className="text-center text-slate-400">Aucune procédure orpheline</p>}
+                 {redZoneList.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                        <i className="fa-solid fa-check-circle text-4xl mb-3 text-emerald-200"></i>
+                        <p className="font-medium">Tout est en ordre</p>
+                    </div>
+                 )}
                </div>
              </div>
         )}
 
         {type === 'intensity' && (
-            <div className="space-y-6 animate-fade-in flex-1 h-full flex flex-col">
+            <div className="flex-1 flex flex-col animate-fade-in">
                {layoutMode === 'focus' && (
-                  <div className="mb-6">
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                  <div className="mb-6 text-center">
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
                         <i className="fa-solid fa-bolt-lightning text-amber-500"></i>
                          Cartographie d'Expertise
                     </h2>
@@ -702,7 +799,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                   </div>
                )}
                
-               <div className="flex-1 flex flex-col gap-6 ">
+               <div className="flex-1 flex flex-col gap-6">
                    {/* Radar Chart */}
                    <div className="flex-1 min-h-[200px] w-full relative">
                       <ResponsiveContainer width="100%" height="100%">
@@ -714,7 +811,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                         </RadarChart>
                       </ResponsiveContainer>
                       <div className="absolute top-0 right-0">
-                          <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 uppercase tracking-wider">
+                          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 uppercase tracking-wider shadow-sm">
                             Intensité: {globalKPIs.teamIntensity}%
                           </span>
                       </div>
@@ -723,29 +820,25 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                    {/* Leaderboard Section */}
                    <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                       <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                              <i className="fa-solid fa-trophy text-amber-500"></i> Top Contributeurs
                           </h3>
-                          <button 
-                            onClick={() => navigate('/team')}
-                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm hover:shadow-md transition-all active:scale-95"
-                          >
-                            VOIR TOUTE L'ÉQUIPE
-                          </button>
                       </div>
                       
                       <div className="space-y-3">
                           {teamLeaderboard.length > 0 ? (
                               teamLeaderboard.slice(0,3).map((m, i) => (
-                                 <div key={i} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${i===0 ? 'bg-amber-100 text-amber-700' : i===1 ? 'bg-slate-200 text-slate-600' : 'bg-orange-100 text-orange-700'}`}>
+                                 <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-inner ${i===0 ? 'bg-amber-100 text-amber-700' : i===1 ? 'bg-slate-200 text-slate-600' : 'bg-orange-100 text-orange-700'}`}>
                                        {i+1}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-bold text-slate-700 truncate">{m.first_name} {m.last_name}</p>
                                         <p className="text-[9px] text-slate-400 capitalize">{m.role}</p>
                                     </div>
-                                    <span className="text-[10px] bg-slate-50 text-slate-600 px-2 py-0.5 rounded-full font-black border border-slate-100">{m.xp_points} XP</span>
+                                    <div className="text-right">
+                                        <span className="block text-xs font-black text-indigo-600">{m.xp_points} XP</span>
+                                    </div>
                                  </div>
                               ))
                           ) : (
@@ -775,43 +868,44 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     <div className="p-8 max-w-[1600px] mx-auto space-y-12 animate-fade-in pb-20">
       
       {/* 🚀 HEADER & GLOBAL KPIs (NAVIGATION TABS) */}
-      <div className="space-y-8">
+      <div className="space-y-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-100 pb-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
               Intelligence Métier
-              <span className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest font-black">Pro</span>
+              <span className="text-xs bg-indigo-600 text-white px-3 py-1 rounded-full uppercase tracking-widest font-black shadow-sm shadow-indigo-200">Pro</span>
             </h1>
-            <p className="text-slate-500 font-medium text-lg max-w-2xl">
+            <p className="text-slate-500 font-medium text-lg max-w-2xl leading-relaxed">
               Analysez la performance de votre base de connaissances via 5 axes stratégiques.
             </p>
           </div>
           
           {/* LAYOUT SWITCHER */}
-          <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex items-center gap-1 shadow-inner">
+          <div className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50 flex items-center gap-1 shadow-inner backdrop-blur-sm">
              <button 
                onClick={() => setLayoutMode('focus')}
-               className={`p-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'focus' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+               className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'focus' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
                title="Focus View (1)"
              >
-                <i className="fa-regular fa-square"></i>
+                <i className="fa-regular fa-square text-sm"></i>
                 <span className="text-xs font-black uppercase tracking-wider hidden md:block">Focus</span>
              </button>
-             <div className="w-px h-6 bg-slate-200 mx-1"></div>
+             <div className="w-px h-5 bg-slate-300/50 mx-1"></div>
              <button 
                onClick={() => setLayoutMode('split')}
-               className={`p-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'split' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
-               title="Split View (2)"
+               className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'split' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+               title="Comparatif View (2)"
              >
-                <i className="fa-solid fa-table-columns"></i>
+                <i className="fa-solid fa-table-columns text-sm"></i>
                 <span className="text-xs font-black uppercase tracking-wider hidden md:block">Comparatif</span>
              </button>
+             <div className="w-px h-5 bg-slate-300/50 mx-1"></div>
              <button 
                onClick={() => setLayoutMode('grid')}
-               className={`p-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'grid' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
-               title="Grid View (3)"
+               className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 ${layoutMode === 'grid' ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+               title="Global View (3)"
              >
-                <i className="fa-solid fa-grip"></i>
+                <i className="fa-solid fa-grip text-sm"></i>
                 <span className="text-xs font-black uppercase tracking-wider hidden md:block">Global</span>
              </button>
           </div>
@@ -825,7 +919,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-magnifying-glass-chart" 
             color={globalKPIs.searchSuccessRate >= 85 ? "text-emerald-600" : "text-amber-600"}
             bg={globalKPIs.searchSuccessRate >= 85 ? "bg-emerald-50" : "bg-amber-50"}
-            tooltip="Efficacité des recherches."
             isActive={isKpiSelected('searchSuccess')}
             onClick={() => updateSlot(0, 'searchSuccess')}
           />
@@ -835,7 +928,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-shield-heart" 
             color="text-emerald-600"
             bg="bg-emerald-50"
-            tooltip="Santé documentaire et fraîcheur du contenu."
             isActive={isKpiSelected('reliability')}
             onClick={() => updateSlot(0, 'reliability')}
           />
@@ -845,7 +937,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-arrow-trend-up" 
             color="text-indigo-600"
             bg="bg-indigo-50"
-            tooltip="Croissance d'usage et trafic."
             isActive={isKpiSelected('dynamic')}
             onClick={() => updateSlot(0, 'dynamic')}
           />
@@ -855,7 +946,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-file-circle-xmark" 
             color="text-rose-600"
             bg="bg-rose-50"
-            tooltip="Procédures orphelines (sans référent)."
             isActive={isKpiSelected('redZone')}
             onClick={() => updateSlot(0, 'redZone')}
           />
@@ -865,8 +955,6 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             icon="fa-bolt-lightning" 
             color="text-amber-600"
             bg="bg-amber-50"
-            tooltip="Engagement et contributions de l'équipe."
-            align="right"
             isActive={isKpiSelected('intensity')}
             onClick={() => updateSlot(0, 'intensity')}
           />
@@ -874,41 +962,48 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       </div>
 
       {loading ? (
-        <div className="min-h-[80vh] flex items-center justify-center">
-          <LoadingState message="Analyse des données en cours..." />
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
+          <div className="relative w-24 h-24">
+             <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+             <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+             <div className="absolute inset-0 flex items-center justify-center">
+               <i className="fa-solid fa-chart-pie text-indigo-300 text-2xl animate-pulse"></i>
+             </div>
+          </div>
+          <p className="text-slate-400 font-medium animate-pulse">Analyse des données en cours...</p>
         </div>
       ) : (
         <div className={`
-           grid gap-6 transition-all duration-500 ease-in-out
+           grid gap-8 transition-all duration-500 ease-in-out
            ${layoutMode === 'focus' ? 'grid-cols-1' : ''}
            ${layoutMode === 'split' ? 'grid-cols-1 lg:grid-cols-2' : ''}
            ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : ''}
         `}>
            {layoutMode === 'focus' ? (
               // Focus Mode: Show only 1st slot, full width
-              <div className="col-span-1 h-[600px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+              <div className="col-span-1 min-h-[600px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-10 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                  {renderKPIContent(selectedSlots[0], 0)}
               </div>
            ) : layoutMode === 'split' ? (
               // Split Mode: Show 2 slots
               <>
-                <div className="h-[500px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <div className="min-h-[550px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                    {renderKPIContent(selectedSlots[0], 0)}
                 </div>
-                <div className="h-[500px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <div className="min-h-[550px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                    {renderKPIContent(selectedSlots[1], 1)}
                 </div>
               </>
            ) : (
               // Grid Mode: Show 3 slots - FIRST SLOT FULL WIDTH
               <>
-                 <div className="col-span-full h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
+                 <div className="col-span-full min-h-[500px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                     {renderKPIContent(selectedSlots[0], 0)}
                  </div>
-                 <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
+                 <div className="min-h-[450px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                     {renderKPIContent(selectedSlots[1], 1)}
                  </div>
-                 <div className="h-[450px] bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6">
+                 <div className="min-h-[450px] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 ring-1 ring-slate-50 transition-all hover:shadow-2xl hover:shadow-indigo-100/50">
                     {renderKPIContent(selectedSlots[2], 2)}
                  </div>
               </>
@@ -953,33 +1048,37 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 };
 
 // Sub-component for KPI Cards in Header
-const KPICard = ({ label, value, icon, color, bg, tooltip, isActive, onClick, align = 'left' }: any) => (
+const KPICard = ({ label, value, icon, color, bg, isActive, onClick }: any) => (
   <button 
     onClick={onClick}
     className={`
-      relative overflow-hidden rounded-2xl p-4 border text-left transition-all duration-300 group
+      relative overflow-hidden rounded-2xl p-5 border text-left transition-all duration-300 group outline-none
       ${isActive 
-         ? 'bg-white border-indigo-500 shadow-md ring-1 ring-indigo-500 transform scale-105' 
-         : 'bg-white border-slate-100 hover:border-indigo-300 hover:shadow-sm'
+         ? 'bg-white border-indigo-500 shadow-lg shadow-indigo-100 ring-2 ring-indigo-500 transform -translate-y-1' 
+         : 'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-md hover:-translate-y-0.5'
       }
     `}
   >
-     <div className="flex items-center justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${bg} ${color}`}>
+     <div className="flex items-center justify-between mb-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg shadow-sm transition-transform group-hover:scale-110 ${bg} ${color}`}>
            <i className={`fa-solid ${icon}`}></i>
         </div>
-        {isActive && <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>}
+        {isActive && (
+          <div className="flex h-3 w-3 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+          </div>
+        )}
      </div>
-     <div>
-        <span className="block text-2xl font-black text-slate-800 tracking-tight">{value}</span>
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</span>
+     <div className="space-y-1">
+        <span className={`block text-3xl font-black tracking-tight ${isActive ? 'text-indigo-900' : 'text-slate-800'}`}>{value}</span>
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</span>
      </div>
      
-     {/* Tooltip on Hover */}
-     <div className="absolute inset-0 bg-slate-900/90 text-white p-4 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm z-10">
-        <i className={`fa-solid ${icon} text-2xl mb-2 text-indigo-400`}></i>
-        <p className="text-xs font-medium leading-relaxed">{tooltip}</p>
-     </div>
+     {/* Subtle decorative glow */}
+     {isActive && (
+       <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full blur-2xl opacity-50 pointer-events-none"></div>
+     )}
   </button>
 );
 
