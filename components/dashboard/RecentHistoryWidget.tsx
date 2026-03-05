@@ -25,8 +25,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
     const isSuccessJournal = title.includes("Succès");
 
     if (isSuccessJournal) {
-        // Filter for completed missions and badges only
-        const successItems = activities.filter(a => {
+        // 1. Filter Activities (User actions)
+        const successActivities = activities.filter(a => {
              const content = a.content?.toLowerCase() || '';
              const title = a.title?.toLowerCase() || '';
              return content.includes('terminée') || content.includes('validée') || title.includes('badge');
@@ -41,8 +41,26 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             bg: 'bg-amber-50',
             link: null
         }));
+
+        // 2. Filter Notifications (System alerts: Mission Validated, Badge Awarded)
+        const successNotifications = notifications.filter(n => {
+            const t = n.title?.toLowerCase() || '';
+            return t.includes('validée') || t.includes('succès') || t.includes('badge') || t.includes('completed');
+        }).map(n => ({
+            id: n.id,
+            type: 'notification',
+            title: n.title,
+            content: n.content,
+            date: n.created_at,
+            icon: 'fa-medal',
+            color: 'text-amber-600',
+            bg: 'bg-amber-100',
+            link: n.link
+        }));
         
-        return successItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+        // Merge and Sort
+        const allSuccess = [...successActivities, ...successNotifications];
+        return allSuccess.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
     }
 
     // Default Feed Logic (Activity Feed)
@@ -125,7 +143,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
           <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
             <i className={`fa-solid ${title.includes("Succès") ? "fa-trophy text-amber-400" : "fa-clock-rotate-left"}`}></i>
           </div>
-          <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+          <h3 className="font-black text-slate-900 text-lg tracking-tight uppercase flex items-center gap-2">
             {title}
             <InfoTooltip text={subtitle} />
           </h3>

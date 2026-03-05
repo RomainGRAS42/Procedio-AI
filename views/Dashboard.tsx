@@ -1256,8 +1256,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* 1. Mon Fil d'Activité (LEFT - 6/12) */}
-              <div className="col-span-12 lg:col-span-6">
+              {/* 1. Mon Fil d'Activité (LEFT - 60%) */}
+              <div className="col-span-12 lg:col-span-7">
                 <RecentHistoryWidget
                   activities={activities}
                   loading={loadingActivities}
@@ -1266,8 +1266,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* 2. Mes Trophées & Progression (RIGHT - 6/12) */}
-              <div className="col-span-12 lg:col-span-6 flex flex-col gap-8">
+              {/* 2. Mes Trophées & Progression (RIGHT - 40%) */}
+              <div className="col-span-12 lg:col-span-5 flex flex-col gap-8">
                 <BadgesWidget
                   earnedBadges={earnedBadges}
                   totalConsultations={personalStats?.consultations || 0}
@@ -1278,9 +1278,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* ROW 3: Mes Missions & Journal des Succès (50/50) */}
+            {/* ROW 3: Mes Missions (40%) & Journal des Succès (60%) */}
             <div className="col-span-12 grid grid-cols-12 gap-8">
-                <div className="col-span-12 lg:col-span-6">
+                <div className="col-span-12 lg:col-span-5">
                     <PilotCenterTechWidget
                       missions={activeMissions.filter((m) => m.assigned_to === user.id)}
                       activities={activities}
@@ -1288,27 +1288,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                       onNavigate={onNavigate}
                     />
                 </div>
-                <div className="col-span-12 lg:col-span-6">
-                    {/* Reuse RecentHistoryWidget component but configured as Journal des Succès logic via props later if needed, 
-                        or create a specific SuccessJournalWidget. For now, reusing RecentHistoryWidget as requested but placing it here.
-                        Wait, user wanted "Journal des Succès" here. 
-                        Let's use a filtered version of RecentHistoryWidget or a new one.
-                        Actually, I renamed RecentHistoryWidget to "Journal des Succès" in previous step.
-                        So I need another widget for "Mon Fil d'Activité".
-                        
-                        Strategy:
-                        - Restore RecentHistoryWidget as "Mon Fil d'Activité" (Revert rename or create new)
-                        - Create/Use "Journal des Succès" for the right column.
-                        
-                        Since I just renamed RecentHistoryWidget to "Journal des Succès", 
-                        I should duplicate it or handle title via props.
-                    */}
+                <div className="col-span-12 lg:col-span-7">
+                    {/* Journal des Succès */}
                      <RecentHistoryWidget
-                      activities={activities.filter(a => a.title?.includes('MISSION_COMPLETED') || a.title?.includes('BADGE'))}
+                      activities={activities}
                       loading={loadingActivities}
-                      notifications={[]} // No notifications in Success Journal
+                      notifications={systemNotifications}
                       onNavigate={onNavigate}
-                      title="Journal des Succès" // I need to add this prop support
+                      title="Journal des Succès"
+                      subtitle="Vos victoires, badges et missions validées."
                     />
                 </div>
             </div>
