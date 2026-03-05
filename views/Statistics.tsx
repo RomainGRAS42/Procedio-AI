@@ -368,6 +368,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
             )
           )
         `)
+        .neq('role', 'manager') // Exclude managers from leaderboard
         .order('xp_points', { ascending: false })
         .limit(5);
 
@@ -817,7 +818,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                    <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                       <div className="flex items-center justify-between mb-4">
                           <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                             <i className="fa-solid fa-trophy text-amber-500"></i> Top Contributeurs
+                             <i className="fa-solid fa-trophy text-amber-500"></i> Cartographie d'Équipe - Top Contributeurs
                           </h3>
                       </div>
                       
