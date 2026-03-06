@@ -725,59 +725,30 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           }).eq("id", currentMasteryRequestId);
       }
 
-      if (score >= 70) {
-         // SUCCESS - SEND TO MANAGER VALIDATION
-         setToast({ message: "Examen réussi ! Envoi au manager pour validation.", type: "success" });
+      // ALWAYS SEND TO MANAGER VALIDATION (NO AUTO-FAIL)
+      setToast({ message: "Examen terminé ! Envoi au manager pour validation.", type: "success" });
          
-         // Optimistic UI update
-         setMissions(prev => prev.map(m => 
-           m.id === missionToUpdate.id ? { ...m, status: 'awaiting_validation' as MissionStatus } : m
-         ));
+      // Optimistic UI update
+      setMissions(prev => prev.map(m => 
+        m.id === missionToUpdate.id ? { ...m, status: 'awaiting_validation' as MissionStatus } : m
+      ));
 
-         // 1. Update Mission to Awaiting Validation
-         await supabase.from("missions").update({ 
-           status: "awaiting_validation",
-           completion_notes: `Examen réussi avec un score de ${score}%. En attente de validation.` 
-         }).eq("id", missionToUpdate.id);
+      // 1. Update Mission to Awaiting Validation
+      await supabase.from("missions").update({ 
+        status: "awaiting_validation",
+        completion_notes: `Examen terminé avec un score de ${score}%. En attente de décision du manager.` 
+      }).eq("id", missionToUpdate.id);
 
-         // 2. Notify Manager
-         if (missionToUpdate.created_by) {
-            await supabase.from("notifications").insert({
-               user_id: missionToUpdate.created_by,
-               type: "mission_status",
-               title: "Validation Expertise Requise",
-               content: `${user.firstName} a réussi l'examen (${score}%). Validation requise.`,
-               link: `/dashboard`, // Link to dashboard where ReviewWidget is
-               is_read: false,
-            });
-         }
-
-      } else {
-         // FAILURE - Single attempt allowed
-         setToast({ message: `Score: ${score}%. Échec (seuil 70%). Mission terminée.`, type: "error" });
-         
-         // Optimistic UI update: move to history even if failed
-         setMissions(prev => prev.map(m => 
-           m.id === missionToUpdate.id ? { ...m, status: 'completed' as MissionStatus } : m
-         ));
-
-         // 1. Mark Mission as Completed but with failure note
-         await supabase.from("missions").update({ 
-             status: "completed", 
-             completion_notes: `Score : ${score}% - Vous avez échoué à la demande pour devenir référent.`
-         }).eq("id", missionToUpdate.id);
-
-         // 2. Notify Manager
-         if (missionToUpdate.created_by) {
-            await supabase.from("notifications").insert({
-               user_id: missionToUpdate.created_by,
-               type: "mission_status",
-               title: "Échec Certification",
-               content: `${user.firstName} a échoué à l'examen de référent (${score}%).`,
-               link: "/missions",
-               is_read: false,
-            });
-         }
+      // 2. Notify Manager
+      if (missionToUpdate.created_by) {
+        await supabase.from("notifications").insert({
+            user_id: missionToUpdate.created_by,
+            type: "mission_status",
+            title: "Validation Expertise Requise",
+            content: `${user.firstName} a terminé l'examen (${score}%). Validation requise.`,
+            link: `/dashboard`, // Link to dashboard where ReviewWidget is
+            is_read: false,
+        });
       }
       
       setExamMission(null); // Reset exam mission state

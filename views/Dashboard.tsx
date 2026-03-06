@@ -33,7 +33,6 @@ import MissionsWidget from "../components/dashboard/MissionsWidget";
 import BadgesWidget from "../components/dashboard/BadgesWidget";
 import MasteryWidget from "../components/dashboard/MasteryWidget";
 import AnnouncementWidget from "../components/dashboard/AnnouncementWidget";
-import ActivityWidget from "../components/dashboard/ActivityWidget";
 import ReviewCenterWidget from "../components/dashboard/ReviewCenterWidget";
 import PilotCenterTechWidget from "../components/dashboard/PilotCenterTechWidget";
 import RecentHistoryWidget from "../components/dashboard/RecentHistoryWidget";
@@ -1466,10 +1465,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Col 3: Pouls de l'Équipe (Activity) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full">
-                <ActivityWidget
+                <RecentHistoryWidget
                   activities={activities}
-                  loadingActivities={loadingActivities}
-                  onRefresh={fetchActivities}
+                  loading={loadingActivities}
+                  notifications={systemNotifications}
+                  onNavigate={onNavigate}
+                  onMarkAsRead={(id) => markAsRead(id)}
+                  userRole={user.role}
+                  title="Mon Fil d'Activité"
+                  subtitle="Vos alertes et l'activité de l'équipe."
                 />
               </div>
             </div>

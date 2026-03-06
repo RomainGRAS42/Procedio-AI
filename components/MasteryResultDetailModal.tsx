@@ -98,7 +98,6 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
   }));
 
   const userAnswers = claim.user_answers || null;
-  // const score = claim.score || 0; // Removed duplicate declaration
   const isSuccess = score >= 70;
   const hasHistory = userAnswers !== null;
 
