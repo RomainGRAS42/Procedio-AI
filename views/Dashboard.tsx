@@ -1330,6 +1330,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
                 <PilotCenterTechWidget
                   missions={activeMissions.filter((m) => m.assigned_to === user.id)}
+                  teamMissions={activeMissions.filter(m => (m.mission_type === 'team' || m.mission_type === 'challenge') && m.status === 'open')}
                   exams={approvedExams}
                   activities={activities}
                   loading={loadingMissions || loadingActivities}
@@ -1340,17 +1341,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                   }}
                 />
               </div>
-            </div>
-
-            {/* ROW 2.5: Missions d'Équipe & Défis (New) */}
-            <div className="col-span-12">
-               <MissionsWidget 
-                 activeMissions={activeMissions.filter(m => (m.mission_type === 'team' || m.mission_type === 'challenge') && m.status === 'open')} 
-                 userRole={user.role}
-                 viewMode="team"
-                 onNavigate={onNavigate}
-                 loading={loadingMissions}
-               />
             </div>
 
             {/* ROW 3: Trophées | Maitrise | Journal (3 cols) */}
