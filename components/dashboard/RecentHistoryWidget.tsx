@@ -261,7 +261,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 <div 
                     key={`${item.type}-${item.id}`}
                     onClick={() => item.link && onNavigate && onNavigate(item.link)}
-                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${item.type === 'notification' && !item.link?.includes('read') ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
+                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${item.type === 'notification' && !notifications.find(n => n.id === item.id)?.is_read ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
                     role="article"
                 >
                     {/* ICON / BADGE */}
@@ -295,7 +295,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     )}
                     
                     {/* HOVER ACTIONS (Mark as Read) - Absolute positioning to overlay XP pill area */}
-                    {item.type === 'notification' && !item.link?.includes('read') && onMarkAsRead && (
+                    {item.type === 'notification' && !notifications.find(n => n.id === item.id)?.is_read && onMarkAsRead && (
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                             <button
                                 onClick={(e) => {
