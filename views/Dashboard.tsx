@@ -1453,7 +1453,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Col 2: Podium (TeamPodium) - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-8">
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-12">
                 <TeamPodium />
                 <TechnicianRankingWidget 
                   onNavigate={onNavigate}
