@@ -300,6 +300,25 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                     <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 italic text-sm text-emerald-700 text-left">
                       {mission.completion_notes || "Aucune note."}
                     </div>
+                  ) : mission.title.startsWith("Devenir Référent") && (mission.status === 'assigned' || mission.status === 'in_progress') && mission.assigned_to === user.id ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-6 text-center">
+                        <div className="w-24 h-24 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 text-4xl shadow-lg shadow-indigo-100 mb-2">
+                            <i className="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div className="space-y-2 max-w-xs mx-auto">
+                            <h4 className="text-xl font-black text-slate-900 tracking-tight">Certification</h4>
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                                Cette mission requiert la validation d'un examen de 10 questions.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => onStartQuiz?.(mission)}
+                            className="px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-indigo-500/20 active:scale-95 flex items-center gap-3 group"
+                        >
+                            <span>Commencer le Quiz</span>
+                            <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
                   ) : (mission.status === "in_progress" && mission.assigned_to === user.id) || (mission.status === "awaiting_validation" && user.role === UserRole.MANAGER) ? (
                     <div className="space-y-4">
                       {mission.status === "awaiting_validation" && user.role === UserRole.MANAGER && (
