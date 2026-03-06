@@ -50,20 +50,9 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
                 XP TOTAL DANS LE RANG
               </p>
             </div>
-
-            <div className="flex flex-col items-end">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                PROCHAIN GRADE
-              </span>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-full shadow-sm">
-                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">
-                  {nextTitle}
-                </span>
-              </div>
-            </div>
           </div>
 
-          <div className="relative">
+          <div className="relative mb-2">
             <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out relative"
@@ -73,10 +62,21 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
             </div>
           </div>
 
-          <div className="mt-2 flex items-center">
+          <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
               {Math.round(progressPercentage)}% Progression
             </span>
+
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+                PROCHAIN GRADE
+              </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-full shadow-sm">
+                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">
+                  {nextTitle}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

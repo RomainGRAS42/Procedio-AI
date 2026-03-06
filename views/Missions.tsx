@@ -110,6 +110,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     type: "success" | "error" | "info";
   } | null>(null);
   const [personalFilter, setPersonalFilter] = useState<"active" | "history" | "available">("active");
+  const [missionTypeFilter, setMissionTypeFilter] = useState<"all" | "solo" | "team" | "challenge">("all");
 
   // Form State
   const [newMission, setNewMission] = useState({
@@ -1220,12 +1221,65 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           <div className="flex-1 min-w-0 space-y-12 transition-all duration-300">
             {user.role === UserRole.MANAGER ? (
               <div className="space-y-10">
+                {/* Filter Controls for Manager */}
+                <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl w-fit">
+                  <button
+                    onClick={() => setMissionTypeFilter("all")}
+                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                      missionTypeFilter === "all"
+                        ? "bg-white text-indigo-600 shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}>
+                    Tout
+                  </button>
+                  <button
+                    onClick={() => setMissionTypeFilter("solo")}
+                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                      missionTypeFilter === "solo"
+                        ? "bg-white text-slate-600 shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}>
+                    <i className="fa-solid fa-user"></i>
+                    Solo
+                  </button>
+                  <button
+                    onClick={() => setMissionTypeFilter("team")}
+                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                      missionTypeFilter === "team"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}>
+                    <i className="fa-solid fa-users"></i>
+                    Équipe
+                  </button>
+                  <button
+                    onClick={() => setMissionTypeFilter("challenge")}
+                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                      missionTypeFilter === "challenge"
+                        ? "bg-white text-purple-600 shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}>
+                    <i className="fa-solid fa-trophy"></i>
+                    Défi
+                  </button>
+                </div>
+
                 {/* Section : Needs Review */}
-                {missions.filter((m) => m.status === "awaiting_validation").length > 0 && (
+                {missions.filter(
+                  (m) =>
+                    m.status === "awaiting_validation" &&
+                    (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                ).length > 0 && (
                   <CollapsibleSection
                     title="À Valider Prioritairement"
                     icon={<i className="fa-solid fa-bell animate-pulse"></i>}
-                    count={missions.filter((m) => m.status === "awaiting_validation").length}
+                    count={
+                      missions.filter(
+                        (m) =>
+                          m.status === "awaiting_validation" &&
+                          (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                      ).length
+                    }
                     sectionKey="needs_review"
                     isOpen={!collapsedSections["needs_review"]}
                     onToggle={toggleSection}
@@ -1235,7 +1289,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                         viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
                       }>
                       {missions
-                        .filter((m) => m.status === "awaiting_validation")
+                        .filter(
+                          (m) =>
+                            m.status === "awaiting_validation" &&
+                            (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                        )
                         .map((m) =>
                           viewMode === "grid" ? renderMissionCard(m) : renderMissionListRow(m)
                         )}
@@ -1252,7 +1310,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       (m) =>
                         m.status !== "completed" &&
                         m.status !== "cancelled" &&
-                        m.status !== "awaiting_validation"
+                        m.status !== "awaiting_validation" &&
+                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
                     ).length
                   }
                   sectionKey="ongoing"
@@ -1267,14 +1326,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       (m) =>
                         m.status !== "completed" &&
                         m.status !== "cancelled" &&
-                        m.status !== "awaiting_validation"
+                        m.status !== "awaiting_validation" &&
+                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
                     ).length > 0 ? (
                       missions
                         .filter(
                           (m) =>
                             m.status !== "completed" &&
                             m.status !== "cancelled" &&
-                            m.status !== "awaiting_validation"
+                            m.status !== "awaiting_validation" &&
+                            (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
                         )
                         .map((m) =>
                           viewMode === "grid" ? renderMissionCard(m) : renderMissionListRow(m)
@@ -1282,7 +1343,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     ) : (
                       <div className="py-8 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
                         <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                          Aucune mission en cours
+                          Aucune mission en cours {missionTypeFilter !== 'all' ? `(${missionTypeFilter})` : ''}
                         </p>
                       </div>
                     )}
@@ -1294,8 +1355,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   title="Historique Récent"
                   icon={<i className="fa-solid fa-clock-rotate-left"></i>}
                   count={
-                    missions.filter((m) => m.status === "completed" || m.status === "cancelled")
-                      .length
+                    missions.filter(
+                      (m) =>
+                        (m.status === "completed" || m.status === "cancelled") &&
+                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                    ).length
                   }
                   sectionKey="history"
                   isOpen={!collapsedSections["history"]}
@@ -1306,7 +1370,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
                     }>
                     {missions
-                      .filter((m) => m.status === "completed" || m.status === "cancelled")
+                      .filter(
+                        (m) =>
+                          (m.status === "completed" || m.status === "cancelled") &&
+                          (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                      )
                       .slice(0, 10)
                       .map((m) =>
                         viewMode === "grid" ? renderMissionCard(m) : renderMissionListRow(m)
