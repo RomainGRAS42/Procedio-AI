@@ -314,11 +314,18 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                         />
                     </div>
 
-                    {/* XP PILL (If relevant - ALWAYS VISIBLE unless hovered) */}
-                    {(item.type === 'notification' && item.content?.includes('XP')) && (
+                    {/* XP PILL (Dynamic Extraction) */}
+                    {(item.xp || (item.content && (item.content.includes('XP') || item.content.includes('Gain de')))) && (
                         <div className="shrink-0 flex flex-col items-end justify-center group-hover:opacity-0 transition-opacity duration-200">
-                             <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[9px] font-black whitespace-nowrap">
-                                +50 XP
+                             <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[11px] font-black whitespace-nowrap shadow-sm border border-amber-200/50 flex items-center gap-1">
+                                <i className="fa-solid fa-bolt text-[9px] animate-pulse"></i>
+                                {item.xp ? `+${item.xp} XP` : (
+                                    // Fallback extraction
+                                    (() => {
+                                        const match = item.content.match(/Gain de (\d+)\s*XP/i) || item.content.match(/(\d+)\s*XP/i);
+                                        return match ? `+${match[1]} XP` : '+XP';
+                                    })()
+                                )}
                              </span>
                         </div>
                     )}
