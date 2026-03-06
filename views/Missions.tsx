@@ -1325,14 +1325,14 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   <div className="flex items-center justify-end mb-4 px-2">
                     <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
                       <button
+                        onClick={() => setPersonalFilter("available")}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "available" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+                        Disponibles ({missions.filter(m => m.status === "open").length})
+                      </button>
+                      <button
                         onClick={() => setPersonalFilter("active")}
                         className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "active" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
                         En cours ({missions.filter(m => m.assigned_to === user.id && (m.status === "assigned" || m.status === "in_progress")).length})
-                      </button>
-                      <button
-                        onClick={() => setPersonalFilter("available")}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "available" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
-                        À Saisir ({missions.filter(m => m.status === "open").length})
                       </button>
                       <button
                         onClick={() => setPersonalFilter("history")}
@@ -1375,7 +1375,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                         }>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                           {personalFilter === "available"
-                            ? "Aucune mission à saisir pour le moment"
+                            ? "Aucune mission disponible pour le moment"
                             : personalFilter === "active"
                             ? "Aucune mission en cours"
                             : "Aucune mission terminée"}
