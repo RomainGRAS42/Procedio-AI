@@ -29,11 +29,11 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
 
       <div className="flex items-center gap-6">
         <div className="relative group shrink-0">
-          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100 group-hover:scale-105 transition-transform duration-300">
+          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100 group-hover:scale-105 transition-transform duration-300 relative">
             <span className="text-xl font-black text-indigo-600 font-mono">{currentLevel}</span>
-          </div>
-          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm border border-indigo-100">
-            <i className="fa-solid fa-bolt text-[10px] text-amber-400"></i>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-2 py-0.5 rounded-full border border-indigo-100 text-[8px] font-black text-indigo-400 uppercase tracking-widest shadow-sm whitespace-nowrap">
+              Niveau
+            </div>
           </div>
         </div>
 
