@@ -183,7 +183,8 @@ const ActivityWidget: React.FC<ActivityWidgetProps> = ({
                   if (act.title?.startsWith('CONSULTATION_')) actionText = `a consulté une procédure`;
                   if (act.title?.startsWith('LOG_SUGGESTION_')) actionText = `a fait une suggestion`;
                   if (act.title?.startsWith('CLAIM_MASTERY_')) actionText = `a demandé une validation`;
-                  if (act.title?.startsWith('MISSION_')) actionText = `a avancé sur une mission`;
+                  if (act.title?.startsWith('MISSION_EXPERTISE_LAUNCH')) actionText = `a lancé un appel à expertise`;
+                  else if (act.title?.startsWith('MISSION_')) actionText = `a avancé sur une mission`;
                   if (act.title?.startsWith('APPLY_REFERENT_')) actionText = `souhaite devenir Référent`;
 
                   return (

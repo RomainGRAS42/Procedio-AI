@@ -67,9 +67,23 @@ const AssignReferentModal: React.FC<AssignReferentModalProps> = ({
           procedure_id: procedureId, // Make sure we link it if column exists
           needs_attachment: false,
         },
-      ]);
+      ])
+      .select()
+      .single();
 
       if (error) throw error;
+
+      // LOG PUBLIC ACTIVITY (For Team Feed)
+      if (data) {
+        await supabase.from("notes").insert({
+          user_id: user.id,
+          title: `MISSION_EXPERTISE_LAUNCH_${data.id}`,
+          content: `a lancé un appel à expertise pour la procédure : "${procedureTitle}"`,
+          category: "mission_log",
+          tags: ["mission_launch", "public", "expertise"],
+          status: "public",
+        });
+      }
 
       setIsSuccess(true);
       onSuccess(); // Trigger parent refresh but keep modal open

@@ -130,12 +130,25 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let color = 'text-slate-500';
         let bg = 'bg-slate-50';
         let title = 'Activité';
+        let link: string | null = null;
+        let content = a.content;
 
         if (a.title?.includes('CONSULTATION')) {
             icon = 'fa-eye';
             color = 'text-blue-500';
             bg = 'bg-blue-50';
             title = 'Consultation';
+        } else if (a.title?.includes('MISSION_EXPERTISE_LAUNCH')) {
+            icon = 'fa-bullhorn';
+            color = 'text-rose-600';
+            bg = 'bg-rose-100';
+            title = 'Appel à Expertise';
+            const idMatch = a.title.match(/MISSION_EXPERTISE_LAUNCH_(.*)/);
+            if (idMatch && idMatch[1]) {
+                link = `/missions?id=${idMatch[1]}`;
+                // Add button to content
+                content += `<br/><span class="inline-block mt-2 px-3 py-1 bg-rose-600 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest hover:bg-rose-700 transition-colors">Accéder à la mission</span>`;
+            }
         } else if (a.title?.includes('MISSION')) {
             icon = 'fa-rocket';
             color = 'text-indigo-500';
@@ -167,12 +180,12 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             id: a.id,
             type: 'activity',
             title: title,
-            content: a.content,
+            content: content,
             date: a.created_at,
             icon,
             color,
             bg,
-            link: null
+            link
         };
       }).filter(Boolean) as any[]
     ];
