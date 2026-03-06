@@ -804,6 +804,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     );
   };
 
+  const MissionTypeBadge = ({ type }: { type: MissionType | undefined }) => {
+     switch(type) {
+       case 'challenge':
+         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-100 text-purple-600 text-[8px] font-black uppercase tracking-widest"><i className="fa-solid fa-trophy"></i>Défi</span>;
+       case 'team':
+         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-100 text-blue-600 text-[8px] font-black uppercase tracking-widest"><i className="fa-solid fa-users"></i>Équipe</span>;
+       default:
+         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-widest"><i className="fa-solid fa-user"></i>Solo</span>;
+     }
+  };
+
   const renderMissionCard = (mission: Mission) => {
     const hasUnread = unreadMissionIds.has(mission.id);
     return (
@@ -834,8 +845,9 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           } opacity-20`}></div>
 
         <div className="flex justify-between items-start mb-6">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <UrgencyBadge urgency={mission.urgency} />
+            <MissionTypeBadge type={mission.mission_type} />
             {mission.title.startsWith("Opportunité Manquée") && (
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-[9px] font-black uppercase tracking-widest border border-amber-100/50">
                  <i className="fa-solid fa-magnifying-glass-chart"></i>
@@ -1039,6 +1051,15 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           }}></div>
 
         <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+             <MissionTypeBadge type={mission.mission_type} />
+             {mission.title.startsWith("Opportunité Manquée") && (
+                <span className="flex items-center gap-1.5 w-fit px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[8px] font-black uppercase tracking-widest border border-amber-100/50">
+                   <i className="fa-solid fa-magnifying-glass-chart"></i>
+                   Opportunité Manquée
+                </span>
+             )}
+          </div>
           <h4 className="text-sm font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
             {mission.title}
           </h4>
@@ -1049,7 +1070,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           </p>
 
           {mission.title.startsWith("Opportunité Manquée") && (
-              <span className="mt-1 flex items-center gap-1.5 w-fit px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[8px] font-black uppercase tracking-widest border border-amber-100/50">
+              <span className="mt-1 flex items-center gap-1.5 w-fit px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[8px] font-black uppercase tracking-widest border border-amber-100/50 hidden">
                  <i className="fa-solid fa-magnifying-glass-chart"></i>
                  Opportunité Manquée
               </span>

@@ -161,8 +161,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
       const health = [
         { name: `Frais (< ${freshnessDelay} mois)`, value: fresh, color: '#10b981' }, 
-        { name: `À revoir (${freshnessDelay}-12 mois)`, value: aging, color: '#f59e0b' },
-        { name: 'Obsolète (> 1 an)', value: old, color: '#ef4444' },
+        { name: `À revoir (${freshnessDelay}-${freshnessDelay * 2} mois)`, value: aging, color: '#f59e0b' },
+        { name: `Obsolète (> ${freshnessDelay * 2} mois)`, value: old, color: '#ef4444' },
       ];
 
       setHealthData(health);
