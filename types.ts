@@ -178,6 +178,6 @@ export interface Notification {
   title: string;
   content: string;
   link?: string;
-  read: boolean;
+  is_read: boolean;
   created_at: string;
 }
