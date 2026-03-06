@@ -1716,67 +1716,89 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     {/* Row 3: XP & Urgency */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 text-sm">
-                                <i className="fa-solid fa-star"></i>
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
+                                Récompense
+                            </label>
+                            <div className="relative">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 text-sm">
+                                    <i className="fa-solid fa-star"></i>
+                                </div>
+                                <input
+                                    type="number"
+                                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-2 focus:bg-white focus:border-indigo-500 outline-none font-black text-slate-700 text-sm"
+                                    value={newMission.xp_reward}
+                                    onChange={(e) => setNewMission({ ...newMission, xp_reward: parseInt(e.target.value) })}
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">XP</span>
                             </div>
-                            <input
-                                type="number"
-                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-2 focus:bg-white focus:border-indigo-500 outline-none font-black text-slate-700 text-sm"
-                                value={newMission.xp_reward}
-                                onChange={(e) => setNewMission({ ...newMission, xp_reward: parseInt(e.target.value) })}
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">XP</span>
                         </div>
                         <div className="relative">
-                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-400">
-                                <i className="fa-solid fa-fire"></i>
+                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
+                                Priorité
+                             </label>
+                             <div className="relative">
+                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-400">
+                                    <i className="fa-solid fa-fire"></i>
+                                 </div>
+                                 <select
+                                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
+                                    value={newMission.urgency}
+                                    onChange={(e) => setNewMission({ ...newMission, urgency: e.target.value as any })}
+                                 >
+                                    <option value="low">Faible</option>
+                                    <option value="medium">Moyenne</option>
+                                    <option value="high">Haute</option>
+                                    <option value="critical">Urgente</option>
+                                 </select>
+                                 <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                              </div>
-                             <select
-                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
-                                value={newMission.urgency}
-                                onChange={(e) => setNewMission({ ...newMission, urgency: e.target.value as any })}
-                             >
-                                <option value="low">Low</option>
-                                <option value="medium">Moyenne</option>
-                                <option value="high">Haute</option>
-                                <option value="critical">Urgent</option>
-                             </select>
                         </div>
                     </div>
 
                     {/* Row 4: Recurrence & Deadline */}
                     <div className="grid grid-cols-2 gap-4">
                          <div className="relative">
-                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400">
-                                <i className="fa-solid fa-rotate"></i>
-                             </div>
-                             <select
-                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
-                                value={newMission.recurrence}
-                                onChange={(e) => setNewMission({ ...newMission, recurrence: e.target.value })}
-                             >
-                                <option value="none">1x</option>
-                                <option value="weekly">Hebdo</option>
-                                <option value="monthly">Mensuel</option>
-                             </select>
+                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
+                                Répétition
+                             </label>
+                             <div className="relative">
+                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400">
+                                    <i className="fa-solid fa-rotate"></i>
+                                 </div>
+                                 <select
+                                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
+                                    value={newMission.recurrence}
+                                    onChange={(e) => setNewMission({ ...newMission, recurrence: e.target.value })}
+                                 >
+                                    <option value="none">Une seule fois</option>
+                                    <option value="weekly">Hebdomadaire</option>
+                                    <option value="monthly">Mensuelle</option>
+                                 </select>
+                                 <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 h-12 overflow-hidden relative">
-                             <i className="fa-solid fa-calendar-day text-slate-400 text-xs shrink-0"></i>
-                             {newMission.hasDeadline ? (
-                                 <input 
-                                    type="date" 
-                                    className="bg-transparent border-none outline-none text-xs font-bold text-slate-700 w-full p-0"
-                                    value={newMission.deadline}
-                                    onChange={(e) => setNewMission({ ...newMission, deadline: e.target.value })}
-                                 />
-                             ) : (
-                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex-1">Pas de date</span>
-                             )}
-                             <div 
-                                onClick={() => setNewMission({ ...newMission, hasDeadline: !newMission.hasDeadline })}
-                                className={`w-8 h-4 rounded-full transition-all relative cursor-pointer shrink-0 ${newMission.hasDeadline ? "bg-indigo-600" : "bg-slate-200"}`}
-                            >
-                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.hasDeadline ? "right-0.5" : "left-0.5"}`}></div>
+                        <div>
+                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
+                                Date limite
+                             </label>
+                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 h-12 overflow-hidden relative">
+                                 <i className="fa-solid fa-calendar-day text-slate-400 text-xs shrink-0"></i>
+                                 {newMission.hasDeadline ? (
+                                     <input 
+                                        type="date" 
+                                        className="bg-transparent border-none outline-none text-xs font-bold text-slate-700 w-full p-0"
+                                        value={newMission.deadline}
+                                        onChange={(e) => setNewMission({ ...newMission, deadline: e.target.value })}
+                                     />
+                                 ) : (
+                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex-1">Pas de date</span>
+                                 )}
+                                 <div 
+                                    onClick={() => setNewMission({ ...newMission, hasDeadline: !newMission.hasDeadline })}
+                                    className={`w-8 h-4 rounded-full transition-all relative cursor-pointer shrink-0 ${newMission.hasDeadline ? "bg-indigo-600" : "bg-slate-200"}`}
+                                >
+                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.hasDeadline ? "right-0.5" : "left-0.5"}`}></div>
+                                </div>
                             </div>
                         </div>
                     </div>
