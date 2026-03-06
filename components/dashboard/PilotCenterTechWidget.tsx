@@ -29,6 +29,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
   onOpenExam,
 }) => {
   const [activeTab, setActiveTab] = React.useState<'personal' | 'team'>('personal'); // Tab state
+  const [missionFilter, setMissionFilter] = React.useState<'active' | 'completed' | 'available'>('active');
 
   const getActionIcon = (title: string) => {
     if (title.includes("CONSULTATION")) return "fa-eye";
@@ -48,55 +49,110 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
 
   const visibleExams = exams.filter(e => e.status === 'approved');
   
-  // Content depends on tab
-  const personalContent = [...visibleExams, ...missions];
-  const teamContent = teamMissions;
+  // Content depends on tab & filter
+  let displayMissions: Mission[] = [];
+
+  if (activeTab === 'personal') {
+      if (missionFilter === 'active') {
+          displayMissions = missions.filter(m => m.status === 'assigned' || m.status === 'in_progress' || m.status === 'awaiting_validation');
+      } else if (missionFilter === 'completed') {
+          displayMissions = missions.filter(m => m.status === 'completed' || m.status === 'cancelled');
+      }
+      // 'available' for personal usually empty unless self-assignable pool, but let's keep logic simple
+  } else {
+      // Team Tab
+      if (missionFilter === 'available') {
+          displayMissions = teamMissions.filter(m => m.status === 'open');
+      } else if (missionFilter === 'active') {
+          // Team missions I'm working on are usually in 'personal' list once assigned. 
+          // But maybe we want to see what team is doing? For now let's show user's active team missions or just open ones
+          displayMissions = teamMissions.filter(m => m.status === 'in_progress'); 
+      }
+  }
+
+  // Override: If user clicks "Available", show open team missions regardless of tab? 
+  // Better UX: The tabs "Personnelles" vs "Équipe" act as scope.
+  // Actually, the user asked for "Available | Active | Completed" like in Missions page.
+  // Let's simplify: 
+  // 1. "DISPONIBLES" -> Team Missions (Open)
+  // 2. "EN COURS" -> Personal Active Missions
+  // 3. "TERMINÉES" -> Personal Completed Missions
   
-  const hasContent = activeTab === 'personal' ? personalContent.length > 0 : teamContent.length > 0;
+  // So we might not need the "Personnelles / Équipe" toggle anymore if we use the filter pills?
+  // User image shows "Personnelles . Equipe" AND the pills.
+  // Let's keep both for now, but link them intelligentely.
+  
+  const activeCount = missions.filter(m => m.status === 'assigned' || m.status === 'in_progress' || m.status === 'awaiting_validation').length;
+  const availableCount = teamMissions.filter(m => m.status === 'open').length;
+  const completedCount = missions.filter(m => m.status === 'completed' || m.status === 'cancelled').length;
+
+  const getFilteredMissions = () => {
+      if (missionFilter === 'available') return teamMissions.filter(m => m.status === 'open');
+      if (missionFilter === 'completed') return missions.filter(m => m.status === 'completed' || m.status === 'cancelled');
+      return missions.filter(m => m.status === 'assigned' || m.status === 'in_progress' || m.status === 'awaiting_validation');
+  };
+
+  const currentList = getFilteredMissions();
+  const hasContent = currentList.length > 0 || (missionFilter === 'active' && visibleExams.length > 0);
 
   return (
     <div className="h-full">
       {/* Missions Section */}
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm transition-colors ${activeTab === 'personal' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
-              <i className={`fa-solid ${activeTab === 'personal' ? 'fa-rocket' : 'fa-users'}`}></i>
-            </div>
-            <div>
-                <h3 className="font-black text-slate-900 text-lg tracking-tight leading-none">
-                MISSIONS
-                </h3>
-                <div className="flex gap-2 mt-1">
-                    <button 
-                        onClick={() => setActiveTab('personal')}
-                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'personal' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Personnelles
-                    </button>
-                    <span className="text-slate-300 text-[10px]">•</span>
-                    <button 
-                        onClick={() => setActiveTab('team')}
-                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'team' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Équipe {teamMissions.length > 0 && <span className="bg-emerald-100 text-emerald-600 px-1 rounded-md ml-1">{teamMissions.length}</span>}
-                    </button>
+        <div className="flex flex-col gap-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm transition-colors bg-indigo-50 text-indigo-600`}>
+                <i className="fa-solid fa-rocket"></i>
+                </div>
+                <div>
+                    <h3 className="font-black text-slate-900 text-lg tracking-tight leading-none">
+                    MISSIONS
+                    </h3>
+                    <div className="flex gap-2 mt-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                            {missionFilter === 'available' ? 'Opportunités' : missionFilter === 'completed' ? 'Historique' : 'En cours'}
+                        </span>
+                    </div>
                 </div>
             </div>
+            <button 
+                onClick={() => onNavigate && onNavigate('/missions')}
+                className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center transition-all"
+                title="Voir tout"
+            >
+                <i className="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
-          <button 
-            onClick={() => onNavigate && onNavigate('/missions')}
-            className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center transition-all"
-            title="Voir tout"
-          >
-            <i className="fa-solid fa-arrow-right"></i>
-          </button>
+
+          {/* Filter Pills */}
+          <div className="bg-slate-50 p-1 rounded-xl flex items-center justify-between">
+              <button 
+                onClick={() => setMissionFilter('available')}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${missionFilter === 'available' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                  Disponibles ({availableCount})
+              </button>
+              <button 
+                onClick={() => setMissionFilter('active')}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${missionFilter === 'active' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                  En cours ({activeCount})
+              </button>
+              <button 
+                onClick={() => setMissionFilter('completed')}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${missionFilter === 'completed' ? 'bg-white text-slate-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                  Terminées ({completedCount})
+              </button>
+          </div>
         </div>
 
         <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
           {hasContent ? (
              <>
-               {activeTab === 'personal' && visibleExams.map((exam) => (
+               {/* Show Exams only in Active tab */}
+               {missionFilter === 'active' && visibleExams.map((exam) => (
                 <div
                   key={`exam-${exam.id}`}
                   onClick={() => {
@@ -124,7 +180,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                 </div>
               ))}
 
-              {(activeTab === 'personal' ? missions : teamMissions).slice(0, 10).map((mission) => {
+              {currentList.slice(0, 10).map((mission) => {
                 // Status Logic
                 let statusLabel = "EN ATTENTE";
                 let statusColor = "text-slate-400";
@@ -169,6 +225,12 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                     progressWidth = "100%";
                     progressColor = "bg-emerald-500";
                     break;
+                  case "cancelled":
+                    statusLabel = "ANNULÉE";
+                    statusColor = "text-slate-400";
+                    progressWidth = "100%";
+                    progressColor = "bg-slate-300";
+                    break;
                   default:
                     statusLabel = "EN ATTENTE";
                     progressWidth = "0%";
@@ -197,8 +259,8 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                         </span>
                       </div>
                     </div>
-                    {/* Progress Bar only for personal missions or active team missions */}
-                    {mission.status !== 'open' && (
+                    {/* Progress Bar only for active missions */}
+                    {mission.status !== 'open' && mission.status !== 'completed' && mission.status !== 'cancelled' && (
                         <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden mt-2">
                         <div 
                             className={`h-1 rounded-full transition-all duration-500 ${progressColor}`} 
@@ -217,16 +279,16 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               })}
              </>
           ) : (
-            <div className={`h-full min-h-[200px] px-4 rounded-3xl border flex flex-col items-center justify-center text-center gap-5 ${activeTab === 'personal' ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
-              <div className={`w-16 h-16 rounded-full bg-white flex items-center justify-center text-2xl shadow-sm border shrink-0 ${activeTab === 'personal' ? 'text-emerald-500 border-emerald-50' : 'text-slate-300 border-slate-200'}`}>
-                <i className={`fa-solid ${activeTab === 'personal' ? 'fa-check' : 'fa-users-slash'}`}></i>
+            <div className={`h-full min-h-[200px] px-4 rounded-3xl border flex flex-col items-center justify-center text-center gap-5 bg-slate-50 border-slate-100`}>
+              <div className={`w-16 h-16 rounded-full bg-white flex items-center justify-center text-2xl shadow-sm border shrink-0 text-slate-300 border-slate-200`}>
+                <i className={`fa-solid ${missionFilter === 'completed' ? 'fa-check-double' : 'fa-inbox'}`}></i>
               </div>
               <div>
-                <p className={`text-base font-black uppercase tracking-tight ${activeTab === 'personal' ? 'text-emerald-900' : 'text-slate-400'}`}>
-                  {activeTab === 'personal' ? "Mission accomplie !" : "Aucune mission d'équipe"}
+                <p className={`text-base font-black uppercase tracking-tight text-slate-400`}>
+                  {missionFilter === 'available' ? "Aucune opportunité" : missionFilter === 'completed' ? "Historique vide" : "Rien en cours"}
                 </p>
-                <p className={`text-xs font-medium leading-tight italic mt-2 ${activeTab === 'personal' ? 'text-emerald-700/80' : 'text-slate-400'}`}>
-                  {activeTab === 'personal' ? "Tout est à jour. Une pause bien méritée ?" : "Revenez plus tard pour de nouvelles opportunités."}
+                <p className={`text-xs font-medium leading-tight italic mt-2 text-slate-400`}>
+                  {missionFilter === 'available' ? "Revenez plus tard pour de nouvelles missions." : "Tout est calme pour le moment."}
                 </p>
               </div>
             </div>

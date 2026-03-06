@@ -190,6 +190,13 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             <span className="uppercase">{title}</span>
             <InfoTooltip text={subtitle} />
           </h3>
+          <div className="flex items-center gap-2">
+            {notifications.filter(n => !n.is_read).length > 0 && (
+                <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">
+                    {notifications.filter(n => !n.is_read).length} Non lues
+                </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -210,7 +217,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 <div 
                     key={`${item.type}-${item.id}`}
                     onClick={() => item.link && onNavigate && onNavigate(item.link)}
-                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start ${item.link ? 'cursor-pointer hover:bg-slate-50 hover:border-slate-200' : 'border-transparent bg-white'}`}
+                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start ${item.type === 'notification' && !item.link?.includes('read') ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
                     role="article"
                 >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>

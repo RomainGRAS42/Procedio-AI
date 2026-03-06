@@ -50,6 +50,14 @@ const XPProgressBar: React.FC<XPProgressBarProps> = ({ currentXP, currentLevel }
                 XP TOTAL DANS LE RANG
               </p>
             </div>
+
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                  <i className="fa-solid fa-bolt text-amber-400 text-sm"></i>
+                  <span className="text-xl font-black text-indigo-600 leading-none">{currentXP}</span>
+              </div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">XP Total</span>
+            </div>
           </div>
 
           <div className="relative mb-2">

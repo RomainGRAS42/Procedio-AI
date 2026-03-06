@@ -1282,15 +1282,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           <div className="flex items-center gap-3 shrink-0">
-            {user.role === UserRole.TECHNICIAN && personalStats && (
-              <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100 shadow-sm">
-                <i className="fa-solid fa-bolt text-amber-400 text-lg"></i>
-                <div className="flex flex-col items-end leading-none">
-                  <span className="text-xl font-black text-indigo-600">{personalStats.xp}</span>
-                  <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">XP Total</span>
-                </div>
-              </div>
-            )}
+            {/* XP Display moved to XPProgressBar component */}
             {/* Action button moved to Navbar */}
           </div>
         </header>
