@@ -63,11 +63,11 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         // 2. Filter Notifications (System alerts: Mission Validated, Badge Awarded)
         const successNotifications = notifications.filter(n => {
             const t = n.title?.toLowerCase() || '';
-            return t.includes('validée') || t.includes('succès') || t.includes('badge') || t.includes('completed');
+            return t.includes('validée') || t.includes('succès') || t.includes('badge') || t.includes('completed') || t.includes('félicitations');
         }).map(n => {
             const isBadge = n.title?.toLowerCase().includes('badge');
-            // Extract XP value from content (e.g. "Vous avez gagné <b>50 XP</b>")
-            const xpMatch = n.content?.match(/(\d+)\s*XP/);
+            // Extract XP value from content (e.g. "Vous avez gagné <b>50 XP</b>" or "+300 XP")
+            const xpMatch = n.content?.match(/(\d+)\s*XP/) || n.title?.match(/(\d+)\s*XP/);
             const xpValue = xpMatch ? xpMatch[1] : null;
 
             return {
