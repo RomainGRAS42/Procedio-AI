@@ -98,8 +98,8 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
   }, []);
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col h-full min-h-[400px] relative z-20">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col h-full min-h-[400px] overflow-hidden relative z-20">
+      <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center text-lg">
             <i className="fa-solid fa-trophy"></i>
@@ -111,7 +111,7 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-3">
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
         {loading ? (
            [1, 2, 3, 4, 5].map((i) => (
              <div key={i} className="flex items-center gap-4 p-3 rounded-2xl border border-slate-50 animate-pulse">

@@ -179,7 +179,7 @@ const TeamPodium: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] px-8 pt-8 pb-16 border border-slate-100 shadow-sm flex flex-col gap-6 animate-fade-in relative min-h-[350px] z-30 mb-8">
+    <div className="bg-white rounded-[2.5rem] px-8 pt-8 pb-16 border border-slate-100 shadow-sm flex flex-col gap-6 animate-fade-in relative min-h-[350px] shrink-0 z-30 mb-8">
        {/* Decorative Background Container - Isolated for overflow-hidden */}
        <div className="absolute inset-0 overflow-hidden rounded-[2.5rem] pointer-events-none">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50/30 to-transparent rounded-full blur-3xl -z-10"></div>

@@ -1430,7 +1430,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* MANAGER ROW 2: 3 Columns Layout (Review Center | Team Podium | Activity) */}
             <div className="grid grid-cols-12 gap-8">
               {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 h-full">
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col overflow-hidden">
                 <ReviewCenterWidget
                   pendingSuggestions={pendingSuggestions || []}
                   masteryClaims={masteryClaims || []}
@@ -1453,7 +1453,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Col 2: Podium (TeamPodium) - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-12">
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-12 overflow-hidden">
                 <TeamPodium />
                 <TechnicianRankingWidget 
                   onNavigate={onNavigate}
@@ -1461,7 +1461,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Col 3: Missions d'Équipe - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 flex flex-col overflow-hidden h-full">
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col overflow-hidden">
                 <MissionsWidget
                   activeMissions={activeMissions}
                   userRole={user.role}

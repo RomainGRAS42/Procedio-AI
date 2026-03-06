@@ -166,8 +166,8 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   }, [allItems, selectedType, selectedUser]);
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[500px] h-full">
-      <div className="flex flex-col gap-6 mb-6">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[500px] h-full overflow-hidden">
+      <div className="flex flex-col gap-6 mb-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
@@ -227,7 +227,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
         </div>
       </div>
 
-      <div className="space-y-8 flex-1 overflow-y-auto pr-2 max-h-[600px] scrollbar-thin">
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-3 pb-4">
         {Object.entries(groupedItems).length > 0 ? (
           Object.entries(groupedItems).map(([dateLabel, groupItems]) => (
             <div key={dateLabel} className="space-y-3">
