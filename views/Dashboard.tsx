@@ -1339,6 +1339,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   notifications={systemNotifications}
                   onNavigate={onNavigate}
                   onMarkAsRead={(id) => markAsRead(id)}
+                  userRole={user.role}
                 />
               </div>
 

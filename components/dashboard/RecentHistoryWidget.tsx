@@ -10,6 +10,7 @@ interface RecentHistoryWidgetProps {
   title?: string;
   subtitle?: string;
   onMarkAsRead?: (id: string) => void;
+  userRole?: string; // Added userRole prop
 }
 
 const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
@@ -19,7 +20,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
   onNavigate,
   onMarkAsRead,
   title = "Mon Fil d'Activité",
-  subtitle = "Vos dernières actions et alertes importantes."
+  subtitle = "Vos dernières actions et alertes importantes.",
+  userRole
 }) => {
   // Combine activities and notifications into a single feed
   const feedItems = useMemo(() => {
@@ -27,6 +29,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
     const isSuccessJournal = title.includes("Succès");
 
     if (isSuccessJournal) {
+        // ... (existing SuccessJournal logic) ...
         // 1. Filter Activities (User actions)
         const successActivities = activities.filter(a => {
              const content = a.content?.toLowerCase() || '';
@@ -126,6 +129,12 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         };
       }),
       ...activities.map(a => {
+        // FILTERING LOGIC: Hide Manager-specific activities from Technician
+        if (userRole === 'technician' || userRole === 'TECHNICIAN') {
+            if (a.title?.includes('CLAIM_MASTERY')) return null; // "Prise en charge" (Manager view of tech action)
+            // Add other manager-only activity types here if needed
+        }
+
         let icon = 'fa-check';
         let color = 'text-slate-500';
         let bg = 'bg-slate-50';
@@ -134,11 +143,13 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let content = a.content;
 
         if (a.title?.includes('CONSULTATION')) {
+             // ... existing logic ...
             icon = 'fa-eye';
             color = 'text-blue-500';
             bg = 'bg-blue-50';
             title = 'Consultation';
         } else if (a.title?.includes('MISSION_EXPERTISE_LAUNCH')) {
+            // ... existing logic ...
             icon = 'fa-bullhorn';
             color = 'text-rose-600';
             bg = 'bg-rose-100';
@@ -155,6 +166,10 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             bg = 'bg-indigo-50';
             title = 'Mission';
         } else if (a.title?.includes('CLAIM')) {
+             // CLAIM is usually "Prise en charge" - Technicians might see their own claims? 
+             // Or Manager sees "Tech X claimed mission Y".
+             // If userRole is tech, they probably know they claimed it, so maybe hide or rephrase?
+             // Leaving as is for now unless specified.
             icon = 'fa-hand-holding-hand';
             color = 'text-emerald-500';
             bg = 'bg-emerald-50';
@@ -192,7 +207,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
 
     // Sort by date desc and limit
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
-  }, [activities, notifications, title]);
+  }, [activities, notifications, title, userRole]);
 
   return (
     <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col h-full min-h-[300px]">
