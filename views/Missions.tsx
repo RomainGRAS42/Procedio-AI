@@ -489,6 +489,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                 : "Statut mis à jour.",
           type: "success",
         });
+
+        // Close overlay if completed or submitted
+        if (newStatus === 'completed' || newStatus === 'awaiting_validation') {
+            setSelectedMission(null);
+        }
       }
 
       setCompletingMission(null);
@@ -1517,6 +1522,37 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                             Selon la complexité
                           </p>
+                        </div>
+                      </div>
+
+                      {/* Mission Types Legend */}
+                      <div className="pt-4 mt-4 border-t border-slate-50 space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-sm">
+                                <i className="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Mission Solo</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attribuée à vous seul</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
+                                <i className="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Mission d'Équipe</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Collaborative</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-sm">
+                                <i className="fa-solid fa-trophy"></i>
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Défi</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compétition ouverte</p>
+                            </div>
                         </div>
                       </div>
                     </div>

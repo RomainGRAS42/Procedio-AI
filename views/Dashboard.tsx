@@ -950,9 +950,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         .in("status", statuses)
         .order("created_at", { ascending: false });
 
-      // For Technician, fetch assigned to them OR team/challenge missions
+      // For Technician, fetch assigned to them OR team/challenge missions OR any open mission available to grab
       if (user.role === UserRole.TECHNICIAN) {
-        query = query.or(`assigned_to.eq.${user.id},mission_type.in.("team","challenge")`);
+        query = query.or(`assigned_to.eq.${user.id},mission_type.in.("team","challenge"),status.eq.open`);
       }
 
       const { data, error } = await query;
@@ -1343,7 +1343,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
                 <PilotCenterTechWidget
                   missions={activeMissions.filter((m) => m.assigned_to === user.id)}
-                  teamMissions={activeMissions.filter(m => (m.mission_type === 'team' || m.mission_type === 'challenge') && m.status === 'open')}
+                  teamMissions={activeMissions.filter(m => m.status === 'open')}
                   exams={approvedExams}
                   activities={activities}
                   loading={loadingMissions || loadingActivities}
