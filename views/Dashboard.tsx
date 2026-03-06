@@ -912,7 +912,24 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (user.role === UserRole.TECHNICIAN) {
         // Fetch User's activities OR Team Launches (Public)
-        query = query.or(`user_id.eq.${user.id},title.ilike.MISSION_%_LAUNCH`);
+        // AND EXCLUDE "Prise en charge" (CLAIM_MASTERY) which are manager alerts
+        // Actually, the easiest way is to filter strictly by what TECHNICIANS should see:
+        // 1. Their own activities (user_id = me)
+        // 2. Public announcements (MISSION_%_LAUNCH)
+        // 3. Team achievements (maybe?)
+        
+        // Let's refine the query for Technicians to be safer
+        query = supabase
+            .from("notes")
+            .select(`
+                id, 
+                title, 
+                content, 
+                created_at, 
+                user:user_id (first_name, last_name)
+            `)
+            .or(`user_id.eq.${user.id},title.ilike.MISSION_%_LAUNCH`)
+            .order("created_at", { ascending: false });
       }
 
       const { data, error } = await query.limit(20);
