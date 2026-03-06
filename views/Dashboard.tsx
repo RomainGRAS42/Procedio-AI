@@ -1338,6 +1338,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   loading={loadingActivities}
                   notifications={systemNotifications}
                   onNavigate={onNavigate}
+                  onMarkAsRead={(id) => markAsRead(id)}
                 />
               </div>
 

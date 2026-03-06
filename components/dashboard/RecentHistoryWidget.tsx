@@ -9,6 +9,7 @@ interface RecentHistoryWidgetProps {
   onNavigate?: (path: string) => void;
   title?: string;
   subtitle?: string;
+  onMarkAsRead?: (id: string) => void;
 }
 
 const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
@@ -16,6 +17,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
   loading,
   notifications,
   onNavigate,
+  onMarkAsRead,
   title = "Mon Fil d'Activité",
   subtitle = "Vos dernières actions et alertes importantes."
 }) => {
@@ -269,7 +271,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
 
                     {/* CONTENT */}
                     <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
+                        <div className="flex justify-between items-start mb-1 pr-8">
                             <span className={`text-[10px] font-black uppercase tracking-widest ${badgeConfig.color}`}>
                                 {item.type === 'notification' ? item.title : badgeConfig.label}
                             </span>
@@ -278,17 +280,33 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                             </span>
                         </div>
                         
-                        <p className="text-xs font-medium text-slate-600 leading-snug line-clamp-2" 
+                        <p className="text-xs font-medium text-slate-600 leading-snug line-clamp-2 pr-8" 
                            dangerouslySetInnerHTML={{ __html: item.content || '' }}
                         />
                     </div>
 
-                    {/* XP PILL (If relevant) */}
+                    {/* XP PILL (If relevant - and not overlapped by hover action) */}
                     {(item.type === 'notification' && item.content?.includes('XP')) && (
-                        <div className="shrink-0 flex flex-col items-end justify-center">
+                        <div className="shrink-0 flex flex-col items-end justify-center group-hover:opacity-0 transition-opacity">
                              <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[9px] font-black">
                                 +50 XP
                              </span>
+                        </div>
+                    )}
+                    
+                    {/* HOVER ACTIONS (Mark as Read) */}
+                    {item.type === 'notification' && !item.link?.includes('read') && onMarkAsRead && (
+                        <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkAsRead(item.id);
+                                }}
+                                className="w-8 h-8 rounded-full bg-white shadow-md border border-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                                title="Marquer comme lu"
+                            >
+                                <i className="fa-solid fa-check"></i>
+                            </button>
                         </div>
                     )}
                 </div>
