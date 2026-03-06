@@ -284,7 +284,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   const uniqueNew = newBadgesForUI.filter(b => !existingIds.has(b.badges.id));
                   return [...prev, ...uniqueNew];
                });
- 
+
                // 2. Background Sync
                const newBadgesInserts = badgesDefs.map(def => ({
                  user_id: user.id,
@@ -1245,7 +1245,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   if (!user) return <LoadingState />;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20">
+    <div className="h-screen bg-[#F8FAFC] flex flex-col overflow-hidden">
       <CustomToast
         visible={!!toast}
         message={toast?.message || ""}
@@ -1253,8 +1253,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         onClose={() => setToast(null)}
       />
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col min-h-0 animate-fade-in">
+        <header className="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
           <div className="space-y-1 shrink-0">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               Bonjour,
@@ -1308,127 +1308,129 @@ const Dashboard: React.FC<DashboardProps> = ({
         </header>
 
         {user.role === UserRole.TECHNICIAN ? (
-          <div className="grid grid-cols-12 gap-y-4 gap-x-8">
-            {/* Barre de progression XP avec style unifié */}
-            <div className="col-span-12 mt-6 mb-4">
-              {loadingPersonalStats || !personalStats ? (
-                <div className="w-full h-32 bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm flex flex-col justify-center animate-pulse">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-full"></div>
-                    <div className="space-y-2">
-                      <div className="h-6 w-32 bg-slate-100 rounded-full"></div>
-                      <div className="h-4 w-48 bg-slate-100 rounded-full"></div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-12 gap-y-4 gap-x-8 pb-20">
+              {/* Barre de progression XP avec style unifié */}
+              <div className="col-span-12 mt-6 mb-4">
+                {loadingPersonalStats || !personalStats ? (
+                  <div className="w-full h-32 bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm flex flex-col justify-center animate-pulse">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-slate-100 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-32 bg-slate-100 rounded-full"></div>
+                        <div className="h-4 w-48 bg-slate-100 rounded-full"></div>
+                      </div>
                     </div>
+                    <div className="h-4 w-full bg-slate-100 rounded-full"></div>
                   </div>
-                  <div className="h-4 w-full bg-slate-100 rounded-full"></div>
-                </div>
-              ) : (
-                <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
-              )}
-            </div>
-
-            {/* ROW 2: Action & Stats Grid */}
-            <div className="col-span-12 grid grid-cols-12 gap-8">
-              {/* Message du Manager (Full Width Above Grid) */}
-              <div className="col-span-12">
-                <AnnouncementWidget
-                  user={user}
-                  announcement={announcement}
-                  isRead={isRead}
-                  handleMarkAsRead={handleMarkAsRead}
-                  handleSaveAnnouncement={handleUpdateAnnouncement}
-                  loadingAnnouncement={loadingAnnouncement}
-                  saving={saving}
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                  editContent={editContent}
-                  setEditContent={setEditContent}
-                  requiresConfirmation={requiresConfirmation}
-                  setRequiresConfirmation={setRequiresConfirmation}
-                  formatDate={(d) => new Date(d).toLocaleDateString()}
-                  compact={true} 
-                />
+                ) : (
+                  <XPProgressBar currentXP={personalStats.xp} currentLevel={personalStats.level} />
+                )}
               </div>
 
-              {/* 1. Mon Fil d'Activité (LEFT - 50%) */}
-              <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
-                <RecentHistoryWidget
-                  activities={activities}
-                  loading={loadingActivities}
-                  notifications={systemNotifications}
-                  onNavigate={onNavigate}
-                  onMarkAsRead={(id) => markAsRead(id)}
-                  userRole={user.role}
-                />
-              </div>
-
-              {/* 2. Mes Missions (RIGHT - 50%) */}
-              <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
-                <PilotCenterTechWidget
-                  missions={activeMissions.filter((m) => m.assigned_to === user.id)}
-                  teamMissions={activeMissions.filter(m => m.status === 'open')}
-                  exams={approvedExams}
-                  activities={activities}
-                  loading={loadingMissions || loadingActivities}
-                  onNavigate={onNavigate}
-                  onOpenExam={(exam) => {
-                      setActiveQuizRequest(exam);
-                      setShowDashboardQuiz(true);
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* ROW 3: Trophées | Maitrise | Journal (3 cols) */}
-            <div className="col-span-12 grid grid-cols-12 gap-8">
-                {/* Mes Trophées */}
-                <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
-                  <BadgesWidget
-                    earnedBadges={earnedBadges}
-                    totalConsultations={personalStats?.consultations || 0}
-                    totalSuggestions={personalStats?.suggestions || 0}
-                    totalMissions={personalStats?.missions || 0}
-                    onNavigate={onNavigate}
+              {/* ROW 2: Action & Stats Grid */}
+              <div className="col-span-12 grid grid-cols-12 gap-8">
+                {/* Message du Manager (Full Width Above Grid) */}
+                <div className="col-span-12">
+                  <AnnouncementWidget
+                    user={user}
+                    announcement={announcement}
+                    isRead={isRead}
+                    handleMarkAsRead={handleMarkAsRead}
+                    handleSaveAnnouncement={handleUpdateAnnouncement}
+                    loadingAnnouncement={loadingAnnouncement}
+                    saving={saving}
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
+                    editContent={editContent}
+                    setEditContent={setEditContent}
+                    requiresConfirmation={requiresConfirmation}
+                    setRequiresConfirmation={setRequiresConfirmation}
+                    formatDate={(d) => new Date(d).toLocaleDateString()}
+                    compact={true} 
                   />
                 </div>
 
-                {/* Maitrise Experte */}
-                <div className="col-span-12 lg:col-span-4">
-                     {personalStats && <MasteryWidget personalStats={personalStats} />}
+                {/* 1. Mon Fil d'Activité (LEFT - 50%) */}
+                <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
+                  <RecentHistoryWidget
+                    activities={activities}
+                    loading={loadingActivities}
+                    notifications={systemNotifications}
+                    onNavigate={onNavigate}
+                    onMarkAsRead={(id) => markAsRead(id)}
+                    userRole={user.role}
+                  />
                 </div>
 
-                {/* Journal des Succès */}
-                <div className="col-span-12 lg:col-span-4">
-                     <RecentHistoryWidget
-                      activities={activities}
-                      loading={loadingActivities}
-                      notifications={systemNotifications}
+                {/* 2. Mes Missions (RIGHT - 50%) */}
+                <div className="col-span-12 lg:col-span-6 lg:h-[600px]">
+                  <PilotCenterTechWidget
+                    missions={activeMissions.filter((m) => m.assigned_to === user.id)}
+                    teamMissions={activeMissions.filter(m => m.status === 'open')}
+                    exams={approvedExams}
+                    activities={activities}
+                    loading={loadingMissions || loadingActivities}
+                    onNavigate={onNavigate}
+                    onOpenExam={(exam) => {
+                        setActiveQuizRequest(exam);
+                        setShowDashboardQuiz(true);
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* ROW 3: Trophées | Maitrise | Journal (3 cols) */}
+              <div className="col-span-12 grid grid-cols-12 gap-8">
+                  {/* Mes Trophées */}
+                  <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
+                    <BadgesWidget
+                      earnedBadges={earnedBadges}
+                      totalConsultations={personalStats?.consultations || 0}
+                      totalSuggestions={personalStats?.suggestions || 0}
+                      totalMissions={personalStats?.missions || 0}
                       onNavigate={onNavigate}
-                      title="Journal des Succès"
-                      subtitle="Vos victoires, badges et missions validées."
                     />
-                </div>
-            </div>
+                  </div>
 
-            {/* ROW 5: RSS (Full Width) */}
-            <div className="col-span-12 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
-              <RSSWidget user={user} />
+                  {/* Maitrise Experte */}
+                  <div className="col-span-12 lg:col-span-4">
+                       {personalStats && <MasteryWidget personalStats={personalStats} />}
+                  </div>
+
+                  {/* Journal des Succès */}
+                  <div className="col-span-12 lg:col-span-4">
+                       <RecentHistoryWidget
+                        activities={activities}
+                        loading={loadingActivities}
+                        notifications={systemNotifications}
+                        onNavigate={onNavigate}
+                        title="Journal des Succès"
+                        subtitle="Vos victoires, badges et missions validées."
+                      />
+                  </div>
+              </div>
+
+              {/* ROW 5: RSS (Full Width) */}
+              <div className="col-span-12 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
+                <RSSWidget user={user} />
+              </div>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-8">
+          <div className="flex-1 flex flex-col min-h-0 gap-6">
             {/* MANAGER ROW 0: Team Synergy (Top Priority) */}
-            <div className="w-full">
+            <div className="w-full shrink-0">
               <TeamSynergyWidget />
             </div>
 
             {/* MANAGER ROW 1: KPIs Summary */}
-            <div className="w-full">
+            <div className="w-full shrink-0">
               <StatsSummaryWidget stats={filteredStats} orientation="horizontal" />
             </div>
 
             {/* MANAGER ROW 2: 3 Columns Layout (Review Center | Team Podium | Activity) */}
-            <div className="grid grid-cols-12 gap-8">
+            <div className="flex-1 min-h-0 grid grid-cols-12 gap-8">
               {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full flex flex-col overflow-hidden">
                 <ReviewCenterWidget
@@ -1453,7 +1455,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Col 2: Podium (TeamPodium) - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-12 overflow-hidden">
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-6 overflow-hidden">
                 <TeamPodium />
                 <TechnicianRankingWidget 
                   onNavigate={onNavigate}
@@ -1473,9 +1475,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* MANAGER ROW 3: RSS (Veille Info) */}
-            <div className="w-full">
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px]">
-                <RSSWidget user={user} />
+            {/* Keeping it shrink-0 but it might require scrolling if screen is small */}
+            <div className="w-full shrink-0">
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 h-[200px] overflow-hidden relative">
+                 <div className="absolute inset-0 overflow-y-auto">
+                    <RSSWidget user={user} />
+                 </div>
               </div>
             </div>
           </div>

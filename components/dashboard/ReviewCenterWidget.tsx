@@ -166,7 +166,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   }, [allItems, selectedType, selectedUser]);
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative min-h-[500px] h-full overflow-hidden">
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full overflow-hidden">
       <div className="flex flex-col gap-6 mb-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
