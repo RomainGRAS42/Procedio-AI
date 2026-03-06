@@ -107,9 +107,16 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                 <i className="fa-solid fa-rocket"></i>
                 </div>
                 <div>
-                    <h3 className="font-black text-slate-900 text-lg tracking-tight leading-none">
-                    MISSIONS
-                    </h3>
+                    <div className="flex items-center gap-3">
+                        <h3 className="font-black text-slate-900 text-lg tracking-tight leading-none">
+                        MISSIONS
+                        </h3>
+                        {availableCount > 0 && (
+                            <span className="animate-pulse px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase tracking-widest border border-emerald-200">
+                                Nouvelle mission disponible
+                            </span>
+                        )}
+                    </div>
                     <div className="flex gap-2 mt-1">
                         <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
                             {missionFilter === 'available' ? 'Opportunités' : missionFilter === 'completed' ? 'Historique' : 'En cours'}

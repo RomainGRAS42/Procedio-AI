@@ -80,7 +80,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 color: isBadge ? 'text-amber-600' : 'text-emerald-500',
                 bg: isBadge ? 'bg-amber-100' : 'bg-emerald-50',
                 link: n.link,
-                xp: xpValue
+                xp: xpValue,
+                isRead: n.read
             };
         });
         
@@ -125,7 +126,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             color,
             bg,
             link: n.link,
-            xp
+            xp,
+            isRead: n.read
         };
       }),
       ...activities.map(a => {
@@ -201,7 +203,8 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             icon,
             color,
             bg,
-            link
+            link,
+            isRead: true // Activities are considered read by default
         };
       }).filter(Boolean) as any[]
     ];
@@ -286,13 +289,26 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     }
                 })();
 
+                const isUnread = item.type === 'notification' && !item.isRead;
+
                 return (
                 <div 
                     key={`${item.type}-${item.id}`}
                     onClick={() => item.link && onNavigate && onNavigate(item.link)}
-                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${item.type === 'notification' && !notifications.find(n => n.id === item.id)?.read ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
+                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${
+                        isUnread 
+                            ? 'bg-white border-indigo-100 shadow-sm' 
+                            : item.link 
+                                ? 'cursor-pointer hover:bg-slate-50 border-slate-100 bg-white' 
+                                : 'border-transparent bg-slate-50/30'
+                    }`}
                     role="article"
                 >
+                    {/* Unread Indicator */}
+                    {isUnread && (
+                        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                    )}
+
                     {/* ICON / BADGE */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${badgeConfig.bg} ${badgeConfig.border} ${badgeConfig.color}`}>
                         <i className={`fa-solid ${badgeConfig.icon}`}></i>
@@ -309,7 +325,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                             </span>
                         </div>
                         
-                        <p className="text-xs font-medium text-slate-600 leading-snug line-clamp-2 pr-8" 
+                        <p className={`text-xs leading-snug line-clamp-2 pr-8 ${isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-500'}`} 
                            dangerouslySetInnerHTML={{ __html: item.content || '' }}
                         />
                     </div>

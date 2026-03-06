@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '../lib/supabase';
 
 interface MasteryResultDetailModalProps {
   isOpen: boolean;
@@ -12,11 +13,39 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
   const [isReferentLoading, setIsReferentLoading] = React.useState(false);
   const [currentReferentId, setCurrentReferentId] = React.useState<string | null>(null);
   const [isRejecting, setIsRejecting] = React.useState(false);
+  const [xpReward, setXpReward] = React.useState<number>(0);
+
+  const score = claim?.score || 0;
 
   React.useEffect(() => {
     if (claim?.procedure_id) {
        // Check if this procedure already has a referent
     }
+
+    const fetchExpectedXP = async () => {
+        if (!claim?.user_id || !claim?.procedure_id) return;
+        
+        // Default logic
+        let calculatedXp = score === 100 ? 100 : score >= 85 ? 75 : 50;
+
+        // Check for linked mission
+        const { data: linkedMission } = await supabase
+            .from('missions')
+            .select('xp_reward, status')
+            .eq('assigned_to', claim.user_id)
+            .eq('procedure_id', claim.procedure_id)
+            .neq('status', 'cancelled')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (linkedMission && linkedMission.xp_reward) {
+            calculatedXp = linkedMission.xp_reward;
+        }
+        setXpReward(calculatedXp);
+    };
+
+    fetchExpectedXP();
   }, [claim]);
 
   if (!isOpen || !claim) return null;
@@ -183,10 +212,10 @@ const MasteryResultDetailModal: React.FC<MasteryResultDetailModalProps> = ({ isO
                       onClick={() => handleReferentAction('assign')}
                       disabled={isReferentLoading || isRejecting}
                       className="px-6 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-all flex items-center gap-2"
-                      title="Valider et nommer cet utilisateur comme Référent"
+                      title={`Valider et nommer cet utilisateur comme Référent (+${xpReward} XP)`}
                   >
                       {isReferentLoading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-check"></i>}
-                      Valider & Nommer Référent
+                      Valider & Nommer Référent <span className="ml-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] shadow-sm">+{xpReward} XP</span>
                   </button>
                 </>
              )}
