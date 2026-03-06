@@ -89,6 +89,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
   const getFilteredMissions = () => {
       if (missionFilter === 'available') return teamMissions.filter(m => m.status === 'open');
       if (missionFilter === 'completed') return missions.filter(m => m.status === 'completed' || m.status === 'cancelled');
+      // Fix: Ensure we catch ALL active statuses including 'assigned'
       return missions.filter(m => m.status === 'assigned' || m.status === 'in_progress' || m.status === 'awaiting_validation');
   };
 

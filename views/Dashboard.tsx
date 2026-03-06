@@ -936,8 +936,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       // Manager: open, assigned, in_progress, awaiting_validation (completed kept for team view only if recent?)
       
       const statuses = user.role === UserRole.TECHNICIAN 
-        ? ["open", "assigned", "in_progress", "awaiting_validation"] 
-        : ["open", "assigned", "in_progress", "awaiting_validation"];
+        ? ["open", "assigned", "in_progress", "awaiting_validation", "completed", "cancelled"] 
+        : ["open", "assigned", "in_progress", "awaiting_validation", "completed", "cancelled"];
 
       let query = supabase
         .from("missions")
@@ -952,6 +952,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       // For Technician, fetch assigned to them OR team/challenge missions OR any open mission available to grab
       if (user.role === UserRole.TECHNICIAN) {
+        // Updated: Also include completed/cancelled missions for History Tab
         query = query.or(`assigned_to.eq.${user.id},mission_type.in.("team","challenge"),status.eq.open`);
       }
 
