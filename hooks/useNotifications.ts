@@ -111,6 +111,7 @@ export const useNotifications = (user: User) => {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
+        .eq("read", false) // Only fetch unread notifications
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -204,34 +205,69 @@ export const useNotifications = (user: User) => {
   };
 
   const handleClearAll = async () => {
-    if (user.role === UserRole.TECHNICIAN) {
-      await supabase.from('suggestion_responses').update({ read: true }).eq('user_id', user.id);
-      await supabase.from('notifications').update({ read: true }).eq('user_id', user.id);
-      setSuggestionResponses([]);
-      setSystemNotifications([]);
-      await supabase.from('notes').delete().in('title', ["FLASH_NOTE_VALIDATED", "FLASH_NOTE_REJECTED"]).eq('user_id', user.id);
-      setFlashNoteNotifications([]);
-    } else {
-      const unviewedLogIds = readLogs.map(l => l.id);
-      if (unviewedLogIds.length > 0) {
-        await supabase.from("notes").update({ viewed: true }).in("id", unviewedLogIds);
+    try {
+      if (user.role === UserRole.TECHNICIAN) {
+        // Bulk update/delete for Technician
+        await supabase
+          .from('suggestion_responses')
+          .update({ read: true })
+          .eq('user_id', user.id)
+          .eq('read', false);
+          
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('user_id', user.id)
+          .eq('read', false);
+          
+        await supabase
+          .from('notes')
+          .delete()
+          .in('title', ["FLASH_NOTE_VALIDATED", "FLASH_NOTE_REJECTED"])
+          .eq('user_id', user.id);
+
+        setSuggestionResponses([]);
+        setSystemNotifications([]);
+        setFlashNoteNotifications([]);
+      } else {
+        // Bulk update/delete for Manager
+        // 1. Logs
+        await supabase
+          .from("notes")
+          .update({ viewed: true })
+          .eq('user_id', user.id)
+          .eq('viewed', false)
+          .or('title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%,title.ilike.CLAIM_MASTERY_%');
+
+        // 2. Suggestions (Global queue)
+        // Only mark displayed ones as viewed or all pending?
+        // To be safe and ensure "Clear All" really clears the badge:
+        await supabase
+          .from("procedure_suggestions")
+          .update({ viewed: true })
+          .eq("status", "pending")
+          .eq("viewed", false);
+
+        // 3. System Notifications
+        await supabase
+          .from("notifications")
+          .update({ read: true })
+          .eq("user_id", user.id)
+          .eq("read", false);
+
+        // 4. Flash Notes
+        await supabase
+          .from("notes")
+          .delete()
+          .eq("title", "FLASH_NOTE_SUGGESTION");
+
+        setReadLogs([]);
+        setPendingSuggestions([]);
+        setSystemNotifications([]);
+        setFlashNoteNotifications([]);
       }
-      setReadLogs([]);
-      const unviewedSuggestionIds = pendingSuggestions.map(s => s.id);
-      if (unviewedSuggestionIds.length > 0) {
-        await supabase.from("procedure_suggestions").update({ viewed: true }).in("id", unviewedSuggestionIds);
-      }
-      setPendingSuggestions([]);
-      const systemNotifIds = systemNotifications.map(n => n.id);
-      if (systemNotifIds.length > 0) {
-        await supabase.from("notifications").update({ read: true }).in("id", systemNotifIds);
-      }
-      setSystemNotifications([]);
-      const flashNotifIds = flashNoteNotifications.map(n => n.id);
-      if (flashNotifIds.length > 0) {
-        await supabase.from("notes").delete().in("id", flashNotifIds);
-      }
-      setFlashNoteNotifications([]);
+    } catch (err) {
+      console.error("Error clearing notifications:", err);
     }
   };
 

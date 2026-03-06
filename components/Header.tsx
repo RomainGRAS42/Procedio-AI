@@ -213,8 +213,8 @@ const Header: React.FC<HeaderProps> = ({
             aria-label={`${totalNotifs} notifications`}>
             <i className={`fa-solid fa-bell ${totalNotifs > 0 ? "animate-bounce" : ""}`}></i>
             {totalNotifs > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
-                {totalNotifs}
+              <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 bg-rose-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                {totalNotifs > 99 ? '99+' : totalNotifs}
               </span>
             )}
           </button>
