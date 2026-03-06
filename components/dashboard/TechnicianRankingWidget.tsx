@@ -26,43 +26,51 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("DEBUG: TechnicianRankingWidget mounted - v4 (Split Queries)");
     const fetchRanking = async () => {
       try {
         setLoading(true);
-        // 1. Fetch top technicians by XP
-        const { data: profiles, error } = await supabase
+        
+        // 1. Fetch top technicians (profiles only) to avoid embedding issues
+        const { data: profiles, error: profileError } = await supabase
           .from('user_profiles')
-          .select(`
-            id, 
-            first_name, 
-            last_name, 
-            avatar_url, 
-            xp_points, 
-            level,
-            user_badges:user_badges!user_badges_user_id_fkey (
-              created_at,
-              badges (
-                name,
-                icon,
-                category
-              )
-            )
-          `)
-          .neq('role', 'manager') // Show all non-managers (Technicians)
+          .select('id, first_name, last_name, avatar_url, xp_points, level')
+          .neq('role', 'manager') 
           .order('xp_points', { ascending: false })
           .limit(10);
 
-        if (error) throw error;
+        if (profileError) throw profileError;
 
-        if (profiles) {
-          const ranked: RankedUser[] = profiles.map((p: any) => {
-            // Determine "Top Badge" (e.g. latest awarded or highest level)
-            // Here we pick the most recent one for now, or maybe the one with highest requirement?
-            // Let's go with most recent.
-            const sortedBadges = (p.user_badges || [])
-                .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        if (profiles && profiles.length > 0) {
+           // 2. Fetch badges for these users separately
+           const userIds = profiles.map(p => p.id);
+           const { data: badgesData, error: badgeError } = await supabase
+             .from('user_badges')
+             .select(`
+               user_id,
+               created_at,
+               badges (
+                 name,
+                 icon,
+                 category
+               )
+             `)
+             .in('user_id', userIds);
+
+           if (badgeError) {
+             console.warn("Error fetching badges:", badgeError);
+             // Continue without badges if error
+           }
+
+           // 3. Merge data
+           const ranked: RankedUser[] = profiles.map((p: any) => {
+            const userBadges = badgesData?.filter((b: any) => b.user_id === p.id) || [];
             
-            const bestBadge = sortedBadges.length > 0 ? sortedBadges[0].badges : null;
+            const sortedBadges = userBadges.sort((a: any, b: any) => 
+                new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+            );
+            
+            const bestBadge = sortedBadges.length > 0 ? (Array.isArray(sortedBadges[0].badges) ? sortedBadges[0].badges[0] : sortedBadges[0].badges) : null;
 
             return {
               id: p.id,
@@ -76,6 +84,8 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
           });
 
           setUsers(ranked);
+        } else {
+            setUsers([]);
         }
       } catch (err) {
         console.error("Error fetching ranking:", err);
