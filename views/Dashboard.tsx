@@ -929,6 +929,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 user:user_id (first_name, last_name)
             `)
             .or(`user_id.eq.${user.id},title.ilike.MISSION_%_LAUNCH`)
+            .not("title", "ilike", "CLAIM_MASTERY%") // Explicitly exclude CLAIM_MASTERY
+            .not("title", "ilike", "MISSION_CLAIM%") // Explicitly exclude MISSION_CLAIM
             .order("created_at", { ascending: false });
       }
 
