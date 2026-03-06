@@ -766,16 +766,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         color: "text-rose-600",
         bg: "bg-rose-50",
         icon: "fa-triangle-exclamation",
-        label: "Urgent",
+        label: "Urgente",
       },
-      high: { color: "text-orange-600", bg: "bg-orange-50", icon: "fa-fire", label: "Prioritaire" },
+      high: { color: "text-orange-600", bg: "bg-orange-50", icon: "fa-fire", label: "Haute" },
       medium: {
         color: "text-indigo-600",
         bg: "bg-indigo-50",
         icon: "fa-calendar",
-        label: "Standard",
+        label: "Moyenne",
       },
-      low: { color: "text-slate-500", bg: "bg-slate-50", icon: "fa-clock", label: "Libre" },
+      low: { color: "text-slate-500", bg: "bg-slate-50", icon: "fa-clock", label: "Faible" },
     }[urgency];
 
     return (
@@ -1135,7 +1135,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
           <div className="hidden md:block">
             <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">
-              Urgence
+              Priorité
             </span>
             <UrgencyBadge urgency={mission.urgency} />
           </div>
@@ -1475,7 +1475,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                             Priorité Haute
                           </p>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Action sous 48h
+                            Important
                           </p>
                         </div>
                       </div>
