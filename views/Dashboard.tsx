@@ -36,6 +36,7 @@ import AnnouncementWidget from "../components/dashboard/AnnouncementWidget";
 import ReviewCenterWidget from "../components/dashboard/ReviewCenterWidget";
 import PilotCenterTechWidget from "../components/dashboard/PilotCenterTechWidget";
 import RecentHistoryWidget from "../components/dashboard/RecentHistoryWidget";
+import TechnicianRankingWidget from "../components/dashboard/TechnicianRankingWidget";
 import RSSWidget from "../components/RSSWidget";
 import MasteryQuizModal from "../components/MasteryQuizModal";
 import MasteryResultDetailModal from "../components/MasteryResultDetailModal";
@@ -1463,17 +1464,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
 
-              {/* Col 3: Pouls de l'Équipe (Activity) - 4/12 */}
+              {/* Col 3: Classement Techniciens (Leaderboard) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full">
-                <RecentHistoryWidget
-                  activities={activities}
-                  loading={loadingActivities}
-                  notifications={systemNotifications}
+                <TechnicianRankingWidget 
                   onNavigate={onNavigate}
-                  onMarkAsRead={(id) => markAsRead(id)}
-                  userRole={user.role}
-                  title="Mon Fil d'Activité"
-                  subtitle="Vos alertes et l'activité de l'équipe."
                 />
               </div>
             </div>
