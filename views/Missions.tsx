@@ -1140,6 +1140,16 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             <UrgencyBadge urgency={mission.urgency} />
           </div>
 
+          <div className="hidden md:block">
+             <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">
+                Gain XP
+             </span>
+             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 w-fit">
+                <i className="fa-solid fa-medal text-indigo-500 text-[10px]"></i>
+                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{mission.xp_reward} XP</span>
+             </div>
+          </div>
+
           <div className="hidden sm:block">
             <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">
               Statut
