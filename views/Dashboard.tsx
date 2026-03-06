@@ -911,7 +911,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         .order("created_at", { ascending: false });
 
       if (user.role === UserRole.TECHNICIAN) {
-        query = query.eq("user_id", user.id);
+        // Fetch User's activities OR Team Launches (Public)
+        query = query.or(`user_id.eq.${user.id},title.ilike.MISSION_%_LAUNCH`);
       }
 
       const { data, error } = await query.limit(20);
@@ -1070,6 +1071,18 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       setActiveMissions((prev) => [...prev, data]);
       setToast({ message: "Mission créée avec succès !", type: "success" });
+
+      // LOG PUBLIC ACTIVITY (For Team Feed)
+      if (missionData.mission_type === 'team' || missionData.mission_type === 'challenge') {
+          await supabase.from("notes").insert({
+            user_id: user.id,
+            title: missionData.mission_type === 'challenge' ? 'MISSION_CHALLENGE_LAUNCH' : 'MISSION_TEAM_LAUNCH',
+            content: `a lancé ${missionData.mission_type === 'challenge' ? 'un défi' : 'une mission d\'équipe'} : "${missionData.title}"`,
+            category: "mission_log",
+            tags: ["mission_launch", "public"],
+            status: "public",
+          });
+      }
     } catch (err: any) {
       setToast({ message: "Erreur création mission: " + err.message, type: "error" });
     }

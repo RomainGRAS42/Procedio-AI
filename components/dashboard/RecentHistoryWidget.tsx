@@ -29,7 +29,12 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         const successActivities = activities.filter(a => {
              const content = a.content?.toLowerCase() || '';
              const title = a.title?.toLowerCase() || '';
-             return content.includes('terminée') || content.includes('validée') || title.includes('badge');
+             // Capture "terminée", "validée", "badge", but also "referent_granted" or "mastery_completed"
+             return content.includes('terminée') || 
+                    content.includes('validée') || 
+                    content.includes('félicitations') ||
+                    title.includes('badge') || 
+                    title.includes('mastery_completed');
         }).map(a => {
             const isBadge = a.title?.includes('BADGE');
             // Extract XP value from content if available (e.g. "Vous avez gagné 50 XP")
@@ -144,6 +149,16 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             color = 'text-orange-500';
             bg = 'bg-orange-50';
             title = 'Candidature Référent';
+        } else if (a.title?.includes('MISSION_CHALLENGE_LAUNCH')) {
+            icon = 'fa-trophy';
+            color = 'text-purple-600';
+            bg = 'bg-purple-100';
+            title = 'Nouveau Défi';
+        } else if (a.title?.includes('MISSION_TEAM_LAUNCH')) {
+            icon = 'fa-users-line';
+            color = 'text-blue-600';
+            bg = 'bg-blue-100';
+            title = 'Mission d\'Équipe';
         }
 
         return {
