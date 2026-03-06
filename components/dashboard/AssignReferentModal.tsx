@@ -54,7 +54,7 @@ const AssignReferentModal: React.FC<AssignReferentModalProps> = ({
       if (!user) return;
 
       // Create OPEN Mission (assigned_to: null)
-      const { error } = await supabase.from("missions").insert([
+      const { data, error } = await supabase.from("missions").insert([
         {
           title: `Devenir Référent : ${procedureTitle}`,
           description: `Objectif : Valider votre expertise sur cette procédure orpheline.\n\nAction requise : Passer l'examen de maîtrise (Quiz).\n\nRécompense : Statut de Référent + Prime XP.`,
