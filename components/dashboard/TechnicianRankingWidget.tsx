@@ -44,8 +44,7 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
               badges (
                 name,
                 icon,
-                category,
-                level_required
+                category
               )
             )
           `)
@@ -96,7 +95,7 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
             <i className="fa-solid fa-trophy"></i>
           </div>
           <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
-            TOP TECHNICIENS
+            Top Techniciens
             <InfoTooltip text="Classement des techniciens basé sur l'expérience (XP) cumulée." />
           </h3>
         </div>
