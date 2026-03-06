@@ -109,7 +109,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [personalFilter, setPersonalFilter] = useState<"active" | "history">("active");
+  const [personalFilter, setPersonalFilter] = useState<"active" | "history" | "available">("active");
 
   // Form State
   const [newMission, setNewMission] = useState({
@@ -1306,12 +1306,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
               </div>
             ) : (
               <>
-                {/* Personal Missions Section */}
+                {/* Unified Missions Section */}
                 <CollapsibleSection
-                  title="Mes Missions Personnelles"
-                  icon={<i className="fa-solid fa-user-check"></i>}
+                  title="Missions"
+                  icon={<i className="fa-solid fa-rocket"></i>}
                   count={
                     missions.filter((m) => {
+                      if (personalFilter === "available") return m.status === "open";
                       if (m.assigned_to !== user.id) return false;
                       if (personalFilter === "active")
                         return m.status === "assigned" || m.status === "in_progress";
@@ -1326,28 +1327,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       <button
                         onClick={() => setPersonalFilter("active")}
                         className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "active" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
-                        En cours (
-                        {
-                          missions.filter(
-                            (m) =>
-                              m.assigned_to === user.id &&
-                              (m.status === "assigned" || m.status === "in_progress")
-                          ).length
-                        }
-                        )
+                        En cours ({missions.filter(m => m.assigned_to === user.id && (m.status === "assigned" || m.status === "in_progress")).length})
+                      </button>
+                      <button
+                        onClick={() => setPersonalFilter("available")}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "available" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+                        À Saisir ({missions.filter(m => m.status === "open").length})
                       </button>
                       <button
                         onClick={() => setPersonalFilter("history")}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "history" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
-                        Terminées (
-                        {
-                          missions.filter(
-                            (m) =>
-                              m.assigned_to === user.id &&
-                              (m.status === "completed" || m.status === "cancelled")
-                          ).length
-                        }
-                        )
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "history" ? "bg-white text-slate-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+                        Terminées ({missions.filter(m => m.assigned_to === user.id && (m.status === "completed" || m.status === "cancelled")).length})
                       </button>
                     </div>
                   </div>
@@ -1357,6 +1347,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
                     }>
                     {missions.filter((m) => {
+                      if (personalFilter === "available") return m.status === "open";
                       if (m.assigned_to !== user.id) return false;
                       if (personalFilter === "active")
                         return m.status === "assigned" || m.status === "in_progress";
@@ -1364,6 +1355,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     }).length > 0 ? (
                       missions
                         .filter((m) => {
+                          if (personalFilter === "available") return m.status === "open";
                           if (m.assigned_to !== user.id) return false;
                           if (personalFilter === "active")
                             return m.status === "assigned" || m.status === "in_progress";
@@ -1382,45 +1374,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                             : "py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center"
                         }>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          {personalFilter === "active"
+                          {personalFilter === "available"
+                            ? "Aucune mission à saisir pour le moment"
+                            : personalFilter === "active"
                             ? "Aucune mission en cours"
                             : "Aucune mission terminée"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleSection>
-
-                {/* Team Missions Section */}
-                <CollapsibleSection
-                  title="Missions d'Équipe"
-                  icon={<i className="fa-solid fa-users"></i>}
-                  count={missions.filter((m) => m.status === "open").length}
-                  sectionKey="team"
-                  isOpen={!collapsedSections["team"]}
-                  onToggle={toggleSection}
-                  colorClass="bg-emerald-500">
-                  <div
-                    className={
-                      viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
-                    }>
-                    {missions.filter((m) => m.status === "open").length > 0 ? (
-                      missions
-                        .filter((m) => m.status === "open")
-                        .map((mission) =>
-                          viewMode === "grid"
-                            ? renderMissionCard(mission)
-                            : renderMissionListRow(mission)
-                        )
-                    ) : (
-                      <div
-                        className={
-                          viewMode === "grid"
-                            ? "md:col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center"
-                            : "py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center"
-                        }>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          Aucune mission d'équipe disponible
                         </p>
                       </div>
                     )}
