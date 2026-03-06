@@ -33,7 +33,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
 
   if (isTeamView) {
     return (
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-[600px]">
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col relative h-full min-h-0">
         <div className="flex items-center justify-between mb-6 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg shrink-0">
