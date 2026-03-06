@@ -716,28 +716,41 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         return;
       }
 
+      // Update Mastery Request with Score
+      if (currentMasteryRequestId) {
+          await supabase.from("mastery_requests").update({
+              score: score,
+              status: 'completed' // Quiz finished
+          }).eq("id", currentMasteryRequestId);
+      }
+
       if (score >= 70) {
-         // SUCCESS
-         setToast({ message: "Examen réussi ! Félicitations.", type: "success" });
+         // SUCCESS - SEND TO MANAGER VALIDATION
+         setToast({ message: "Examen réussi ! Envoi au manager pour validation.", type: "success" });
          
-         // Optimistic UI update: hide the exam button in the local state
+         // Optimistic UI update
          setMissions(prev => prev.map(m => 
-           m.id === missionToUpdate.id ? { ...m, status: 'completed' as MissionStatus } : m
+           m.id === missionToUpdate.id ? { ...m, status: 'awaiting_validation' as MissionStatus } : m
          ));
 
-         // 1. Complete Mission
+         // 1. Update Mission to Awaiting Validation
          await supabase.from("missions").update({ 
-           status: "completed",
-           completion_notes: `Examen validé avec un score de ${score}%` 
+           status: "awaiting_validation",
+           completion_notes: `Examen réussi avec un score de ${score}%. En attente de validation.` 
          }).eq("id", missionToUpdate.id);
 
-         // 2. Add as Referent (if not exist)
-         if (missionToUpdate.procedure_id) {
-             await supabase.from("procedure_referents").insert({
-                 procedure_id: missionToUpdate.procedure_id,
-                 user_id: user.id
-             });
+         // 2. Notify Manager
+         if (missionToUpdate.created_by) {
+            await supabase.from("notifications").insert({
+               user_id: missionToUpdate.created_by,
+               type: "mission_status",
+               title: "Validation Expertise Requise",
+               content: `${user.firstName} a réussi l'examen (${score}%). Validation requise.`,
+               link: `/dashboard`, // Link to dashboard where ReviewWidget is
+               is_read: false,
+            });
          }
+
       } else {
          // FAILURE - Single attempt allowed
          setToast({ message: `Score: ${score}%. Échec (seuil 70%). Mission terminée.`, type: "error" });
@@ -759,7 +772,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                user_id: missionToUpdate.created_by,
                type: "mission_status",
                title: "Échec Certification",
-               content: `${user.firstName} a échoué à l'examen de référent (${score}%). (Détails en Pilotage)`,
+               content: `${user.firstName} a échoué à l'examen de référent (${score}%).`,
                link: "/missions",
                is_read: false,
             });
