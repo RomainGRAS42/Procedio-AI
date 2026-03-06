@@ -262,7 +262,7 @@ const Header: React.FC<HeaderProps> = ({
                         <p className="text-xs font-bold text-slate-800 leading-tight mb-0.5">{notif.title}</p>
                         <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{notif.content}</p>
                       </div>
-                      {!notif.read && (
+                      {!notif.is_read && (
                         <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-white"></div>
                       )}
                     </div>

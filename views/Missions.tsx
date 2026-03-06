@@ -275,10 +275,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
            for (const uid of newMission.participants) {
                 await supabase.from("notifications").insert({
                   user_id: uid,
-                  type: "mission",
+                  type: "mission_assigned",
                   title: "Mission d'Équipe 🤝",
                   content: `Vous avez été ajouté à la mission d'équipe : ${newMission.title}`,
                   link: "/missions",
+                  is_read: false,
                 });
            }
       }
@@ -335,17 +336,15 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
       if (error) throw error;
 
-      // Notify Manager/Creator
-      if (mission.created_by) {
-        const { error: notifError } = await supabase.from("notifications").insert({
-          user_id: mission.created_by,
-          type: "mission",
-          title: "Mission réclamée",
-          content: `${user.firstName} ${user.lastName} a pris en charge la mission : ${mission.title}`,
-          link: "/missions",
-        });
-        if (notifError) console.error("Error sending claim notification:", notifError);
-      }
+      // Log notification
+      await supabase.from("notifications").insert({
+        user_id: mission.created_by,
+        type: "mission_status",
+        title: "Mission prise en charge",
+        content: `${user.firstName} a pris en charge la mission "${mission.title}"`,
+        link: `/missions?id=${missionId}`,
+        is_read: false,
+      });
 
       // Log system message
       await supabase.from("mission_messages").insert({
@@ -509,10 +508,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         if (newStatus === "completed" && user.role === UserRole.MANAGER && mission.assigned_to) {
           await supabase.from("notifications").insert({
             user_id: mission.assigned_to,
-            type: "mission",
+            type: "mission_status",
             title: "Mission validée !",
-            content: `Votre mission "${mission.title}" a été validée. Vous avez gagné <b>${mission.xp_reward || 50} XP</b> !`,
+            content: `Votre mission "${mission.title}" a été validée.`,
             link: "/missions",
+            is_read: false,
           });
         }
 
@@ -523,10 +523,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         if (newStatus === "in_progress" && mission.created_by && mission.created_by !== user.id) {
           await supabase.from("notifications").insert({
             user_id: mission.created_by,
-            type: "mission",
+            type: "mission_status",
             title: "Mission démarrée \uD83D\uDE80",
             content: `${user.firstName || "Le technicien"} a commencé la mission : "${mission.title}"`,
             link: `/missions?id=${mission.id}`,
+            is_read: false,
           });
         }
 
@@ -546,7 +547,14 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         // fetchMissions(); // Still kept commented to rely on optimistic update first
 
         // 3. Technician finishes -> Notify manager (HANDLED BY TRIGGER)
-        /* if (newStatus === "completed" ... ) { ... } */
+        await supabase.from("notifications").insert({
+            user_id: mission.created_by,
+            type: "mission_status",
+            title: "Mission terminée",
+            content: `${user.firstName || "Le technicien"} a terminé la mission : "${mission.title}"`,
+            link: `/dashboard?action=review&id=${mission.id}`,
+            is_read: false,
+          });
       }
     } catch (err) {
       console.error(err);
@@ -585,12 +593,13 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       const mission = missions.find((m) => m.id === missionId);
       if (mission && mission.created_by !== user.id) {
         await supabase.from("notifications").insert({
-          user_id: mission.created_by,
-          type: "mission",
-          title: "Mission démarrée",
-          content: `${user.firstName} a démarré la mission : ${mission.title}`,
-          link: "/missions",
-        });
+            user_id: mission.created_by,
+            type: "mission_status",
+            title: "Mission démarrée",
+            content: `${user.firstName} a démarré la mission : ${mission.title}`,
+            link: "/missions",
+            is_read: false,
+          });
       }
     } catch (err) {
       // Revert
@@ -748,10 +757,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
          if (missionToUpdate.created_by) {
             await supabase.from("notifications").insert({
                user_id: missionToUpdate.created_by,
-               type: "mission",
+               type: "mission_status",
                title: "Échec Certification",
                content: `${user.firstName} a échoué à l'examen de référent (${score}%). (Détails en Pilotage)`,
-               link: "/missions"
+               link: "/missions",
+               is_read: false,
             });
          }
       }
@@ -917,8 +927,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           (user.role as any) === "manager") && (
           <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase">
-                {mission.assignee ? (
+              <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase overflow-hidden">
+                {mission.assignee?.avatar_url ? (
+                    <img src={mission.assignee.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : mission.assignee ? (
                   mission.assignee.first_name.substring(0, 2)
                 ) : mission.assignee_name ? (
                   mission.assignee_name.substring(0, 2)

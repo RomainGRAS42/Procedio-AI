@@ -40,7 +40,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
     e.preventDefault();
     if (onToggleReadStatus) {
         // Toggle read status (inverse current)
-        const currentRead = type === 'notification' ? item.read : item.isReadByManager;
+        const currentRead = type === 'notification' ? item.is_read : item.isReadByManager;
         onToggleReadStatus(type, item.id, !currentRead);
     }
   };
@@ -48,15 +48,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   const alertCount = 
     pendingSuggestions.filter(s => !s.isReadByManager).length + 
     masteryClaims.filter(c => !c.isReadByManager).length +
-    notifications.filter(n => {
-      if (n.read) return false;
-      // Filter out notifications for inactive missions
-      const missionId = n.link && n.link.includes('id=') ? n.link.split('id=')[1] : null;
-      if (missionId) {
-        return activeMissions.some(m => m.id === missionId);
-      }
-      return false; // Default to false: Actionable alerts must be linked to active missions
-    }).length;
+    notifications.filter(n => !n.is_read && (n.type === 'mission_status' || n.type === 'info')).length;
 
   // 1. Unify items
   const allItems = useMemo(() => [
@@ -100,7 +92,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
         date: n.created_at || new Date().toISOString(),
         title: n.title,
         user: { first_name: 'Système', last_name: '' }, // Notifications are system-generated or we don't have sender info joined yet
-        isRead: n.read === true,
+        isRead: n.is_read === true,
         content: n.content,
         missionId,
         isMissionActive

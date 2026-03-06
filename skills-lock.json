@@ -15,6 +15,11 @@
       "source": "kimny1143/claude-code-template",
       "sourceType": "github",
       "computedHash": "631c3bf10aa2e91ff22b9baf3063b1ddfda914f4eefc0e6a861073080753e75e"
+    },
+    "wcag-audit-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f7f8b9474ffbcda529173206ff5cd1f813c742186b819d16248f9b4e1dec230a"
     }
   }
 }

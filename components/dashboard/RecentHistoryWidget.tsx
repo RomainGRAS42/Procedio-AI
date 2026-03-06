@@ -213,39 +213,87 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 ))}
             </div>
         ) : feedItems.length > 0 ? (
-            feedItems.map((item) => (
+            feedItems.map((item) => {
+                const badgeConfig = (() => {
+                    if (item.type === 'notification') {
+                        switch (item.title) {
+                            case "Mission validée !":
+                            case "Mission validée":
+                                return { 
+                                    icon: 'fa-check', 
+                                    bg: 'bg-emerald-50', 
+                                    color: 'text-emerald-600', 
+                                    border: 'border-emerald-100',
+                                    label: item.title
+                                };
+                            case "Nouvelle mission":
+                            case "Mission d'Équipe 🤝":
+                                return { 
+                                    icon: 'fa-bell', 
+                                    bg: 'bg-rose-50', 
+                                    color: 'text-rose-600', 
+                                    border: 'border-rose-100',
+                                    label: item.title
+                                };
+                            default:
+                                return { 
+                                    icon: 'fa-bell', 
+                                    bg: 'bg-indigo-50', 
+                                    color: 'text-indigo-600', 
+                                    border: 'border-indigo-100',
+                                    label: item.title
+                                };
+                        }
+                    } else {
+                        return {
+                            icon: item.icon,
+                            bg: item.bg,
+                            color: item.color,
+                            border: 'border-transparent',
+                            label: item.title
+                        };
+                    }
+                })();
+
+                return (
                 <div 
                     key={`${item.type}-${item.id}`}
                     onClick={() => item.link && onNavigate && onNavigate(item.link)}
                     className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start ${item.type === 'notification' && !item.link?.includes('read') ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
                     role="article"
                 >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
-                        <i className={`fa-solid ${item.icon} text-sm`}></i>
+                    {/* ICON / BADGE */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${badgeConfig.bg} ${badgeConfig.border} ${badgeConfig.color}`}>
+                        <i className={`fa-solid ${badgeConfig.icon}`}></i>
                     </div>
+
+                    {/* CONTENT */}
                     <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
-                            <span className={`text-[11px] font-black uppercase tracking-widest ${item.color}`}>
-                                {item.title}
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${badgeConfig.color}`}>
+                                {item.type === 'notification' ? item.title : badgeConfig.label}
                             </span>
-                            <span className="text-[10px] font-bold text-slate-400">
+                            <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap ml-2">
                                 {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
-                        <div className="flex justify-between items-end gap-4">
-                            <div 
-                                className="text-[13px] font-medium text-slate-700 leading-snug mt-0.5 line-clamp-2"
-                                dangerouslySetInnerHTML={{ __html: item.content }}
-                            />
-                            {item.xp && (
-                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 shrink-0">
-                                    <span className="text-[10px] font-black text-amber-600">+{item.xp} XP</span>
-                                </div>
-                            )}
-                        </div>
+                        
+                        <p className="text-xs font-medium text-slate-600 leading-snug line-clamp-2" 
+                           dangerouslySetInnerHTML={{ __html: item.content || '' }}
+                        />
                     </div>
+
+                    {/* XP PILL (If relevant) */}
+                    {(item.type === 'notification' && item.content?.includes('XP')) && (
+                        <div className="shrink-0 flex flex-col items-end justify-center">
+                             <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[9px] font-black">
+                                +50 XP
+                             </span>
+                        </div>
+                    )}
                 </div>
-            ))
+            );
+          })
         ) : (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50 py-8">
                 <i className="fa-solid fa-wind text-3xl mb-2"></i>
