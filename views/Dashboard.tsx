@@ -1572,8 +1572,33 @@ const Dashboard: React.FC<DashboardProps> = ({
                     });
 
                     // Grant XP
-                    const score = selectedMasteryClaim.score || 100;
-                    const xpReward = score === 100 ? 100 : score >= 85 ? 75 : 50;
+                    let xpReward = score === 100 ? 100 : score >= 85 ? 75 : 50;
+                    
+                    // Check if there is a linked mission with specific XP reward
+                    const { data: linkedMission } = await supabase
+                        .from('missions')
+                        .select('id, xp_reward, status')
+                        .eq('assigned_to', userId)
+                        .eq('procedure_id', procId)
+                        .neq('status', 'cancelled')
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (linkedMission && linkedMission.xp_reward) {
+                        xpReward = linkedMission.xp_reward;
+                        console.log(`🎯 Using Mission XP Reward: ${xpReward} XP (Mission ID: ${linkedMission.id})`);
+                        
+                        // Ensure mission is marked completed
+                        if (linkedMission.status !== 'completed') {
+                            await supabase.from('missions').update({ 
+                                status: 'completed',
+                                completed_at: new Date().toISOString(),
+                                submission_xp_granted: true
+                            }).eq('id', linkedMission.id);
+                        }
+                    }
+
                     await supabase.rpc('increment_user_xp', {
                         target_user_id: userId,
                         xp_amount: xpReward,
