@@ -1466,35 +1466,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       Légende
                     </h3>
                     <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-sm">
-                          <i className="fa-solid fa-fire"></i>
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-slate-800 uppercase tracking-tight">
-                            Priorité Haute
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Important
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm">
-                          <i className="fa-solid fa-medal"></i>
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-slate-800 uppercase tracking-tight">
-                            Récompense XP
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Selon la complexité
-                          </p>
-                        </div>
-                      </div>
-
                       {/* Mission Types Legend */}
-                      <div className="pt-4 mt-4 border-t border-slate-50 space-y-4">
+                      <div className="pt-4 mt-4 space-y-4">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-sm">
                                 <i className="fa-solid fa-user"></i>
