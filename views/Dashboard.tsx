@@ -1461,7 +1461,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Col 3: Missions d'Équipe - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 h-full">
+              <div className="col-span-12 lg:col-span-4 h-full flex flex-col">
                 <MissionsWidget
                   activeMissions={activeMissions}
                   userRole={user.role}
