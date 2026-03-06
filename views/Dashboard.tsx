@@ -1572,6 +1572,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     });
 
                     // Grant XP
+                    const score = selectedMasteryClaim.score || 100;
                     let xpReward = score === 100 ? 100 : score >= 85 ? 75 : 50;
                     
                     // Check if there is a linked mission with specific XP reward
