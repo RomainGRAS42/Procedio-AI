@@ -111,6 +111,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   } | null>(null);
   const [personalFilter, setPersonalFilter] = useState<"active" | "history" | "available">("active");
   const [missionTypeFilter, setMissionTypeFilter] = useState<"all" | "solo" | "team" | "challenge">("all");
+  const [technicianFilter, setTechnicianFilter] = useState<string>("all");
 
   // Form State
   const [newMission, setNewMission] = useState({
@@ -763,7 +764,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
          // 1. Mark Mission as Completed but with failure note
          await supabase.from("missions").update({ 
              status: "completed", 
-             completion_notes: `Échec à la certification avec un score de ${score}%`
+             completion_notes: `Score : ${score}% - Vous avez échoué à la demande pour devenir référent.`
          }).eq("id", missionToUpdate.id);
 
          // 2. Notify Manager
@@ -1247,7 +1248,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             {user.role === UserRole.MANAGER ? (
               <div className="space-y-10">
                 {/* Filter Controls for Manager */}
-                <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl w-fit">
+                <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl w-fit">
                   <button
                     onClick={() => setMissionTypeFilter("all")}
                     className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
@@ -1287,13 +1288,31 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     <i className="fa-solid fa-trophy"></i>
                     Défi
                   </button>
+                  
+                  {/* Technician Filter Dropdown */}
+                  <div className="relative ml-2 pl-2 border-l border-slate-200">
+                     <select 
+                       value={technicianFilter}
+                       onChange={(e) => setTechnicianFilter(e.target.value)}
+                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer hover:text-indigo-600 transition-colors py-2 pr-4"
+                     >
+                       <option value="all">Tous les techniciens</option>
+                       {technicians.map(tech => (
+                         <option key={tech.id} value={tech.id}>
+                           {tech.first_name} {tech.last_name}
+                         </option>
+                       ))}
+                     </select>
+                     <i className="fa-solid fa-chevron-down absolute right-0 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 pointer-events-none"></i>
+                  </div>
                 </div>
 
                 {/* Section : Needs Review */}
                 {missions.filter(
                   (m) =>
                     m.status === "awaiting_validation" &&
-                    (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                    (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                    (technicianFilter === "all" || m.assigned_to === technicianFilter)
                 ).length > 0 && (
                   <CollapsibleSection
                     title="À Valider Prioritairement"
@@ -1302,7 +1321,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       missions.filter(
                         (m) =>
                           m.status === "awaiting_validation" &&
-                          (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                          (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                          (technicianFilter === "all" || m.assigned_to === technicianFilter)
                       ).length
                     }
                     sectionKey="needs_review"
@@ -1317,7 +1337,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                         .filter(
                           (m) =>
                             m.status === "awaiting_validation" &&
-                            (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                            (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                            (technicianFilter === "all" || m.assigned_to === technicianFilter)
                         )
                         .map((m) =>
                           viewMode === "grid" ? renderMissionCard(m) : renderMissionListRow(m)
@@ -1336,7 +1357,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                         m.status !== "completed" &&
                         m.status !== "cancelled" &&
                         m.status !== "awaiting_validation" &&
-                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                        (technicianFilter === "all" || m.assigned_to === technicianFilter)
                     ).length
                   }
                   sectionKey="ongoing"
@@ -1352,7 +1374,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                         m.status !== "completed" &&
                         m.status !== "cancelled" &&
                         m.status !== "awaiting_validation" &&
-                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                        (technicianFilter === "all" || m.assigned_to === technicianFilter)
                     ).length > 0 ? (
                       missions
                         .filter(
@@ -1360,7 +1383,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                             m.status !== "completed" &&
                             m.status !== "cancelled" &&
                             m.status !== "awaiting_validation" &&
-                            (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                            (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                            (technicianFilter === "all" || m.assigned_to === technicianFilter)
                         )
                         .map((m) =>
                           viewMode === "grid" ? renderMissionCard(m) : renderMissionListRow(m)
@@ -1383,7 +1407,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     missions.filter(
                       (m) =>
                         (m.status === "completed" || m.status === "cancelled") &&
-                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                        (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                        (technicianFilter === "all" || m.assigned_to === technicianFilter)
                     ).length
                   }
                   sectionKey="history"
@@ -1398,7 +1423,8 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       .filter(
                         (m) =>
                           (m.status === "completed" || m.status === "cancelled") &&
-                          (missionTypeFilter === "all" || m.mission_type === missionTypeFilter)
+                          (missionTypeFilter === "all" || m.mission_type === missionTypeFilter) &&
+                          (technicianFilter === "all" || m.assigned_to === technicianFilter)
                       )
                       .slice(0, 10)
                       .map((m) =>
