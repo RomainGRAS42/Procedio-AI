@@ -111,7 +111,6 @@ export const useNotifications = (user: User) => {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
-        .eq("read", false) // Only fetch unread notifications
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

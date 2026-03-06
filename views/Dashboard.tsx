@@ -1455,19 +1455,19 @@ const Dashboard: React.FC<DashboardProps> = ({
               {/* Col 2: Podium (TeamPodium) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full flex flex-col gap-8">
                 <TeamPodium />
+                <TechnicianRankingWidget 
+                  onNavigate={onNavigate}
+                />
+              </div>
+
+              {/* Col 3: Missions d'Équipe - 4/12 */}
+              <div className="col-span-12 lg:col-span-4 h-full">
                 <MissionsWidget
                   activeMissions={activeMissions}
                   userRole={user.role}
                   viewMode="team"
                   onNavigate={onNavigate}
                   loading={loadingMissions}
-                />
-              </div>
-
-              {/* Col 3: Classement Techniciens (Leaderboard) - 4/12 */}
-              <div className="col-span-12 lg:col-span-4 h-full">
-                <TechnicianRankingWidget 
-                  onNavigate={onNavigate}
                 />
               </div>
             </div>

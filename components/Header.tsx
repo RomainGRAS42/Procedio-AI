@@ -101,7 +101,7 @@ const Header: React.FC<HeaderProps> = ({
     ? (pendingSuggestions.length + readLogs.length) 
     : suggestionResponses.length) 
     + flashNoteNotifications.length
-    + systemNotifications.length;
+    + systemNotifications.filter(n => !n.read).length;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

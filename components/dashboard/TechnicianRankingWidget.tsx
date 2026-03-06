@@ -39,7 +39,7 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
             avatar_url, 
             xp_points, 
             level,
-            user_badges (
+            user_badges:user_badges!user_badges_user_id_fkey (
               created_at,
               badges (
                 name,
