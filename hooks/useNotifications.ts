@@ -111,7 +111,8 @@ export const useNotifications = (user: User) => {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) throw error;
       if (data) setSystemNotifications(data as Notification[]);
     } catch (err) {
@@ -193,10 +194,10 @@ export const useNotifications = (user: User) => {
     try {
       const { error } = await supabase
         .from("notifications")
-        .update({ is_read: true })
+        .update({ read: true })
         .eq("id", id);
       if (error) throw error;
-      setSystemNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
+      setSystemNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
     } catch (err) {
       console.error("Error marking notification as read:", err);
     }

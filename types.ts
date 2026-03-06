@@ -178,6 +178,7 @@ export interface Notification {
   title: string;
   content: string;
   link?: string;
-  is_read: boolean;
+  read: boolean;
   created_at: string;
+  metadata?: Record<string, any>;
 }
