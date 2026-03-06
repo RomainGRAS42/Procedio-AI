@@ -1430,7 +1430,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* MANAGER ROW 2: 3 Columns Layout (Review Center | Team Podium | Activity) */}
-            <div className="grid grid-cols-12 gap-8 min-h-[700px]">
+            <div className="grid grid-cols-12 gap-8 h-[600px]">
               {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full flex flex-col overflow-hidden">
                 <ReviewCenterWidget
