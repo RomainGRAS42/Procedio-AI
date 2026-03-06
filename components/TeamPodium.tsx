@@ -179,13 +179,13 @@ const TeamPodium: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col gap-4 animate-fade-in relative min-h-[260px] shrink-0 z-30">
+    <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col gap-4 animate-fade-in relative h-full flex-1 shrink-0 z-30">
        {/* Decorative Background Container - Isolated for overflow-hidden */}
        <div className="absolute inset-0 overflow-hidden rounded-[2.5rem] pointer-events-none">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50/30 to-transparent rounded-full blur-3xl -z-10"></div>
        </div>
 
-       <div className="flex items-center gap-4 mb-2">
+       <div className="flex items-center gap-4 mb-2 shrink-0">
         <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-lg">
           <i className="fa-solid fa-medal"></i>
         </div>
@@ -198,7 +198,7 @@ const TeamPodium: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3 h-full">
+      <div className="flex flex-col md:flex-row gap-3 flex-1 min-h-0">
         {renderCard(data.progression, 'progression')}
         {renderCard(data.expert, 'expert')}
         {renderCard(data.explorer, 'explorer')}

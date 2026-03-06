@@ -98,7 +98,7 @@ const TechnicianRankingWidget: React.FC<TechnicianRankingWidgetProps> = ({ onNav
   }, []);
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col flex-1 overflow-hidden relative z-20">
+    <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col flex-1 h-full overflow-hidden relative z-20">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center text-lg">
