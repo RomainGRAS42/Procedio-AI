@@ -48,7 +48,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
   const alertCount = 
     pendingSuggestions.filter(s => !s.isReadByManager).length + 
     masteryClaims.filter(c => !c.isReadByManager).length +
-    notifications.filter(n => !n.is_read && (n.type === 'mission_status' || n.type === 'info')).length;
+    notifications.filter(n => !n.read && (n.type === 'mission_status' || n.type === 'info')).length;
 
   // 1. Unify items
   const allItems = useMemo(() => [

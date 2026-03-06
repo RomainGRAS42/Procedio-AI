@@ -81,7 +81,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const unreadMissionIds = React.useMemo(() => {
     const ids = new Set<string>();
     systemNotifications.forEach(n => {
-      if (n.type === 'chat_message' && !n.is_read && n.link && n.link.includes('missions?id=')) {
+      if (n.type === 'chat_message' && !n.read && n.link && n.link.includes('missions?id=')) {
         const id = n.link.split('missions?id=')[1];
         if (id) ids.add(id);
       }
@@ -93,7 +93,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     setSelectedMission(mission);
     // Auto-mark notifications as read for this mission
     systemNotifications.forEach(n => {
-      if (n.type === 'chat_message' && !n.is_read && n.link?.includes(mission.id)) {
+      if (n.type === 'chat_message' && !n.read && n.link?.includes(mission.id)) {
         markAsRead(n.id);
       }
     });
@@ -184,7 +184,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             // Mark as read immediately when opened via link
             systemNotifications.forEach(n => {
                 // Check if link contains the mission ID (simple check)
-                if (n.link && n.link.includes(missionId) && !n.is_read) {
+                if (n.link && n.link.includes(missionId) && !n.read) {
                     markAsRead(n.id);
                 }
             });
