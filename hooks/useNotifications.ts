@@ -111,7 +111,6 @@ export const useNotifications = (user: User) => {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
-        .eq("read", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       if (data) setSystemNotifications(data as Notification[]);
@@ -170,9 +169,10 @@ export const useNotifications = (user: User) => {
           },
           (payload) => {
             setSystemNotifications((prev) => {
-              if (prev.some(n => n.id === payload.new.id)) return prev;
-              return [payload.new as Notification, ...prev];
-            });
+          if (prev.some(n => n.id === payload.new.id)) return prev;
+          // When a new notification arrives, add it to the list
+          return [payload.new as Notification, ...prev];
+      });
           }
         )
         .subscribe();
@@ -193,10 +193,10 @@ export const useNotifications = (user: User) => {
     try {
       const { error } = await supabase
         .from("notifications")
-        .update({ read: true })
+        .update({ is_read: true })
         .eq("id", id);
       if (error) throw error;
-      setSystemNotifications((prev) => prev.filter((n) => n.id !== id));
+      setSystemNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
     } catch (err) {
       console.error("Error marking notification as read:", err);
     }
