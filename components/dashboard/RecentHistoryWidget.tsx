@@ -261,7 +261,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 <div 
                     key={`${item.type}-${item.id}`}
                     onClick={() => item.link && onNavigate && onNavigate(item.link)}
-                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start ${item.type === 'notification' && !item.link?.includes('read') ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
+                    className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${item.type === 'notification' && !item.link?.includes('read') ? 'border-slate-900 bg-white shadow-sm' : item.link ? 'cursor-pointer hover:bg-slate-50 border-slate-100' : 'border-transparent bg-white'}`}
                     role="article"
                 >
                     {/* ICON / BADGE */}
@@ -285,24 +285,24 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                         />
                     </div>
 
-                    {/* XP PILL (If relevant - and not overlapped by hover action) */}
+                    {/* XP PILL (If relevant - ALWAYS VISIBLE unless hovered) */}
                     {(item.type === 'notification' && item.content?.includes('XP')) && (
-                        <div className="shrink-0 flex flex-col items-end justify-center group-hover:opacity-0 transition-opacity">
-                             <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[9px] font-black">
+                        <div className="shrink-0 flex flex-col items-end justify-center group-hover:opacity-0 transition-opacity duration-200">
+                             <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md text-[9px] font-black whitespace-nowrap">
                                 +50 XP
                              </span>
                         </div>
                     )}
                     
-                    {/* HOVER ACTIONS (Mark as Read) */}
+                    {/* HOVER ACTIONS (Mark as Read) - Absolute positioning to overlay XP pill area */}
                     {item.type === 'notification' && !item.link?.includes('read') && onMarkAsRead && (
-                        <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onMarkAsRead(item.id);
                                 }}
-                                className="w-8 h-8 rounded-full bg-white shadow-md border border-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                                className="w-8 h-8 rounded-full bg-white shadow-md border border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-100 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                                 title="Marquer comme lu"
                             >
                                 <i className="fa-solid fa-check"></i>
