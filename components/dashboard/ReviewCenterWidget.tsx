@@ -40,7 +40,7 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
     e.preventDefault();
     if (onToggleReadStatus) {
         // Toggle read status (inverse current)
-        const currentRead = type === 'notification' ? item.is_read : item.isReadByManager;
+        const currentRead = type === 'notification' ? item.read : item.isReadByManager;
         onToggleReadStatus(type, item.id, !currentRead);
     }
   };
