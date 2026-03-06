@@ -1245,7 +1245,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   if (!user) return <LoadingState />;
 
   return (
-    <div className="h-screen bg-[#F8FAFC] flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
       <CustomToast
         visible={!!toast}
         message={toast?.message || ""}
@@ -1418,7 +1418,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col min-h-0 gap-6">
+          <div className="flex flex-col gap-8 pb-12">
             {/* MANAGER ROW 0: Team Synergy (Top Priority) */}
             <div className="w-full shrink-0">
               <TeamSynergyWidget />
@@ -1430,7 +1430,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* MANAGER ROW 2: 3 Columns Layout (Review Center | Team Podium | Activity) */}
-            <div className="flex-1 min-h-0 grid grid-cols-12 gap-8">
+            <div className="grid grid-cols-12 gap-8 min-h-[700px]">
               {/* Col 1: Centre de Pilotage (ReviewCenter) - 4/12 */}
               <div className="col-span-12 lg:col-span-4 h-full flex flex-col overflow-hidden">
                 <ReviewCenterWidget
@@ -1475,13 +1475,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* MANAGER ROW 3: RSS (Veille Info) */}
-            {/* Keeping it shrink-0 but it might require scrolling if screen is small */}
             <div className="w-full shrink-0">
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 h-[200px] overflow-hidden relative">
-                 <div className="absolute inset-0 overflow-y-auto">
-                    <RSSWidget user={user} />
-                 </div>
-              </div>
+               <RSSWidget user={user} />
             </div>
           </div>
         )}
