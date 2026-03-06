@@ -150,10 +150,15 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                           </button>
                         ) : null
                       ) : (
+                        // EVEN IF READ, KEEP THE BUTTON IF CONTENT HASN'T CHANGED (Persistent "Read" State)
+                        // Actually, user requested: "si le technicien a cliqué 1 fois sur j'ai compris, tant que le message du manager ne change pas, le btn doit rester en LU"
+                        // This implies showing a "Lu" indicator permanently for this message ID.
                         announcement.requires_confirmation && (
-                          <div className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2 opacity-75 select-none">
-                            <i className="fa-solid fa-circle-check text-sm"></i>
-                            <span className="text-[10px] font-black uppercase tracking-widest">Lu</span>
+                          <div className="px-5 py-2.5 rounded-xl bg-sky-600 text-white border border-sky-500 flex items-center gap-2 select-none shadow-sm opacity-90">
+                            <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                               <i className="fa-solid fa-check text-[10px]"></i>
+                            </span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">J'ai compris</span>
                           </div>
                         )
                       )

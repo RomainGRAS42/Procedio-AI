@@ -132,6 +132,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         // FILTERING LOGIC: Hide Manager-specific activities from Technician
         if (userRole === 'technician' || userRole === 'TECHNICIAN') {
             if (a.title?.includes('CLAIM_MASTERY')) return null; // "Prise en charge" (Manager view of tech action)
+            if (a.title?.includes('MISSION_CLAIM')) return null; // "Prise en charge" (Technician claiming a mission - no need to see it in feed as 'Prise en charge')
             // Add other manager-only activity types here if needed
         }
 
