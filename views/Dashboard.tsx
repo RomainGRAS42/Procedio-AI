@@ -931,11 +931,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   const fetchActiveMissions = async () => {
     try {
       // Define statuses for ACTIVE missions only (for Dashboard)
-      // Technician: assigned, in_progress, awaiting_validation
+      // Technician: assigned, in_progress, awaiting_validation + OPEN (for team missions)
       // Manager: open, assigned, in_progress, awaiting_validation (completed kept for team view only if recent?)
       
       const statuses = user.role === UserRole.TECHNICIAN 
-        ? ["assigned", "in_progress", "awaiting_validation"] 
+        ? ["open", "assigned", "in_progress", "awaiting_validation"] 
         : ["open", "assigned", "in_progress", "awaiting_validation"];
 
       let query = supabase
@@ -949,9 +949,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         .in("status", statuses)
         .order("created_at", { ascending: false });
 
-      // For Technician, only fetch their own missions
+      // For Technician, fetch assigned to them OR team/challenge missions
       if (user.role === UserRole.TECHNICIAN) {
-        query = query.eq("assigned_to", user.id);
+        query = query.or(`assigned_to.eq.${user.id},mission_type.in.("team","challenge")`);
       }
 
       const { data, error } = await query;
@@ -1340,6 +1340,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                   }}
                 />
               </div>
+            </div>
+
+            {/* ROW 2.5: Missions d'Équipe & Défis (New) */}
+            <div className="col-span-12">
+               <MissionsWidget 
+                 activeMissions={activeMissions.filter(m => (m.mission_type === 'team' || m.mission_type === 'challenge') && m.status === 'open')} 
+                 userRole={user.role}
+                 viewMode="team"
+                 onNavigate={onNavigate}
+                 loading={loadingMissions}
+               />
             </div>
 
             {/* ROW 3: Trophées | Maitrise | Journal (3 cols) */}

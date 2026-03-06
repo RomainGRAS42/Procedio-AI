@@ -17,7 +17,19 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
   onNavigate,
   loading
 }) => {
-  const isTeamView = userRole === UserRole.MANAGER && viewMode === 'team';
+  // Allow Team View for everyone if explicitly requested (e.g. for Technicians to see Team Challenges)
+  const isTeamView = viewMode === 'team';
+
+  const getMissionTypeBadge = (type: string | undefined) => {
+    switch(type) {
+      case 'challenge':
+        return <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-purple-100 text-purple-600"><i className="fa-solid fa-trophy mr-1"></i>Défi</span>;
+      case 'team':
+        return <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-100 text-blue-600"><i className="fa-solid fa-users mr-1"></i>Équipe</span>;
+      default:
+        return <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500"><i className="fa-solid fa-user mr-1"></i>Solo</span>;
+    }
+  };
 
   if (isTeamView) {
     return (
@@ -71,6 +83,7 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
                   <div key={mission.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => onNavigate?.('missions')}>
                     <div className="flex justify-between items-center mb-1">
                       <div className="flex items-center gap-2">
+                         {getMissionTypeBadge(mission.mission_type)}
                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${statuscolor}`}>
                            {statusLabel}
                          </span>
@@ -123,7 +136,10 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
         {activeMissions.slice(0, 4).map((mission) => (
           <div key={mission.id} onClick={() => onNavigate?.('missions')} className="p-4 bg-slate-50 border border-transparent hover:border-indigo-100 hover:bg-white rounded-2xl transition-all cursor-pointer group/m">
             <div className="flex justify-between items-start mb-2">
-              <span className={`text-[7px] font-black uppercase tracking-widest ${mission.urgency === 'critical' ? 'text-rose-500' : 'text-indigo-500'}`}>{mission.urgency}</span>
+              <div className="flex items-center gap-2">
+                {getMissionTypeBadge(mission.mission_type)}
+                <span className={`text-[7px] font-black uppercase tracking-widest ${mission.urgency === 'critical' ? 'text-rose-500' : 'text-indigo-500'}`}>{mission.urgency}</span>
+              </div>
               <span className="text-[9px] font-black text-indigo-600">{mission.xp_reward} XP</span>
             </div>
             <p className="text-[11px] font-bold text-slate-800 line-clamp-1 group-hover/m:text-indigo-600 transition-colors">{mission.title}</p>

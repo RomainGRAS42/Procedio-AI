@@ -38,6 +38,9 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
   const [teamLeaderboard, setTeamLeaderboard] = useState(cacheStore.get('stats_leaderboard') || []);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   
+  // Configuration dynamique
+  const [freshnessDelay, setFreshnessDelay] = useState(6); // Mois par défaut
+  
   const [globalKPIs, setGlobalKPIs] = useState(cacheStore.get('stats_global_kpis') || {
     searchSuccess: 0,
     searchSuccessRate: 100,
@@ -89,7 +92,7 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
     if (user.role === UserRole.MANAGER) {
       fetchAllStats();
     }
-  }, [user]);
+  }, [user, freshnessDelay]); // Re-fetch quand le délai change
 
   const fetchHealthData = async () => {
     try {
@@ -112,10 +115,11 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       const activeMissionSet = new Set(activeMissions?.map(m => m.procedure_id) || []);
 
       const now = new Date();
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(now.getMonth() - 6);
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(now.getFullYear() - 1);
+      const freshLimitDate = new Date();
+      freshLimitDate.setMonth(now.getMonth() - freshnessDelay);
+      
+      const oldLimitDate = new Date();
+      oldLimitDate.setFullYear(now.getFullYear() - 1);
 
       let fresh = 0;
       let aging = 0;
@@ -126,8 +130,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
 
       procs.forEach((p: any) => {
         const date = new Date(p.updated_at || p.created_at);
-        if (date > sixMonthsAgo) fresh++;
-        else if (date > oneYearAgo) aging++;
+        if (date > freshLimitDate) fresh++;
+        else if (date > oldLimitDate) aging++;
         else old++;
 
         // ZONE ROUGE LOGIC
@@ -156,8 +160,8 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
       }));
 
       const health = [
-        { name: 'Frais (< 6 mois)', value: fresh, color: '#10b981' }, 
-        { name: 'À revoir (6-12 mois)', value: aging, color: '#f59e0b' },
+        { name: `Frais (< ${freshnessDelay} mois)`, value: fresh, color: '#10b981' }, 
+        { name: `À revoir (${freshnessDelay}-12 mois)`, value: aging, color: '#f59e0b' },
         { name: 'Obsolète (> 1 an)', value: old, color: '#ef4444' },
       ];
 
@@ -700,7 +704,21 @@ const Statistics: React.FC<StatisticsProps> = ({ user }) => {
                        <i className="fa-solid fa-shield-heart text-emerald-500"></i>
                        Qualité du Patrimoine
                     </h2>
-                     <p className="text-slate-500 mt-2 font-medium">Objectif : &gt; 70% de procédures fraîches.</p>
+                     <div className="flex items-center justify-center gap-2 mt-2">
+                       <p className="text-slate-500 font-medium">Fraîcheur (&lt; {freshnessDelay} mois) et complétude des procédures</p>
+                       <div className="relative group/tooltip">
+                          <select 
+                            value={freshnessDelay}
+                            onChange={(e) => setFreshnessDelay(Number(e.target.value))}
+                            className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                          >
+                            <option value={3}>3 mois</option>
+                            <option value={6}>6 mois</option>
+                            <option value={12}>12 mois</option>
+                            <option value={24}>24 mois</option>
+                          </select>
+                       </div>
+                     </div>
                   </div>
                 )}
                 

@@ -1653,6 +1653,12 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                                     {newMission.participants.length > 0 ? `${newMission.participants.length} participants` : "Sélectionner participants"}
                                 </span>
                              </div>
+                        ) : newMission.mission_type === 'challenge' ? (
+                             <div className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center px-4 pl-12">
+                                <span className="text-xs font-bold text-slate-400 italic">
+                                    Ouvert à toute l'équipe (Premier arrivé)
+                                </span>
+                             </div>
                         ) : (
                             <select
                                 className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-xs appearance-none cursor-pointer"
@@ -1663,7 +1669,9 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                                 {technicians.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
                             </select>
                         )}
-                        <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        {newMission.mission_type !== 'challenge' && (
+                            <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        )}
                     </div>
                     {/* Team Selection List (Conditional) */}
                     {newMission.mission_type === 'team' && (
