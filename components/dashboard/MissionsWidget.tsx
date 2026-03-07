@@ -73,12 +73,12 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
                  }[mission.status] || mission.status;
                  
                  const statuscolor = {
-                   'open': 'bg-emerald-50 text-emerald-600 border border-emerald-100', // Inviting Green
+                   'open': 'bg-slate-100 text-slate-500 border border-slate-200', // Neutral Gray for Available
                    'assigned': 'bg-blue-50 text-blue-600 border border-blue-100',
                    'in_progress': 'bg-indigo-50 text-indigo-600 border border-indigo-100',
                    'awaiting_validation': 'bg-amber-50 text-amber-600 border border-amber-100',
                    'completed': 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-                   'cancelled': 'bg-rose-50 text-rose-500 border border-rose-100 opacity-70' // Muted Rose
+                   'cancelled': 'bg-rose-50 text-rose-500 border border-rose-100 opacity-70'
                  }[mission.status] || 'bg-slate-50 text-slate-500 border border-slate-100';
 
                  return (
