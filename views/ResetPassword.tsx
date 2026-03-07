@@ -48,8 +48,9 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack, userEmail }) => {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-8 animate-slide-up">
-      <div className="flex items-center gap-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-white/50">
+      <div className="w-full max-w-xl space-y-8 animate-slide-up">
+        <div className="flex items-center gap-4">
         <button onClick={onBack} className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 transition-all flex items-center justify-center">
           <i className="fa-solid fa-arrow-left"></i>
         </button>
@@ -126,7 +127,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack, userEmail }) => {
 
       <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
         Une fois validé, vous devrez utiliser votre nouveau mot de passe lors de votre prochaine connexion.
-      </p>
+      </div>
     </div>
   );
 };

@@ -314,11 +314,24 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       if (error) throw error;
 
       // Log notification
+      // Only notify creator if it's NOT the user themselves taking the mission
+      if (mission.created_by !== user.id) {
+        await supabase.from("notifications").insert({
+          user_id: mission.created_by,
+          type: "mission_status",
+          title: "Mission prise en charge",
+          content: `${user.firstName} a pris en charge la mission "${mission.title}"`,
+          link: `/missions?id=${missionId}`,
+          is_read: false,
+        });
+      }
+
+      // Log notification for the assignee (Self-confirmation)
       await supabase.from("notifications").insert({
-        user_id: mission.created_by,
+        user_id: user.id,
         type: "mission_status",
-        title: "Mission prise en charge",
-        content: `${user.firstName} a pris en charge la mission "${mission.title}"`,
+        title: "Mission acceptée ✅",
+        content: `Vous avez pris en charge la mission "${mission.title}". Bon courage !`,
         link: `/missions?id=${missionId}`,
         is_read: false,
       });
