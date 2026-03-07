@@ -22,6 +22,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
   prefillDescription = '',
   technicians = [],
 }) => {
+  console.log("CreateMissionModal rendered (v2.1.2)", { isOpen, userId }); // DEBUG: Verify component version
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const [newMission, setNewMission] = useState({
@@ -31,6 +32,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
     urgency: 'medium' as MissionUrgency,
     mission_type: 'solo' as MissionType,
     assigned_to: '',
+    participants: [] as string[],
     hasDeadline: false,
     deadline: '',
     needs_attachment: true,
@@ -69,15 +71,24 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
 
     try {
       let assigned_to = null;
+      let status = 'open';
 
-      if (newMission.mission_type === 'solo' && newMission.assigned_to) {
-        assigned_to = newMission.assigned_to;
-      } else if (newMission.mission_type === 'team' && newMission.assigned_to) {
-        // If team mission has specific assignee (subset/leader), use it
-         assigned_to = newMission.assigned_to;
+      // Determine status and assignments
+      if (newMission.mission_type === 'solo') {
+          if (newMission.assigned_to) {
+              assigned_to = newMission.assigned_to;
+              status = 'assigned';
+          }
+      } else if (newMission.mission_type === 'team') {
+          // Team mission logic
+          if (newMission.participants.length > 0) {
+              status = 'assigned'; // Assigned to specific participants
+          } else {
+              status = 'open'; // Open to all (default)
+          }
       }
 
-      const { error } = await supabase.from('missions').insert([
+      const { data: insertedMission, error } = await supabase.from('missions').insert([
         {
           title: newMission.title,
           description: newMission.description,
@@ -86,14 +97,41 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
           deadline: newMission.hasDeadline ? newMission.deadline : null,
           assigned_to: assigned_to,
           created_by: userId,
-          status: assigned_to ? 'assigned' : 'open',
+          status: status,
           needs_attachment: newMission.needs_attachment,
           mission_type: newMission.mission_type,
           recurrence_rule: newMission.recurrence !== 'once' ? newMission.recurrence : null,
         },
-      ]);
+      ]).select().single();
 
       if (error) throw error;
+
+      // Handle Team Participants
+      if (newMission.mission_type === 'team' && newMission.participants.length > 0) {
+          const participantsData = newMission.participants.map(uid => ({
+              mission_id: insertedMission.id,
+              user_id: uid,
+              status: 'pending'
+          }));
+          
+          const { error: partError } = await supabase
+            .from('mission_participants')
+            .insert(participantsData);
+            
+          if (partError) console.error("Error adding participants:", partError);
+          
+          // Notify Participants
+           for (const uid of newMission.participants) {
+                await supabase.from("notifications").insert({
+                  user_id: uid,
+                  type: "mission_assigned",
+                  title: "Mission d'Équipe 🤝",
+                  content: `Vous avez été ajouté à la mission d'équipe : ${newMission.title}`,
+                  link: "/missions",
+                  is_read: false,
+                });
+           }
+      }
 
       // Reset form
       setNewMission({
@@ -103,6 +141,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
         urgency: 'medium',
         mission_type: 'solo',
         assigned_to: '',
+        participants: [],
         hasDeadline: false,
         deadline: '',
         needs_attachment: true,
@@ -239,7 +278,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assignation</label>
                    
-                   {newMission.mission_type === 'team' && (
+                   {newMission.mission_type === 'team' ? (
                      <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 mb-3 space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
@@ -253,41 +292,59 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
                         
                         {/* Checkbox "Tout l'équipe" */}
                          <label className="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-indigo-100/50 hover:border-indigo-200 transition-colors shadow-sm">
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${!newMission.assigned_to ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
-                                {!newMission.assigned_to && <i className="fa-solid fa-check text-white text-[10px]"></i>}
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${newMission.participants.length === 0 ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                {newMission.participants.length === 0 && <i className="fa-solid fa-check text-white text-[10px]"></i>}
                             </div>
                             <input 
                               type="checkbox" 
                               className="hidden"
-                              checked={!newMission.assigned_to}
-                              onChange={(e) => {
-                                  if (e.target.checked) {
-                                      setNewMission({ ...newMission, assigned_to: '' });
-                                  }
-                              }}
+                              checked={newMission.participants.length === 0}
+                              onChange={() => setNewMission(prev => ({ ...prev, participants: [] }))}
                             />
-                            <span className={`text-xs font-bold ${!newMission.assigned_to ? 'text-indigo-700' : 'text-slate-500'}`}>Envoyer à toute l'équipe</span>
+                            <span className={`text-xs font-bold ${newMission.participants.length === 0 ? 'text-indigo-700' : 'text-slate-500'}`}>Envoyer à toute l'équipe</span>
                          </label>
-                     </div>
-                   )}
 
-                   {/* Selector - Always visible for SOLO. For TEAM, visible but acts as "Select specific member" which unchecks "All Team" */}
-                   <div className={`relative transition-all ${newMission.mission_type === 'team' && !newMission.assigned_to ? 'opacity-50 hover:opacity-100' : 'opacity-100'}`}>
-                      <select
-                        className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer text-sm"
-                        value={newMission.assigned_to}
-                        onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
-                      >
-                        <option value="">{newMission.mission_type === 'team' ? "Ou sélectionner un membre spécifique..." : "Sélectionner un technicien"}</option>
-                        {technicians.map((tech) => (
-                          <option key={tech.id} value={tech.id}>
-                            {tech.first_name} {tech.last_name}
-                          </option>
-                        ))}
-                      </select>
-                      <i className="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500"></i>
-                      <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                   </div>
+                         {/* List of Technicians */}
+                         <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1 mt-2">
+                            {technicians.map(tech => (
+                                <label key={tech.id} className="flex items-center gap-2 p-1.5 hover:bg-white/50 rounded-lg cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="accent-indigo-600 rounded w-3 h-3"
+                                        checked={newMission.participants.includes(tech.id)} 
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                // Add to participants (this automatically unchecks "All Team")
+                                                setNewMission(prev => ({ ...prev, participants: [...prev.participants, tech.id] }));
+                                            } else {
+                                                setNewMission(prev => ({ ...prev, participants: prev.participants.filter(id => id !== tech.id) }));
+                                            }
+                                        }} 
+                                    />
+                                    <span className="text-xs font-medium text-slate-600">{tech.first_name} {tech.last_name}</span>
+                                </label>
+                            ))}
+                         </div>
+                     </div>
+                   ) : (
+                       /* SOLO Mode - Dropdown */
+                       <div className="relative">
+                          <select
+                            className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer text-sm"
+                            value={newMission.assigned_to}
+                            onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
+                          >
+                            <option value="">Sélectionner un technicien</option>
+                            {technicians.map((tech) => (
+                              <option key={tech.id} value={tech.id}>
+                                {tech.first_name} {tech.last_name}
+                              </option>
+                            ))}
+                          </select>
+                          <i className="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500"></i>
+                          <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                       </div>
+                   )}
                 </div>
               )}
 

@@ -11,6 +11,7 @@ import { useLocation } from "react-router-dom";
 
 import MissionDetailsModal from "../components/MissionDetailsModal";
 import MasteryQuizModal from "../components/MasteryQuizModal";
+import CreateMissionModal from "../components/CreateMissionModal";
 
 interface MissionsProps {
   user: User;
@@ -114,21 +115,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const [technicianFilter, setTechnicianFilter] = useState<string>("all");
 
   // Form State
-  const [newMission, setNewMission] = useState({
-    title: "",
-    description: "",
-    xp_reward: 50,
-    urgency: "medium" as MissionUrgency,
-    mission_type: "solo" as MissionType,
-    assigned_to: "", // For Solo
-    participants: [] as string[], // For Team
-    recurrence: "none", // 'none', 'weekly', 'monthly'
-    hasDeadline: false,
-    deadline: "",
-    needs_attachment: false,
-    category: "",
-    opportunity_id: null as string | null, // Track the origin opportunity
-  });
+  const [prefillData, setPrefillData] = useState({ title: '', description: '' });
 
   // Lifecycle Modals State
   const [completingMission, setCompletingMission] = useState<Mission | null>(null);
@@ -169,7 +156,10 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
     if (location.state && (location.state as any).createMission) {
       const { initialData } = location.state as any;
       if (initialData) {
-        setNewMission((prev) => ({ ...prev, ...initialData }));
+        setPrefillData({
+            title: initialData.title || '',
+            description: initialData.description || ''
+        });
         setShowCreateModal(true);
       }
       window.history.replaceState({}, document.title);
@@ -225,101 +215,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
 
   // fetchMissions removed - using Context
 
-  const handleCreateMission = async () => {
-    if (!newMission.title.trim()) return;
-    try {
-      let assigned_to = null;
-      let missionStatus = "open";
-
-      // Logic for Solo vs Team
-      if (newMission.mission_type === "solo" && newMission.assigned_to) {
-        assigned_to = newMission.assigned_to;
-        missionStatus = "assigned";
-      } else if (newMission.mission_type === "team" && newMission.participants.length > 0) {
-        missionStatus = "assigned"; 
-      }
-
-      const { data: insertedMission, error } = await supabase.from("missions").insert([
-        {
-          title: newMission.title,
-          description: newMission.description,
-          xp_reward: newMission.xp_reward,
-          urgency: newMission.urgency,
-          deadline: newMission.hasDeadline ? newMission.deadline : null,
-          assigned_to: assigned_to,
-          created_by: user.id,
-          status: missionStatus,
-          needs_attachment: newMission.needs_attachment,
-          category: newMission.category || null,
-          mission_type: newMission.mission_type,
-          recurrence_rule: newMission.recurrence !== 'none' ? newMission.recurrence : null,
-        },
-      ]).select().single();
-
-      if (error) throw error;
-
-      // Handle Participants (Team)
-      if (newMission.mission_type === "team" && newMission.participants.length > 0) {
-          const participantsData = newMission.participants.map(uid => ({
-              mission_id: insertedMission.id,
-              user_id: uid,
-              status: 'pending'
-          }));
-          
-          const { error: partError } = await supabase
-            .from('mission_participants')
-            .insert(participantsData);
-            
-          if (partError) console.error("Error adding participants:", partError);
-          
-          // Notify Participants
-           for (const uid of newMission.participants) {
-                await supabase.from("notifications").insert({
-                  user_id: uid,
-                  type: "mission_assigned",
-                  title: "Mission d'Équipe 🤝",
-                  content: `Vous avez été ajouté à la mission d'équipe : ${newMission.title}`,
-                  link: "/missions",
-                  is_read: false,
-                });
-           }
-      }
-
-      // Notification for assigned technician (Solo) is handled by DB Trigger
-      /* if (newMission.mission_type === "solo" && assigned_to) { ... } */
-
-      // Resolve the opportunity if it came from one
-      if ((newMission as any).opportunity_id) {
-        await supabase
-          .from('search_opportunities')
-          .update({ status: 'resolved' })
-          .eq('id', (newMission as any).opportunity_id);
-      }
-
-      setToast({ message: "Mission stratégique crée !", type: "success" });
-      setShowCreateModal(false);
-      setNewMission({
-        title: "",
-        description: "",
-        xp_reward: 50,
-        urgency: "medium",
-        mission_type: "solo",
-        assigned_to: "",
-        participants: [],
-        recurrence: "none",
-        hasDeadline: false,
-        deadline: "",
-        needs_attachment: false,
-        category: "",
-        opportunity_id: null,
-      });
-
-      // fetchMissions(); // Handled by Realtime in Context
-    } catch (err) {
-      console.error(err);
-      setToast({ message: "Erreur lors de la création.", type: "error" });
-    }
-  };
+  // handleCreateMission removed - using CreateMissionModal component
 
   const handleClaimMission = async (missionId: string) => {
     try {
@@ -1644,245 +1540,18 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       )}
 
       {/* MODAL CREATION MISSION */}
-      {showCreateModal &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-            <div className="bg-white rounded-[2rem] w-full max-w-[95vw] xl:max-w-[1200px] shadow-2xl animate-scale-up flex flex-col overflow-hidden border border-white/20">
-              
-              {/* HEADER INTEGRATED TITLE */}
-              <div className="flex items-center gap-6 p-6 pb-4 shrink-0 border-b border-slate-50">
-                <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-200 shrink-0">
-                  <i className="fa-solid fa-bolt"></i>
-                </div>
-                <div className="flex-1 relative group">
-                     <label className="absolute -top-2.5 left-0 text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                        Titre de la mission
-                     </label>
-                     <input
-                        type="text"
-                        placeholder="ex: Rédiger la procédure VPN"
-                        className="w-full bg-transparent border-none p-0 text-2xl font-black text-slate-800 placeholder:text-slate-200 focus:ring-0 outline-none h-10"
-                        value={newMission.title}
-                        onChange={(e) => setNewMission({ ...newMission, title: e.target.value })}
-                        autoFocus
-                    />
-                </div>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="w-10 h-10 rounded-full bg-slate-50 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center shrink-0">
-                  <i className="fa-solid fa-xmark text-lg"></i>
-                </button>
-              </div>
-
-              {/* CONTENT SINGLE VIEW */}
-              <div className="p-8 grid grid-cols-12 gap-8">
-                
-                {/* LEFT: CONTEXT */}
-                <div className="col-span-12 lg:col-span-7 flex flex-col gap-6">
-                    <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-100 p-4 flex flex-col focus-within:bg-white focus-within:border-indigo-200 transition-colors">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                            Description & Objectif
-                        </label>
-                        <textarea
-                            placeholder="Expliquez ce qui est attendu..."
-                            className="w-full flex-1 bg-transparent border-none outline-none font-medium text-slate-600 resize-none leading-relaxed text-sm min-h-[200px]"
-                            value={newMission.description}
-                            onChange={(e) => setNewMission({ ...newMission, description: e.target.value })}
-                        />
-                    </div>
-
-                    <div
-                        className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-white hover:border-indigo-200 transition-all"
-                        onClick={() => setNewMission({ ...newMission, needs_attachment: !newMission.needs_attachment })}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm transition-all ${newMission.needs_attachment ? "bg-indigo-600 text-white" : "bg-white text-slate-300 border border-slate-200"}`}>
-                                <i className="fa-solid fa-paperclip"></i>
-                            </div>
-                            <div>
-                                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Preuve requise</p>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Fichier obligatoire</p>
-                            </div>
-                        </div>
-                        <div className={`w-10 h-5 rounded-full transition-all relative ${newMission.needs_attachment ? "bg-indigo-600" : "bg-slate-200"}`}>
-                            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.needs_attachment ? "right-1" : "left-1"}`}></div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* RIGHT: SETTINGS */}
-                <div className="col-span-12 lg:col-span-5 flex flex-col gap-5">
-                    {/* Row 1: Type */}
-                    <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100 flex">
-                        {[
-                            { id: 'solo', label: 'Solo', icon: 'user' },
-                            { id: 'team', label: 'Équipe', icon: 'users' },
-                            { id: 'challenge', label: 'Défis', icon: 'trophy' }
-                        ].map((type) => (
-                            <button
-                                key={type.id}
-                                onClick={() => setNewMission({ ...newMission, mission_type: type.id as any })}
-                                className={`flex-1 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${newMission.mission_type === type.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                            >
-                                <i className={`fa-solid fa-${type.icon}`}></i>
-                                {type.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Row 2: Assign */}
-                    <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500">
-                            <i className="fa-solid fa-user-check"></i>
-                        </div>
-                        {newMission.mission_type === 'team' ? (
-                             <div className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center px-4 pl-12 overflow-x-auto">
-                                <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                                    {newMission.participants.length > 0 ? `${newMission.participants.length} participants` : "Sélectionner participants"}
-                                </span>
-                             </div>
-                        ) : newMission.mission_type === 'challenge' ? (
-                             <div className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center px-4 pl-12">
-                                <span className="text-xs font-bold text-slate-400 italic">
-                                    Ouvert à toute l'équipe (Premier arrivé)
-                                </span>
-                             </div>
-                        ) : (
-                            <select
-                                className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 text-xs appearance-none cursor-pointer"
-                                value={newMission.assigned_to}
-                                onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
-                            >
-                                <option value="">Sélectionner un technicien</option>
-                                {technicians.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
-                            </select>
-                        )}
-                        {newMission.mission_type !== 'challenge' && (
-                            <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                        )}
-                    </div>
-                    {/* Team Selection List (Conditional) */}
-                    {newMission.mission_type === 'team' && (
-                        <div className="h-24 overflow-y-auto bg-slate-50 border border-slate-100 rounded-xl p-2 custom-scrollbar">
-                             {technicians.map((tech) => (
-                                <label key={tech.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded-lg cursor-pointer">
-                                    <input type="checkbox" className="accent-indigo-600 rounded" checked={newMission.participants.includes(tech.id)} onChange={(e) => {
-                                        if (e.target.checked) setNewMission(prev => ({ ...prev, participants: [...prev.participants, tech.id] }));
-                                        else setNewMission(prev => ({ ...prev, participants: prev.participants.filter(id => id !== tech.id) }));
-                                    }} />
-                                    <span className="text-xs font-bold text-slate-600">{tech.first_name}</span>
-                                </label>
-                             ))}
-                        </div>
-                    )}
-
-                    {/* Row 3: XP & Urgency */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="relative group">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
-                                Récompense
-                            </label>
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 text-sm">
-                                    <i className="fa-solid fa-star"></i>
-                                </div>
-                                <input
-                                    type="number"
-                                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-2 focus:bg-white focus:border-indigo-500 outline-none font-black text-slate-700 text-sm"
-                                    value={newMission.xp_reward}
-                                    onChange={(e) => setNewMission({ ...newMission, xp_reward: parseInt(e.target.value) })}
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">XP</span>
-                            </div>
-                        </div>
-                        <div className="relative">
-                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
-                                Priorité
-                             </label>
-                             <div className="relative">
-                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-400">
-                                    <i className="fa-solid fa-fire"></i>
-                                 </div>
-                                 <select
-                                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
-                                    value={newMission.urgency}
-                                    onChange={(e) => setNewMission({ ...newMission, urgency: e.target.value as any })}
-                                 >
-                                    <option value="low">Faible</option>
-                                    <option value="medium">Moyenne</option>
-                                    <option value="high">Haute</option>
-                                    <option value="critical">Urgente</option>
-                                 </select>
-                                 <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                             </div>
-                        </div>
-                    </div>
-
-                    {/* Row 4: Recurrence & Deadline */}
-                    <div className="grid grid-cols-2 gap-4">
-                         <div className="relative">
-                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
-                                Répétition
-                             </label>
-                             <div className="relative">
-                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400">
-                                    <i className="fa-solid fa-rotate"></i>
-                                 </div>
-                                 <select
-                                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-8 focus:bg-white focus:border-indigo-500 outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer"
-                                    value={newMission.recurrence}
-                                    onChange={(e) => setNewMission({ ...newMission, recurrence: e.target.value })}
-                                 >
-                                    <option value="none">Une seule fois</option>
-                                    <option value="weekly">Hebdomadaire</option>
-                                    <option value="monthly">Mensuelle</option>
-                                 </select>
-                                 <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                            </div>
-                        </div>
-                        <div>
-                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block pl-1">
-                                Date limite
-                             </label>
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 h-12 overflow-hidden relative">
-                                 <i className="fa-solid fa-calendar-day text-slate-400 text-xs shrink-0"></i>
-                                 {newMission.hasDeadline ? (
-                                     <input 
-                                        type="date" 
-                                        className="bg-transparent border-none outline-none text-xs font-bold text-slate-700 w-full p-0"
-                                        value={newMission.deadline}
-                                        onChange={(e) => setNewMission({ ...newMission, deadline: e.target.value })}
-                                     />
-                                 ) : (
-                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex-1">Pas de date</span>
-                                 )}
-                                 <div 
-                                    onClick={() => setNewMission({ ...newMission, hasDeadline: !newMission.hasDeadline })}
-                                    className={`w-8 h-4 rounded-full transition-all relative cursor-pointer shrink-0 ${newMission.hasDeadline ? "bg-indigo-600" : "bg-slate-200"}`}
-                                >
-                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${newMission.hasDeadline ? "right-0.5" : "left-0.5"}`}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-              </div>
-
-              {/* FOOTER ACTION */}
-              <div className="p-6 pt-0 flex justify-end">
-                 <button
-                  onClick={handleCreateMission}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-3">
-                  <span>Lancer la Mission</span>
-                  <i className="fa-solid fa-paper-plane"></i>
-                </button>
-              </div>
-
-            </div>
-          </div>,
-          document.body
-        )}
+      <CreateMissionModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+            refreshMissions();
+            setToast({ message: "Mission stratégique lancée !", type: "success" });
+        }}
+        userId={user.id}
+        technicians={technicians}
+        prefillTitle={prefillData.title}
+        prefillDescription={prefillData.description}
+      />
 
       {/* MODAL COMPLETION/REVIEW MISSION */}
       {completingMission &&
