@@ -261,24 +261,19 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
         </div>
 
         {/* COLLECTION (En bas - Liste Verticale) */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between mb-4 shrink-0">
              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                 Collection ({virtualBadges.length})
              </p>
-             {virtualBadges.length > 3 && (
-                 <button className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors">
-                    Voir tout
-                 </button>
-             )}
           </div>
           
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 max-h-[300px]">
             {virtualBadges.length > 0 ? (
-              virtualBadges.slice(0, 3).map((ub) => {
+              virtualBadges.map((ub) => {
                 const style = getBadgeStyle(ub.badges.criteria_value || 0);
                 return (
-                  <div key={ub.id} className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-50 hover:bg-slate-50 hover:border-slate-100 transition-all cursor-default">
+                  <div key={ub.id} className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-50 hover:bg-slate-50 hover:border-slate-100 transition-all cursor-default shrink-0">
                     <div
                       className={`w-10 h-10 rounded-xl ${style.bg} border ${style.border} flex items-center justify-center shrink-0 shadow-sm ${style.shadow}`}>
                       <i className={`fa-solid ${ub.badges.icon} text-sm ${style.icon}`}></i>
@@ -317,14 +312,6 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
                   Complétez l'objectif ci-dessus pour débloquer votre premier badge !
                 </p>
               </div>
-            )}
-            
-            {virtualBadges.length > 3 && (
-                <div className="text-center mt-1">
-                    <span className="text-[10px] font-medium text-slate-400 italic">
-                        + {virtualBadges.length - 3} autres trophées...
-                    </span>
-                </div>
             )}
           </div>
         </div>
