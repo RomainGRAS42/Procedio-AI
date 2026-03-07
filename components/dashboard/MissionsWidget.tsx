@@ -23,11 +23,11 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
   const getMissionTypeBadge = (type: string | undefined) => {
     switch(type) {
       case 'challenge':
-        return <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-purple-100 text-purple-600"><i className="fa-solid fa-trophy mr-1"></i>Défi</span>;
+        return <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest bg-purple-50 text-purple-600 border border-purple-100 flex items-center gap-1"><i className="fa-solid fa-trophy text-[7px]"></i>Défi</span>;
       case 'team':
-        return <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-100 text-blue-600"><i className="fa-solid fa-users mr-1"></i>Équipe</span>;
-      default:
-        return <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500"><i className="fa-solid fa-user mr-1"></i>Solo</span>;
+        return <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-1"><i className="fa-solid fa-users text-[7px]"></i>Équipe</span>;
+      default: // solo
+        return <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1"><i className="fa-solid fa-user text-[7px]"></i>Solo</span>;
     }
   };
 
