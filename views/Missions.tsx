@@ -13,6 +13,52 @@ import MissionDetailsModal from "../components/MissionDetailsModal";
 import MasteryQuizModal from "../components/MasteryQuizModal";
 import CreateMissionModal from "../components/CreateMissionModal";
 
+const MissionActionMenu = ({ onCancel }: { onCancel: () => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+        title="Plus d'options"
+      >
+        <i className="fa-solid fa-ellipsis-vertical"></i>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-fade-in origin-top-right">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCancel();
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-4 py-3 hover:bg-rose-50 text-rose-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors"
+          >
+            <i className="fa-solid fa-trash-can"></i>
+            Annuler la mission
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface MissionsProps {
   user: User;
   onSelectProcedure?: (procedure: Procedure) => void;
@@ -895,16 +941,12 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                 (mission.status === "open" &&
                   (user.role === UserRole.MANAGER || (user.role as any) === "manager"))) &&
                 (user.role === UserRole.MANAGER || (user.role as any) === "manager") && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
+                  <MissionActionMenu 
+                    onCancel={() => {
                       setCancellingMission(mission);
                       setReasonText("");
                     }}
-                    className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95">
-                    <i className="fa-solid fa-trash-can mr-1"></i>
-                    Annuler
-                  </button>
+                  />
                 )}
             </div>
           </div>
@@ -1068,17 +1110,12 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             (mission.status === "open" ||
               mission.status === "assigned" ||
               mission.status === "in_progress") && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
+              <MissionActionMenu 
+                onCancel={() => {
                   setCancellingMission(mission);
                   setReasonText("");
                 }}
-                className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-1"
-                title="Annuler ou Supprimer la mission">
-                <i className="fa-solid fa-trash-can"></i>
-                <span className="hidden xl:inline">Annuler</span>
-              </button>
+              />
             )}
 
           <div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-all">
