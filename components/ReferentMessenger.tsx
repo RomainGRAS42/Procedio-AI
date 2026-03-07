@@ -477,6 +477,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                     const unreadCount = msgs.filter(
                       (m) => m.recipient_id === user.id && !m.is_read
                     ).length;
+                    const isResolved = msgs.some(m => m.is_resolved);
 
                     return (
                       <button
@@ -486,8 +487,11 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                           unreadCount > 0
                             ? "bg-indigo-50/30 border-indigo-100/50 shadow-sm"
                             : "hover:bg-slate-50 border-transparent hover:border-slate-100"
+                        } ${isResolved ? "opacity-60 grayscale-[0.5]" : ""}`}>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 overflow-hidden transition-transform group-hover:scale-105 ${
+                          unreadCount > 0 ? "border-indigo-200 shadow-sm" : 
+                          isResolved ? "border-slate-200" : "border-slate-100"
                         }`}>
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 overflow-hidden transition-transform group-hover:scale-105 ${unreadCount > 0 ? "border-indigo-200 shadow-sm" : "border-slate-100"}`}>
                           {partner?.avatar_url || (partner as any)?.avatarUrl ? (
                             <img 
                               src={partner?.avatar_url || (partner as any)?.avatarUrl} 
@@ -507,7 +511,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-0.5">
-                            <span className="font-black text-slate-800 text-[11px] truncate uppercase tracking-tight">
+                            <span className={`font-black text-slate-800 text-[11px] truncate uppercase tracking-tight ${isResolved ? "text-slate-500" : ""}`}>
                               {partner?.first_name} {partner?.last_name}
                             </span>
                             <span className="text-[9px] text-slate-400 font-bold shrink-0">
@@ -522,19 +526,32 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                               )}
                               {lastMsg.content}
                             </p>
-                            {(lastMsg.procedure || lastMsg.procedure_id) && (
-                              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100/80 rounded-lg w-fit border border-slate-200/50">
-                                <i className="fa-solid fa-file-lines text-[8px] text-slate-400"></i>
-                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter truncate max-w-[150px]">
-                                  {lastMsg.procedure?.title || "Validation Procédure"}
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {(lastMsg.procedure || lastMsg.procedure_id) && (
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100/80 rounded-lg w-fit border border-slate-200/50">
+                                  <i className="fa-solid fa-file-lines text-[8px] text-slate-400"></i>
+                                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter truncate max-w-[100px]">
+                                    {lastMsg.procedure?.title || "Validation Procédure"}
+                                  </span>
+                                </div>
+                              )}
+                              {isResolved && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100/50">
+                                  <i className="fa-solid fa-check text-[7px]"></i>
+                                  <span className="text-[7px] font-black uppercase tracking-widest">Résolu</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {unreadCount > 0 && (
                           <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">
                             {unreadCount}
+                          </div>
+                        )}
+                        {isResolved && unreadCount === 0 && (
+                          <div className="text-slate-300 group-hover:text-emerald-500 transition-colors">
+                            <i className="fa-solid fa-circle-check text-xs"></i>
                           </div>
                         )}
                       </button>
