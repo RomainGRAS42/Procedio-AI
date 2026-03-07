@@ -298,12 +298,14 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                             setNotification({ msg: "Erreur de lien", type: "error" });
                           }
                         }}
-                        className="px-3 py-1.5 bg-white text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-50 hover:shadow-sm transition-all shrink-0 flex items-center gap-2"
+                        className="h-10 px-4 bg-indigo-50/50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-100 hover:shadow-md transition-all shrink-0 flex items-center gap-3 active:scale-95 group/link"
                       >
-                        <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                        <div className="flex flex-col items-start leading-none -gap-0.5">
-                          <span>Lien</span>
-                          <span className="text-[7px] opacity-60 italic normal-case tracking-normal">(Valable 1 heure)</span>
+                        <i className="fa-solid fa-arrow-up-right-from-square text-xs group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform"></i>
+                        <div className="flex flex-col items-start justify-center leading-none gap-1">
+                          <span className="text-[10px]">Lien</span>
+                          <span className="text-[7px] opacity-70 italic normal-case tracking-normal font-medium">
+                            (Valable 1 heure)
+                          </span>
                         </div>
                       </button>
                     </div>
