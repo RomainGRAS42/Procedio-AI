@@ -7,49 +7,66 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 Deno.serve(async (req) => {
   try {
-    // 1. WARNING: J+13 Days of inactivity
-    // Find open threads where last_activity_at is between 13 and 14 days ago and no warning sent yet
-    const warningThreshold = new Date();
-    warningThreshold.setDate(warningThreshold.getDate() - 13);
+    const now = new Date();
     
-    const { data: threadsToWarn } = await supabase
+    // 1. WARNING: J+13 Days of inactivity
+    const warningThreshold = new Date();
+    warningThreshold.setDate(now.getDate() - 13);
+    
+    // Find the latest message for each open thread that hasn't been warned
+    // We'll use a RPC or a clever query if possible, but let's stay simple with a select
+    // and filter in JS if needed, or better, query messages older than 13 days 
+    // where no newer message exists in that same thread.
+    const { data: messagesToWarn, error: warnError } = await supabase
       .from("direct_messages")
-      .select("*, sender:sender_id(first_name), recipient:recipient_id(first_name)")
+      .select("*, procedure:procedure_id(title)")
       .eq("is_resolved", false)
       .lt("last_activity_at", warningThreshold.toISOString())
-      // We could use a metadata flag to avoid double warning
       .is("metadata->warning_sent", null);
 
-    if (threadsToWarn) {
-      for (const thread of threadsToWarn) {
+    if (warnError) throw warnError;
+
+    if (messagesToWarn && messagesToWarn.length > 0) {
+      // Group by thread (sender/recipient/procedure) to avoid spam
+      const uniqueThreads = new Map();
+      messagesToWarn.forEach(m => {
+        const key = [m.sender_id, m.recipient_id, m.procedure_id].sort().join(':');
+        if (!uniqueThreads.has(key)) uniqueThreads.set(key, m);
+      });
+
+      for (const thread of uniqueThreads.values()) {
         // Insert System Message
         await supabase.from("direct_messages").insert({
-          sender_id: thread.recipient_id, // System message masquerading or use a system ID
+          sender_id: thread.recipient_id,
           recipient_id: thread.sender_id,
           content: "Cette discussion est inactive. Sans réponse de votre part, elle sera clôturée automatiquement dans 2 jours.",
           procedure_id: thread.procedure_id,
+          last_activity_at: now.toISOString(),
           metadata: { is_system: true }
         });
 
-        // Insert Notification in Activity Feed (notes table)
+        // Insert Notification in Activity Feed for the "other" person (technically both should know)
+        // Usually, it's the technician who needs the nudge
         await supabase.from("notes").insert({
           user_id: thread.sender_id,
           title: "Discussion inactive",
-          content: `Votre discussion sur "${thread.procedure?.title || 'la procédure'}" va bientôt être clôturée.`,
+          content: `Votre discussion sur "${thread.procedure?.title || 'une procédure'}" va bientôt être clôturée.`,
           tags: ["système", "rappel"],
           status: "public"
         });
 
-        // Mark as warned
+        // Mark ALL messages in this thread as warned to avoid repeat warns
         await supabase.from("direct_messages")
-          .update({ metadata: { ...thread.metadata, warning_sent: true } })
-          .eq("id", thread.id);
+          .update({ metadata: { warning_sent: true } })
+          .eq("is_resolved", false)
+          .or(`and(sender_id.eq.${thread.sender_id},recipient_id.eq.${thread.recipient_id}),and(sender_id.eq.${thread.recipient_id},recipient_id.eq.${thread.sender_id})`)
+          .eq(thread.procedure_id ? 'procedure_id' : 'procedure_id', thread.procedure_id);
       }
     }
 
     // 2. CLOSURE: J+15 Days of inactivity
     const closureThreshold = new Date();
-    closureThreshold.setDate(closureThreshold.getDate() - 15);
+    closureThreshold.setDate(now.getDate() - 15);
 
     const { error: closureError } = await supabase
       .from("direct_messages")
