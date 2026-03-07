@@ -413,8 +413,17 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           });
         }
 
-        // 2. Manager cancels -> Notify technician (HANDLED BY TRIGGER)
-        /* if (newStatus === "cancelled" && mission.assigned_to && mission.assigned_to !== user.id) { ... } */
+        // 2. Manager cancels -> Notify technician
+        if (newStatus === "cancelled" && mission.assigned_to && mission.assigned_to !== user.id) {
+          await supabase.from("notifications").insert({
+            user_id: mission.assigned_to,
+            type: "mission_status",
+            title: "Mission annulée 🚫",
+            content: `La mission "${mission.title}" a été annulée. Motif : ${notes || "Aucun motif précisé."}`,
+            link: "/missions",
+            is_read: false,
+          });
+        }
 
         // 3. Technician starts mission -> Notify Manager (NEW)
         if (newStatus === "in_progress" && mission.created_by && mission.created_by !== user.id) {
@@ -896,6 +905,24 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                     Annuler
                   </button>
                 )}
+
+                {/* Manager Actions (Cancel/Delete) */}
+                {(user.role === UserRole.MANAGER || (user.role as any) === "manager") &&
+                  (mission.status === "open" ||
+                    mission.status === "assigned" ||
+                    mission.status === "in_progress") && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCancellingMission(mission);
+                        setReasonText("");
+                      }}
+                      className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95"
+                      title="Annuler ou Supprimer la mission">
+                      <i className="fa-solid fa-trash-can mr-1"></i>
+                      Annuler
+                    </button>
+                  )}
             </div>
           </div>
         )}

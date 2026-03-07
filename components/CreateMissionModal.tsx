@@ -170,30 +170,25 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
       <div className="bg-white rounded-[2rem] w-full max-w-6xl h-[90vh] max-h-[800px] shadow-2xl animate-scale-up flex flex-col overflow-hidden">
         
         {/* HEADER */}
-        <div className="p-8 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
-          <div className="flex items-start gap-6 flex-1">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-6">
             <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-indigo-200 shrink-0">
               <i className="fa-solid fa-bolt"></i>
             </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                Titre de la mission
-              </label>
-              <input
-                type="text"
-                placeholder="Nom de la mission..."
-                className="w-full text-3xl font-black text-slate-900 placeholder:text-slate-300 outline-none bg-transparent truncate"
-                value={newMission.title}
-                onChange={(e) => setNewMission({ ...newMission, title: e.target.value })}
-                autoFocus
-              />
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                Nouvelle Mission
+              </h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Créer une opportunité pour l'équipe
+              </p>
             </div>
           </div>
           
           <div className="flex flex-col items-end gap-4 shrink-0">
              <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center">
+              className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center mb-2">
               <i className="fa-solid fa-xmark text-sm"></i>
             </button>
 
@@ -241,8 +236,24 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
            {/* LEFT COLUMN - Description */}
            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar border-r border-slate-100 bg-slate-50/30">
               <div className="space-y-6 h-full flex flex-col">
+                  
+                  {/* TITLE INPUT MOVED HERE */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">
+                        Titre de la mission <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Rédiger la procédure VPN..."
+                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-lg"
+                        value={newMission.title}
+                        onChange={(e) => setNewMission({ ...newMission, title: e.target.value })}
+                        autoFocus
+                      />
+                  </div>
+
                   <div className="flex-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block ml-1">
                       Description & Objectif
                     </label>
                     <textarea
