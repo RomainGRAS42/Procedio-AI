@@ -245,8 +245,8 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
                           <i className="fa-solid fa-users"></i>
                         </div>
                         <div>
-                           <p className="text-xs font-bold text-indigo-900">Ouvert à toute l'équipe</p>
-                           <p className="text-[10px] font-medium text-indigo-600/80">Premier arrivé, premier servi (par défaut)</p>
+                           <p className="text-xs font-bold text-indigo-900">Mission Collective</p>
+                           <p className="text-[10px] font-medium text-indigo-600/80">Envoyée à toute l'équipe. Chacun peut soumettre son résultat.</p>
                         </div>
                      </div>
                    )}
@@ -279,9 +279,9 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
                          <i className="fa-solid fa-trophy"></i>
                       </div>
                       <div>
-                         <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight">Challenge Ouvert</h4>
+                         <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight">Premier Arrivé, Premier Servi</h4>
                          <p className="text-xs font-medium text-amber-700/80 mt-1 leading-relaxed">
-                           Ce défi est visible par tous. Plusieurs techniciens peuvent participer et gagner la récompense.
+                           Haute compétition. Le défi disparaît dès qu'un technicien le réclame. Une seule personne pourra remporter la mise.
                          </p>
                       </div>
                    </div>
