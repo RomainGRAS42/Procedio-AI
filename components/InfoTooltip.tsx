@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface InfoTooltipProps {
   text: string;
@@ -16,39 +17,68 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({
   iconClassName = "text-slate-300 hover:text-indigo-500 text-[0.8rem]",
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const iconRef = useRef<HTMLDivElement>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
 
-  const getAlignClasses = () => {
-    switch (align) {
-      case "left":
-        return "left-0";
-      case "right":
-        return "right-0";
-      default:
-        return "left-1/2 -translate-x-1/2";
-    }
-  };
+  useEffect(() => {
+    if (isVisible && iconRef.current) {
+      const updatePosition = () => {
+        if (!iconRef.current) return;
+        const rect = iconRef.current.getBoundingClientRect();
+        
+        let left = rect.left + rect.width / 2;
+        let transform = 'translate(-50%, -100%)';
+        
+        if (align === 'left') {
+            left = rect.left;
+            transform = 'translate(0, -100%)';
+        } else if (align === 'right') {
+            left = rect.right;
+            transform = 'translate(-100%, -100%)';
+        }
 
-  const getArrowClasses = () => {
-    switch (align) {
-      case "left":
-        return "left-4";
-      case "right":
-        return "right-4";
-      default:
-        return "left-1/2 -translate-x-1/2";
+        // Calculate top to match "bottom-full mb-3" logic (approx 12px gap)
+        // transform -100% shifts it up by its own height, so top should be the anchor point
+        const top = rect.top - 12;
+
+        setTooltipStyle({
+            position: 'fixed',
+            top: `${top}px`,
+            left: `${left}px`,
+            transform: transform,
+            zIndex: 9999,
+            pointerEvents: 'none', // Tooltip is read-only
+        });
+      };
+
+      updatePosition();
+      
+      // Update on scroll/resize to keep it attached
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
-  };
+  }, [isVisible, align]);
 
   return (
-    <div
-      className={`relative inline-block group ${className}`}
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}>
-      <i className={`fa-solid fa-circle-info transition-colors cursor-help ${iconClassName}`}></i>
+    <>
+      <div
+        ref={iconRef}
+        className={`relative inline-block group ${className}`}
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}>
+        <i className={`fa-solid fa-circle-info transition-colors cursor-help ${iconClassName}`}></i>
+      </div>
 
-      {isVisible && (
+      {isVisible && createPortal(
         <div
-          className={`absolute bottom-full mb-3 w-[max-content] max-w-[280px] sm:max-w-xs bg-[#121826] text-white text-[13px] p-4 rounded-2xl shadow-xl z-50 animate-fade-in pointer-events-none ${getAlignClasses()}`}>
+          style={tooltipStyle}
+          className="w-[max-content] max-w-[280px] sm:max-w-xs bg-[#121826] text-white text-[13px] p-4 rounded-2xl shadow-xl animate-fade-in"
+        >
           {isHtml ? (
             <div
               className="font-medium leading-relaxed text-center antialiased whitespace-normal break-words"
@@ -60,10 +90,14 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({
             </p>
           )}
           <div
-            className={`absolute top-full -mt-1 border-4 border-transparent border-t-[#121826] ${getArrowClasses()}`}></div>
-        </div>
+            className={`absolute top-full -mt-1 border-4 border-transparent border-t-[#121826] ${
+                align === 'left' ? 'left-4' : align === 'right' ? 'right-4' : 'left-1/2 -translate-x-1/2'
+            }`}
+          ></div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };
 

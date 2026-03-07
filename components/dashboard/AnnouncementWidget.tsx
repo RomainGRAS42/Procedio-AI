@@ -76,25 +76,41 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
             </button>
           </div>
           <div className="flex gap-3">
-            <textarea
-              className="flex-1 h-20 p-3 bg-white border border-sky-200 rounded-xl focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/5 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              placeholder="Écrivez votre message à l'équipe ici..."
-            />
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setRequiresConfirmation(!requiresConfirmation)}
-                className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${requiresConfirmation ? "bg-amber-50 border-amber-200 text-amber-600 shadow-sm" : "bg-white border-sky-100 text-sky-300"}`}
-                title="Demander confirmation de lecture">
-                <i
-                  className={`fa-solid ${requiresConfirmation ? "fa-bell text-xs" : "fa-bell-slash text-xs"}`}></i>
-              </button>
+            <div className="flex-1 flex flex-col gap-3">
+              <textarea
+                className="w-full h-20 p-3 bg-white border border-sky-200 rounded-xl focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/5 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Écrivez votre message à l'équipe ici..."
+              />
+              <div className="flex items-center gap-3 px-1">
+                <button
+                  onClick={() => setRequiresConfirmation(!requiresConfirmation)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
+                    requiresConfirmation 
+                      ? "bg-amber-50 border-amber-200 text-amber-700 shadow-sm" 
+                      : "bg-white border-slate-200 text-slate-400 hover:border-sky-200 hover:text-sky-500"
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                    requiresConfirmation ? "bg-amber-500 border-amber-600 text-white" : "bg-white border-slate-300"
+                  }`}>
+                    {requiresConfirmation && <i className="fa-solid fa-check text-[8px]"></i>}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">
+                    Demander une confirmation de lecture
+                  </span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex flex-col justify-end">
               <button
                 onClick={handleSaveAnnouncement}
                 disabled={saving || !editContent.trim()}
-                className="w-9 h-9 rounded-lg bg-sky-600 text-white flex items-center justify-center shadow-lg shadow-sky-200 hover:bg-slate-900 transition-all disabled:opacity-50">
-                <i className="fa-solid fa-paper-plane text-xs"></i>
+                className="w-12 h-12 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-lg shadow-sky-200 hover:bg-slate-900 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                title="Envoyer le message">
+                <i className="fa-solid fa-paper-plane text-sm"></i>
               </button>
             </div>
           </div>

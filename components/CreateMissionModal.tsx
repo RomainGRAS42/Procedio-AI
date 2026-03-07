@@ -24,6 +24,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
 }) => {
   console.log("CreateMissionModal rendered (v2.1.2)", { isOpen, userId }); // DEBUG: Verify component version
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [newMission, setNewMission] = useState({
     title: prefillTitle,
@@ -60,7 +61,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
   }, [newMission.description, isOpen]);
 
   const handleCreateMission = async () => {
-    if (!newMission.title.trim()) return;
+    if (!newMission.title.trim() || isSubmitting) return;
 
     // Check for required fields based on mission type
     if (newMission.mission_type === 'solo' && !newMission.assigned_to) {
@@ -68,6 +69,8 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
         alert("Veuillez assigner la mission à un technicien.");
         return;
     }
+
+    setIsSubmitting(true);
 
     try {
       let assigned_to = null;
@@ -152,6 +155,8 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
       onClose();
     } catch (err) {
       console.error('Error creating mission:', err);
+      alert("Une erreur est survenue lors de la création de la mission.");
+      setIsSubmitting(false);
     }
   };
 
@@ -484,11 +489,20 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
         <div className="p-8 border-t border-slate-100 bg-white shrink-0">
            <button
             onClick={handleCreateMission}
-            disabled={!newMission.title.trim() || (newMission.mission_type === 'solo' && !newMission.assigned_to)}
+            disabled={!newMission.title.trim() || (newMission.mission_type === 'solo' && !newMission.assigned_to) || isSubmitting}
             className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.99]"
           >
-            <span>Lancer la mission</span>
-            <i className="fa-solid fa-paper-plane group-hover:translate-x-1 transition-transform"></i>
+            {isSubmitting ? (
+              <>
+                <i className="fa-solid fa-circle-notch fa-spin"></i>
+                <span>Création en cours...</span>
+              </>
+            ) : (
+              <>
+                <span>Lancer la mission</span>
+                <i className="fa-solid fa-paper-plane group-hover:translate-x-1 transition-transform"></i>
+              </>
+            )}
           </button>
         </div>
 
