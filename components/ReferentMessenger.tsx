@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import { useUser } from "../hooks/useUser";
+import { useAuth } from "../hooks/useAuth";
 
 interface DirectMessage {
   id: string;
@@ -9,12 +9,13 @@ interface DirectMessage {
   content: string;
   created_at: string;
   is_read: boolean;
+  procedure_id?: string;
   sender?: { first_name: string; last_name: string; avatar_url: string };
   procedure?: { title: string; uuid: string };
 }
 
 const ReferentMessenger: React.FC = () => {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<{ [key: string]: DirectMessage[] }>({});
   const [unreadCount, setUnreadCount] = useState(0);
