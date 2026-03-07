@@ -29,7 +29,6 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
     const isSuccessJournal = title.includes("Succès");
 
     if (isSuccessJournal) {
-        // ... (existing SuccessJournal logic) ...
         // 1. Filter Activities (User actions)
         const successActivities = activities.filter(a => {
              const content = a.content?.toLowerCase() || '';
@@ -49,7 +48,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             return {
                 id: a.id,
                 type: 'activity',
-                title: isBadge ? 'Trophée Débloqué' : 'Mission Accomplie',
+                title: isBadge ? 'Trophée Débloqué' : 'Mission Validée !',
                 content: a.content, // Keep full content or simplified
                 date: a.created_at,
                 icon: isBadge ? 'fa-trophy' : 'fa-check-circle',
@@ -87,7 +86,24 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         
         // Merge and Sort
         const allSuccess = [...successActivities, ...successNotifications];
-        return allSuccess.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+        
+        // DEDUPLICATION LOGIC
+        const uniqueKeys = new Set();
+        const dedupedSuccess = allSuccess.filter(item => {
+            // Create a unique key based on content similarity and time (down to the minute)
+            // Extract mission name to ignore small variations like "Votre mission X" vs "La mission X"
+            const contentSimplified = item.content.replace(/^(Votre|La)\s+mission\s+["']?|["']?\s+a été validée\.?|!/gi, "").trim();
+            const timeKey = new Date(item.date).toISOString().slice(0, 16); // Up to minute
+            const key = `${contentSimplified}|${timeKey}`;
+            
+            if (uniqueKeys.has(key)) {
+                return false;
+            }
+            uniqueKeys.add(key);
+            return true;
+        });
+
+        return dedupedSuccess.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
     }
 
     // Default Feed Logic (Activity Feed)
@@ -225,10 +241,22 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             <InfoTooltip text={subtitle} />
           </h3>
           <div className="flex items-center gap-2">
-            {notifications.filter(n => !n.read).length > 0 && (
-                <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">
-                    {notifications.filter(n => !n.read).length} Non lues
-                </span>
+            {title.includes("Succès") ? (
+                 notifications.filter(n => !n.read && (n.title.includes('validée') || n.title.includes('succès') || n.title.includes('badge'))).length > 0 && (
+                    <span 
+                        className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100 cursor-default select-none"
+                        aria-disabled="true"
+                        title="Information seulement"
+                    >
+                        {notifications.filter(n => !n.read && (n.title.includes('validée') || n.title.includes('succès') || n.title.includes('badge'))).length} Non lues
+                    </span>
+                 )
+            ) : (
+                notifications.filter(n => !n.read).length > 0 && (
+                    <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">
+                        {notifications.filter(n => !n.read).length} Non lues
+                    </span>
+                )
             )}
           </div>
         </div>
@@ -290,17 +318,26 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                 })();
 
                 const isUnread = item.type === 'notification' && !item.isRead;
+                const isSuccessJournal = title.includes("Succès");
+                const clickAction = isSuccessJournal ? (e: any) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Mark as read locally without navigation
+                    if (onMarkAsRead && item.type === 'notification') {
+                        onMarkAsRead(item.id);
+                    }
+                } : () => item.link && onNavigate && onNavigate(item.link);
 
                 return (
                 <div 
                     key={`${item.type}-${item.id}`}
-                    onClick={() => item.link && onNavigate && onNavigate(item.link)}
+                    onClick={clickAction}
                     className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${
                         isUnread 
                             ? 'bg-white border-indigo-100 shadow-sm' 
-                            : item.link 
+                            : (item.link && !isSuccessJournal)
                                 ? 'cursor-pointer hover:bg-slate-50 border-slate-100 bg-white' 
-                                : 'border-transparent bg-slate-50/30'
+                                : 'border-transparent bg-slate-50/30 cursor-default'
                     }`}
                     role="article"
                 >
