@@ -127,6 +127,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack, userEmail }) => {
 
       <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
         Une fois validé, vous devrez utiliser votre nouveau mot de passe lors de votre prochaine connexion.
+      </p>
       </div>
     </div>
   );
