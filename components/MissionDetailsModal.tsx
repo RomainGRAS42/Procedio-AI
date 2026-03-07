@@ -229,7 +229,8 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
 
         await onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl || undefined);
         
-        if (newStatus === "completed") {
+        // Always close modal on completion action (whether Manager validating or Technician submitting)
+        if (newStatus === "completed" || newStatus === "awaiting_validation") {
             onClose();
         } else {
             setShowSuccessModal("submit");
