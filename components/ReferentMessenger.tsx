@@ -38,6 +38,8 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [notification, setNotification] = useState<{ msg: string; type: "success" | "info" | "error" } | null>(null);
+  const [showResolveConfirm, setShowResolveConfirm] = useState(false);
+  const [showReferralLoopback, setShowReferralLoopback] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -269,55 +271,19 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                 if (!isResolved) {
                   return (
                     <button
-                      onClick={async () => {
-                        if (!window.confirm("Voulez-vous marquer cet incident comme résolu ? Cela fermera la discussion.")) return;
-                        
-                        try {
-                          const lastMsg = msgs[msgs.length - 1];
-                          const procId = lastMsg?.procedure_id;
-
-                          const { error } = await supabase
-                            .from("direct_messages")
-                            .update({ is_resolved: true })
-                            .or(`sender_id.eq.${activeConversation},recipient_id.eq.${activeConversation}`)
-                            .eq('procedure_id', procId);
-
-                          if (error) throw error;
-
-                          // Update local state
-                          setConversations(prev => ({
-                            ...prev,
-                            [activeConversation]: prev[activeConversation].map(m => ({ ...m, is_resolved: true }))
-                          }));
-
-                          setNotification({ msg: "Incident marqué comme résolu", type: "success" });
-
-                          // Referral Loopback
-                          if (user.role === UserRole.MANAGER) {
-                            if (window.confirm("Bravo ! Souhaitez-vous mettre à jour la procédure pour capitaliser sur cette résolution ?")) {
-                              const proc = msgs.find(m => m.procedure)?.procedure;
-                              if (proc) {
-                                onToggle(false); // Close messenger
-                                window.location.href = `/procedure/${proc.uuid}?action=suggest`;
-                              }
-                            }
-                          }
-                        } catch (err) {
-                          console.error("Error resolving incident:", err);
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all flex items-center gap-2"
-                      title="Marquer comme résolu"
+                      onClick={() => setShowResolveConfirm(true)}
+                      className="px-3 py-1.5 bg-white text-emerald-600 border border-emerald-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-200 transition-all flex items-center gap-2 shadow-sm"
+                      title="Clôturer l'incident"
                     >
-                      <i className="fa-solid fa-check-circle"></i>
-                      <span>Résolu</span>
+                      <i className="fa-solid fa-flag-checkered"></i>
+                      <span>Clôturer</span>
                     </button>
                   );
                 }
                 return (
                   <div className="px-3 py-1.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
                     <i className="fa-solid fa-lock"></i>
-                    <span>Clos</span>
+                    <span>Discussion Close</span>
                   </div>
                 );
               })()}
@@ -564,6 +530,104 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
             "fa-circle-info"
           }`}></i>
           <span className="text-xs font-bold leading-none">{notification.msg}</span>
+        </div>
+      )}
+
+      {/* CUSTOM CONFIRMATION MODAL - Incident Resolved */}
+      {showResolveConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-scale-up border border-white/20">
+            <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl mb-6 mx-auto shadow-inner">
+              <i className="fa-solid fa-flag-checkered"></i>
+            </div>
+            <div className="text-center mb-8">
+              <h3 className="font-black text-slate-800 text-lg leading-tight mb-2">Clôturer l'incident ?</h3>
+              <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                Cette discussion sera marquée comme terminée et ne pourra plus recevoir de nouveaux messages.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const msgs = conversations[activeConversation!] || [];
+                    const lastMsg = msgs[msgs.length - 1];
+                    const procId = lastMsg?.procedure_id;
+
+                    const { error } = await supabase
+                      .from("direct_messages")
+                      .update({ is_resolved: true })
+                      .or(`sender_id.eq.${activeConversation},recipient_id.eq.${activeConversation}`)
+                      .eq('procedure_id', procId);
+
+                    if (error) throw error;
+
+                    setConversations(prev => ({
+                      ...prev,
+                      [activeConversation!]: prev[activeConversation!].map(m => ({ ...m, is_resolved: true }))
+                    }));
+
+                    setShowResolveConfirm(false);
+                    setNotification({ msg: "Discussion clôturée avec succès", type: "success" });
+
+                    if (user.role === UserRole.MANAGER) {
+                      setShowReferralLoopback(true);
+                    }
+                  } catch (err) {
+                    console.error("Error resolving incident:", err);
+                    setShowResolveConfirm(false);
+                  }
+                }}
+                className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-200 transition-all active:scale-95"
+              >
+                Confirmer la résolution
+              </button>
+              <button
+                onClick={() => setShowResolveConfirm(false)}
+                className="w-full py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM MODAL - Referral Loopback */}
+      {showReferralLoopback && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-scale-up border border-indigo-100">
+            <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mb-6 mx-auto shadow-inner">
+              <i className="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div className="text-center mb-8">
+              <h3 className="font-black text-slate-800 text-lg leading-tight mb-2">Bravo pour cette résolution !</h3>
+              <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                Souhaitez-vous mettre à jour la procédure pour que cette solution profite à toute l'équipe ?
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  const msgs = conversations[activeConversation!] || [];
+                  const proc = msgs.find(m => m.procedure)?.procedure;
+                  if (proc) {
+                    onToggle(false);
+                    window.location.href = `/procedure/${proc.uuid}?action=suggest`;
+                  }
+                }}
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition-all active:scale-95"
+              >
+                Mettre à jour la procédure
+              </button>
+              <button
+                onClick={() => setShowReferralLoopback(false)}
+                className="w-full py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                Peut-être plus tard
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
