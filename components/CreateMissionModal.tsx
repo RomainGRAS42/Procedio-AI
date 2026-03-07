@@ -240,24 +240,45 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assignation</label>
                    
                    {newMission.mission_type === 'team' && (
-                     <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 mb-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
-                          <i className="fa-solid fa-users"></i>
+                     <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 mb-3 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
+                              <i className="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-indigo-900">Ouvert à toute l'équipe</p>
+                              <p className="text-[10px] font-medium text-indigo-600/80">Chacun peut renvoyer un résultat</p>
+                            </div>
                         </div>
-                        <div>
-                           <p className="text-xs font-bold text-indigo-900">Mission Collective</p>
-                           <p className="text-[10px] font-medium text-indigo-600/80">Envoyée à toute l'équipe. Chacun peut soumettre son résultat.</p>
-                        </div>
+                        
+                        {/* Checkbox "Tout l'équipe" */}
+                         <label className="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-indigo-100/50 hover:border-indigo-200 transition-colors shadow-sm">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${!newMission.assigned_to ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                {!newMission.assigned_to && <i className="fa-solid fa-check text-white text-[10px]"></i>}
+                            </div>
+                            <input 
+                              type="checkbox" 
+                              className="hidden"
+                              checked={!newMission.assigned_to}
+                              onChange={(e) => {
+                                  if (e.target.checked) {
+                                      setNewMission({ ...newMission, assigned_to: '' });
+                                  }
+                              }}
+                            />
+                            <span className={`text-xs font-bold ${!newMission.assigned_to ? 'text-indigo-700' : 'text-slate-500'}`}>Envoyer à toute l'équipe</span>
+                         </label>
                      </div>
                    )}
 
-                   <div className="relative">
+                   {/* Selector - Always visible for SOLO. For TEAM, visible but acts as "Select specific member" which unchecks "All Team" */}
+                   <div className={`relative transition-all ${newMission.mission_type === 'team' && !newMission.assigned_to ? 'opacity-50 hover:opacity-100' : 'opacity-100'}`}>
                       <select
                         className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer text-sm"
                         value={newMission.assigned_to}
                         onChange={(e) => setNewMission({ ...newMission, assigned_to: e.target.value })}
                       >
-                        <option value="">{newMission.mission_type === 'team' ? "Assigner à un membre spécifique (optionnel)" : "Sélectionner un technicien"}</option>
+                        <option value="">{newMission.mission_type === 'team' ? "Ou sélectionner un membre spécifique..." : "Sélectionner un technicien"}</option>
                         {technicians.map((tech) => (
                           <option key={tech.id} value={tech.id}>
                             {tech.first_name} {tech.last_name}
