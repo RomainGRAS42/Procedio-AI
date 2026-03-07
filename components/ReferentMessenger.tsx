@@ -11,6 +11,7 @@ interface DirectMessage {
   is_read: boolean;
   procedure_id?: string;
   sender?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
+  recipient?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   procedure?: { title: string; uuid: string };
 }
 
@@ -74,6 +75,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({ isOpen, onToggle,
           `
           *,
           sender:sender_id(first_name, last_name, avatar_url),
+          recipient:recipient_id(first_name, last_name, avatar_url),
           procedure:procedure_id(title, uuid)
         `
         )
@@ -352,27 +354,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({ isOpen, onToggle,
                   Object.entries(conversations).map(([partnerId, msgs]) => {
                     const lastMsg = msgs[msgs.length - 1];
                     // Déterminer le partenaire de conversation (l'autre personne)
-                    let partner = null;
-                    
-                    // Si le dernier message est du référent (user), alors le partenaire est le destinataire
-                    if (lastMsg.sender_id === user.id) {
-                      // Chercher le premier message de l'autre personne dans cette conversation
-                      const otherPersonMsg = msgs.find((m) => m.sender_id !== user.id);
-                      if (otherPersonMsg?.sender) {
-                        partner = otherPersonMsg.sender;
-                      } else {
-                        // Si pas de message de l'autre personne, essayer de récupérer les infos du destinataire
-                        // Le destinataire est dans lastMsg.recipient_id
-                        partner = {
-                          first_name: lastMsg.recipient_id === user.id ? (user.firstName || "Technicien") : "Technicien",
-                          last_name: "",
-                          avatar_url: "",
-                        };
-                      }
-                    } else {
-                      // Si le dernier message n'est pas du référent, alors le partenaire est l'expéditeur
-                      partner = lastMsg.sender;
-                    }
+                    const partner = lastMsg.sender_id === user.id ? lastMsg.recipient : lastMsg.sender;
 
                     const unreadCount = msgs.filter(
                       (m) => m.recipient_id === user.id && !m.is_read
