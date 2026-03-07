@@ -271,25 +271,29 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                   const msgs = conversations[activeConversation] || [];
                   const procMsg = [...msgs].reverse().find((m) => m.procedure);
                   if (!procMsg?.procedure) return null;
-
                   return (
-                    <div className="mx-4 mt-3 mb-1 p-2 bg-indigo-50/50 border border-indigo-100/30 rounded-xl flex items-center justify-between gap-3 shadow-sm shrink-0">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <div className="w-6 h-6 rounded bg-white flex items-center justify-center text-indigo-500 shrink-0">
-                          <i className="fa-solid fa-file-lines text-[10px]"></i>
+                    <div
+                      key={`proc-${procMsg.id}`}
+                      className="mb-4 p-3 bg-indigo-50/30 rounded-[2rem] border border-indigo-100 flex items-center justify-between gap-4 animate-fade-in"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-indigo-600 shrink-0 shadow-sm">
+                          <i className="fa-solid fa-file-lines text-base"></i>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[8px] font-black uppercase tracking-widest text-indigo-400 mb-0.5 whitespace-nowrap">Cette discussion concerne la procédure :</p>
-                          <p className="text-[10px] font-bold text-slate-700 truncate">
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-[10px] font-black text-indigo-600/80 uppercase tracking-widest leading-tight truncate">
+                            Cette discussion concerne :
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate">
                             {procMsg.procedure.title}
                           </p>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={async () => {
                           const fileUrl = procMsg.procedure.file_url;
                           if (!fileUrl) return;
-                          
+
                           setNotification({ msg: "Génération du lien sécurisé...", type: "info" });
                           const { data } = await supabase.storage.from("procedures").createSignedUrl(fileUrl, 3600);
                           if (data?.signedUrl) {
@@ -298,12 +302,13 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                             setNotification({ msg: "Erreur de lien", type: "error" });
                           }
                         }}
-                        className="h-10 px-4 bg-indigo-50/50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-100 hover:shadow-md transition-all shrink-0 flex items-center gap-3 active:scale-95 group/link"
+                        className="h-10 px-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-indigo-500 hover:bg-indigo-700 hover:shadow-lg transition-all shrink-0 flex items-center gap-3 active:scale-95 group/link"
+                        aria-label={`Ouvrir le document ${procMsg.procedure.title}`}
                       >
                         <i className="fa-solid fa-arrow-up-right-from-square text-xs group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform"></i>
                         <div className="flex flex-col items-start justify-center leading-none gap-1">
                           <span className="text-[10px]">Lien</span>
-                          <span className="text-[7px] opacity-70 italic normal-case tracking-normal font-medium">
+                          <span className="text-[7px] text-white/80 italic normal-case tracking-normal font-medium whitespace-nowrap">
                             (Valable 1 heure)
                           </span>
                         </div>
