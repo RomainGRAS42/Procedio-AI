@@ -170,8 +170,8 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure, 
           ref={chatPanelRef}
           className={`fixed bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-[100] animate-slide-up transition-all duration-300 ease-in-out
             ${isExpanded 
-              ? 'bottom-6 right-6 w-[800px] h-[80vh] max-w-[calc(100vw-3rem)]' 
-              : 'bottom-6 right-6 w-96 h-[600px] max-w-[calc(100vw-3rem)]'
+              ? 'bottom-24 right-6 w-[800px] h-[75vh] max-w-[calc(100vw-3rem)]' 
+              : 'bottom-24 right-6 w-96 h-[550px] max-w-[calc(100vw-3rem)]'
             }
             max-md:inset-4 max-md:w-auto max-md:h-auto max-md:max-h-[90vh]`}
         >
@@ -493,8 +493,8 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure, 
         </div>
       )}
 
-      {/* Bouton sticky - toujours visible (maintenant après le panel pour être au-dessus) */}
-      <div className="fixed bottom-6 right-6 z-[110] animate-bounce-in">
+      {/* Bouton sticky - toujours visible (z-index 90 pour être SOUS la fenêtre s'ils se touchent) */}
+      <div className="fixed bottom-6 right-6 z-[90] animate-bounce-in">
         <button
           onClick={() => onToggle(!isOpen)}
           className={`group relative w-16 h-16 rounded-full shadow-xl transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/10 ${
