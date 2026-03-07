@@ -1586,11 +1586,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                     await dismissRelatedNotification(selectedMasteryClaim.id);
                     
                     // Notify User
+                    const rawTitle = selectedMasteryClaim.procedures?.title || "";
+                    const cleanTitle = rawTitle.replace(/\.[^/.]+$/, "").replace(/^[0-9a-f.-]+-/i, "").replace(/_/g, " ").trim();
+
                     await supabase.from("notifications").insert({
                       user_id: userId,
                       type: "level_up",
                       title: "Félicitations ! 🎓",
-                      content: `Vous avez été nommé Référent pour la procédure "${selectedMasteryClaim.procedures?.title}".`,
+                      content: `Vous avez été nommé Référent pour la procédure "${cleanTitle}".`,
                       link: `/procedure/${procId}`,
                     });
 

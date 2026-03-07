@@ -548,8 +548,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           await supabase.from("notes").insert([
             {
               user_id: user.id,
-              title: `CONSULTATION_${procedure.title.substring(0, 50)}`,
-              content: `${user.firstName} a consulté la procédure "${procedure.title}"`,
+              title: `CONSULTATION_${cleanTitle.substring(0, 50)}`,
+              content: `${user.firstName} a consulté la procédure "${cleanTitle}"`,
               procedure_id: isUUID ? realProcedureId : procedure.db_id || procedure.uuid || null,
               is_protected: false,
               status: "public",
@@ -767,6 +767,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               ? `${referentExpert.first_name} ${referentExpert.last_name}`
               : undefined,
             expertNames: procedureExperts, // Envoi des experts au chat
+            instructions: `Si vous ne savez pas répondre à une question sur la procédure, vous devez explicitement dire : "Je ne suis pas sûr de la réponse, veuillez contacter [Nom du Référent] (si un référent est présent)." ou une phrase similaire invitant à contacter l'expert humain.`
           }),
         }
       );
@@ -784,10 +785,18 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         data = { output: "Le serveur n'a pas renvoyé de réponse." };
       }
 
+      // Formater la réponse pour remplacer "D'après le CONTEXTE" par une phrase plus humaine
+      let aiResponseText = data.output || data.text || (typeof data === "string" ? data : "Analyse terminée.");
+      
+      // Remplacement du préfixe robotique par quelque chose de plus naturel
+      aiResponseText = aiResponseText.replace(/D'après le CONTEXTE fourni, voici la réponse précise à ta question/gi, "Voici ce que j'ai trouvé dans le document");
+      aiResponseText = aiResponseText.replace(/D'après le CONTEXTE fourni,/gi, "Selon la procédure,");
+      aiResponseText = aiResponseText.replace(/CONTEXTE/g, "document");
+
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: data.output || data.text || (typeof data === "string" ? data : "Analyse terminée."),
+        text: aiResponseText,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMsg]);
@@ -852,7 +861,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         user_id: user.id,
         procedure_id: targetUuid,
         title: `LOG_SUGGESTION_${newSuggestion.id}`,
-        content: `${user.firstName} a proposé une modification sur : ${procedure.title}`,
+        content: `${user.firstName} a proposé une modification sur : ${cleanTitle}`,
         viewed: false,
       });
 
@@ -894,8 +903,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       await supabase.from("notes").insert([
         {
           user_id: user.id,
-          title: `APPLY_REFERENT_${procedure.title.substring(0, 50)}`,
-          content: `${user.firstName} souhaite devenir Référent sur "${procedure.title}"`,
+          title: `APPLY_REFERENT_${cleanTitle.substring(0, 50)}`,
+          content: `${user.firstName} souhaite devenir Référent sur "${cleanTitle}"`,
           procedure_id: targetUuid,
         },
       ]);
@@ -905,7 +914,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         user_id: user.id,
         type: "info",
         title: "Candidature envoyée",
-        content: `Votre demande pour devenir Référent sur "${procedure.title}" a été transmise.`,
+        content: `Votre demande pour devenir Référent sur "${cleanTitle}" a été transmise.`,
         link: `/procedures/${targetUuid}`,
       });
     } catch (err) {
