@@ -42,6 +42,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
     },
     {
+      id: "missions",
+      label: "Missions",
+      icon: "fa-compass",
+      roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
+    },
+    {
       id: "notes",
       label: "Mes Notes",
       icon: "fa-note-sticky",
@@ -51,12 +57,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       id: "flash-notes",
       label: "Flash Notes",
       icon: "fa-bolt", // Lightning icon for "Flash" / "Instant"
-      roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
-    },
-    {
-      id: "missions",
-      label: "Missions",
-      icon: "fa-compass",
       roles: [UserRole.MANAGER, UserRole.TECHNICIAN],
     },
     { id: "statistics", label: "Analyses", icon: "fa-chart-pie", roles: [UserRole.MANAGER] },

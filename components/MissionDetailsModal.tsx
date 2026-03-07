@@ -207,6 +207,22 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
     try {
       if (action === "complete") {
         const newStatus: MissionStatus = (user.role as any) === "manager" ? "completed" : "awaiting_validation";
+        
+        // Send system message for submission
+        if (newStatus === "awaiting_validation") {
+            const date = new Date();
+            const dateStr = date.toLocaleDateString('fr-FR');
+            const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const name = user.firstName ? `${user.firstName} ${user.lastName || ''}` : user.email;
+            
+            await supabase.from("mission_messages").insert({
+                mission_id: mission.id,
+                user_id: user.id,
+                content: `${name} a soumis son travail le ${dateStr} à ${timeStr}`,
+                type: 'system'
+            });
+        }
+
         onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl || undefined);
         if (newStatus === "completed") onClose();
         else setShowSuccessModal("submit");
@@ -369,14 +385,14 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                              <button onClick={() => handleAction("cancel")} disabled={!completionNotes.trim()} className="w-full py-3 border border-rose-200 text-rose-500 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-50 disabled:opacity-50">Refuser / Correction</button>
                            </>
                          ) : (
-                           <button onClick={() => handleAction("complete")} disabled={!completionNotes.trim() && !attachmentUrl} className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl disabled:opacity-50">Soumettre mon travail</button>
+                           <button onClick={() => handleAction("complete")} disabled={!completionNotes.trim() && !attachmentUrl} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl disabled:opacity-50 hover:bg-indigo-700 transition-colors">Soumettre mon travail</button>
                          )}
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center py-8 text-center space-y-4">
-                       <p className="text-sm text-slate-500 font-medium">{mission.status === "open" ? "Réclamez cette mission." : "En attente."}</p>
-                       {mission.status === "open" && <button onClick={() => onUpdateStatus(mission.id, "assigned")} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest">Réclamer</button>}
+                       <p className="text-sm text-slate-500 font-medium">{mission.status === "open" ? "Prenez en charge cette mission." : "En attente."}</p>
+                       {mission.status === "open" && <button onClick={() => onUpdateStatus(mission.id, "assigned")} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest">Prendre en charge</button>}
                        {mission.status === "assigned" && mission.assigned_to === user.id && <button onClick={() => handleAction("start")} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg">Démarrer</button>}
                     </div>
                   )}

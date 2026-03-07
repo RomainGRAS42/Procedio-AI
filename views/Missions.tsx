@@ -340,7 +340,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
       await supabase.from("mission_messages").insert({
           mission_id: missionId,
           user_id: user.id,
-          content: `${user.firstName} a réclamé la mission`,
+          content: `${user.firstName} a pris en charge la mission`,
           type: 'system'
       });
 
@@ -362,7 +362,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         error: err,
       });
       setToast({
-        message: "Impossible de réclamer cette mission. " + (err.message || ""),
+        message: "Impossible de prendre en charge cette mission. " + (err.message || ""),
         type: "error",
       });
     }
@@ -1427,7 +1427,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       if (personalFilter === "available") return m.status === "open";
                       if (m.assigned_to !== user.id) return false;
                       if (personalFilter === "active")
-                        return m.status === "assigned" || m.status === "in_progress";
+                        return m.status === "assigned" || m.status === "in_progress" || m.status === "awaiting_validation";
                       return m.status === "completed" || m.status === "cancelled";
                     }).length
                   }
@@ -1444,7 +1444,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       <button
                         onClick={() => setPersonalFilter("active")}
                         className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${personalFilter === "active" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
-                        En cours ({missions.filter(m => m.assigned_to === user.id && (m.status === "assigned" || m.status === "in_progress")).length})
+                        En cours ({missions.filter(m => m.assigned_to === user.id && (m.status === "assigned" || m.status === "in_progress" || m.status === "awaiting_validation")).length})
                       </button>
                       <button
                         onClick={() => setPersonalFilter("history")}
@@ -1470,7 +1470,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                           if (personalFilter === "available") return m.status === "open";
                           if (m.assigned_to !== user.id) return false;
                           if (personalFilter === "active")
-                            return m.status === "assigned" || m.status === "in_progress";
+                            return m.status === "assigned" || m.status === "in_progress" || m.status === "awaiting_validation";
                           return m.status === "completed" || m.status === "cancelled";
                         })
                         .map((mission) =>

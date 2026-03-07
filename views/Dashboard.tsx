@@ -1009,8 +1009,15 @@ const Dashboard: React.FC<DashboardProps> = ({
         setAnnouncement(data);
         cacheStore.set("dash_announcement", data);
 
-        const lastReadId = localStorage.getItem(`announcement_read_${user.id}`);
-        setIsRead(lastReadId === data.id);
+        // Check DB for read status instead of localStorage
+        const { data: readEntry } = await supabase
+            .from("announcement_reads")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("announcement_id", data.id)
+            .maybeSingle();
+            
+        setIsRead(!!readEntry);
       } else {
         setAnnouncement(null);
       }
@@ -1023,20 +1030,36 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleMarkAsRead = async () => {
-    if (announcement) {
-      setIsRead(true);
-      localStorage.setItem(`announcement_read_${user.id}`, announcement.id);
-      setToast({ message: "Annonce marquée comme lue", type: "success" });
+    if (announcement && user.id) {
+      try {
+          // Persist read status in DB
+          const { error } = await supabase.from("announcement_reads").insert({
+              user_id: user.id,
+              announcement_id: announcement.id,
+              read_at: new Date().toISOString()
+          });
+          
+          if (error) {
+            // Ignore unique constraint violation (already read)
+            if (error.code !== '23505') throw error;
+          }
 
-      // Notify Manager
-      if (announcement.author_id && announcement.author_id !== user.id) {
-        await supabase.from("notifications").insert({
-          user_id: announcement.author_id,
-          type: "info",
-          title: "Message Lu",
-          content: `${user.firstName} ${user.lastName} a confirmé la lecture de votre message.`,
-          link: "/dashboard",
-        });
+          setIsRead(true);
+          setToast({ message: "Merci, confirmation enregistrée !", type: "success" });
+
+          // Notify Manager
+          if (announcement.author_id && announcement.author_id !== user.id) {
+            await supabase.from("notifications").insert({
+              user_id: announcement.author_id,
+              type: "info",
+              title: "Message Lu",
+              content: `${user.firstName} ${user.lastName} a confirmé la lecture de votre message.`,
+              link: "/dashboard",
+            });
+          }
+      } catch (e) {
+          console.error("Error marking announcement as read:", e);
+          setToast({ message: "Erreur lors de la confirmation.", type: "error" });
       }
     }
   };

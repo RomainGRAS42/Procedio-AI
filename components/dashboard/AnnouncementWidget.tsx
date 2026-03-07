@@ -76,41 +76,39 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
             </button>
           </div>
 
-          {/* Toggle moved to top */}
-          <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
-             <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={requiresConfirmation}
-                  onChange={() => setRequiresConfirmation(!requiresConfirmation)}
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                <span className="ml-3 text-[10px] font-black uppercase tracking-widest text-slate-600">
-                  Exiger une confirmation de lecture
-                </span>
-             </label>
-             {requiresConfirmation && <span className="text-[9px] text-amber-500 font-bold animate-pulse">Important</span>}
-          </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1 flex flex-col gap-3">
-              <textarea
-                className="w-full h-20 p-3 bg-white border border-sky-200 rounded-xl focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/5 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                placeholder="Écrivez votre message à l'équipe ici..."
-              />
-            </div>
+          <div className="flex flex-col gap-3">
+            <textarea
+              className="w-full h-20 p-3 bg-white border border-sky-200 rounded-xl focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/5 outline-none resize-none font-medium text-slate-700 text-sm transition-all"
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="Écrivez votre message à l'équipe ici..."
+            />
             
-            <div className="flex flex-col justify-end">
-              <button
-                onClick={handleSaveAnnouncement}
-                disabled={saving || !editContent.trim()}
-                className="w-12 h-12 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-lg shadow-sky-200 hover:bg-slate-900 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
-                title="Envoyer le message">
-                <i className="fa-solid fa-paper-plane text-sm"></i>
-              </button>
+            <div className="flex items-center justify-between">
+               {/* Toggle moved to bottom */}
+               <div className="flex items-center gap-3 pl-1">
+                  <label className="relative inline-flex items-center cursor-pointer group">
+                     <input 
+                       type="checkbox" 
+                       className="sr-only peer"
+                       checked={requiresConfirmation}
+                       onChange={() => setRequiresConfirmation(!requiresConfirmation)}
+                     />
+                     <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500 shadow-sm"></div>
+                     <span className="ml-3 text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-sky-600 transition-colors">
+                       Exiger une confirmation de lecture
+                     </span>
+                  </label>
+                  {requiresConfirmation && <span className="text-[9px] text-amber-500 font-bold animate-pulse">Important</span>}
+               </div>
+
+               <button
+                 onClick={handleSaveAnnouncement}
+                 disabled={saving || !editContent.trim()}
+                 className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-lg shadow-sky-200 hover:bg-slate-900 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                 title="Envoyer le message">
+                 <i className="fa-solid fa-paper-plane text-xs"></i>
+               </button>
             </div>
           </div>
         </div>
