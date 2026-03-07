@@ -396,7 +396,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
           <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
             {activeConversation ? (
               // --- CHAT VIEW ---
-              <div className="h-full flex flex-col">
+              <div className={`h-full flex flex-col ${conversations[activeConversation]?.some(m => m.is_resolved) ? "opacity-75 grayscale-[0.3]" : ""}`}>
                 {/* Back button and Context Bar */}
                 <div className="px-4 py-3 border-b border-slate-50 bg-white shadow-sm flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-4 overflow-hidden">
@@ -427,7 +427,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                           if (data?.signedUrl) window.open(data.signedUrl, '_blank');
                         } catch (err) { console.error(err); }
                       }}
-                      className="px-3 py-2 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2 shrink-0"
+                      className={`px-3 py-2 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2 shrink-0 ${conversations[activeConversation]?.some(m => m.is_resolved) ? "opacity-50 grayscale" : ""}`}
                     >
                       <i className="fa-solid fa-external-link text-xs"></i>
                       <div className="flex flex-col text-left leading-none">
