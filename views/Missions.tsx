@@ -1035,23 +1035,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                   </button>
                 )}
 
-                {/* Manager Actions (Cancel/Delete) */}
-                {(user.role === UserRole.MANAGER || (user.role as any) === "manager") &&
-                  (mission.status === "open" ||
-                    mission.status === "assigned" ||
-                    mission.status === "in_progress") && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCancellingMission(mission);
-                        setReasonText("");
-                      }}
-                      className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95"
-                      title="Annuler ou Supprimer la mission">
-                      <i className="fa-solid fa-trash-can mr-1"></i>
-                      Annuler
-                    </button>
-                  )}
+                {/* Manager Actions moved to end of row */}
             </div>
           </div>
 
@@ -1078,6 +1062,24 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             </span>
             <StatusBadge status={mission.status} />
           </div>
+
+          {/* Manager Actions (Cancel/Delete) - Moved here */}
+          {(user.role === UserRole.MANAGER || (user.role as any) === "manager") &&
+            (mission.status === "open" ||
+              mission.status === "assigned" ||
+              mission.status === "in_progress") && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCancellingMission(mission);
+                  setReasonText("");
+                }}
+                className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-1"
+                title="Annuler ou Supprimer la mission">
+                <i className="fa-solid fa-trash-can"></i>
+                <span className="hidden xl:inline">Annuler</span>
+              </button>
+            )}
 
           <div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-all">
             <i className="fa-solid fa-chevron-right text-xs"></i>
@@ -1191,11 +1193,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                      <select 
                        value={technicianFilter}
                        onChange={(e) => setTechnicianFilter(e.target.value)}
-                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer hover:text-indigo-600 transition-colors py-2 pr-6 text-right"
+                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer hover:text-indigo-600 transition-colors py-2 pr-6 text-center"
                      >
-                       <option value="all">Tous les techniciens</option>
+                       <option value="all" className="text-center">Tous les techniciens</option>
                        {technicians.map(tech => (
-                         <option key={tech.id} value={tech.id}>
+                         <option key={tech.id} value={tech.id} className="text-center">
                            {tech.first_name} {tech.last_name}
                          </option>
                        ))}
