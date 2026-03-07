@@ -901,28 +901,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       setCancellingMission(mission);
                       setReasonText("");
                     }}
-                    className="px-4 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all font-black">
+                    className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95">
+                    <i className="fa-solid fa-trash-can mr-1"></i>
                     Annuler
                   </button>
                 )}
-
-                {/* Manager Actions (Cancel/Delete) */}
-                {(user.role === UserRole.MANAGER || (user.role as any) === "manager") &&
-                  (mission.status === "open" ||
-                    mission.status === "assigned" ||
-                    mission.status === "in_progress") && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCancellingMission(mission);
-                        setReasonText("");
-                      }}
-                      className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95"
-                      title="Annuler ou Supprimer la mission">
-                      <i className="fa-solid fa-trash-can mr-1"></i>
-                      Annuler
-                    </button>
-                  )}
             </div>
           </div>
         )}
@@ -1051,6 +1034,24 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       Examen
                   </button>
                 )}
+
+                {/* Manager Actions (Cancel/Delete) */}
+                {(user.role === UserRole.MANAGER || (user.role as any) === "manager") &&
+                  (mission.status === "open" ||
+                    mission.status === "assigned" ||
+                    mission.status === "in_progress") && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCancellingMission(mission);
+                        setReasonText("");
+                      }}
+                      className="px-3 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg font-black text-[8px] uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95"
+                      title="Annuler ou Supprimer la mission">
+                      <i className="fa-solid fa-trash-can mr-1"></i>
+                      Annuler
+                    </button>
+                  )}
             </div>
           </div>
 
@@ -1142,53 +1143,55 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             {user.role === UserRole.MANAGER ? (
               <div className="space-y-10">
                 {/* Filter Controls for Manager */}
-                <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl w-fit">
-                  <button
-                    onClick={() => setMissionTypeFilter("all")}
-                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                      missionTypeFilter === "all"
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}>
-                    Tout
-                  </button>
-                  <button
-                    onClick={() => setMissionTypeFilter("solo")}
-                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                      missionTypeFilter === "solo"
-                        ? "bg-white text-slate-600 shadow-sm"
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}>
-                    <i className="fa-solid fa-user"></i>
-                    Solo
-                  </button>
-                  <button
-                    onClick={() => setMissionTypeFilter("team")}
-                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                      missionTypeFilter === "team"
-                        ? "bg-white text-blue-600 shadow-sm"
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}>
-                    <i className="fa-solid fa-users"></i>
-                    Équipe
-                  </button>
-                  <button
-                    onClick={() => setMissionTypeFilter("challenge")}
-                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                      missionTypeFilter === "challenge"
-                        ? "bg-white text-purple-600 shadow-sm"
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}>
-                    <i className="fa-solid fa-trophy"></i>
-                    Défi
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-100 p-1.5 rounded-xl w-full">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setMissionTypeFilter("all")}
+                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                        missionTypeFilter === "all"
+                          ? "bg-white text-indigo-600 shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}>
+                      Tout
+                    </button>
+                    <button
+                      onClick={() => setMissionTypeFilter("solo")}
+                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                        missionTypeFilter === "solo"
+                          ? "bg-white text-slate-600 shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}>
+                      <i className="fa-solid fa-user"></i>
+                      Solo
+                    </button>
+                    <button
+                      onClick={() => setMissionTypeFilter("team")}
+                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                        missionTypeFilter === "team"
+                          ? "bg-white text-blue-600 shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}>
+                      <i className="fa-solid fa-users"></i>
+                      Équipe
+                    </button>
+                    <button
+                      onClick={() => setMissionTypeFilter("challenge")}
+                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                        missionTypeFilter === "challenge"
+                          ? "bg-white text-purple-600 shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}>
+                      <i className="fa-solid fa-trophy"></i>
+                      Défi
+                    </button>
+                  </div>
                   
                   {/* Technician Filter Dropdown */}
-                  <div className="relative ml-2 pl-2 border-l border-slate-200">
+                  <div className="relative border-l border-slate-200 pl-4 mr-2">
                      <select 
                        value={technicianFilter}
                        onChange={(e) => setTechnicianFilter(e.target.value)}
-                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer hover:text-indigo-600 transition-colors py-2 pr-4"
+                       className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer hover:text-indigo-600 transition-colors py-2 pr-6 text-right"
                      >
                        <option value="all">Tous les techniciens</option>
                        {technicians.map(tech => (
