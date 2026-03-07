@@ -40,7 +40,7 @@ export const useNotifications = (user: User) => {
       if (data) {
         const formatted = data.map((item: any) => ({
           id: item.id,
-          userName: item.user_profiles?.first_name || item.user_profiles?.email || "Utilisateur",
+          userName: item.user_profiles?.first_name || item.user_profiles?.email?.split("@")[0] || "Utilisateur",
           procedureTitle: item.procedures?.title || "Procédure",
           content: item.suggestion,
           status: item.status,

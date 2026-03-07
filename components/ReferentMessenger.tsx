@@ -179,8 +179,8 @@ const ReferentMessenger: React.FC = () => {
       const myMsg = {
         ...data,
         sender: {
-          first_name: user.firstName,
-          last_name: user.lastName,
+          first_name: user.firstName || user.email?.split("@")[0] || "Moi",
+          last_name: user.lastName || "",
           avatar_url: user.avatarUrl,
         },
       };
@@ -294,14 +294,28 @@ const ReferentMessenger: React.FC = () => {
                 ) : (
                   Object.entries(conversations).map(([partnerId, msgs]) => {
                     const lastMsg = msgs[msgs.length - 1];
-                    const partner =
-                      lastMsg.sender_id === user.id
-                        ? msgs.find((m) => m.sender_id !== user.id)?.sender || {
-                            first_name: "Utilisateur",
-                            last_name: "",
-                            avatar_url: "",
-                          } // Fallback if user initiated
-                        : lastMsg.sender;
+                    // Déterminer le partenaire de conversation (l'autre personne)
+                    let partner = null;
+                    
+                    // Si le dernier message est du référent (user), alors le partenaire est le destinataire
+                    if (lastMsg.sender_id === user.id) {
+                      // Chercher le premier message de l'autre personne dans cette conversation
+                      const otherPersonMsg = msgs.find((m) => m.sender_id !== user.id);
+                      if (otherPersonMsg?.sender) {
+                        partner = otherPersonMsg.sender;
+                      } else {
+                        // Si pas de message de l'autre personne, essayer de récupérer les infos du destinataire
+                        // Le destinataire est dans lastMsg.recipient_id
+                        partner = {
+                          first_name: lastMsg.recipient_id === user.id ? (user.firstName || "Technicien") : "Technicien",
+                          last_name: "",
+                          avatar_url: "",
+                        };
+                      }
+                    } else {
+                      // Si le dernier message n'est pas du référent, alors le partenaire est l'expéditeur
+                      partner = lastMsg.sender;
+                    }
 
                     const unreadCount = msgs.filter(
                       (m) => m.recipient_id === user.id && !m.is_read
