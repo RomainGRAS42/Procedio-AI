@@ -204,9 +204,9 @@ const ReferentMessenger: React.FC = () => {
   return (
     <>
       {/* Floating Bubble */}
-      <div className="fixed bottom-24 right-6 z-50 flex flex-col gap-4 items-end">
+      <div className="fixed bottom-24 right-6 z-[70] flex flex-col gap-4 items-end">
         {unreadCount > 0 && !isOpen && (
-          <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg animate-bounce absolute -top-2 right-0 z-50">
+          <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg animate-bounce absolute -top-2 right-0 z-[70]">
             {unreadCount}
           </div>
         )}
@@ -222,7 +222,7 @@ const ReferentMessenger: React.FC = () => {
 
       {/* Messenger Panel */}
       {isOpen && (
-        <div className="fixed bottom-40 right-6 w-80 md:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 flex flex-col overflow-hidden animate-slide-up origin-bottom-right">
+        <div className="fixed bottom-40 right-6 w-80 md:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-[70] flex flex-col overflow-hidden animate-slide-up origin-bottom-right">
           <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between shrink-0">
             <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
               <i className="fa-solid fa-inbox text-emerald-500"></i>

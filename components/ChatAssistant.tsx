@@ -164,7 +164,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     <>
       {/* Bouton sticky - toujours visible */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-[60] animate-bounce-in">
+        <div className="fixed bottom-6 right-6 z-[80] animate-bounce-in">
           {/* Bouton "Indigo Search Sparkle" (Brand Color) */}
           <button
             onClick={() => setIsOpen(true)}
@@ -189,7 +189,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
       {isOpen && (
         <div 
           ref={chatPanelRef}
-          className={`fixed bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-slide-up transition-all duration-300 ease-in-out
+          className={`fixed bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-[80] animate-slide-up transition-all duration-300 ease-in-out
             ${isExpanded 
               ? 'bottom-6 right-6 w-[800px] h-[80vh] max-w-[calc(100vw-3rem)]' 
               : 'bottom-6 right-6 w-96 h-[600px] max-w-[calc(100vw-3rem)]'
