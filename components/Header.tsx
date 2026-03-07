@@ -261,6 +261,14 @@ const Header: React.FC<HeaderProps> = ({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-slate-800 leading-tight mb-0.5">{notif.title}</p>
                         <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{notif.content}</p>
+                        <p className="text-[9px] text-slate-400 mt-1 font-medium">
+                          {new Date(notif.created_at).toLocaleString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
                       </div>
                       {!notif.read && (
                         <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-white"></div>
@@ -282,6 +290,14 @@ const Header: React.FC<HeaderProps> = ({
                       setShowNotifications(false);
                     }} className="p-3 rounded-xl border border-indigo-100 bg-indigo-50/50 cursor-pointer hover:scale-[1.02] transition-all">
                       <p className="text-[11px] text-slate-700 font-bold leading-relaxed">{log.content}</p>
+                      <p className="text-[9px] text-indigo-400 mt-1 font-medium text-right">
+                        {new Date(log.created_at).toLocaleString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
                     </div>
                   ))}
                   {/* Add other notification types similarly... */}

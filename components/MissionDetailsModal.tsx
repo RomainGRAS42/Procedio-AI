@@ -276,18 +276,18 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
                   
                   {mission.deadline && (
                     <div className="flex items-center gap-3 pr-6 border-r border-slate-100">
-                       <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                       <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center animate-pulse">
                           <i className="fa-solid fa-hourglass-half"></i>
                        </div>
                        <div>
                           <div className="text-sm font-black text-rose-500">
                             {(() => {
                                 const daysLeft = Math.ceil((new Date(mission.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                                return daysLeft > 0 ? `${daysLeft} jours` : daysLeft === 0 ? "Aujourd'hui" : "Expirée";
+                                return daysLeft > 0 ? `${daysLeft} jours restants` : daysLeft === 0 ? "Aujourd'hui !" : "Expirée";
                             })()}
                           </div>
                           <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider text-left">
-                            {new Date(mission.deadline).toLocaleDateString()}
+                            Limite : {new Date(mission.deadline).toLocaleDateString()}
                           </div>
                        </div>
                     </div>

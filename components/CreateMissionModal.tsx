@@ -131,7 +131,7 @@ const CreateMissionModal: React.FC<CreateMissionModalProps> = ({
                   title: "Mission d'Équipe 🤝",
                   content: `Vous avez été ajouté à la mission d'équipe : ${newMission.title}`,
                   link: "/missions",
-                  is_read: false,
+                  read: false,
                 });
            }
       }

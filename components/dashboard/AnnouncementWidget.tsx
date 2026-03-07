@@ -64,7 +64,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
   return (
     <section className={containerClasses} style={animationStyle}>
       {isEditing ? (
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-[10px] font-black text-sky-700 uppercase tracking-widest">
               Édition du message manager
@@ -75,6 +75,24 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
               <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
+
+          {/* Toggle moved to top */}
+          <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
+             <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={requiresConfirmation}
+                  onChange={() => setRequiresConfirmation(!requiresConfirmation)}
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                <span className="ml-3 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  Exiger une confirmation de lecture
+                </span>
+             </label>
+             {requiresConfirmation && <span className="text-[9px] text-amber-500 font-bold animate-pulse">Important</span>}
+          </div>
+
           <div className="flex gap-3">
             <div className="flex-1 flex flex-col gap-3">
               <textarea
@@ -83,25 +101,6 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder="Écrivez votre message à l'équipe ici..."
               />
-              <div className="flex items-center gap-3 px-1">
-                <button
-                  onClick={() => setRequiresConfirmation(!requiresConfirmation)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
-                    requiresConfirmation 
-                      ? "bg-amber-50 border-amber-200 text-amber-700 shadow-sm" 
-                      : "bg-white border-slate-200 text-slate-400 hover:border-sky-200 hover:text-sky-500"
-                  }`}
-                >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                    requiresConfirmation ? "bg-amber-500 border-amber-600 text-white" : "bg-white border-slate-300"
-                  }`}>
-                    {requiresConfirmation && <i className="fa-solid fa-check text-[8px]"></i>}
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">
-                    Demander une confirmation de lecture
-                  </span>
-                </button>
-              </div>
             </div>
             
             <div className="flex flex-col justify-end">
@@ -163,7 +162,7 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                             <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors animate-pulse">
                               <i className="fa-solid fa-check text-[10px]"></i>
                             </span>
-                            <span>Confirmer lecture</span>
+                            <span>J'ai bien reçu l'info</span>
                           </button>
                         ) : null
                       ) : (

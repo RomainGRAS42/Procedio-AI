@@ -480,10 +480,10 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                               </div>
                               <div className="flex flex-col ml-4 pl-4 border-l border-slate-100">
                                 <span className="text-[10px] font-black text-amber-600 tabular-nums">
-                                  {(member.procedure_referents?.[0]?.count || 0)} RÉF.
+                                  {(member.procedure_referents?.[0]?.count || 0)} PROC.
                                 </span>
                                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
-                                  Gardien
+                                  Référent
                                 </span>
                               </div>
                             </div>
@@ -537,8 +537,8 @@ const Team: React.FC<TeamProps> = ({ user }) => {
                                     {/* Referent Workload */}
                                     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col">
                                       <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1">Procédures dont il est référent</p>
-                                        <p className="text-[9px] text-slate-400 font-medium mb-4">Responsable de la maintenance et validation.</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1">Procédures supervisées</p>
+                                        <p className="text-[9px] text-slate-400 font-medium mb-4">Ce membre est responsable de la mise à jour de ces procédures.</p>
                                       </div>
                                       {referentProcedures.length > 0 ? (
                                         <div className="space-y-2 overflow-y-auto max-h-48 pr-2 custom-scrollbar">

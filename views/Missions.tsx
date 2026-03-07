@@ -306,7 +306,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
         .from("missions")
         .update({
           assigned_to: user.id,
-          status: "assigned",
+          status: "in_progress",
         })
         .match({ id: missionId, status: "open" })
         .is("assigned_to", null);
@@ -320,21 +320,21 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
           user_id: mission.created_by,
           type: "mission_status",
           title: "Mission prise en charge",
-          content: `${user.firstName} a pris en charge la mission "${mission.title}"`,
+          content: `${user.firstName} a démarré la mission "${mission.title}"`,
           link: `/missions?id=${missionId}`,
-          is_read: false,
+          read: false,
         });
       }
 
-      // Log notification for the assignee (Self-confirmation)
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        type: "mission_status",
-        title: "Mission acceptée ✅",
-        content: `Vous avez pris en charge la mission "${mission.title}". Bon courage !`,
-        link: `/missions?id=${missionId}`,
-        is_read: false,
-      });
+      // Log notification for the assignee (Self-confirmation) - HANDLED BY TRIGGER NOW
+      // await supabase.from("notifications").insert({
+      //   user_id: user.id,
+      //   type: "mission_status",
+      //   title: "Mission acceptée ✅",
+      //   content: `Vous avez pris en charge la mission "${mission.title}". Bon courage !`,
+      //   link: `/missions?id=${missionId}`,
+      //   read: false,
+      // });
 
       // Log system message
       await supabase.from("mission_messages").insert({
@@ -502,7 +502,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             title: "Mission validée !",
             content: `Votre mission "${mission.title}" a été validée.`,
             link: "/missions",
-            is_read: false,
+            read: false,
           });
         }
 
@@ -514,7 +514,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             title: "Mission annulée 🚫",
             content: `La mission "${mission.title}" a été annulée. Motif : ${notes || "Aucun motif précisé."}`,
             link: "/missions",
-            is_read: false,
+            read: false,
           });
         }
 
@@ -526,7 +526,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             title: "Mission démarrée \uD83D\uDE80",
             content: `${user.firstName || "Le technicien"} a commencé la mission : "${mission.title}"`,
             link: `/missions?id=${mission.id}`,
-            is_read: false,
+            read: false,
           });
         }
 
@@ -552,7 +552,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             title: "Mission terminée",
             content: `${user.firstName || "Le technicien"} a terminé la mission : "${mission.title}"`,
             link: `/dashboard?action=review&id=${mission.id}`,
-            is_read: false,
+            read: false,
           });
       }
     } catch (err) {
@@ -597,7 +597,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             title: "Mission démarrée",
             content: `${user.firstName} a démarré la mission : ${mission.title}`,
             link: "/missions",
-            is_read: false,
+            read: false,
           });
       }
     } catch (err) {
@@ -745,7 +745,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
             title: "Validation Expertise Requise",
             content: `${user.firstName} a terminé l'examen (${score}%). Validation requise.`,
             link: `/dashboard`, // Link to dashboard where ReviewWidget is
-            is_read: false,
+            read: false,
         });
       }
       
@@ -806,11 +806,11 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
   const MissionTypeBadge = ({ type }: { type: MissionType | undefined }) => {
      switch(type) {
        case 'challenge':
-         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-100 text-purple-600 text-[8px] font-black uppercase tracking-widest"><i className="fa-solid fa-trophy"></i>Défi</span>;
+         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-100 text-purple-600 text-[8px] font-black uppercase tracking-widest border border-purple-200 shadow-sm"><i className="fa-solid fa-trophy"></i>Défi</span>;
        case 'team':
-         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-100 text-blue-600 text-[8px] font-black uppercase tracking-widest"><i className="fa-solid fa-users"></i>Équipe</span>;
+         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-100 text-blue-600 text-[8px] font-black uppercase tracking-widest border border-blue-200 shadow-sm"><i className="fa-solid fa-users"></i>Équipe</span>;
        default:
-         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-widest"><i className="fa-solid fa-user"></i>Solo</span>;
+         return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-100 text-cyan-600 text-[8px] font-black uppercase tracking-widest border border-cyan-200 shadow-sm"><i className="fa-solid fa-user"></i>Solo</span>;
      }
   };
 
