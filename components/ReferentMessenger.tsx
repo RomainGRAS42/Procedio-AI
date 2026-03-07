@@ -105,14 +105,17 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
       if (error) throw error;
 
       if (data) {
-        // Group by conversation partner (the other person)
+        // Group by conversation partner + procedure
         const grouped: { [key: string]: DirectMessage[] } = {};
         let unread = 0;
 
         data.forEach((msg: any) => {
           const partnerId = msg.sender_id === user.id ? msg.recipient_id : msg.sender_id;
-          if (!grouped[partnerId]) grouped[partnerId] = [];
-          grouped[partnerId].push(msg);
+          const procId = msg.procedure_id || "no_procedure";
+          const threadKey = `${partnerId}:${procId}`;
+          
+          if (!grouped[threadKey]) grouped[threadKey] = [];
+          grouped[threadKey].push(msg);
 
           if (msg.recipient_id === user.id && !msg.is_read) {
             unread++;
@@ -143,10 +146,12 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
 
     setConversations((prev) => {
       const partnerId = msg.sender_id;
-      const existing = prev[partnerId] || [];
+      const procId = msg.procedure_id || "no_procedure";
+      const threadKey = `${partnerId}:${procId}`;
+      const existing = prev[threadKey] || [];
       return {
         ...prev,
-        [partnerId]: [...existing, fullMsg],
+        [threadKey]: [...existing, fullMsg],
       };
     });
 
@@ -223,10 +228,13 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
         },
       };
 
-      setConversations((prev) => ({
-        ...prev,
-        [partnerId]: [...(prev[partnerId] || []), myMsg],
-      }));
+      setConversations((prev) => {
+        const threadKey = `${recipient_id}:${procedure_id || "no_procedure"}`;
+        return {
+          ...prev,
+          [threadKey]: [...(prev[threadKey] || []), myMsg],
+        };
+      });
 
       setInput("");
     } catch (err) {
@@ -469,25 +477,30 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                     <p className="text-[10px] uppercase font-bold tracking-widest">Aucun message</p>
                   </div>
                 ) : (
-                  Object.entries(conversations).map(([partnerId, msgs]) => {
-                    const lastMsg = msgs[msgs.length - 1];
-                    // Déterminer le partenaire de conversation (l'autre personne)
-                    const partner = lastMsg.sender_id === user.id ? lastMsg.recipient : lastMsg.sender;
+                  Object.entries(conversations)
+                    .sort(([, a], [, b]) => {
+                      const timeA = new Date(a[a.length - 1].created_at).getTime();
+                      const timeB = new Date(b[b.length - 1].created_at).getTime();
+                      return timeB - timeA;
+                    })
+                    .map(([threadKey, msgs]) => {
+                      const lastMsg = msgs[msgs.length - 1];
+                      const partnerId = threadKey.split(':')[0];
+                      const partner = lastMsg.sender_id === user.id ? lastMsg.recipient : lastMsg.sender;
+                      const unreadCount = msgs.filter(
+                        (m) => m.recipient_id === user.id && !m.is_read
+                      ).length;
+                      const isResolved = msgs.some(m => m.is_resolved);
 
-                    const unreadCount = msgs.filter(
-                      (m) => m.recipient_id === user.id && !m.is_read
-                    ).length;
-                    const isResolved = msgs.some(m => m.is_resolved);
-
-                    return (
-                      <button
-                        key={partnerId}
-                        onClick={() => setActiveConversation(partnerId)}
-                        className={`w-full p-3 rounded-xl transition-all flex items-center gap-3 text-left group border ${
-                          unreadCount > 0
-                            ? "bg-indigo-50/30 border-indigo-100/50 shadow-sm"
-                            : "hover:bg-slate-50 border-transparent hover:border-slate-100"
-                        } ${isResolved ? "opacity-60 grayscale-[0.5]" : ""}`}>
+                      return (
+                        <button
+                          key={threadKey}
+                          onClick={() => setActiveConversation(threadKey)}
+                          className={`w-full p-3 rounded-xl transition-all flex items-center gap-3 text-left group border ${
+                            unreadCount > 0
+                              ? "bg-indigo-50/30 border-indigo-100/50 shadow-sm"
+                              : "hover:bg-slate-50 border-transparent hover:border-slate-100"
+                          } ${isResolved ? "opacity-60 grayscale-[0.5]" : ""}`}>
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 overflow-hidden transition-transform group-hover:scale-105 ${
                           unreadCount > 0 ? "border-indigo-200 shadow-sm" : 
                           isResolved ? "border-slate-200" : "border-slate-100"
@@ -566,11 +579,11 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
 
       {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[150] flex items-center gap-3 animate-fade-in border backdrop-blur-md ${
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[150] flex items-center gap-3 animate-fade-in border backdrop-blur-md ${
           notification.type === "success" ? "bg-emerald-500/90 border-emerald-400 text-white" :
           notification.type === "error" ? "bg-rose-500/90 border-rose-400 text-white" :
           "bg-slate-800/90 border-slate-700 text-white"
-        }`}>
+        }">
           <i className={`fa-solid ${
             notification.type === "success" ? "fa-circle-check" :
             notification.type === "error" ? "fa-circle-exclamation" :
@@ -600,12 +613,15 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                     const msgs = conversations[activeConversation!] || [];
                     const lastMsg = msgs[msgs.length - 1];
                     const procId = lastMsg?.procedure_id;
+                    const [partnerId, currentProcId] = activeConversation!.split(':');
+                    const actualProcId = currentProcId === "no_procedure" ? null : currentProcId;
 
+                    // Strictly scoped resolution: Me + Partner + Procedure
                     const { error } = await supabase
                       .from("direct_messages")
                       .update({ is_resolved: true })
-                      .or(`sender_id.eq.${activeConversation},recipient_id.eq.${activeConversation}`)
-                      .eq('procedure_id', procId);
+                      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${partnerId}),and(sender_id.eq.${partnerId},recipient_id.eq.${user.id})`)
+                      .eq('procedure_id', actualProcId);
 
                     if (error) throw error;
 
@@ -614,9 +630,9 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                       .from("direct_messages")
                       .insert({
                         sender_id: user.id,
-                        recipient_id: activeConversation,
+                        recipient_id: partnerId,
                         content: `Incident clos par ${user.firstName}`,
-                        procedure_id: procId,
+                        procedure_id: actualProcId,
                         is_resolved: true,
                         metadata: { is_system: true }
                       })
@@ -689,7 +705,8 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
               <button
                 onClick={() => {
                   const msgs = conversations[activeConversation!] || [];
-                  const proc = msgs.find(m => m.procedure)?.procedure;
+                  const lastMsg = msgs[msgs.length - 1];
+                  const proc = lastMsg.procedure;
                   if (proc) {
                     onToggle(false);
                     window.location.href = `/procedure/${proc.uuid}?action=suggest`;
