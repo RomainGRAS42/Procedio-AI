@@ -163,14 +163,16 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
     }
   };
 
-  const markAsRead = async (partnerId: string) => {
+  const markAsRead = async (threadKey: string) => {
     if (!user) return;
 
     // Optimistic update
     const unreadInConv =
-      conversations[partnerId]?.filter((m) => m.recipient_id === user.id && !m.is_read).length || 0;
+      conversations[threadKey]?.filter((m) => m.recipient_id === user.id && !m.is_read).length || 0;
     if (unreadInConv > 0) {
       setUnreadCount((prev) => Math.max(0, prev - unreadInConv));
+
+      const partnerId = threadKey.split(':')[0];
 
       // DB Update
       await supabase
@@ -183,7 +185,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
       // Update local state
       setConversations((prev) => ({
         ...prev,
-        [partnerId]: prev[partnerId].map((m) =>
+        [threadKey]: prev[threadKey].map((m) =>
           m.recipient_id === user.id ? { ...m, is_read: true } : m
         ),
       }));
@@ -196,13 +198,16 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
 
     try {
       const content = input.trim();
-        const { data, error } = await supabase
+      const [recipient_id, procedure_id_raw] = activeConversation.split(':');
+      const procedure_id = procedure_id_raw === 'no_procedure' ? null : procedure_id_raw;
+
+      const { data, error } = await supabase
         .from("direct_messages")
         .insert({
           sender_id: user.id,
-          recipient_id: activeConversation,
+          recipient_id: recipient_id,
           content: content,
-          procedure_id: conversations[activeConversation]?.slice(-1)[0]?.procedure_id || null,
+          procedure_id: procedure_id,
           last_activity_at: new Date().toISOString(),
         })
         .select()
@@ -214,10 +219,10 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
       await supabase
         .from("direct_messages")
         .update({ last_activity_at: new Date().toISOString() })
-        .or(`sender_id.eq.${activeConversation},recipient_id.eq.${activeConversation}`);
+        .or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipient_id}),and(sender_id.eq.${recipient_id},recipient_id.eq.${user.id})`)
+        .eq('procedure_id', procedure_id);
 
       // Add to local state immediately
-      const partnerId = activeConversation;
       const myMsg = {
         ...data,
         sender: {
@@ -229,10 +234,9 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
       };
 
       setConversations((prev) => {
-        const threadKey = `${recipient_id}:${procedure_id || "no_procedure"}`;
         return {
           ...prev,
-          [threadKey]: [...(prev[threadKey] || []), myMsg],
+          [activeConversation]: [...(prev[activeConversation] || []), myMsg],
         };
       });
 
@@ -579,11 +583,11 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
 
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[150] flex items-center gap-3 animate-fade-in border backdrop-blur-md ${
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[150] flex items-center gap-3 animate-fade-in border backdrop-blur-md ${
           notification.type === "success" ? "bg-emerald-500/90 border-emerald-400 text-white" :
           notification.type === "error" ? "bg-rose-500/90 border-rose-400 text-white" :
           "bg-slate-800/90 border-slate-700 text-white"
-        }">
+        }`}>
           <i className={`fa-solid ${
             notification.type === "success" ? "fa-circle-check" :
             notification.type === "error" ? "fa-circle-exclamation" :
