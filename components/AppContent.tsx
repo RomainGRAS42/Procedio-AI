@@ -33,6 +33,7 @@ const AppContent: React.FC<any> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [activeWidget, setActiveWidget] = React.useState<'none' | 'copilot' | 'messenger'>('none');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const mainScrollRef = React.useRef<HTMLElement>(null);
 
@@ -194,6 +195,8 @@ const AppContent: React.FC<any> = ({
 
       <ChatAssistant 
         user={user} 
+        isOpen={activeWidget === 'copilot'}
+        onToggle={(open) => setActiveWidget(open ? 'copilot' : 'none')}
         onSelectProcedure={(p) => {
           let hash = "";
           if (p.fileUrl && p.fileUrl.includes('#')) {
@@ -207,7 +210,11 @@ const AppContent: React.FC<any> = ({
       />
       
       {/* Referent Messenger (Floating) */}
-      <ReferentMessenger />
+      <ReferentMessenger 
+        isOpen={activeWidget === 'messenger'}
+        onToggle={(open) => setActiveWidget(open ? 'messenger' : 'none')}
+        hideTrigger={activeWidget === 'copilot'}
+      />
     </div>
   );
 };

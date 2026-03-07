@@ -26,10 +26,11 @@ interface Message {
 interface ChatAssistantProps {
   user: User;
   onSelectProcedure: (procedure: Procedure) => void;
+  isOpen: boolean;
+  onToggle: (isOpen: boolean) => void;
 }
 
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure, isOpen, onToggle }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -54,7 +55,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isOpen && chatPanelRef.current && !chatPanelRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        onToggle(false);
       }
     };
 
@@ -164,10 +165,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
     <>
       {/* Bouton sticky - toujours visible */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-[80] animate-bounce-in">
+        <div className="fixed bottom-6 right-6 z-[100] animate-bounce-in">
           {/* Bouton "Indigo Search Sparkle" (Brand Color) */}
           <button
-            onClick={() => setIsOpen(true)}
+            onClick={() => onToggle(true)}
             className="group relative w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-500 shadow-xl shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/10"
           >
             {/* Conteneur d'icônes avec rotation */}
@@ -189,7 +190,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
       {isOpen && (
         <div 
           ref={chatPanelRef}
-          className={`fixed bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-[80] animate-slide-up transition-all duration-300 ease-in-out
+          className={`fixed bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col z-[100] animate-slide-up transition-all duration-300 ease-in-out
             ${isExpanded 
               ? 'bottom-6 right-6 w-[800px] h-[80vh] max-w-[calc(100vw-3rem)]' 
               : 'bottom-6 right-6 w-96 h-[600px] max-w-[calc(100vw-3rem)]'
@@ -225,7 +226,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                 <i className={`fa-solid ${isExpanded ? 'fa-compress' : 'fa-expand'}`} />
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => onToggle(false)}
                 className="w-8 h-8 rounded-lg hover:bg-white/50 text-slate-500 hover:text-slate-700 transition-all flex items-center justify-center"
                 aria-label="Fermer"
               >
@@ -280,7 +281,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                                 status: procData.status
                              } as Procedure;
                              onSelectProcedure(procedure);
-                             setIsOpen(false);
+                             onToggle(false);
                           } else {
                             window.open(href, '_blank', 'noopener,noreferrer');
                           }
@@ -332,7 +333,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                                   category: data.Type,
                                   fileUrl: data.file_url
                                 } as any);
-                                setIsOpen(false);
+                                onToggle(false);
                               } else if (group.path) {
                                 const fullUrl = `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${group.path}`;
                                 window.open(fullUrl, '_blank');
@@ -365,7 +366,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                                       category: data.Type,
                                       fileUrl: `${data.file_url}#search="${searchStr}"`
                                     } as any);
-                                    setIsOpen(false);
+                                    onToggle(false);
                                   } else if (group.path) {
                                     const fullUrl = `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${group.path}#search="${searchStr}"`;
                                     window.open(fullUrl, '_blank');
@@ -412,7 +413,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                                  category: data.Type,
                                  fileUrl: data.file_url
                                } as any);
-                               setIsOpen(false);
+                               onToggle(false);
                              } else if (s.path) {
                                const fullUrl = `https://pczlikyvfmrdauufgxai.supabase.co/storage/v1/object/public/procedures/${s.path}`;
                                window.open(fullUrl, '_blank');
@@ -455,7 +456,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure }
                              category: data.Type,
                              fileUrl: data.file_url
                            } as any);
-                           setIsOpen(false);
+                           onToggle(false);
                         }
                       }}
                       className="mt-4 flex items-center gap-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md group"

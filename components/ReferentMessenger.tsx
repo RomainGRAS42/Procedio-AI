@@ -14,9 +14,14 @@ interface DirectMessage {
   procedure?: { title: string; uuid: string };
 }
 
-const ReferentMessenger: React.FC = () => {
+interface ReferentMessengerProps {
+  isOpen: boolean;
+  onToggle: (isOpen: boolean) => void;
+  hideTrigger?: boolean;
+}
+
+const ReferentMessenger: React.FC<ReferentMessengerProps> = ({ isOpen, onToggle, hideTrigger }) => {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<{ [key: string]: DirectMessage[] }>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeConversation, setActiveConversation] = useState<string | null>(null); // sender_id
@@ -204,14 +209,14 @@ const ReferentMessenger: React.FC = () => {
   return (
     <>
       {/* Floating Bubble */}
-      <div className="fixed bottom-24 right-6 z-[70] flex flex-col gap-4 items-end">
+      <div className={`fixed bottom-24 right-6 z-[90] flex flex-col gap-4 items-end transition-all duration-300 ${hideTrigger ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100'}`}>
         {unreadCount > 0 && !isOpen && (
-          <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg animate-bounce absolute -top-2 right-0 z-[70]">
+          <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg animate-bounce absolute -top-2 right-0 z-[90]">
             {unreadCount}
           </div>
         )}
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => onToggle(!isOpen)}
           className={`w-12 h-12 rounded-full shadow-xl flex items-center justify-center transition-all hover:scale-110 ${
             isOpen ? "bg-slate-800 text-white rotate-90" : "bg-emerald-500 text-white"
           }`}
@@ -222,7 +227,7 @@ const ReferentMessenger: React.FC = () => {
 
       {/* Messenger Panel */}
       {isOpen && (
-        <div className="fixed bottom-40 right-6 w-80 md:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-[70] flex flex-col overflow-hidden animate-slide-up origin-bottom-right">
+        <div className="fixed bottom-40 right-6 w-80 md:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-100 z-[90] flex flex-col overflow-hidden animate-slide-up origin-bottom-right">
           <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between shrink-0">
             <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
               <i className="fa-solid fa-inbox text-emerald-500"></i>
