@@ -11,6 +11,7 @@ interface RecentHistoryWidgetProps {
   subtitle?: string;
   onMarkAsRead?: (id: string) => void;
   userRole?: string; // Added userRole prop
+  missions?: any[]; // List of missions for XP lookup
 }
 
 const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
@@ -21,10 +22,32 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
   onMarkAsRead,
   title = "Mon Fil d'Activité",
   subtitle = "Vos dernières actions et alertes importantes.",
-  userRole
+  userRole,
+  missions = []
 }) => {
   // Combine activities and notifications into a single feed
   const feedItems = useMemo(() => {
+    // Helper to find mission XP
+    const findMissionXP = (text: string): string | null => {
+        if (!text) return null;
+        // 1. Try to extract quoted title "Mission Title"
+        const quoteMatch = text.match(/["'](.+?)["']/);
+        if (quoteMatch && quoteMatch[1]) {
+            const missionTitle = quoteMatch[1];
+            // Find mission with this title (case insensitive)
+            const mission = missions.find(m => m.title.toLowerCase() === missionTitle.toLowerCase());
+            if (mission && mission.xp_reward) return mission.xp_reward.toString();
+        }
+        
+        // 2. Fallback: Check if any mission title is contained in the text
+        // Sort missions by title length desc to match longest title first
+        const sortedMissions = [...missions].sort((a, b) => b.title.length - a.title.length);
+        const found = sortedMissions.find(m => text.toLowerCase().includes(m.title.toLowerCase()));
+        if (found && found.xp_reward) return found.xp_reward.toString();
+        
+        return null;
+    };
+
     // If it's the Success Journal (based on title), we only want COMPLETED missions and Badges
     const isSuccessJournal = title.includes("Succès");
 
@@ -48,9 +71,10 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             const xpMatch = a.content?.match(/(\d+)\s*XP/);
             let xpValue = xpMatch ? xpMatch[1] : null;
             
-            // Fallback for activities
+            // Fallback for activities: Lookup real mission XP
             if (!xpValue && (title.includes('validée') || content.includes('validée') || content.includes('terminée'))) {
-                 xpValue = '50';
+                 const realXP = findMissionXP(a.content || '') || findMissionXP(a.title || '');
+                 xpValue = realXP || '50';
             }
             
             return {
@@ -77,9 +101,10 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             const xpMatch = n.content?.match(/(\d+)\s*XP/) || n.title?.match(/(\d+)\s*XP/);
             let xpValue = xpMatch ? xpMatch[1] : null;
 
-            // Fallback: If it's a mission validation and no XP found, assume 50 XP default
+            // Fallback: If it's a mission validation and no XP found, try to lookup mission XP, else default 50
             if (!xpValue && (n.title?.toLowerCase().includes('validée') || n.content?.toLowerCase().includes('validée'))) {
-                xpValue = '50';
+                const realXP = findMissionXP(n.content || '') || findMissionXP(n.title || '');
+                xpValue = realXP || '50';
             }
 
             return {
@@ -240,7 +265,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
 
     // Sort by date desc and limit
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
-  }, [activities, notifications, title, userRole]);
+  }, [activities, notifications, title, userRole, missions]);
 
   return (
     <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm flex flex-col h-full min-h-[300px]">
@@ -332,6 +357,14 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
 
                 const isUnread = item.type === 'notification' && !item.isRead;
                 const isSuccessJournal = title.includes("Succès");
+                
+                // Navigation Logic:
+                // - Success Journal: Click marks as read (no nav)
+                // - Activity Feed: Click navigates ONLY if it's a "Nouvelle mission" or similar actionable event
+                const isNewMission = item.title?.toLowerCase().includes('nouvelle mission') || 
+                                     item.title?.toLowerCase().includes('mission d\'équipe') ||
+                                     item.title?.toLowerCase().includes('nouveau défi');
+
                 const clickAction = isSuccessJournal ? (e: any) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -339,7 +372,11 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     if (onMarkAsRead && item.type === 'notification') {
                         onMarkAsRead(item.id);
                     }
-                } : () => item.link && onNavigate && onNavigate(item.link);
+                } : () => {
+                    if (isNewMission && item.link && onNavigate) {
+                        onNavigate(item.link);
+                    }
+                };
 
                 return (
                 <div 
@@ -348,7 +385,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${
                         isUnread 
                             ? 'bg-white border-indigo-100 shadow-sm cursor-pointer hover:bg-slate-50' 
-                            : (item.link && !isSuccessJournal)
+                            : (isNewMission && item.link && !isSuccessJournal)
                                 ? 'cursor-pointer hover:bg-slate-50 border-slate-100 bg-white' 
                                 : 'border-transparent bg-slate-50/30 cursor-default'
                     }`}

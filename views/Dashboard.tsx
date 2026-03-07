@@ -1383,6 +1383,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     onNavigate={onNavigate}
                     onMarkAsRead={(id) => markAsRead(id)}
                     userRole={user.role}
+                    missions={activeMissions}
                   />
                 </div>
 
@@ -1430,6 +1431,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         onNavigate={onNavigate}
                         title="Journal des Succès"
                         subtitle="Vos victoires, badges et missions validées."
+                        missions={activeMissions}
                       />
                   </div>
               </div>
