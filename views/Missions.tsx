@@ -15,33 +15,66 @@ import CreateMissionModal from "../components/CreateMissionModal";
 
 const MissionActionMenu = ({ onCancel }: { onCancel: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
   const menuRef = React.useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
+  // Update position and handle click outside
   useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.right + window.scrollX - 192, // Align right (w-48 = 192px)
+      });
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(event.target as Node) && 
+        buttonRef.current && 
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      // Recalculate on scroll/resize
+      window.addEventListener("scroll", () => setIsOpen(false));
+      window.addEventListener("resize", () => setIsOpen(false));
+    }
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", () => setIsOpen(false));
+      window.removeEventListener("resize", () => setIsOpen(false));
+    };
+  }, [isOpen]);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <>
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+        className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10 relative"
         title="Plus d'options"
       >
         <i className="fa-solid fa-ellipsis-vertical"></i>
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-fade-in origin-top-right">
+      {isOpen && createPortal(
+        <div 
+          ref={menuRef}
+          className="absolute z-[9999] w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 animate-fade-in origin-top-right"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -53,9 +86,10 @@ const MissionActionMenu = ({ onCancel }: { onCancel: () => void }) => {
             <i className="fa-solid fa-trash-can"></i>
             Annuler la mission
           </button>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };
 

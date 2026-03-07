@@ -68,23 +68,25 @@ const MissionsWidget: React.FC<MissionsWidgetProps> = ({
                    'assigned': 'Assignée',
                    'in_progress': 'En cours',
                    'awaiting_validation': 'En attente',
-                   'completed': 'Terminée'
+                   'completed': 'Terminée',
+                   'cancelled': 'Annulée'
                  }[mission.status] || mission.status;
                  
                  const statuscolor = {
-                   'open': 'bg-slate-100 text-slate-500',
-                   'assigned': 'bg-blue-100 text-blue-600',
-                   'in_progress': 'bg-indigo-100 text-indigo-600',
-                   'awaiting_validation': 'bg-amber-100 text-amber-600',
-                   'completed': 'bg-emerald-100 text-emerald-600'
-                 }[mission.status] || 'bg-slate-100 text-slate-500';
+                   'open': 'bg-emerald-50 text-emerald-600 border border-emerald-100', // Inviting Green
+                   'assigned': 'bg-blue-50 text-blue-600 border border-blue-100',
+                   'in_progress': 'bg-indigo-50 text-indigo-600 border border-indigo-100',
+                   'awaiting_validation': 'bg-amber-50 text-amber-600 border border-amber-100',
+                   'completed': 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                   'cancelled': 'bg-rose-50 text-rose-500 border border-rose-100 opacity-70' // Muted Rose
+                 }[mission.status] || 'bg-slate-50 text-slate-500 border border-slate-100';
 
                  return (
                   <div key={mission.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group cursor-pointer" onClick={() => onNavigate?.('missions')}>
                     <div className="flex justify-between items-center mb-1">
                       <div className="flex items-center gap-2">
                          {getMissionTypeBadge(mission.mission_type)}
-                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${statuscolor}`}>
+                         <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${statuscolor}`}>
                            {statusLabel}
                          </span>
                          <span className="text-[9px] font-bold text-slate-400">
