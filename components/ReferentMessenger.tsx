@@ -275,40 +275,37 @@ const ReferentMessenger: React.FC = () => {
                   {conversations[activeConversation]?.map((msg) => (
                     <div
                       key={msg.id}
-                      className={`flex ${msg.sender_id === user.id ? "justify-end" : "justify-start"}`}>
+                      className={`flex items-end gap-2 ${msg.sender_id === user.id ? "flex-row-reverse" : "flex-row"}`}>
+                      
+                      {/* Avatar outside the bubble */}
+                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 mb-1">
+                        {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
+                          <img 
+                            src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
+                            alt="Avatar" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
+                            }}
+                          />
+                        ) : (
+                          <img 
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
+                            alt="Avatar Fallback" 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+
                       <div
-                        className={`max-w-[85%] p-3 rounded-2xl text-xs flex flex-col gap-1.5 ${
+                        className={`max-w-[75%] p-3 rounded-2xl text-xs flex flex-col gap-1 shadow-sm ${
                           msg.sender_id === user.id
-                            ? "bg-emerald-500 text-white rounded-tr-none"
-                            : "bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm"
+                            ? "bg-indigo-600 text-white rounded-br-none"
+                            : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
                         }`}>
-                        <div className="flex items-center gap-2 mb-0.5 opacity-80">
-                          {/* User Avatar with optimized fallback */}
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border-2 ${msg.sender_id === user.id ? "bg-white/20 border-white/30" : "bg-white border-slate-100 shadow-sm"}`}>
-                            {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
-                              <img 
-                                src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
-                                alt="Avatar" 
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
-                                }}
-                              />
-                            ) : (
-                              <img 
-                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
-                                alt="Avatar Fallback" 
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <span className="text-[8px] font-black uppercase tracking-widest">
-                            {msg.sender_id === user.id ? "Moi" : (msg.sender?.first_name || "Utilisateur")}
-                          </span>
-                        </div>
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                         <span
-                          className={`text-[9px] block mt-1 ${msg.sender_id === user.id ? "text-emerald-100" : "text-slate-300"}`}>
+                          className={`text-[8px] block opacity-50 ${msg.sender_id === user.id ? "text-right" : "text-left"}`}>
                           {new Date(msg.created_at).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -385,13 +382,22 @@ const ReferentMessenger: React.FC = () => {
                             ? "bg-indigo-50/30 border-indigo-100/50 shadow-sm"
                             : "hover:bg-slate-50 border-transparent hover:border-slate-100"
                         }`}>
-                        <div className="w-10 h-10 rounded-full bg-white border border-slate-100 shadow-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          {partner?.avatar_url ? (
-                            <img src={partner.avatar_url} className="w-full h-full object-cover" alt="User" />
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 overflow-hidden transition-transform group-hover:scale-105 ${unreadCount > 0 ? "border-indigo-200 shadow-sm" : "border-slate-100"}`}>
+                          {partner?.avatar_url || (partner as any)?.avatarUrl ? (
+                            <img 
+                              src={partner?.avatar_url || (partner as any)?.avatarUrl} 
+                              className="w-full h-full object-cover" 
+                              alt="User" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
+                              }}
+                            />
                           ) : (
-                            <span className="font-black text-xs text-slate-400 uppercase">
-                              {partner?.first_name?.[0] || "?"}
-                            </span>
+                            <img 
+                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
+                              className="w-full h-full object-cover" 
+                              alt="User Fallback" 
+                            />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">

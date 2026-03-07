@@ -1141,39 +1141,36 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
               {directMessages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.sender_id === user.id ? "justify-end" : "justify-start"}`}>
+                  className={`flex items-end gap-3 ${msg.sender_id === user.id ? "flex-row-reverse" : "flex-row"}`}>
+                  
+                  {/* Avatar outside */}
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 mb-1 bg-white">
+                    {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
+                      <img 
+                        src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
+                        }}
+                      />
+                    ) : (
+                      <img 
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
+                        alt="Avatar Fallback" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+
                   <div
-                    className={`max-w-[85%] p-4 rounded-3xl text-sm shadow-sm flex flex-col gap-2 ${
+                    className={`max-w-[75%] p-4 rounded-2xl text-sm shadow-sm flex flex-col gap-1.5 ${
                       msg.sender_id === user.id
-                        ? "bg-emerald-500 text-white rounded-tr-none"
-                        : "bg-white border border-slate-100 text-slate-700 rounded-tl-none"
+                        ? "bg-indigo-600 text-white rounded-br-none"
+                        : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
                     }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      {/* User Avatar with optimized fallback */}
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/20 border-2 border-white/30 flex items-center justify-center shrink-0 shadow-sm">
-                        {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
-                          <img 
-                            src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
-                            alt="Avatar" 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
-                            }}
-                          />
-                        ) : (
-                          <img 
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
-                            alt="Avatar Fallback" 
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-80">
-                        {msg.sender_id === user.id ? "Moi" : (msg.sender?.first_name || "Utilisateur")}
-                      </span>
-                    </div>
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    <span className={`text-[10px] block mt-1 opacity-70 text-right`}>
+                    <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    <span className={`text-[10px] block opacity-50 ${msg.sender_id === user.id ? "text-right" : "text-left"}`}>
                       {new Date(msg.created_at).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
