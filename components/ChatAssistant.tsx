@@ -164,27 +164,30 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure, 
   return (
     <>
       {/* Bouton sticky - toujours visible */}
-      {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-bounce-in">
-          {/* Bouton "Indigo Search Sparkle" (Brand Color) */}
-          <button
-            onClick={() => onToggle(true)}
-            className="group relative w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-500 shadow-xl shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/10"
-          >
-            {/* Conteneur d'icônes avec rotation */}
-            <div className="relative w-full h-full flex items-center justify-center transition-transform duration-500">
-              
-              {/* État FERMÉ : Loupe + Sparkles */}
+      <div className="fixed bottom-6 right-6 z-[100] animate-bounce-in">
+        {/* Bouton "Indigo Search Sparkle" / "Close" */}
+        <button
+          onClick={() => onToggle(!isOpen)}
+          className={`group relative w-16 h-16 rounded-full shadow-xl transition-all duration-300 flex items-center justify-center overflow-hidden border border-white/10 ${
+            isOpen 
+              ? 'bg-slate-800 hover:bg-slate-700 shadow-slate-900/20' 
+              : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-1'
+          }`}
+        >
+          {/* Conteneur d'icônes avec rotation */}
+          <div className={`relative w-full h-full flex items-center justify-center transition-all duration-500 ${isOpen ? 'rotate-90' : ''}`}>
+            {isOpen ? (
+              <i className="fa-solid fa-xmark text-2xl text-white"></i>
+            ) : (
               <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform scale-100 opacity-100 group-hover:scale-110">
                 <i className="fa-solid fa-magnifying-glass text-2xl text-white"></i>
                 <i className="fa-solid fa-sparkles text-sm text-yellow-300 absolute top-3 right-3 animate-pulse"></i>
                 <i className="fa-solid fa-sparkles text-[10px] text-white absolute bottom-4 left-3 opacity-70 animate-ping" style={{ animationDuration: '3s' }}></i>
               </div>
-
-            </div>
-          </button>
-        </div>
-      )}
+            )}
+          </div>
+        </button>
+      </div>
 
       {/* Panel Chat */}
       {isOpen && (
@@ -224,13 +227,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ user, onSelectProcedure, 
                 title={isExpanded ? "Réduire (Mode Widget)" : "Agrandir (Mode Lecture)"}
               >
                 <i className={`fa-solid ${isExpanded ? 'fa-compress' : 'fa-expand'}`} />
-              </button>
-              <button
-                onClick={() => onToggle(false)}
-                className="w-8 h-8 rounded-lg hover:bg-white/50 text-slate-500 hover:text-slate-700 transition-all flex items-center justify-center"
-                aria-label="Fermer"
-              >
-                <i className="fa-solid fa-xmark" />
               </button>
             </div>
           </div>
