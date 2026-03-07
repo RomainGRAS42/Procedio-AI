@@ -21,6 +21,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleHash = () => {
+      // Check for type=recovery OR implicit flow (access_token present) combined with previous intent
+      // Actually, Supabase handles the session exchange automatically. 
+      // We just need to detect if we are in a "password reset" context.
+      // Often the URL will be /#access_token=...&type=recovery
       if (window.location.hash.includes("type=recovery")) {
         setIsRecoveryMode(true);
       }
