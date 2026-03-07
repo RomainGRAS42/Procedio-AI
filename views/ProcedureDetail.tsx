@@ -369,8 +369,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       procedure.db_id ||
       (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
 
-    const procedureContext = `\n---\n📌 Contexte : ${cleanTitle}\n🔗 Lien : ${window.location.origin}/procedures/${targetUuid}`;
-    const fullContent = content + procedureContext;
+    const fullContent = content; // Don't append context anymore
 
     try {
       const { data, error } = await supabase
@@ -402,6 +401,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           first_name: user.firstName || user.email?.split("@")[0] || "Moi",
           last_name: user.lastName || "",
           avatar_url: user.avatarUrl,
+          avatarUrl: user.avatarUrl,
         },
       };
 
@@ -1105,6 +1105,29 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           {isHumanChat ? (
             // HUMAN CHAT
             <>
+              {/* Entête de contexte de procédure */}
+              <div className="mx-6 mt-4 p-3 bg-indigo-50/50 border border-indigo-100/50 rounded-xl flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-indigo-500 shadow-sm shrink-0">
+                    <i className="fa-solid fa-file-lines text-sm"></i>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-0.5 whitespace-nowrap">Cette discussion concerne la procédure :</p>
+                    <p className="text-xs font-bold text-slate-700 truncate">{procedure.title}</p>
+                  </div>
+                </div>
+                <a 
+                  href={`/procedures/${procedure.db_id || procedure.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsChatOpen(false);
+                  }}
+                  className="px-3 py-1.5 bg-white text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-50 transition-all shrink-0"
+                >
+                  Ouvrir
+                </a>
+              </div>
+
               {directMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-10 text-slate-400 opacity-60">
                   <i className="fa-regular fa-comments text-4xl mb-4"></i>

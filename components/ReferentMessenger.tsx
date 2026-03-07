@@ -182,6 +182,7 @@ const ReferentMessenger: React.FC = () => {
           first_name: user.firstName || user.email?.split("@")[0] || "Moi",
           last_name: user.lastName || "",
           avatar_url: user.avatarUrl,
+          avatarUrl: user.avatarUrl, // Added both for compatibility
         },
       };
 
@@ -240,6 +241,36 @@ const ReferentMessenger: React.FC = () => {
             {activeConversation ? (
               // Chat View
               <div className="h-full flex flex-col">
+                {/* Entête de contexte de procédure (si disponible dans la conversation) */}
+                {(() => {
+                  const msgs = conversations[activeConversation] || [];
+                  const procMsg = [...msgs].reverse().find((m) => m.procedure);
+                  if (!procMsg?.procedure) return null;
+
+                  return (
+                    <div className="mx-4 mt-3 mb-1 p-2 bg-indigo-50/50 border border-indigo-100/30 rounded-xl flex items-center justify-between gap-3 shadow-sm shrink-0">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="w-6 h-6 rounded bg-white flex items-center justify-center text-indigo-500 shrink-0">
+                          <i className="fa-solid fa-file-lines text-[10px]"></i>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-indigo-400 mb-0.5 whitespace-nowrap">Cette discussion concerne la procédure :</p>
+                          <p className="text-[10px] font-bold text-slate-700 truncate">
+                            {procMsg.procedure.title}
+                          </p>
+                        </div>
+                      </div>
+                      <a 
+                        href={`/procedures/${procMsg.procedure.uuid || procMsg.procedure_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 bg-white text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-50 transition-all shrink-0"
+                      >
+                        Lien
+                      </a>
+                    </div>
+                  );
+                })()}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/20">
                   {conversations[activeConversation]?.map((msg) => (
                     <div
