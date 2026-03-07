@@ -384,6 +384,8 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
 
       if (error) throw error;
 
+      console.log('Message sent successfully:', data);
+      
       // Manual update for immediate feedback (if subscription is slow)
       // We construct a temporary message object
       const tempMsg = {
