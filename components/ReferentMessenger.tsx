@@ -13,6 +13,7 @@ interface DirectMessage {
   procedure_id?: string;
   is_resolved?: boolean;
   last_activity_at?: string;
+  metadata?: { is_system?: boolean; [key: string]: any };
   sender?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   recipient?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   procedure?: { title: string; uuid: string; file_url?: string };
@@ -352,48 +353,77 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                   );
                 })()}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/20">
-                  {conversations[activeConversation]?.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex items-end gap-2 ${msg.sender_id === user.id ? "flex-row-reverse" : "flex-row"}`}>
-                      
-                      {/* Avatar outside the bubble */}
-                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 mb-1">
-                        {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
-                          <img 
-                            src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
-                            alt="Avatar" 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
-                            }}
-                          />
-                        ) : (
-                          <img 
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
-                            alt="Avatar Fallback" 
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
+                  {conversations[activeConversation]?.map((msg) => {
+                    const isSystem = msg.metadata?.is_system;
 
+                    if (isSystem) {
+                      return (
+                        <div key={msg.id} className="flex justify-center my-6 animate-fade-in px-4">
+                          <div className="bg-white/80 backdrop-blur-sm border border-emerald-100 px-4 py-2 rounded-2xl shadow-sm flex items-center gap-3">
+                            <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px]">
+                              <i className="fa-solid fa-flag-checkered"></i>
+                            </div>
+                            <div className="flex flex-col">
+                              <p className="text-[10px] font-black text-slate-800 leading-tight">
+                                {msg.content}
+                              </p>
+                              <span className="text-[8px] font-medium text-slate-400">
+                                {new Date(msg.created_at).toLocaleString([], {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
                       <div
-                        className={`max-w-[75%] p-3 rounded-2xl text-xs flex flex-col gap-1 shadow-sm ${
-                          msg.sender_id === user.id
-                            ? "bg-indigo-600 text-white rounded-br-none"
-                            : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
-                        }`}>
-                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                        <span
-                          className={`text-[8px] block opacity-50 ${msg.sender_id === user.id ? "text-right" : "text-left"}`}>
-                          {new Date(msg.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        key={msg.id}
+                        className={`flex items-end gap-2 ${msg.sender_id === user.id ? "flex-row-reverse" : "flex-row"}`}>
+                        
+                        {/* Avatar outside the bubble */}
+                        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 mb-1">
+                          {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
+                            <img 
+                              src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
+                              alt="Avatar" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
+                              }}
+                            />
+                          ) : (
+                            <img 
+                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
+                              alt="Avatar Fallback" 
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+
+                        <div
+                          className={`max-w-[75%] p-3 rounded-2xl text-xs flex flex-col gap-1 shadow-sm ${
+                            msg.sender_id === user.id
+                              ? "bg-indigo-600 text-white rounded-br-none"
+                              : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
+                          }`}>
+                          <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                          <span
+                            className={`text-[8px] block opacity-50 ${msg.sender_id === user.id ? "text-right" : "text-left"}`}>
+                            {new Date(msg.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
                 <div className="p-3 border-t border-slate-50 bg-white">
@@ -562,17 +592,49 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
 
                     if (error) throw error;
 
-                    setConversations(prev => ({
-                      ...prev,
-                      [activeConversation!]: prev[activeConversation!].map(m => ({ ...m, is_resolved: true }))
-                    }));
+                    // Insert System Message to record resolution
+                    const { data: sysData, error: sysError } = await supabase
+                      .from("direct_messages")
+                      .insert({
+                        sender_id: user.id,
+                        recipient_id: activeConversation,
+                        content: `Incident clos par ${user.firstName}`,
+                        procedure_id: procId,
+                        is_resolved: true,
+                        metadata: { is_system: true }
+                      })
+                      .select()
+                      .single();
+
+                    if (!sysError && sysData) {
+                      setConversations(prev => ({
+                        ...prev,
+                        [activeConversation!]: [
+                          ...(prev[activeConversation!] || []).map(m => ({ ...m, is_resolved: true })),
+                          { 
+                            ...sysData, 
+                            sender: { 
+                              first_name: user.firstName, 
+                              last_name: user.lastName, 
+                              avatar_url: user.avatarUrl 
+                            } 
+                          }
+                        ]
+                      }));
+                    } else {
+                      // Fallback if system message insert fails
+                      setConversations(prev => ({
+                        ...prev,
+                        [activeConversation!]: prev[activeConversation!].map(m => ({ ...m, is_resolved: true }))
+                      }));
+                    }
 
                     setShowResolveConfirm(false);
                     setNotification({ msg: "Discussion clôturée avec succès", type: "success" });
 
-                    if (user.role === UserRole.MANAGER) {
-                      setShowReferralLoopback(true);
-                    }
+                    // More permissive check for loopback: anyone who can close it can see the loopback
+                    // OR specifically non-technicians
+                    setShowReferralLoopback(true);
                   } catch (err) {
                     console.error("Error resolving incident:", err);
                     setShowResolveConfirm(false);
