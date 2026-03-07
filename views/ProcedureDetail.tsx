@@ -302,6 +302,71 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
   const [masteryRequest, setMasteryRequest] = useState<any | null>(null);
   const [isMasteryModalOpen, setIsMasteryModalOpen] = useState(false);
   const [procedureExperts, setProcedureExperts] = useState<string[]>([]); // Liste des noms des experts
+  const [isHumanChat, setIsHumanChat] = useState(false);
+  const [directMessages, setDirectMessages] = useState<any[]>([]);
+  
+  // Real-time subscription for direct messages
+  useEffect(() => {
+    if (!user || !procedure) return;
+    
+    // Initial fetch
+    const fetchDirectMessages = async () => {
+        const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+        if (!targetUuid) return;
+
+        const { data } = await supabase
+            .from('direct_messages')
+            .select('*, sender:sender_id(first_name, last_name, avatar_url)')
+            .eq('procedure_id', targetUuid)
+            .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+            .order('created_at', { ascending: true });
+            
+        if (data) setDirectMessages(data);
+    };
+    
+    fetchDirectMessages();
+
+    // Subscribe
+    const channel = supabase.channel(`procedure_chat_${procedure.id}`)
+        .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: `procedure_id=eq.${procedure.db_id || procedure.uuid}` }, // Filter by procedure to avoid noise
+            async (payload) => {
+                const newMsg = payload.new;
+                // Only add if relevant to this user
+                if (newMsg.sender_id === user.id || newMsg.recipient_id === user.id) {
+                     // Fetch sender details
+                     const { data: senderData } = await supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', newMsg.sender_id).single();
+                     setDirectMessages(prev => [...prev, { ...newMsg, sender: senderData }]);
+                }
+            }
+        )
+        .subscribe();
+
+    return () => { channel.unsubscribe(); };
+  }, [user, procedure, isHumanChat]);
+
+  const handleSendDirectMessage = async () => {
+      if (!input.trim() || !referentExpert) return;
+      
+      const content = input.trim();
+      setInput(""); // Optimistic clear
+      
+      const targetUuid = procedure.db_id || (typeof procedure.id === 'string' && procedure.id.includes('-') ? procedure.id : null);
+
+      try {
+          await supabase.from('direct_messages').insert({
+              sender_id: user.id,
+              recipient_id: referentExpert.id,
+              procedure_id: targetUuid,
+              content: content
+          });
+          // No need to manually update state, subscription handles it
+      } catch (err) {
+          console.error("Error sending DM:", err);
+          setNotification({ msg: "Erreur d'envoi du message", type: "error" });
+      }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -950,57 +1015,97 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       >
         <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
-              <i className="fa-solid fa-brain"></i>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xl transition-colors duration-300 ${isHumanChat ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
+              <i className={`fa-solid ${isHumanChat ? 'fa-user-headset' : 'fa-brain'}`}></i>
             </div>
             <div>
               <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">
-                Expert Procedio
+                {isHumanChat ? (referentExpert ? `${referentExpert.first_name} ${referentExpert.last_name}` : 'Référent') : 'Expert Procedio'}
               </h3>
-              <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">
-                IA Connectée
+              <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${isHumanChat ? 'text-emerald-600' : 'text-emerald-500'}`}>
+                {isHumanChat ? 'Support Humain' : 'IA Connectée'}
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setIsChatOpen(false)}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
-            <i className="fa-solid fa-xmark"></i>
-          </button>
+          <div className="flex items-center gap-2">
+             {isHumanChat && (
+                 <button 
+                    onClick={() => setIsHumanChat(false)}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-100 transition-all"
+                 >
+                    Retour IA
+                 </button>
+             )}
+             <button
+                onClick={() => setIsChatOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i className="fa-solid fa-xmark"></i>
+             </button>
+          </div>
         </div>
 
         {/* ... (Chat Content) ... */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/10 scrollbar-hide">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[92%] p-5 rounded-3xl shadow-sm ${
-                  msg.sender === "user"
-                    ? "bg-slate-900 text-white rounded-tr-none font-bold text-sm"
-                    : "bg-white text-slate-600 border border-slate-100 rounded-tl-none text-[13px] leading-relaxed"
-                }`}>
-                {msg.sender === "ai" ? (
-                  <div className="procedio-markdown">
-                    <ErrorBoundary
-                      fallback={
-                        <p className="text-red-400 text-xs">Erreur d'affichage du message.</p>
-                      }>
-                      {typeof msg.text === "string" ? (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
-                      ) : (
-                        <span>{String(msg.text)}</span>
-                      )}
-                    </ErrorBoundary>
-                  </div>
-                ) : (
-                  msg.text
+          {isHumanChat ? (
+              // HUMAN CHAT
+              <>
+                {directMessages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 opacity-60">
+                        <i className="fa-regular fa-comments text-4xl mb-4"></i>
+                        <p className="text-xs font-medium text-center max-w-[200px]">
+                            Posez votre question directement à {referentExpert?.first_name || 'votre référent'}. <br/>
+                            Il recevra une notification.
+                        </p>
+                    </div>
                 )}
-              </div>
-            </div>
-          ))}
-          {isTyping && (
+                {directMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender_id === user.id ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] p-4 rounded-3xl text-sm shadow-sm ${
+                            msg.sender_id === user.id 
+                                ? "bg-emerald-500 text-white rounded-tr-none" 
+                                : "bg-white border border-slate-100 text-slate-700 rounded-tl-none"
+                        }`}>
+                            <p>{msg.content}</p>
+                            <span className={`text-[10px] block mt-1 opacity-70 text-right`}>
+                                {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+              </>
+          ) : (
+              // AI CHAT
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[92%] p-5 rounded-3xl shadow-sm ${
+                      msg.sender === "user"
+                        ? "bg-slate-900 text-white rounded-tr-none font-bold text-sm"
+                        : "bg-white text-slate-600 border border-slate-100 rounded-tl-none text-[13px] leading-relaxed"
+                    }`}>
+                    {msg.sender === "ai" ? (
+                      <div className="procedio-markdown">
+                        <ErrorBoundary
+                          fallback={
+                            <p className="text-red-400 text-xs">Erreur d'affichage du message.</p>
+                          }>
+                          {typeof msg.text === "string" ? (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                          ) : (
+                            <span>{String(msg.text)}</span>
+                          )}
+                        </ErrorBoundary>
+                      </div>
+                    ) : (
+                      msg.text
+                    )}
+                  </div>
+                </div>
+              ))
+          )}
+          {isTyping && !isHumanChat && (
             <div className="flex justify-start">
               <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex gap-1.5">
                 <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
@@ -1013,34 +1118,52 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         </div>
 
         <div className="p-6 bg-white border-t border-slate-50 space-y-4">
-          {/* Quick Actions and Input remain here... */}
-          <div className="flex flex-wrap gap-2 mb-2 px-1">
-            {quickActions.map((action, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSendMessage(action.prompt)}
-                disabled={isTyping}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-50/50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm active:scale-95 disabled:opacity-50">
-                <i className={`fa-solid ${action.icon}`}></i>
-                {action.label}
-              </button>
-            ))}
-          </div>
+          {/* Quick Actions and Input */}
+          {!isHumanChat && (
+              <div className="flex flex-wrap gap-2 mb-2 px-1">
+                {quickActions.map((action, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSendMessage(action.prompt)}
+                    disabled={isTyping}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50/50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm active:scale-95 disabled:opacity-50">
+                    <i className={`fa-solid ${action.icon}`}></i>
+                    {action.label}
+                  </button>
+                ))}
+                
+                {/* NEW: Contact Referent Button */}
+                {referentExpert && (
+                    <button
+                        onClick={() => setIsHumanChat(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all border border-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 animate-fade-in"
+                        title={`Contacter ${referentExpert.first_name} ${referentExpert.last_name}`}
+                    >
+                        <i className="fa-solid fa-user-headset"></i>
+                        Contacter le référent
+                    </button>
+                )}
+              </div>
+          )}
 
           <div className="relative">
             <input
               type="text"
-              placeholder="Posez votre question sur ce document..."
-              className="w-full pl-6 pr-14 py-6 rounded-3xl bg-slate-50 border-none outline-none font-bold text-slate-700 text-sm shadow-inner focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all"
+              placeholder={isHumanChat ? `Écrivez à ${referentExpert?.first_name || 'votre référent'}...` : "Posez votre question sur ce document..."}
+              className={`w-full pl-6 pr-14 py-6 rounded-3xl bg-slate-50 border-none outline-none font-bold text-slate-700 text-sm shadow-inner focus:bg-white focus:ring-4 transition-all ${isHumanChat ? 'focus:ring-emerald-500/10' : 'focus:ring-indigo-500/5'}`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+              onKeyDown={(e) => e.key === "Enter" && (isHumanChat ? handleSendDirectMessage() : handleSendMessage())}
               disabled={isTyping}
             />
             <button
-              onClick={() => handleSendMessage()}
+              onClick={() => isHumanChat ? handleSendDirectMessage() : handleSendMessage()}
               disabled={!input.trim() || isTyping}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-indigo-600/20 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-2xl flex items-center justify-center transition-all disabled:opacity-20">
+              className={`absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl flex items-center justify-center transition-all disabled:opacity-20 ${
+                  isHumanChat 
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                    : 'bg-indigo-600/20 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+              }`}>
               <i className="fa-solid fa-paper-plane text-sm"></i>
             </button>
           </div>

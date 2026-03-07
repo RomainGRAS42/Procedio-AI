@@ -16,6 +16,7 @@ import SearchResults from "../views/SearchResults";
 import XPProgressBarTest from "../views/XPProgressBarTest";
 import MouseTrailEffect from "./MouseTrailEffect";
 import ChatAssistant from "./ChatAssistant";
+import ReferentMessenger from "./ReferentMessenger";
 import { MissionsProvider } from "../contexts/MissionsContext";
 
 const ProcedureRedirect = () => {
@@ -204,6 +205,9 @@ const AppContent: React.FC<any> = ({
           navigate(`/procedure/${p.id}${hash}`);
         }} 
       />
+      
+      {/* Referent Messenger (Floating) */}
+      <ReferentMessenger />
     </div>
   );
 };
