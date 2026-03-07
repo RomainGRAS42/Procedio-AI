@@ -227,7 +227,7 @@ const Header: React.FC<HeaderProps> = ({
                   <h4 className="font-bold text-slate-800 text-sm tracking-tight">Notifications</h4>
                   {totalNotifs > 0 && (
                     <button onClick={handleClearAll} className="text-[10px] font-black text-indigo-500 hover:text-slate-900 uppercase tracking-widest flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-50 transition-all">
-                      <i className="fa-solid fa-broom"></i> Tout effacer
+                      <i className="fa-solid fa-check-double"></i> Tout marquer comme lu
                     </button>
                   )}
                 </div>

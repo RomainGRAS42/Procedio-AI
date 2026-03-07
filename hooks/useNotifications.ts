@@ -206,7 +206,7 @@ export const useNotifications = (user: User) => {
   const handleClearAll = async () => {
     try {
       if (user.role === UserRole.TECHNICIAN) {
-        // Bulk update/delete for Technician
+        // Bulk update for Technician (Mark as Read only, no deletion)
         await supabase
           .from('suggestion_responses')
           .update({ read: true })
@@ -219,17 +219,26 @@ export const useNotifications = (user: User) => {
           .eq('user_id', user.id)
           .eq('read', false);
           
+        // For flash notes, we mark them as "viewed" implicitly by clearing local state, 
+        // or we could add a 'viewed' column if needed. For now, we just clear the UI list
+        // but to respect "no deletion", we stop calling .delete().
+        // Instead, we might need to update a status if the schema supports it.
+        // Assuming 'notes' has a 'viewed' column (it does based on Manager logic):
         await supabase
           .from('notes')
-          .delete()
+          .update({ viewed: true })
           .in('title', ["FLASH_NOTE_VALIDATED", "FLASH_NOTE_REJECTED"])
           .eq('user_id', user.id);
 
         setSuggestionResponses([]);
-        setSystemNotifications([]);
-        setFlashNoteNotifications([]);
+        // setSystemNotifications([]); // Don't clear local state entirely, just mark as read?
+        // Actually, "Tout marquer comme lu" usually keeps them in the list but unbolded.
+        // But the user said "pas de suppression".
+        // Let's refetch to update UI state properly instead of emptying the array.
+        fetchSystemNotifications();
+        setFlashNoteNotifications([]); // These are transient, maybe okay to clear from view?
       } else {
-        // Bulk update/delete for Manager
+        // Bulk update for Manager (Mark as Read)
         // 1. Logs
         await supabase
           .from("notes")
@@ -239,8 +248,6 @@ export const useNotifications = (user: User) => {
           .or('title.ilike.LOG_READ_%,title.ilike.LOG_SUGGESTION_%,title.ilike.CLAIM_MASTERY_%');
 
         // 2. Suggestions (Global queue)
-        // Only mark displayed ones as viewed or all pending?
-        // To be safe and ensure "Clear All" really clears the badge:
         await supabase
           .from("procedure_suggestions")
           .update({ viewed: true })
@@ -254,16 +261,19 @@ export const useNotifications = (user: User) => {
           .eq("user_id", user.id)
           .eq("read", false);
 
-        // 4. Flash Notes
+        // 4. Flash Notes - Mark as viewed instead of delete
         await supabase
           .from("notes")
-          .delete()
-          .eq("title", "FLASH_NOTE_SUGGESTION");
+          .update({ viewed: true })
+          .eq("title", "FLASH_NOTE_SUGGESTION")
+          .eq("viewed", false); // Only unread ones
 
-        setReadLogs([]);
-        setPendingSuggestions([]);
-        setSystemNotifications([]);
-        setFlashNoteNotifications([]);
+        // Refresh lists to show "read" state
+        fetchReadLogs();
+        fetchPendingSuggestions();
+        fetchSystemNotifications();
+        // For flash notes, they disappear when viewed usually
+        setFlashNoteNotifications([]); 
       }
     } catch (err) {
       console.error("Error clearing notifications:", err);
