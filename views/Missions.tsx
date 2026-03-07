@@ -1462,7 +1462,7 @@ const Missions: React.FC<MissionsProps> = ({ user, onSelectProcedure, setActiveT
                       if (personalFilter === "available") return m.status === "open";
                       if (m.assigned_to !== user.id) return false;
                       if (personalFilter === "active")
-                        return m.status === "assigned" || m.status === "in_progress";
+                        return m.status === "assigned" || m.status === "in_progress" || m.status === "awaiting_validation";
                       return m.status === "completed" || m.status === "cancelled";
                     }).length > 0 ? (
                       missions
