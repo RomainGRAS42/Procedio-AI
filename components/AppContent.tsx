@@ -34,6 +34,7 @@ const AppContent: React.FC<any> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [activeWidget, setActiveWidget] = React.useState<'none' | 'copilot' | 'messenger'>('none');
+  const [hasMessengerMessages, setHasMessengerMessages] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const mainScrollRef = React.useRef<HTMLElement>(null);
 
@@ -213,7 +214,8 @@ const AppContent: React.FC<any> = ({
       <ReferentMessenger 
         isOpen={activeWidget === 'messenger'}
         onToggle={(open) => setActiveWidget(open ? 'messenger' : 'none')}
-        hideTrigger={activeWidget === 'copilot'}
+        hideTrigger={activeWidget === 'copilot' || (!hasMessengerMessages && activeWidget !== 'messenger')}
+        onMessagesLoaded={setHasMessengerMessages}
       />
     </div>
   );

@@ -19,9 +19,15 @@ interface ReferentMessengerProps {
   isOpen: boolean;
   onToggle: (isOpen: boolean) => void;
   hideTrigger?: boolean;
+  onMessagesLoaded?: (hasMessages: boolean) => void;
 }
 
-const ReferentMessenger: React.FC<ReferentMessengerProps> = ({ isOpen, onToggle, hideTrigger }) => {
+const ReferentMessenger: React.FC<ReferentMessengerProps> = ({ 
+  isOpen, 
+  onToggle, 
+  hideTrigger,
+  onMessagesLoaded 
+}) => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<{ [key: string]: DirectMessage[] }>({});
   const [unreadCount, setUnreadCount] = useState(0);
@@ -99,8 +105,12 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({ isOpen, onToggle,
           }
         });
 
+        const hasMessages = data.length > 0;
         setConversations(grouped);
         setUnreadCount(unread);
+        if (onMessagesLoaded) onMessagesLoaded(hasMessages);
+      } else {
+        if (onMessagesLoaded) onMessagesLoaded(false);
       }
     } catch (err) {
       console.error("Error fetching messages:", err);
