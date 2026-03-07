@@ -13,6 +13,7 @@ interface ProtectedNote extends Note {
   is_flash_note?: boolean; 
   folder_id?: string;
   author_name?: string;
+  expires_at?: string; // Explicitly add to ProtectedNote
 }
 
 interface NoteFolder {
@@ -199,10 +200,11 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
               year: "numeric",
             }),
             user_id: n.user_id,
-            author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : "Inconnu",
+            author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : "Système",
             status: n.status || "private",
             category: n.category || "general",
-            folder_id: n.folder_id
+            folder_id: n.folder_id,
+            expires_at: n.expires_at
           }));
 
         // Client-side filtering as double security & Organization
@@ -534,7 +536,8 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
           author_name: n.author ? `${n.author.first_name} ${n.author.last_name}` : (user ? `${user.firstName} ${user.lastName}` : "Moi"),
           status: n.status || "private",
           category: n.category || "general",
-          folder_id: n.folder_id
+          folder_id: n.folder_id,
+          expires_at: n.expires_at
         };
 
         setNotes(prev => {
@@ -880,19 +883,40 @@ const Notes: React.FC<NotesProps> = ({ initialIsAdding = false, onEditorClose, m
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {notes
-                        .filter(n => n.status === 'public')
+                        .filter(n => n.status === 'public' && (!n.expires_at || new Date(n.expires_at) > new Date()))
                         .map(note => (
                           <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
                         ))
                       }
-                      {notes.filter(n => n.status === 'public').length === 0 && (
+                      {notes.filter(n => n.status === 'public' && (!n.expires_at || new Date(n.expires_at) > new Date())).length === 0 && (
                         <div className="col-span-full py-10 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
                            <i className="fa-solid fa-bolt-slash text-2xl mb-2"></i>
-                           <p className="text-[10px] font-bold uppercase tracking-widest">Aucune Flash Note officielle</p>
+                           <p className="text-[10px] font-bold uppercase tracking-widest">Aucune Flash Note officielle active</p>
                         </div>
                       )}
                     </div>
                   </div>
+
+                  {/* CLOSED/EXPIRED FLASH NOTES SECTION */}
+                  {notes.filter(n => n.status === 'public' && n.expires_at && new Date(n.expires_at) <= new Date()).length > 0 && (
+                    <div className="space-y-6 px-2 opacity-70">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-1.5 h-6 bg-slate-400 rounded-full"></div>
+                          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Flash Notes Terminées</h3>
+                        </div>
+                        <div className="h-px flex-1 bg-slate-100 mx-8"></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {notes
+                          .filter(n => n.status === 'public' && n.expires_at && new Date(n.expires_at) <= new Date())
+                          .map(note => (
+                            <NoteCard key={note.id} note={note} mode={mode} user={user} onDelete={handleDelete} onOpen={() => setViewingNote(note)} unlockedNotes={unlockedNotes} setPasswordVerify={setPasswordVerify} onPublish={handlePublish} />
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
 
                   {/* PENDING PROPOSALS SECTION (Only if suggestions exist) */}
                   {notes.filter(n => n.status === 'suggestion').length > 0 && (
@@ -1709,6 +1733,8 @@ const NoteCard: React.FC<{
   const cardColor = mode === "flash" ? colors[colorIndex] : "bg-white";
   const borderClass = mode === "flash" ? "border-transparent" : "border-slate-100";
 
+  const isExpired = note.expires_at && new Date(note.expires_at) <= new Date();
+  
   return (
     <div
       onClick={() => {
@@ -1718,7 +1744,7 @@ const NoteCard: React.FC<{
           onOpen();
         }
       }}
-      className={`group hover:translate-y-[-4px] active:scale-95 transition-all duration-300 rounded-[2rem] p-6 relative cursor-pointer flex flex-col h-64 shadow-sm hover:shadow-xl ${cardColor} border ${borderClass}`}
+      className={`group hover:translate-y-[-4px] active:scale-95 transition-all duration-300 rounded-[2rem] p-6 relative cursor-pointer flex flex-col h-64 shadow-sm hover:shadow-xl ${cardColor} border ${borderClass} ${isExpired ? 'opacity-60 grayscale-[0.5]' : ''}`}
     >
       <div className="flex justify-between items-start mb-4">
         <h3 className={`font-black text-lg line-clamp-2 ${mode === "flash" ? "text-slate-800" : "text-slate-900"} uppercase tracking-tight leading-tight`} style={{ wordBreak: 'break-word' }}>
