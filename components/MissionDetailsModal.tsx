@@ -206,31 +206,47 @@ const MissionDetailsModal: React.FC<MissionDetailsModalProps> = ({
     setIsSubmitting(true);
     try {
       if (action === "complete") {
-        const newStatus: MissionStatus = (user.role as any) === "manager" ? "completed" : "awaiting_validation";
+        // Fix: Use strict enum comparison for Manager role to ensure correct status
+        const isManager = user.role === UserRole.MANAGER || (user.role as any) === "manager" || (user.role as any) === "MANAGER";
+        const newStatus: MissionStatus = isManager ? "completed" : "awaiting_validation";
         
-        // Send system message for submission
+        // Send system message for submission (Only if status is awaiting_validation - i.e. Technician submitting)
         if (newStatus === "awaiting_validation") {
             const date = new Date();
             const dateStr = date.toLocaleDateString('fr-FR');
             const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             const name = user.firstName ? `${user.firstName} ${user.lastName || ''}` : user.email;
             
-            await supabase.from("mission_messages").insert({
+            const { error: msgError } = await supabase.from("mission_messages").insert({
                 mission_id: mission.id,
                 user_id: user.id,
                 content: `${name} a soumis son travail le ${dateStr} à ${timeStr}`,
                 type: 'system'
             });
+
+            if (msgError) console.error("Error inserting submission message:", msgError);
         }
 
-        onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl || undefined);
-        if (newStatus === "completed") onClose();
-        else setShowSuccessModal("submit");
+        await onUpdateStatus(mission.id, newStatus, completionNotes, attachmentUrl || undefined);
+        
+        if (newStatus === "completed") {
+            onClose();
+        } else {
+            setShowSuccessModal("submit");
+        }
       } else if (action === "start") {
         onUpdateStatus(mission.id, "in_progress");
       } else if (action === "cancel") {
         onUpdateStatus(mission.id, "in_progress", completionNotes);
-        await supabase.from("mission_messages").insert({ mission_id: mission.id, user_id: user.id, content: `❌ Mission refusée. Motif : ${completionNotes || "Revoir la copie."}` });
+        
+        // Add system message for refusal
+        await supabase.from("mission_messages").insert({ 
+            mission_id: mission.id, 
+            user_id: user.id, 
+            content: `❌ Mission refusée. Motif : ${completionNotes || "Revoir la copie."}`,
+            type: 'system' 
+        });
+        
         setCompletionNotes("");
         onClose();
       } else if (action === "promote") {
