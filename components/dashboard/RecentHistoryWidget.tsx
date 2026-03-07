@@ -41,6 +41,9 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     title.includes('mastery_completed');
         }).map(a => {
             const isBadge = a.title?.includes('BADGE');
+            const content = a.content?.toLowerCase() || '';
+            const title = a.title?.toLowerCase() || '';
+            
             // Extract XP value from content if available (e.g. "Vous avez gagné 50 XP")
             const xpMatch = a.content?.match(/(\d+)\s*XP/);
             let xpValue = xpMatch ? xpMatch[1] : null;
