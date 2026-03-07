@@ -1040,6 +1040,18 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const [isRevisionHistoryOpen, setIsRevisionHistoryOpen] = useState(false);
+
+  // Loopback logic for incident resolution
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "suggest") {
+      setIsSuggestionModalOpen(true);
+      // Clean up URL to avoid re-triggering on refresh if undesired 
+      // (Optional, but often better UX)
+    }
+  }, []);
+
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (

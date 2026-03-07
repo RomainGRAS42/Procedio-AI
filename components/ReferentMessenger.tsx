@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
+import { UserRole } from "../types";
 
 interface DirectMessage {
   id: string;
@@ -10,6 +11,8 @@ interface DirectMessage {
   created_at: string;
   is_read: boolean;
   procedure_id?: string;
+  is_resolved?: boolean;
+  last_activity_at?: string;
   sender?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   recipient?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   procedure?: { title: string; uuid: string; file_url?: string };
@@ -185,19 +188,25 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
 
     try {
       const content = input.trim();
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from("direct_messages")
         .insert({
           sender_id: user.id,
           recipient_id: activeConversation,
           content: content,
-          // We can try to infer procedure context from the last message in conversation
           procedure_id: conversations[activeConversation]?.slice(-1)[0]?.procedure_id || null,
+          last_activity_at: new Date().toISOString(),
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Update resolution status of other messages in this thread (simple approach)
+      await supabase
+        .from("direct_messages")
+        .update({ last_activity_at: new Date().toISOString() })
+        .or(`sender_id.eq.${activeConversation},recipient_id.eq.${activeConversation}`);
 
       // Add to local state immediately
       const partnerId = activeConversation;
@@ -253,13 +262,73 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
               <i className="fa-solid fa-inbox text-emerald-500"></i>
               Messagerie
             </h3>
-            {activeConversation && (
-              <button
-                onClick={() => setActiveConversation(null)}
-                className="text-[10px] font-bold text-slate-400 hover:text-indigo-600">
-                <i className="fa-solid fa-arrow-left mr-1"></i> Retour
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {activeConversation && (() => {
+                const msgs = conversations[activeConversation] || [];
+                const isResolved = msgs.some(m => m.is_resolved);
+                if (!isResolved) {
+                  return (
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm("Voulez-vous marquer cet incident comme résolu ? Cela fermera la discussion.")) return;
+                        
+                        try {
+                          const lastMsg = msgs[msgs.length - 1];
+                          const procId = lastMsg?.procedure_id;
+
+                          const { error } = await supabase
+                            .from("direct_messages")
+                            .update({ is_resolved: true })
+                            .or(`sender_id.eq.${activeConversation},recipient_id.eq.${activeConversation}`)
+                            .eq('procedure_id', procId);
+
+                          if (error) throw error;
+
+                          // Update local state
+                          setConversations(prev => ({
+                            ...prev,
+                            [activeConversation]: prev[activeConversation].map(m => ({ ...m, is_resolved: true }))
+                          }));
+
+                          setNotification({ msg: "Incident marqué comme résolu", type: "success" });
+
+                          // Referral Loopback
+                          if (user.role === UserRole.MANAGER) {
+                            if (window.confirm("Bravo ! Souhaitez-vous mettre à jour la procédure pour capitaliser sur cette résolution ?")) {
+                              const proc = msgs.find(m => m.procedure)?.procedure;
+                              if (proc) {
+                                onToggle(false); // Close messenger
+                                window.location.href = `/procedure/${proc.uuid}?action=suggest`;
+                              }
+                            }
+                          }
+                        } catch (err) {
+                          console.error("Error resolving incident:", err);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all flex items-center gap-2"
+                      title="Marquer comme résolu"
+                    >
+                      <i className="fa-solid fa-check-circle"></i>
+                      <span>Résolu</span>
+                    </button>
+                  );
+                }
+                return (
+                  <div className="px-3 py-1.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fa-solid fa-lock"></i>
+                    <span>Clos</span>
+                  </div>
+                );
+              })()}
+              {activeConversation && (
+                <button
+                  onClick={() => setActiveConversation(null)}
+                  className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 ml-2">
+                  <i className="fa-solid fa-arrow-left mr-1"></i> Retour
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-hidden relative">
@@ -362,22 +431,37 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                   <div ref={messagesEndRef} />
                 </div>
                 <div className="p-3 border-t border-slate-50 bg-white">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                      placeholder="Répondre..."
-                      className="w-full pl-4 pr-10 py-3 rounded-xl bg-slate-50 border-none text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500/20"
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!input.trim() || isSending}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all">
-                      <i className="fa-solid fa-paper-plane"></i>
-                    </button>
-                  </div>
+                  {(() => {
+                    const msgs = conversations[activeConversation] || [];
+                    const isResolved = msgs.some(m => m.is_resolved);
+                    if (isResolved) {
+                      return (
+                        <div className="py-2 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Cette discussion est terminée
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                          placeholder="Répondre..."
+                          className="w-full pl-4 pr-10 py-3 rounded-xl bg-slate-50 border-none text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        />
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!input.trim() || isSending}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all">
+                          <i className="fa-solid fa-paper-plane"></i>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ) : (
