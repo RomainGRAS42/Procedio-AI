@@ -198,6 +198,13 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
         let title = 'Activité';
         let link: string | null = null;
         let content = a.content;
+        let isRead = true; // Default read status
+
+        // Special handling for high-value XP gains (Mission Validated, Level Up, etc.)
+        const isHighValue = a.content?.includes('XP') && (a.content.match(/(\d+)\s*XP/)?.[1] || 0) >= 100;
+        if (isHighValue) {
+             isRead = false; // Highlight high value activities
+        }
 
         if (a.title?.includes('CONSULTATION')) {
              // ... existing logic ...
@@ -222,6 +229,13 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             color = 'text-indigo-500';
             bg = 'bg-indigo-50';
             title = 'Mission';
+        } else if (a.title?.includes('MISSION_COMPLETION') || content?.includes('Maîtrise validée')) {
+             // Validation / Success Activity
+             icon = 'fa-trophy';
+             color = 'text-amber-500';
+             bg = 'bg-amber-50';
+             title = 'Victoire !';
+             isRead = false; // Highlight victories
         } else if (a.title?.includes('CLAIM')) {
              // CLAIM is usually "Prise en charge" - Technicians might see their own claims? 
              // Or Manager sees "Tech X claimed mission Y".
@@ -258,7 +272,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             color,
             bg,
             link,
-            isRead: true // Activities are considered read by default
+            isRead: isRead
         };
       }).filter(Boolean) as any[]
     ];
@@ -355,7 +369,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     }
                 })();
 
-                const isUnread = item.type === 'notification' && !item.isRead;
+                const isUnread = item.type === 'notification' ? !item.isRead : !item.isRead; // Apply unread logic to activities too
                 const isSuccessJournal = title.includes("Succès");
                 
                 // Navigation Logic:

@@ -329,9 +329,17 @@ const ReviewCenterWidget: React.FC<ReviewCenterWidgetProps> = ({
                   } else if (item.dataType === 'notification') {
                      const notif = item as any;
                      typeLabel = notif.isMissionActive ? 'Alerte Mission' : 'Notification';
-                     icon = 'fa-bell';
-                     iconBg = isUnread ? 'bg-rose-100' : 'bg-slate-100';
-                     iconColor = isUnread ? 'text-rose-600' : 'text-slate-400';
+                     
+                     // Custom color for Mission Completed
+                     if (notif.title === "Mission terminée") {
+                         icon = 'fa-flag-checkered';
+                         iconBg = isUnread ? 'bg-emerald-100' : 'bg-slate-100';
+                         iconColor = isUnread ? 'text-emerald-600' : 'text-slate-400';
+                     } else {
+                         icon = 'fa-bell';
+                         iconBg = isUnread ? 'bg-rose-100' : 'bg-slate-100';
+                         iconColor = isUnread ? 'text-rose-600' : 'text-slate-400';
+                     }
                   }
 
                   return (

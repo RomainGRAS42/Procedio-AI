@@ -135,7 +135,7 @@ const TeamPodium: React.FC = () => {
 
     return (
       <div 
-        className="flex-1 bg-white rounded-2xl border border-slate-100 p-4 flex flex-col items-center text-center hover:border-indigo-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden h-full min-h-[160px]"
+        className="flex-1 bg-white rounded-2xl border border-slate-100 p-4 flex flex-col items-center text-center hover:border-indigo-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden h-full min-h-[180px]"
         role="article"
         aria-label={`Champion ${champion.badge_title}: ${champion.first_name} ${champion.last_name}`}
       >
@@ -166,11 +166,11 @@ const TeamPodium: React.FC = () => {
         </p>
 
         {/* Metric */}
-        <div className="mt-auto w-full pt-3 border-t border-slate-50">
-            <p className={`text-lg font-black leading-none mb-1 ${champion.badge_color === 'indigo' ? 'text-indigo-600' : champion.badge_color === 'emerald' ? 'text-emerald-600' : 'text-amber-600'}`}>
+        <div className="mt-auto w-full pt-3 border-t border-slate-50 pb-1">
+            <p className={`text-xl font-black leading-none mb-1 ${champion.badge_color === 'indigo' ? 'text-indigo-600' : champion.badge_color === 'emerald' ? 'text-emerald-600' : 'text-amber-600'}`}>
                 {champion.metric_value}
             </p>
-            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate">
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">
                 {champion.metric_label}
             </p>
         </div>
