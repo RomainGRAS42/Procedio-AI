@@ -43,7 +43,12 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             const isBadge = a.title?.includes('BADGE');
             // Extract XP value from content if available (e.g. "Vous avez gagné 50 XP")
             const xpMatch = a.content?.match(/(\d+)\s*XP/);
-            const xpValue = xpMatch ? xpMatch[1] : null;
+            let xpValue = xpMatch ? xpMatch[1] : null;
+            
+            // Fallback for activities
+            if (!xpValue && (title.includes('validée') || content.includes('validée') || content.includes('terminée'))) {
+                 xpValue = '50';
+            }
             
             return {
                 id: a.id,
@@ -67,7 +72,12 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
             const isBadge = n.title?.toLowerCase().includes('badge');
             // Extract XP value from content (e.g. "Vous avez gagné <b>50 XP</b>" or "+300 XP")
             const xpMatch = n.content?.match(/(\d+)\s*XP/) || n.title?.match(/(\d+)\s*XP/);
-            const xpValue = xpMatch ? xpMatch[1] : null;
+            let xpValue = xpMatch ? xpMatch[1] : null;
+
+            // Fallback: If it's a mission validation and no XP found, assume 50 XP default
+            if (!xpValue && (n.title?.toLowerCase().includes('validée') || n.content?.toLowerCase().includes('validée'))) {
+                xpValue = '50';
+            }
 
             return {
                 id: n.id,
@@ -372,11 +382,11 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                         <div className="shrink-0 flex flex-col items-end justify-center group-hover:opacity-0 transition-opacity duration-200">
                              <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[11px] font-black whitespace-nowrap shadow-sm border border-amber-200/50 flex items-center gap-1">
                                 <i className="fa-solid fa-bolt text-[9px] animate-pulse"></i>
-                                {item.xp ? `+${item.xp} XP` : (
+                                {item.xp ? `+ ${item.xp} XP` : (
                                     // Fallback extraction
                                     (() => {
                                         const match = item.content.match(/Gain de (\d+)\s*XP/i) || item.content.match(/(\d+)\s*XP/i);
-                                        return match ? `+${match[1]} XP` : '+XP';
+                                        return match ? `+ ${match[1]} XP` : '+ 50 XP';
                                     })()
                                 )}
                              </span>

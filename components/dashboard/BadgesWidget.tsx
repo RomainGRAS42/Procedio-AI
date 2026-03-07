@@ -104,8 +104,8 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
   };
 
   return (
-    <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-orange-100 transition-all h-full">
-      <div className="flex items-center justify-between">
+    <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6 hover:border-orange-100 transition-all h-full overflow-hidden">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-lg shadow-sm">
             <i className="fa-solid fa-trophy"></i>
@@ -184,16 +184,16 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col gap-6">
+      <div className="flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
         {/* PROCHAIN TROPHÉE (En haut - Focus) */}
-        <div className="bg-slate-50/80 rounded-3xl p-5 border border-slate-200 relative overflow-hidden group/challenge hover:bg-white hover:border-amber-200 hover:shadow-md transition-all">
+        <div className="bg-slate-50/80 rounded-3xl p-5 border border-slate-200 relative overflow-hidden group/challenge hover:bg-white hover:border-amber-200 hover:shadow-md transition-all shrink-0">
             {/* Background pattern decoration */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-bl-full -mr-4 -mt-4"></div>
             
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
-                        Objectif en cours
+                        Prochain objectif
                     </p>
                     <div className="text-right">
                         <span className="text-sm font-black text-slate-900 block leading-none">
@@ -261,14 +261,14 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
         </div>
 
         {/* COLLECTION (En bas - Liste Verticale) */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex flex-col">
           <div className="flex items-center justify-between mb-4 shrink-0">
              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                 Collection ({virtualBadges.length})
              </p>
           </div>
           
-          <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 max-h-[300px]">
+          <div className="flex flex-col gap-3">
             {virtualBadges.length > 0 ? (
               virtualBadges.map((ub) => {
                 const style = getBadgeStyle(ub.badges.criteria_value || 0);

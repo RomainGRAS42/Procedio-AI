@@ -119,7 +119,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                     </div>
                     <div className="flex gap-2 mt-1">
                         <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
-                            {missionFilter === 'available' ? 'Opportunités' : missionFilter === 'completed' ? 'Historique' : 'En cours'}
+                            {missionFilter === 'available' ? 'Missions Disponibles' : missionFilter === 'completed' ? 'Historique' : 'En cours'}
                         </span>
                     </div>
                 </div>
@@ -306,7 +306,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
               </div>
               <div>
                 <p className={`text-base font-black uppercase tracking-tight text-slate-400`}>
-                  {missionFilter === 'available' ? "Aucune opportunité" : missionFilter === 'completed' ? "Historique vide" : "Rien en cours"}
+                  {missionFilter === 'available' ? "Aucune mission disponible" : missionFilter === 'completed' ? "Historique vide" : "Rien en cours"}
                 </p>
                 <p className={`text-xs font-medium leading-tight italic mt-2 text-slate-400`}>
                   {missionFilter === 'available' ? "Revenez plus tard pour de nouvelles missions." : "Tout est calme pour le moment."}
