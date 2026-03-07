@@ -184,131 +184,148 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 space-y-6">
-        <div>
-          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
-            Collection active
-          </p>
-          <div className="flex flex-wrap gap-3">
+      <div className="flex-1 flex flex-col gap-6">
+        {/* PROCHAIN TROPHÉE (En haut - Focus) */}
+        <div className="bg-slate-50/80 rounded-3xl p-5 border border-slate-200 relative overflow-hidden group/challenge hover:bg-white hover:border-amber-200 hover:shadow-md transition-all">
+            {/* Background pattern decoration */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-bl-full -mr-4 -mt-4"></div>
+            
+            <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                        Objectif en cours
+                    </p>
+                    <div className="text-right">
+                        <span className="text-sm font-black text-slate-900 block leading-none">
+                            {nextObjective.current} <span className="text-slate-400 text-[10px] font-bold">/ {nextObjective.target}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4 mb-4">
+                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl shadow-sm border bg-white ${
+                        nextObjective.color === 'emerald' ? 'text-emerald-500 border-emerald-100' :
+                        nextObjective.color === 'indigo' ? 'text-indigo-500 border-indigo-100' :
+                        'text-amber-500 border-amber-100'
+                      }`}>
+                        <i className={`fa-solid ${nextObjective.icon}`}></i>
+                      </div>
+                      <div className="flex-1">
+                          <h4 className="font-black text-slate-800 text-sm uppercase tracking-tight mb-1">
+                              {nextObjective.subtitle.replace("Trophée ", "")}
+                          </h4>
+                          <p className="text-[10px] text-slate-500 font-medium leading-tight line-clamp-2">
+                              {nextObjective.description}
+                          </p>
+                      </div>
+                </div>
+
+                {/* Large Progress Bar */}
+                <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
+                  <div
+                    className={`h-full relative transition-all duration-1000 ${
+                      nextObjective.color === 'emerald' ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
+                      nextObjective.color === 'indigo' ? 'bg-gradient-to-r from-indigo-400 to-indigo-500' :
+                      'bg-gradient-to-r from-amber-400 to-amber-500'
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                  >
+                      {/* Shimmer effect */}
+                      <div className="absolute top-0 left-0 w-full h-full bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                  </div>
+                </div>
+                
+                <div className="mt-3 flex items-center justify-between">
+                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                        Progression : {Math.round(progressPercent)}%
+                     </span>
+                     {/* Call to Action based on type */}
+                     {nextObjective.unit === "Lectures" && (
+                         <button 
+                            onClick={() => onNavigate && onNavigate('/procedures')}
+                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:underline decoration-2 underline-offset-2 uppercase tracking-wide transition-all"
+                         >
+                            Explorer <i className="fa-solid fa-arrow-right ml-1"></i>
+                         </button>
+                     )}
+                     {nextObjective.unit === "Missions" && (
+                         <button 
+                            onClick={() => onNavigate && onNavigate('/missions')}
+                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:underline decoration-2 underline-offset-2 uppercase tracking-wide transition-all"
+                         >
+                            Voir Missions <i className="fa-solid fa-arrow-right ml-1"></i>
+                         </button>
+                     )}
+                </div>
+            </div>
+        </div>
+
+        {/* COLLECTION (En bas - Liste Verticale) */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-4">
+             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                Collection ({virtualBadges.length})
+             </p>
+             {virtualBadges.length > 3 && (
+                 <button className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+                    Voir tout
+                 </button>
+             )}
+          </div>
+          
+          <div className="flex flex-col gap-3">
             {virtualBadges.length > 0 ? (
-              virtualBadges.map((ub) => {
+              virtualBadges.slice(0, 3).map((ub) => {
                 const style = getBadgeStyle(ub.badges.criteria_value || 0);
                 return (
-                  <div key={ub.id} className="group relative">
+                  <div key={ub.id} className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-50 hover:bg-slate-50 hover:border-slate-100 transition-all cursor-default">
                     <div
-                      className={`w-14 h-14 rounded-2xl ${style.bg} border ${style.border} flex flex-col items-center justify-center gap-1 hover:bg-white hover:scale-110 transition-all cursor-help transform shadow-sm ${style.shadow}`}>
-                      <i className={`fa-solid ${ub.badges.icon} text-lg ${style.icon}`}></i>
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter truncate w-10 text-center leading-none">
-                        {ub.badges.name}
-                      </span>
+                      className={`w-10 h-10 rounded-xl ${style.bg} border ${style.border} flex items-center justify-center shrink-0 shadow-sm ${style.shadow}`}>
+                      <i className={`fa-solid ${ub.badges.icon} text-sm ${style.icon}`}></i>
                     </div>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white rounded-xl text-[10px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
-                      <p
-                        className={`font-black uppercase tracking-widest mb-1 ${style.icon.replace("text-", "text-")}`}>
-                        {ub.badges.name}
-                      </p>
-                      <p className="text-slate-300 leading-relaxed">{ub.badges.description}</p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-slate-900"></div>
+                    
+                    <div className="flex-1 min-w-0">
+                        <h5 className="text-xs font-black text-slate-700 uppercase tracking-tight truncate">
+                            {ub.badges.name}
+                        </h5>
+                        <div className="flex items-center gap-2 mt-0.5">
+                             <span className={`text-[9px] font-bold uppercase tracking-wider ${style.icon.replace('text-', 'text-opacity-80 text-')}`}>
+                                {ub.badges.criteria_value >= 1000 ? 'Légendaire' : ub.badges.criteria_value >= 500 ? 'Élite' : 'Initié'}
+                             </span>
+                             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                             <span className="text-[9px] text-slate-400 truncate">
+                                {ub.badges.description}
+                             </span>
+                        </div>
+                    </div>
+
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${style.border} bg-white opacity-0 group-hover:opacity-100 transition-opacity`}>
+                        <i className="fa-solid fa-check text-[10px] text-emerald-500"></i>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="w-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">
-                  Votre parcours trophées
-                </p>
-                <p className="text-[11px] text-slate-400 mb-3">
-                  Complétez des actions pour débloquer vos premiers badges !
-                </p>
-                <div className="flex justify-center gap-2 mt-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex flex-col items-center justify-center gap-0.5 opacity-50">
-                    <i className="fa-solid fa-book text-xs"></i>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                      Novice
-                    </span>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex flex-col items-center justify-center gap-0.5 opacity-50">
-                    <i className="fa-solid fa-check-circle text-xs"></i>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                      Engagé
-                    </span>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex flex-col items-center justify-center gap-0.5 opacity-50">
-                    <i className="fa-solid fa-trophy text-xs"></i>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                      Expert
-                    </span>
-                  </div>
+              <div className="w-full py-8 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                <div className="w-12 h-12 rounded-full bg-slate-100 mx-auto flex items-center justify-center mb-3 text-slate-300">
+                     <i className="fa-solid fa-trophy text-xl"></i>
                 </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  Aucun trophée
+                </p>
+                <p className="text-[10px] text-slate-400 max-w-[180px] mx-auto leading-relaxed">
+                  Complétez l'objectif ci-dessus pour débloquer votre premier badge !
+                </p>
               </div>
             )}
-          </div>
-        </div>
-
-        <div className="pt-6 border-t border-slate-100">
-          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
-            Prochain Trophée
-          </p>
-          <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group/challenge hover:bg-white hover:border-amber-200 transition-all relative">
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 bg-[#121826] text-white rounded-2xl shadow-xl opacity-0 invisible group-hover/challenge:opacity-100 group-hover/challenge:visible transition-all z-50 pointer-events-none">
-              <div className="flex items-center gap-3 mb-2">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
-                    nextObjective.color === "emerald"
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : nextObjective.color === "indigo"
-                      ? "bg-indigo-500/20 text-indigo-400"
-                      : "bg-amber-500/20 text-amber-400"
-                  }`}>
-                  <i className={`fa-solid ${nextObjective.icon}`}></i>
+            
+            {virtualBadges.length > 3 && (
+                <div className="text-center mt-1">
+                    <span className="text-[10px] font-medium text-slate-400 italic">
+                        + {virtualBadges.length - 3} autres trophées...
+                    </span>
                 </div>
-                <p className="font-black text-xs uppercase tracking-wider text-white">
-                  {nextObjective.subtitle}
-                </p>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {nextObjective.description}
-              </p>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-[#121826]"></div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Dynamic color class handling */}
-              <div className={`w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-sm transition-colors ${
-                nextObjective.color === 'emerald' ? 'group-hover/challenge:bg-emerald-50 group-hover/challenge:text-emerald-500' :
-                nextObjective.color === 'indigo' ? 'group-hover/challenge:bg-indigo-50 group-hover/challenge:text-indigo-500' :
-                'group-hover/challenge:bg-amber-50 group-hover/challenge:text-amber-500'
-              }`}>
-                <i className={`fa-solid ${nextObjective.icon}`}></i>
-              </div>
-              <div>
-                <p className="text-xs font-black text-slate-700 uppercase leading-none mb-1">
-                  {nextObjective.title}
-                </p>
-                <p className="text-[10px] text-slate-400 font-medium leading-tight mb-1.5">
-                  {nextObjective.subtitle}
-                </p>
-                <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full animate-pulse transition-all duration-1000 ${
-                      nextObjective.color === 'emerald' ? 'bg-emerald-400' :
-                      nextObjective.color === 'indigo' ? 'bg-indigo-400' :
-                      'bg-amber-400'
-                    }`}
-                    style={{
-                      width: `${progressPercent}%`,
-                    }}></div>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                {nextObjective.current} / {nextObjective.target}
-              </span>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                {nextObjective.unit}
-              </span>
-            </div>
+            )}
           </div>
         </div>
       </div>

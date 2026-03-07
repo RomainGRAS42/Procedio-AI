@@ -334,7 +334,7 @@ const RecentHistoryWidget: React.FC<RecentHistoryWidgetProps> = ({
                     onClick={clickAction}
                     className={`p-4 rounded-2xl border transition-all group flex gap-4 items-start relative overflow-hidden ${
                         isUnread 
-                            ? 'bg-white border-indigo-100 shadow-sm' 
+                            ? 'bg-white border-indigo-100 shadow-sm cursor-pointer hover:bg-slate-50' 
                             : (item.link && !isSuccessJournal)
                                 ? 'cursor-pointer hover:bg-slate-50 border-slate-100 bg-white' 
                                 : 'border-transparent bg-slate-50/30 cursor-default'
