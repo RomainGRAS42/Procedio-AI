@@ -536,7 +536,10 @@ const Team: React.FC<TeamProps> = ({ user }) => {
 
                                     {/* Referent Workload */}
                                     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col">
-                                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Expertise & Gardiennage</p>
+                                      <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1">Procédures dont il est référent</p>
+                                        <p className="text-[9px] text-slate-400 font-medium mb-4">Responsable de la maintenance et validation.</p>
+                                      </div>
                                       {referentProcedures.length > 0 ? (
                                         <div className="space-y-2 overflow-y-auto max-h-48 pr-2 custom-scrollbar">
                                           {referentProcedures.map((ref: any) => (
