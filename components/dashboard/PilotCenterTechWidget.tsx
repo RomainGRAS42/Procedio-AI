@@ -204,7 +204,7 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
 
                 switch (mission.status) {
                   case "assigned":
-                    statusLabel = "À LANCER";
+                    statusLabel = "À COMMENCER";
                     statusColor = "text-indigo-600 animate-pulse";
                     progressWidth = "5%";
                     progressColor = "bg-indigo-600";
@@ -252,8 +252,21 @@ const PilotCenterTechWidget: React.FC<PilotCenterTechWidgetProps> = ({
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                          {mission.mission_type === 'challenge' && <span className="text-[8px] font-black uppercase tracking-widest text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded mb-1 inline-block">Défi</span>}
-                          {mission.mission_type === 'team' && <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded mb-1 inline-block">Équipe</span>}
+                          {/* Badges Logic */}
+                          {mission.mission_type === 'challenge' ? (
+                            <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-purple-600 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md mb-2">
+                                <i className="fa-solid fa-trophy text-[7px]"></i> DÉFI
+                            </span>
+                          ) : mission.mission_type === 'team' ? (
+                            <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md mb-2">
+                                <i className="fa-solid fa-users text-[7px]"></i> ÉQUIPE
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md mb-2">
+                                <i className="fa-solid fa-user text-[7px]"></i> SOLO
+                            </span>
+                          )}
+                          
                           <span className="block text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                             {mission.title}
                           </span>

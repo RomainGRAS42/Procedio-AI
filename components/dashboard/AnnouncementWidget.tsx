@@ -141,24 +141,23 @@ const AnnouncementWidget: React.FC<AnnouncementWidgetProps> = ({
                         announcement.requires_confirmation ? (
                           <button
                             onClick={handleMarkAsRead}
-                            className="group relative bg-gradient-to-r from-sky-600 to-blue-600 hover:from-slate-800 hover:to-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-sky-200/50 hover:shadow-slate-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2 shrink-0 border border-white/20 ring-2 ring-transparent focus:ring-sky-200 outline-none"
-                            aria-label="Marquer le message comme lu">
-                            <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                            className="group relative bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200/50 hover:shadow-emerald-300/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2 shrink-0 border border-white/20 ring-2 ring-transparent focus:ring-emerald-200 outline-none"
+                            title="Votre manager demande une confirmation de lecture."
+                            aria-label="Confirmer la lecture du message">
+                            <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors animate-pulse">
                               <i className="fa-solid fa-check text-[10px]"></i>
                             </span>
-                            <span>J'ai compris</span>
+                            <span>Confirmer lecture</span>
                           </button>
                         ) : null
                       ) : (
                         // EVEN IF READ, KEEP THE BUTTON IF CONTENT HASN'T CHANGED (Persistent "Read" State)
-                        // Actually, user requested: "si le technicien a cliqué 1 fois sur j'ai compris, tant que le message du manager ne change pas, le btn doit rester en LU"
-                        // This implies showing a "Lu" indicator permanently for this message ID.
                         announcement.requires_confirmation && (
-                          <div className="px-5 py-2.5 rounded-xl bg-sky-600 text-white border border-sky-500 flex items-center gap-2 select-none shadow-sm opacity-90">
-                            <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                               <i className="fa-solid fa-check text-[10px]"></i>
+                          <div className="px-4 py-2 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center gap-2 select-none shadow-inner opacity-80 cursor-default">
+                            <span className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                               <i className="fa-solid fa-check-double text-[10px]"></i>
                             </span>
-                            <span className="text-[10px] font-black uppercase tracking-widest">J'ai compris</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest">Message Lu</span>
                           </div>
                         )
                       )
