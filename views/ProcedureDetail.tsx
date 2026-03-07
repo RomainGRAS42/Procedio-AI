@@ -1149,13 +1149,23 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                         : "bg-white border border-slate-100 text-slate-700 rounded-tl-none"
                     }`}>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-full bg-white/20 border border-white/30 flex items-center justify-center shrink-0 overflow-hidden">
-                        {msg.sender?.avatar_url ? (
-                          <img src={msg.sender.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      {/* User Avatar with optimized fallback */}
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/20 border-2 border-white/30 flex items-center justify-center shrink-0 shadow-sm">
+                        {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
+                          <img 
+                            src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
+                            alt="Avatar" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
+                            }}
+                          />
                         ) : (
-                          <span className="text-[8px] font-black uppercase text-white/80">
-                            {msg.sender?.first_name?.[0] || "?"}
-                          </span>
+                          <img 
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
+                            alt="Avatar Fallback" 
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
                       <span className="text-[10px] font-black uppercase tracking-widest opacity-80">

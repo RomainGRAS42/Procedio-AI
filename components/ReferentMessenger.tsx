@@ -10,7 +10,7 @@ interface DirectMessage {
   created_at: string;
   is_read: boolean;
   procedure_id?: string;
-  sender?: { first_name: string; last_name: string; avatar_url: string };
+  sender?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   procedure?: { title: string; uuid: string };
 }
 
@@ -283,13 +283,23 @@ const ReferentMessenger: React.FC = () => {
                             : "bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm"
                         }`}>
                         <div className="flex items-center gap-2 mb-0.5 opacity-80">
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 overflow-hidden border ${msg.sender_id === user.id ? "bg-white/20 border-white/30" : "bg-slate-100 border-slate-200"}`}>
-                            {msg.sender?.avatar_url ? (
-                              <img src={msg.sender.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                          {/* User Avatar with optimized fallback */}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border-2 ${msg.sender_id === user.id ? "bg-white/20 border-white/30" : "bg-white border-slate-100 shadow-sm"}`}>
+                            {msg.sender?.avatar_url || msg.sender?.avatarUrl ? (
+                              <img 
+                                src={msg.sender?.avatar_url || msg.sender?.avatarUrl} 
+                                alt="Avatar" 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`;
+                                }}
+                              />
                             ) : (
-                              <span className={`text-[6px] font-black uppercase ${msg.sender_id === user.id ? "text-white" : "text-slate-400"}`}>
-                                {msg.sender?.first_name?.[0] || "?"}
-                              </span>
+                              <img 
+                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.first_name || "U")}&background=4f46e5&color=fff&bold=true`} 
+                                alt="Avatar Fallback" 
+                                className="w-full h-full object-cover"
+                              />
                             )}
                           </div>
                           <span className="text-[8px] font-black uppercase tracking-widest">
