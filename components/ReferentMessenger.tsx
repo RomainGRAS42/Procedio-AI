@@ -246,12 +246,26 @@ const ReferentMessenger: React.FC = () => {
                       key={msg.id}
                       className={`flex ${msg.sender_id === user.id ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[85%] p-3 rounded-2xl text-xs ${
+                        className={`max-w-[85%] p-3 rounded-2xl text-xs flex flex-col gap-1.5 ${
                           msg.sender_id === user.id
                             ? "bg-emerald-500 text-white rounded-tr-none"
                             : "bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm"
                         }`}>
-                        <p>{msg.content}</p>
+                        <div className="flex items-center gap-2 mb-0.5 opacity-80">
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 overflow-hidden border ${msg.sender_id === user.id ? "bg-white/20 border-white/30" : "bg-slate-100 border-slate-200"}`}>
+                            {msg.sender?.avatar_url ? (
+                              <img src={msg.sender.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className={`text-[6px] font-black uppercase ${msg.sender_id === user.id ? "text-white" : "text-slate-400"}`}>
+                                {msg.sender?.first_name?.[0] || "?"}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[8px] font-black uppercase tracking-widest">
+                            {msg.sender_id === user.id ? "Moi" : (msg.sender?.first_name || "Utilisateur")}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
                         <span
                           className={`text-[9px] block mt-1 ${msg.sender_id === user.id ? "text-emerald-100" : "text-slate-300"}`}>
                           {new Date(msg.created_at).toLocaleTimeString([], {
@@ -325,36 +339,46 @@ const ReferentMessenger: React.FC = () => {
                       <button
                         key={partnerId}
                         onClick={() => setActiveConversation(partnerId)}
-                        className="w-full p-3 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-3 text-left group border border-transparent hover:border-slate-100">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 border border-slate-200 group-hover:border-emerald-200 overflow-hidden">
+                        className={`w-full p-3 rounded-xl transition-all flex items-center gap-3 text-left group border ${
+                          unreadCount > 0
+                            ? "bg-indigo-50/30 border-indigo-100/50 shadow-sm"
+                            : "hover:bg-slate-50 border-transparent hover:border-slate-100"
+                        }`}>
+                        <div className="w-10 h-10 rounded-full bg-white border border-slate-100 shadow-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                           {partner?.avatar_url ? (
-                            <img src={partner.avatar_url} className="w-full h-full object-cover" />
+                            <img src={partner.avatar_url} className="w-full h-full object-cover" alt="User" />
                           ) : (
-                            <span className="font-black text-xs">{partner?.first_name?.[0]}</span>
+                            <span className="font-black text-xs text-slate-400 uppercase">
+                              {partner?.first_name?.[0] || "?"}
+                            </span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-0.5">
-                            <span className="font-bold text-slate-700 text-xs truncate">
+                            <span className="font-black text-slate-800 text-[11px] truncate uppercase tracking-tight">
                               {partner?.first_name} {partner?.last_name}
                             </span>
-                            <span className="text-[9px] text-slate-400">
+                            <span className="text-[9px] text-slate-400 font-bold shrink-0">
                               {new Date(lastMsg.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <p
-                            className={`text-[10px] truncate ${unreadCount > 0 ? "font-bold text-slate-800" : "text-slate-400"}`}>
-                            {lastMsg.sender_id === user.id && (
-                              <i className="fa-solid fa-reply mr-1 opacity-50"></i>
+                          <div className="flex flex-col gap-1">
+                            <p
+                              className={`text-[10px] truncate italic ${unreadCount > 0 ? "font-black text-slate-900" : "text-slate-400"}`}>
+                              {lastMsg.sender_id === user.id && (
+                                <i className="fa-solid fa-reply mr-1 text-slate-300"></i>
+                              )}
+                              {lastMsg.content}
+                            </p>
+                            {(lastMsg.procedure || lastMsg.procedure_id) && (
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100/80 rounded-lg w-fit border border-slate-200/50">
+                                <i className="fa-solid fa-file-lines text-[8px] text-slate-400"></i>
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter truncate max-w-[150px]">
+                                  {lastMsg.procedure?.title || "Validation Procédure"}
+                                </span>
+                              </div>
                             )}
-                            {lastMsg.content}
-                          </p>
-                          {lastMsg.procedure && (
-                            <span className="inline-block mt-1 px-1.5 py-0.5 bg-slate-100 rounded text-[8px] text-slate-500 truncate max-w-full">
-                              <i className="fa-regular fa-file-pdf mr-1"></i>
-                              {lastMsg.procedure.title}
-                            </span>
-                          )}
+                          </div>
                         </div>
                         {unreadCount > 0 && (
                           <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">

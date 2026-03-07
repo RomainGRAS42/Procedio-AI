@@ -359,7 +359,6 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       channel.unsubscribe();
     };
   }, [user, procedure, isHumanChat]);
-
   const handleSendDirectMessage = async () => {
     if (!input.trim() || !referentExpert) return;
 
@@ -370,6 +369,9 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
       procedure.db_id ||
       (typeof procedure.id === "string" && procedure.id.includes("-") ? procedure.id : null);
 
+    const procedureContext = `\n---\n📌 Contexte : ${cleanTitle}\n🔗 Lien : ${window.location.origin}/procedures/${targetUuid}`;
+    const fullContent = content + procedureContext;
+
     try {
       const { data, error } = await supabase
         .from("direct_messages")
@@ -377,7 +379,7 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
           sender_id: user.id,
           recipient_id: referentExpert.id,
           procedure_id: targetUuid,
-          content: content,
+          content: fullContent,
         })
         .select()
         .single(); // Important: select() to get the inserted row back if needed
@@ -392,13 +394,13 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
         id: data?.id || Date.now().toString(),
         sender_id: user.id,
         recipient_id: referentExpert.id,
-        content: content,
+        content: fullContent,
         created_at: new Date().toISOString(),
         is_read: false,
         procedure_id: targetUuid,
         sender: {
-          first_name: user.firstName,
-          last_name: user.lastName,
+          first_name: user.firstName || user.email?.split("@")[0] || "Moi",
+          last_name: user.lastName || "",
           avatar_url: user.avatarUrl,
         },
       };
@@ -1118,12 +1120,26 @@ const ProcedureDetail: React.FC<ProcedureDetailProps> = ({
                   key={msg.id}
                   className={`flex ${msg.sender_id === user.id ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] p-4 rounded-3xl text-sm shadow-sm ${
+                    className={`max-w-[85%] p-4 rounded-3xl text-sm shadow-sm flex flex-col gap-2 ${
                       msg.sender_id === user.id
                         ? "bg-emerald-500 text-white rounded-tr-none"
                         : "bg-white border border-slate-100 text-slate-700 rounded-tl-none"
                     }`}>
-                    <p>{msg.content}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-6 h-6 rounded-full bg-white/20 border border-white/30 flex items-center justify-center shrink-0 overflow-hidden">
+                        {msg.sender?.avatar_url ? (
+                          <img src={msg.sender.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[8px] font-black uppercase text-white/80">
+                            {msg.sender?.first_name?.[0] || "?"}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-80">
+                        {msg.sender_id === user.id ? "Moi" : (msg.sender?.first_name || "Utilisateur")}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
                     <span className={`text-[10px] block mt-1 opacity-70 text-right`}>
                       {new Date(msg.created_at).toLocaleTimeString([], {
                         hour: "2-digit",
