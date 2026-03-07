@@ -303,7 +303,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                         <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                         <div className="flex flex-col items-start leading-none -gap-0.5">
                           <span>Lien</span>
-                          <span className="text-[7px] opacity-60 italic normal-case tracking-normal">(PDF)</span>
+                          <span className="text-[7px] opacity-60 italic normal-case tracking-normal">(Valable 1 heure)</span>
                         </div>
                       </button>
                     </div>
