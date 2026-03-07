@@ -88,12 +88,12 @@ const BadgesWidget: React.FC<BadgesWidgetProps> = ({
       }; // Gold
     if (criteriaValue >= 500)
       return {
-        bg: "bg-slate-50",
-        border: "border-slate-200",
-        icon: "text-slate-600",
-        shadow: "shadow-slate-500/10",
-        ring: "ring-slate-100",
-      }; // Silver
+        bg: "bg-indigo-50",
+        border: "border-indigo-100",
+        icon: "text-indigo-600",
+        shadow: "shadow-indigo-500/10",
+        ring: "ring-indigo-100",
+      }; // Silver (Elite)
     return {
       bg: "bg-orange-50",
       border: "border-orange-100",
