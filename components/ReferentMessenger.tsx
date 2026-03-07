@@ -12,7 +12,7 @@ interface DirectMessage {
   procedure_id?: string;
   sender?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
   recipient?: { first_name: string; last_name: string; avatar_url: string; avatarUrl?: string };
-  procedure?: { title: string; uuid: string };
+  procedure?: { title: string; uuid: string; file_url?: string };
 }
 
 interface ReferentMessengerProps {
@@ -34,7 +34,15 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
   const [activeConversation, setActiveConversation] = useState<string | null>(null); // sender_id
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [notification, setNotification] = useState<{ msg: string; type: "success" | "info" | "error" } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   useEffect(() => {
     if (!user) return;
@@ -82,7 +90,7 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
           *,
           sender:sender_id(first_name, last_name, avatar_url),
           recipient:recipient_id(first_name, last_name, avatar_url),
-          procedure:procedure_id(title, uuid)
+          procedure:procedure_id(title, uuid, file_url)
         `
         )
         .or(`recipient_id.eq.${user.id},sender_id.eq.${user.id}`)
@@ -277,14 +285,27 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
                           </p>
                         </div>
                       </div>
-                      <a 
-                        href={`/procedures/${procMsg.procedure.uuid || procMsg.procedure_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2 py-1 bg-white text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-50 transition-all shrink-0"
+                      <button 
+                        onClick={async () => {
+                          const fileUrl = procMsg.procedure.file_url;
+                          if (!fileUrl) return;
+                          
+                          setNotification({ msg: "Génération du lien sécurisé...", type: "info" });
+                          const { data } = await supabase.storage.from("procedures").createSignedUrl(fileUrl, 3600);
+                          if (data?.signedUrl) {
+                            window.open(data.signedUrl, "_blank");
+                          } else {
+                            setNotification({ msg: "Erreur de lien", type: "error" });
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-white text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-50 hover:shadow-sm transition-all shrink-0 flex items-center gap-2"
                       >
-                        Lien
-                      </a>
+                        <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        <div className="flex flex-col items-start leading-none -gap-0.5">
+                          <span>Lien</span>
+                          <span className="text-[7px] opacity-60 italic normal-case tracking-normal">(PDF)</span>
+                        </div>
+                      </button>
                     </div>
                   );
                 })()}
@@ -436,6 +457,22 @@ const ReferentMessenger: React.FC<ReferentMessengerProps> = ({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[150] flex items-center gap-3 animate-fade-in border backdrop-blur-md ${
+          notification.type === "success" ? "bg-emerald-500/90 border-emerald-400 text-white" :
+          notification.type === "error" ? "bg-rose-500/90 border-rose-400 text-white" :
+          "bg-slate-800/90 border-slate-700 text-white"
+        }`}>
+          <i className={`fa-solid ${
+            notification.type === "success" ? "fa-circle-check" :
+            notification.type === "error" ? "fa-circle-exclamation" :
+            "fa-circle-info"
+          }`}></i>
+          <span className="text-xs font-bold leading-none">{notification.msg}</span>
         </div>
       )}
     </>
